@@ -20,8 +20,8 @@
       "destination": "/backend/src/server.js"
     },
     {
-      "source": "/(.*)",
-      "destination": "/frontend/$1"
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ],
   "cleanUrls": true
