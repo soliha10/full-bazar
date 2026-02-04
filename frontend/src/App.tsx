@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -47,7 +47,7 @@ export default function App() {
     });
   };
 
-  const handleUpdateQuantity = (productId: number, delta: number) => {
+  const handleUpdateQuantity = (productId: string | number, delta: number) => {
     setCartItems(prevItems => {
       return prevItems
         .map(item =>
@@ -59,7 +59,7 @@ export default function App() {
     });
   };
 
-  const handleRemoveItem = (productId: number) => {
+  const handleRemoveItem = (productId: string | number) => {
     setCartItems(prevItems => prevItems.filter(item => item.id !== productId));
   };
 
@@ -69,31 +69,53 @@ export default function App() {
     <ThemeProvider>
       <LanguageProvider>
         <Router>
-          <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
-            <Navbar cartCount={cartCount} />
-            <main className="flex-1">
-              <Routes>
-                <Route path="/" element={<Landing onAddToCart={handleAddToCart} />} />
-                <Route path="/products" element={<ProductListing onAddToCart={handleAddToCart} />} />
-                <Route path="/product/:id" element={<ProductDetail onAddToCart={handleAddToCart} />} />
-                <Route 
-                  path="/cart" 
-                  element={
-                    <Cart 
-                      cartItems={cartItems}
-                      onUpdateQuantity={handleUpdateQuantity}
-                      onRemoveItem={handleRemoveItem}
-                    />
-                  } 
-                />
-                <Route path="/checkout" element={<Checkout cartItems={cartItems} />} />
-                <Route path="/order-success" element={<OrderSuccess />} />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
+          <AppContent 
+            cartCount={cartCount} 
+            handleAddToCart={handleAddToCart}
+            handleUpdateQuantity={handleUpdateQuantity}
+            handleRemoveItem={handleRemoveItem}
+            cartItems={cartItems}
+          />
         </Router>
       </LanguageProvider>
     </ThemeProvider>
+  );
+}
+
+function AppContent({ cartCount, handleAddToCart, handleUpdateQuantity, handleRemoveItem, cartItems }: any) {
+  const navigate = useNavigate();
+  
+  const handleSearch = (value: string) => {
+    if (value.trim()) {
+      navigate(`/products?search=${encodeURIComponent(value)}`);
+    } else {
+      navigate('/products');
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
+      <Navbar cartCount={cartCount} onSearchChange={handleSearch} />
+      <main className="flex-1">
+        <Routes>
+          <Route path="/" element={<Landing onAddToCart={handleAddToCart} />} />
+          <Route path="/products" element={<ProductListing onAddToCart={handleAddToCart} />} />
+          <Route path="/product/:id" element={<ProductDetail onAddToCart={handleAddToCart} />} />
+          <Route 
+            path="/cart" 
+            element={
+              <Cart 
+                cartItems={cartItems}
+                onUpdateQuantity={handleUpdateQuantity}
+                onRemoveItem={handleRemoveItem}
+              />
+            } 
+          />
+          <Route path="/checkout" element={<Checkout cartItems={cartItems} />} />
+          <Route path="/order-success" element={<OrderSuccess />} />
+        </Routes>
+      </main>
+      <Footer />
+    </div>
   );
 }

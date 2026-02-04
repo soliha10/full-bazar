@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Star, ShoppingCart, Heart, Share2, Truck, RotateCcw, Shield, ChevronLeft } from 'lucide-react';
+import { Star, ShoppingCart, Heart, Share2, Truck, RotateCcw, Shield, ChevronLeft, Loader2, ExternalLink, Sparkles } from 'lucide-react';
 import { Button } from '../components/Button';
-import { products } from '../data/mockData';
+import { fetchProductById } from '../services/api';
+import { mapProduct, formatSum } from '../utils/productMapper';
 import { Product } from '../components/ProductCard';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ProductDetailProps {
   onAddToCart: (product: Product) => void;
@@ -11,15 +13,43 @@ interface ProductDetailProps {
 
 export function ProductDetail({ onAddToCart }: ProductDetailProps) {
   const { id } = useParams();
-  const product = products.find(p => p.id === Number(id));
+  const { t } = useLanguage();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
 
-  if (!product) {
+  useEffect(() => {
+    const getProduct = async () => {
+      if (!id) return;
+      try {
+        setLoading(true);
+        const data = await fetchProductById(id);
+        setProduct(mapProduct(data));
+      } catch (err) {
+        setError('Product not found or failed to load.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    getProduct();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+        <Loader2 className="w-12 h-12 text-[#FF7A00] animate-spin mb-4" />
+        <p className="text-gray-500">Loading product details...</p>
+      </div>
+    );
+  }
+
+  if (error || !product) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-[#1E1E1E] mb-4">Product not found</h2>
+          <h2 className="text-2xl font-bold text-[#1E1E1E] mb-4">{error || 'Product not found'}</h2>
           <Link to="/products">
             <Button variant="primary">Back to Products</Button>
           </Link>
@@ -100,18 +130,65 @@ export function ProductDetail({ onAddToCart }: ProductDetailProps) {
               {/* Price */}
               <div className="mb-6">
                 <div className="flex items-center gap-3">
-                  <span className="text-4xl font-bold text-[#1E1E1E]">${product.price}</span>
+                  <span className="text-4xl font-bold text-[#1E1E1E]">{formatSum(product.price)}</span>
                   {product.originalPrice && (
                     <>
-                      <span className="text-xl text-gray-400 line-through">${product.originalPrice}</span>
+                      <span className="text-xl text-gray-400 line-through">{formatSum(product.originalPrice)}</span>
                       <span className="bg-[#2ECC71] text-white px-3 py-1 rounded-md font-semibold">
-                        {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                        {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% {t.product.off}
                       </span>
                     </>
                   )}
                 </div>
                 <p className="text-sm text-gray-500 mt-2">Inclusive of all taxes</p>
               </div>
+
+              {/* Marketplace Comparison */}
+              {product.markets && product.markets.length > 0 && (
+                <div className="mb-8 border-t border-b border-gray-100 py-6">
+                  <h3 className="text-lg font-bold text-[#1E1E1E] mb-4 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-[#FF7A00]" />
+                    Marketplace Comparison
+                  </h3>
+                  <div className="space-y-3">
+                    {product.markets
+                      .sort((a, b) => a.price - b.price)
+                      .map((market, idx) => (
+                        <div 
+                          key={idx} 
+                          className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                            market.price === product.price 
+                              ? 'bg-[#FFF5EB] border-[#FF7A00] shadow-sm' 
+                              : 'bg-white border-gray-100 hover:border-gray-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center font-bold text-gray-400 uppercase text-[10px]">
+                              {market.source.substring(0, 2)}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900">{market.source}</p>
+                              {market.price === product.price && (
+                                <span className="text-[10px] text-[#FF7A00] font-bold uppercase">Best Price</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-lg text-gray-900">{formatSum(market.price)}</p>
+                            <a 
+                              href={market.url.startsWith('/') ? `https://uzum.uz${market.url}` : market.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-xs text-[#FF7A00] hover:underline flex items-center gap-1 justify-end"
+                            >
+                              Go to store <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
 
               {/* Stock Status */}
               <div className="mb-6">
@@ -181,7 +258,7 @@ export function ProductDetail({ onAddToCart }: ProductDetailProps) {
               <div className="border-t pt-6 space-y-3">
                 <div className="flex items-center gap-3 text-sm">
                   <Truck className="w-5 h-5 text-[#FF7A00]" />
-                  <span className="text-gray-700">Free shipping on orders over $50</span>
+                  <span className="text-gray-700">Free shipping on orders over 500 000 so'm</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <RotateCcw className="w-5 h-5 text-[#FF7A00]" />

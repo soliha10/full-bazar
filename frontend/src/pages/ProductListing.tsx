@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { SlidersHorizontal, ChevronDown, Loader2 } from 'lucide-react';
 import { ProductCard, Product } from '../components/ProductCard';
-import { products } from '../data/mockData';
+import { Button } from '../components/Button';
+import { useProducts } from '../hooks/useProducts';
 import { useSearchParams } from 'react-router-dom';
 
 interface ProductListingProps {
@@ -11,31 +12,38 @@ interface ProductListingProps {
 export function ProductListing({ onAddToCart }: ProductListingProps) {
   const [searchParams] = useSearchParams();
   const categoryParam = searchParams.get('category');
+  const searchQuery = searchParams.get('search') || '';
 
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(products);
+  const { products: allProducts, loading, error, hasMore, loadMore } = useProducts(1, 48, searchQuery);
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam || 'All');
   const [priceRange, setPriceRange] = useState<string>('all');
   const [minRating, setMinRating] = useState<number>(0);
   const [sortBy, setSortBy] = useState<string>('featured');
   const [showFilters, setShowFilters] = useState(true);
 
-  const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
+  const categories = useMemo(() => ['All', ...Array.from(new Set(allProducts.map(p => p.category)))], [allProducts]);
 
   useEffect(() => {
-    let result = [...products];
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [categoryParam]);
+
+  const filteredProducts = useMemo(() => {
+    let result = [...allProducts];
 
     // Filter by category
     if (selectedCategory !== 'All') {
       result = result.filter(p => p.category === selectedCategory);
     }
 
-    // Filter by price range
-    if (priceRange === 'under50') {
-      result = result.filter(p => p.price < 50);
-    } else if (priceRange === '50to100') {
-      result = result.filter(p => p.price >= 50 && p.price <= 100);
-    } else if (priceRange === 'over100') {
-      result = result.filter(p => p.price > 100);
+    // Filter by price range (UZS)
+    if (priceRange === 'under1m') {
+      result = result.filter(p => p.price < 1000000);
+    } else if (priceRange === '1to3m') {
+      result = result.filter(p => p.price >= 1000000 && p.price <= 3000000);
+    } else if (priceRange === 'over3m') {
+      result = result.filter(p => p.price > 3000000);
     }
 
     // Filter by rating
@@ -52,14 +60,8 @@ export function ProductListing({ onAddToCart }: ProductListingProps) {
       result.sort((a, b) => b.rating - a.rating);
     }
 
-    setFilteredProducts(result);
-  }, [selectedCategory, priceRange, minRating, sortBy]);
-
-  useEffect(() => {
-    if (categoryParam) {
-      setSelectedCategory(categoryParam);
-    }
-  }, [categoryParam]);
+    return result;
+  }, [allProducts, selectedCategory, priceRange, minRating, sortBy]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -125,31 +127,31 @@ export function ProductListing({ onAddToCart }: ProductListingProps) {
                     <input
                       type="radio"
                       name="price"
-                      checked={priceRange === 'under50'}
-                      onChange={() => setPriceRange('under50')}
+                      checked={priceRange === 'under1m'}
+                      onChange={() => setPriceRange('under1m')}
                       className="w-4 h-4 text-[#FF7A00] focus:ring-[#FF7A00]"
                     />
-                    <span className="text-sm text-gray-700 group-hover:text-[#FF7A00]">Under $50</span>
+                    <span className="text-sm text-gray-700 group-hover:text-[#FF7A00]">Under 1 mln so'm</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer group">
                     <input
                       type="radio"
                       name="price"
-                      checked={priceRange === '50to100'}
-                      onChange={() => setPriceRange('50to100')}
+                      checked={priceRange === '1to3m'}
+                      onChange={() => setPriceRange('1to3m')}
                       className="w-4 h-4 text-[#FF7A00] focus:ring-[#FF7A00]"
                     />
-                    <span className="text-sm text-gray-700 group-hover:text-[#FF7A00]">$50 - $100</span>
+                    <span className="text-sm text-gray-700 group-hover:text-[#FF7A00]">1 mln - 3 mln so'm</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer group">
                     <input
                       type="radio"
                       name="price"
-                      checked={priceRange === 'over100'}
-                      onChange={() => setPriceRange('over100')}
+                      checked={priceRange === 'over3m'}
+                      onChange={() => setPriceRange('over3m')}
                       className="w-4 h-4 text-[#FF7A00] focus:ring-[#FF7A00]"
                     />
-                    <span className="text-sm text-gray-700 group-hover:text-[#FF7A00]">Over $100</span>
+                    <span className="text-sm text-gray-700 group-hover:text-[#FF7A00]">Over 3 mln so'm</span>
                   </label>
                 </div>
               </div>
@@ -208,12 +210,49 @@ export function ProductListing({ onAddToCart }: ProductListingProps) {
             </div>
 
             {/* Products */}
-            {filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProducts.map(product => (
-                  <ProductCard key={product.id} product={product} onAddToCart={onAddToCart} />
-                ))}
+            {loading && allProducts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="w-12 h-12 text-[#FF7A00] animate-spin mb-4" />
+                <p className="text-gray-500">Loading amazing deals...</p>
               </div>
+            ) : error ? (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
+                <p className="text-red-600 font-medium mb-4">{error}</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="bg-[#FF7A00] text-white px-6 py-2 rounded-lg hover:bg-[#E66E00] transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : filteredProducts.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredProducts.map(product => (
+                    <ProductCard key={product.id} product={product} onAddToCart={onAddToCart} />
+                  ))}
+                </div>
+                
+                {hasMore && (
+                  <div className="mt-12 text-center">
+                    <Button
+                      variant="outline"
+                      onClick={loadMore}
+                      disabled={loading}
+                      className="px-8 py-3"
+                    >
+                      {loading ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Loading...
+                        </span>
+                      ) : (
+                        'Load More Products'
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="bg-white rounded-xl p-12 text-center border border-gray-200">
                 <p className="text-xl text-gray-600">No products found matching your filters.</p>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Product } from '../components/ProductCard';
 import { useLanguage } from '../contexts/LanguageContext';
+import { formatSum } from '../utils/productMapper';
 
 interface CartItem extends Product {
   cartQuantity: number;
@@ -10,14 +11,14 @@ interface CartItem extends Product {
 
 interface CartProps {
   cartItems: CartItem[];
-  onUpdateQuantity: (productId: number, delta: number) => void;
-  onRemoveItem: (productId: number) => void;
+  onUpdateQuantity: (productId: string | number, delta: number) => void;
+  onRemoveItem: (productId: string | number) => void;
 }
 
 export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
   const { t } = useLanguage();
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.cartQuantity, 0);
-  const shipping = subtotal > 50 ? 0 : 10;
+  const shipping = subtotal > 500000 ? 0 : 25000;
   const tax = subtotal * 0.08; // 8% tax
   const total = subtotal + shipping + tax;
 
@@ -99,11 +100,11 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
                         {/* Price */}
                         <div className="text-right">
                           <p className="text-2xl font-bold text-foreground">
-                            ${(item.price * item.cartQuantity).toFixed(2)}
+                            {formatSum(item.price * item.cartQuantity)}
                           </p>
                           {item.originalPrice && (
                             <p className="text-sm text-muted-foreground line-through">
-                              ${(item.originalPrice * item.cartQuantity).toFixed(2)}
+                              {formatSum(item.originalPrice * item.cartQuantity)}
                             </p>
                           )}
                         </div>
@@ -129,15 +130,15 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-muted-foreground">
                   <span>{t.cart.subtotal} ({cartItems.reduce((sum, item) => sum + item.cartQuantity, 0)} {t.cart.items})</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>{formatSum(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>{t.cart.shipping}</span>
-                  <span>{shipping === 0 ? t.cart.shippingFree : t.cart.shippingPrice}</span>
+                  <span>{shipping === 0 ? t.cart.shippingFree : formatSum(shipping)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>{t.checkout.tax}</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>{formatSum(tax)}</span>
                 </div>
                 {subtotal < 50 && shipping > 0 && (
                   <p className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
@@ -149,7 +150,7 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
               <div className="border-t border-border pt-4 mb-6">
                 <div className="flex justify-between items-center">
                   <span className="text-xl font-bold text-foreground">{t.cart.total}</span>
-                  <span className="text-2xl font-bold text-[#FF7A00]">${total.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-[#FF7A00]">{formatSum(total)}</span>
                 </div>
               </div>
 

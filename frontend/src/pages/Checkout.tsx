@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CreditCard, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
+import { formatSum } from '../utils/productMapper';
 
 interface CheckoutProps {
   cartItems: any[];
@@ -9,6 +10,7 @@ interface CheckoutProps {
 
 export function Checkout({ cartItems }: CheckoutProps) {
   const navigate = useNavigate();
+  // ... rest of the state
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -25,7 +27,7 @@ export function Checkout({ cartItems }: CheckoutProps) {
   });
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.cartQuantity, 0);
-  const shipping = subtotal > 50 ? 0 : 10;
+  const shipping = subtotal > 500000 ? 0 : 25000;
   const tax = subtotal * 0.08;
   const total = subtotal + shipping + tax;
 
@@ -262,8 +264,8 @@ export function Checkout({ cartItems }: CheckoutProps) {
                           {item.name}
                         </p>
                         <p className="text-sm text-gray-500">Qty: {item.cartQuantity}</p>
-                        <p className="text-sm font-semibold text-[#7C3AED]">
-                          ${(item.price * item.cartQuantity).toFixed(2)}
+                        <p className="text-sm font-semibold text-[#FF7A00]">
+                          {formatSum(item.price * item.cartQuantity)}
                         </p>
                       </div>
                     </div>
@@ -273,22 +275,22 @@ export function Checkout({ cartItems }: CheckoutProps) {
                 <div className="border-t pt-4 space-y-3 mb-6">
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>{formatSum(subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Shipping</span>
-                    <span>{shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}</span>
+                    <span>{shipping === 0 ? 'FREE' : formatSum(shipping)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Tax</span>
-                    <span>${tax.toFixed(2)}</span>
+                    <span>{formatSum(tax)}</span>
                   </div>
                 </div>
 
                 <div className="border-t pt-4 mb-6">
                   <div className="flex justify-between items-center">
                     <span className="text-xl font-bold text-[#1E1E1E]">Total</span>
-                    <span className="text-2xl font-bold text-[#7C3AED]">${total.toFixed(2)}</span>
+                    <span className="text-2xl font-bold text-[#FF7A00]">{formatSum(total)}</span>
                   </div>
                 </div>
 

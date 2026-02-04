@@ -1,9 +1,9 @@
 
 const API_BASE_URL = '/api';
 
-export const fetchProducts = async (page = 1, limit = 12) => {
+export const fetchProducts = async (page = 1, limit = 12, search = '') => {
   try {
-    const response = await fetch(`${API_BASE_URL}/products?page=${page}&limit=${limit}`);
+    const response = await fetch(`${API_BASE_URL}/products?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }

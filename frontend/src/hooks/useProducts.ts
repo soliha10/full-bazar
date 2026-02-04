@@ -3,7 +3,7 @@ import { Product } from '../components/ProductCard';
 import { fetchProducts } from '../services/api';
 import { mapProduct } from '../utils/productMapper';
 
-export function useProducts(initialPage = 1, limit = 12) {
+export function useProducts(initialPage = 1, limit = 12, search = '') {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -19,7 +19,7 @@ export function useProducts(initialPage = 1, limit = 12) {
         setLoadingMore(true);
       }
       
-      const data = await fetchProducts(pageNum, limit);
+      const data = await fetchProducts(pageNum, limit, search);
       // data: { products, total, page, limit, hasMore }
       
       const mappedNewProducts: Product[] = data.products.map((item: any) => mapProduct(item));
@@ -34,12 +34,12 @@ export function useProducts(initialPage = 1, limit = 12) {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [limit]);
+  }, [limit, search]);
 
   useEffect(() => {
     loadProducts(1, true);
     setPage(1);
-  }, []); // Only on mount or manual reset
+  }, [search]); // Only on search change or manual reset
 
   const loadMore = useCallback(() => {
     if (!loadingMore && hasMore) {

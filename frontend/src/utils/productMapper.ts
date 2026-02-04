@@ -10,7 +10,6 @@ export const CATEGORY_IMAGES: Record<string, string> = {
   smartphones: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=800'
 };
 
-const USD_TO_UZS = 12800;
 
 export function formatSum(amount: number): string {
   return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " so'm";
@@ -18,9 +17,7 @@ export function formatSum(amount: number): string {
 
 export function mapProduct(item: any): Product {
   const rawPrice = item.actual_price || item.price || '0';
-  const priceStr = String(rawPrice).replace(/\s/g, '').replace(/[^\d.]/g, '');
-  const priceUSD = parseFloat(priceStr) || 0;
-  const priceUZS = priceUSD * USD_TO_UZS;
+  const price = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice).replace(/\s/g, '').replace(/[^\d.]/g, '')) || 0;
 
   const category = item._category || item.category || 'General';
   const normalizedCategory = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
@@ -28,14 +25,14 @@ export function mapProduct(item: any): Product {
   return {
     id: item.id,
     name: item.name || item.title || item.product_name || 'Product',
-    price: priceUZS,
+    price: price,
     category: normalizedCategory,
     image: CATEGORY_IMAGES[normalizedCategory] || CATEGORY_IMAGES[category] || CATEGORY_IMAGES.General,
     rating: parseFloat(item.rating) || 4.5,
     reviews: Math.floor(Math.random() * 50) + 5,
     description: item.title || item.product_name,
     inStock: item.availability !== 'Out of Stock',
-    markets: item.markets,
+    markets: item.markets || [],
     source: item.source,
     url: item.url
   };

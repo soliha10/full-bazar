@@ -4,8 +4,8 @@ import { Button } from '../components/Button';
 import { CategoryCard } from '../components/CategoryCard';
 import { FeatureCard } from '../components/FeatureCard';
 import { ProductCard } from '../components/ProductCard';
-import { products } from '../data/mockData';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useProducts } from '../hooks/useProducts';
 
 interface LandingProps {
   onAddToCart: (product: any) => void;
@@ -13,7 +13,8 @@ interface LandingProps {
 
 export function Landing({ onAddToCart }: LandingProps) {
   const { t } = useLanguage();
-  const featuredProducts = products.slice(0, 4);
+  const { products: allProducts, loading } = useProducts(1, 8);
+  const featuredProducts = allProducts.slice(0, 8);
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
@@ -179,9 +180,15 @@ export function Landing({ onAddToCart }: LandingProps) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.map(product => (
-              <ProductCard key={product.id} product={product} onAddToCart={onAddToCart} />
-            ))}
+            {loading && featuredProducts.length === 0 ? (
+              [...Array(4)].map((_, i) => (
+                <div key={i} className="bg-card rounded-xl h-96 animate-pulse border border-border" />
+              ))
+            ) : (
+              featuredProducts.map(product => (
+                <ProductCard key={product.id} product={product} onAddToCart={onAddToCart} />
+              ))
+            )}
           </div>
         </div>
       </section>

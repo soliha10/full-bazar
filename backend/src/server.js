@@ -139,9 +139,18 @@ app.get('/api/products', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12;
+    const search = (req.query.search || '').toLowerCase();
     const skip = (page - 1) * limit;
 
-    const allProducts = await getAllProducts();
+    let allProducts = await getAllProducts();
+
+    if (search) {
+      allProducts = allProducts.filter(p => 
+        p.name.toLowerCase().includes(search) || 
+        p.category.toLowerCase().includes(search)
+      );
+    }
+
     const paginatedProducts = allProducts.slice(skip, skip + limit);
     
     res.json({

@@ -2,9 +2,10 @@ import { Star, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from './Button';
 import { useLanguage } from '../contexts/LanguageContext';
+import { formatSum } from '../utils/productMapper';
 
 export interface Product {
-  id: number;
+  id: string | number;
   name: string;
   price: number;
   originalPrice?: number;
@@ -13,6 +14,14 @@ export interface Product {
   image: string;
   category: string;
   inStock: boolean;
+  description?: string;
+  source?: string;
+  url?: string;
+  markets?: Array<{
+    source: string;
+    price: number;
+    url: string;
+  }>;
 }
 
 interface ProductCardProps {
@@ -64,10 +73,17 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           <span className="text-xs text-muted-foreground">({product.reviews} {t.product.reviews})</span>
         </div>
 
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-xl font-bold text-foreground">${product.price}</span>
-          {product.originalPrice && (
-            <span className="text-sm text-muted-foreground line-through">${product.originalPrice}</span>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-bold text-foreground">{formatSum(product.price)}</span>
+            {product.originalPrice && (
+              <span className="text-sm text-muted-foreground line-through">{formatSum(product.originalPrice)}</span>
+            )}
+          </div>
+          {product.source && (
+            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded border border-border text-muted-foreground uppercase tracking-wider font-bold">
+              {product.source}
+            </span>
           )}
         </div>
 
