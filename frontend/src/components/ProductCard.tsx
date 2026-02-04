@@ -36,7 +36,7 @@ export function ProductCard({ product }: ProductCardProps) {
     : 0;
 
   return (
-    <div className="bg-card rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 border border-border/50 group">
+    <div className="bg-card rounded-4xl overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 border border-border/50 group">
       <Link to={`/product/${product.id}`}>
         <div className="relative aspect-4/5 overflow-hidden bg-muted">
           <img 

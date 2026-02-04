@@ -1,6 +1,9 @@
 {
   "name": "full-bazar",
   "private": true,
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "build": "cd frontend && npm install && npm run build",
     "install-all": "cd frontend && npm install && cd ../backend && npm install"
