@@ -1,16 +1,20 @@
 import { useState } from 'react';
-import { CreditCard, Lock } from 'lucide-react';
+import { CreditCard, Lock, Truck, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
+import { Product } from '../components/ProductCard';
 import { formatSum } from '../utils/productMapper';
 
+interface CartItem extends Product {
+  cartQuantity: number;
+}
+
 interface CheckoutProps {
-  cartItems: any[];
+  cartItems: CartItem[];
 }
 
 export function Checkout({ cartItems }: CheckoutProps) {
   const navigate = useNavigate();
-  // ... rest of the state
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -44,72 +48,50 @@ export function Checkout({ cartItems }: CheckoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background selection:bg-primary/20 animate-fade-in py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#1E1E1E] mb-6 sm:mb-8">Checkout</h1>
+        <div className="mb-12 text-center md:text-left">
+           <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">Finalize Your <span className="text-gradient">Purchase</span></h1>
+           <p className="text-muted-foreground font-medium mt-2">Professional, secure, and encrypted checkout experience</p>
+        </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid lg:grid-cols-3 gap-12">
             {/* Checkout Form */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-8">
               {/* Shipping Information */}
-              <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
-                <h2 className="text-xl font-bold text-[#1E1E1E] mb-6">Shipping Information</h2>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      First Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      required
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Last Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      required
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      required
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone *
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      required
-                      value={formData.phone}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="bg-card rounded-[2.5rem] p-8 sm:p-10 border border-border shadow-sm space-y-10">
+                <div className="flex items-center gap-4 border-b border-border pb-6">
+                   <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+                      <Truck className="w-6 h-6 text-primary" />
+                   </div>
+                   <h2 className="text-2xl font-black text-foreground">Shipping Information</h2>
+                </div>
+                
+                <div className="grid md:grid-cols-2 gap-8">
+                  {[
+                    { label: "First Name", name: "firstName", type: "text" },
+                    { label: "Last Name", name: "lastName", type: "text" },
+                    { label: "Email Address", name: "email", type: "email" },
+                    { label: "Phone Number", name: "phone", type: "tel" },
+                  ].map((field) => (
+                    <div key={field.name} className="space-y-2">
+                      <label className="block text-sm font-black text-muted-foreground uppercase tracking-widest">
+                        {field.label} *
+                      </label>
+                      <input
+                        type={field.type}
+                        name={field.name}
+                        required
+                        value={(formData as any)[field.name]}
+                        onChange={handleChange}
+                        className="w-full px-6 py-4 bg-muted/30 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:bg-card transition-all font-bold"
+                        placeholder={`Enter your ${field.label.toLowerCase()}`}
+                      />
+                    </div>
+                  ))}
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="block text-sm font-black text-muted-foreground uppercase tracking-widest">
                       Street Address *
                     </label>
                     <input
@@ -118,64 +100,53 @@ export function Checkout({ cartItems }: CheckoutProps) {
                       required
                       value={formData.address}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent"
+                      className="w-full px-6 py-4 bg-muted/30 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:bg-card transition-all font-bold"
+                      placeholder="Street name, apartment, suite, etc."
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      required
-                      value={formData.city}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      State *
-                    </label>
-                    <input
-                      type="text"
-                      name="state"
-                      required
-                      value={formData.state}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      ZIP Code *
-                    </label>
-                    <input
-                      type="text"
-                      name="zipCode"
-                      required
-                      value={formData.zipCode}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent"
-                    />
-                  </div>
+                  {[
+                    { label: "City", name: "city" },
+                    { label: "State / Province", name: "state" },
+                    { label: "ZIP Code", name: "zipCode" },
+                  ].map((field) => (
+                    <div key={field.name} className="space-y-2">
+                      <label className="block text-sm font-black text-muted-foreground uppercase tracking-widest">
+                        {field.label} *
+                      </label>
+                      <input
+                        type="text"
+                        name={field.name}
+                        required
+                        value={(formData as any)[field.name]}
+                        onChange={handleChange}
+                        className="w-full px-6 py-4 bg-muted/30 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:bg-card transition-all font-bold"
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 
               {/* Payment Method */}
-              <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
-                <div className="flex items-center gap-2 mb-6">
-                  <Lock className="w-5 h-5 text-[#2ECC71]" />
-                  <h2 className="text-xl font-bold text-[#1E1E1E]">Payment Method</h2>
+              <div className="bg-card rounded-[2.5rem] p-8 sm:p-10 border border-border shadow-sm space-y-10">
+                <div className="flex items-center justify-between border-b border-border pb-6">
+                   <div className="flex items-center gap-4">
+                     <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+                        <CreditCard className="w-6 h-6 text-primary" />
+                     </div>
+                     <h2 className="text-2xl font-black text-foreground">Payment Method</h2>
+                   </div>
+                   <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/10 px-4 py-2 rounded-xl">
+                      <Lock className="w-4 h-4 text-emerald-500" />
+                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Secure Payment</span>
+                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="space-y-8">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-black text-muted-foreground uppercase tracking-widest">
                       Card Number *
                     </label>
-                    <div className="relative">
+                    <div className="relative group">
                       <input
                         type="text"
                         name="cardNumber"
@@ -184,13 +155,13 @@ export function Checkout({ cartItems }: CheckoutProps) {
                         value={formData.cardNumber}
                         onChange={handleChange}
                         maxLength={19}
-                        className="w-full px-4 py-2 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent"
+                        className="w-full px-6 py-4 pl-16 bg-muted/30 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:bg-card transition-all font-black"
                       />
-                      <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <CreditCard className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-muted-foreground group-focus-within:text-primary transition-colors" />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-black text-muted-foreground uppercase tracking-widest">
                       Cardholder Name *
                     </label>
                     <input
@@ -199,12 +170,13 @@ export function Checkout({ cartItems }: CheckoutProps) {
                       required
                       value={formData.cardName}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent"
+                      placeholder="FULL NAME ON CARD"
+                      className="w-full px-6 py-4 bg-muted/30 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:bg-card transition-all font-black uppercase"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-black text-muted-foreground uppercase tracking-widest">
                         Expiry Date *
                       </label>
                       <input
@@ -215,91 +187,114 @@ export function Checkout({ cartItems }: CheckoutProps) {
                         value={formData.expiryDate}
                         onChange={handleChange}
                         maxLength={5}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent"
+                        className="w-full px-6 py-4 bg-muted/30 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:bg-card transition-all font-black"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        CVV *
+                    <div className="space-y-2">
+                      <label className="block text-sm font-black text-muted-foreground uppercase tracking-widest">
+                        CVV Code *
                       </label>
                       <input
-                        type="text"
+                        type="password"
                         name="cvv"
                         required
-                        placeholder="123"
+                        placeholder="•••"
                         value={formData.cvv}
                         onChange={handleChange}
                         maxLength={4}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent"
+                        className="w-full px-6 py-4 bg-muted/30 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:bg-card transition-all font-black"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg flex items-start gap-3">
-                  <Lock className="w-5 h-5 text-[#2ECC71] mt-0.5" />
-                  <p className="text-sm text-gray-600">
-                    Your payment information is encrypted and secure. We never store your card details.
-                  </p>
+                <div className="p-6 bg-muted/50 rounded-2xl border border-border border-dashed flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-background flex items-center justify-center shrink-0 shadow-sm">
+                    <Shield className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                     <p className="text-sm font-black text-foreground uppercase tracking-wide">Data Protection Guaranteed</p>
+                     <p className="text-xs text-muted-foreground font-medium leading-relaxed mt-1">
+                       Your payment information is handled via military-grade encryption. We do not store or process sensitive card details on our servers.
+                     </p>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Order Summary */}
-            <div>
-              <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 lg:sticky lg:top-24">
-                <h2 className="text-xl font-bold text-[#1E1E1E] mb-6">Order Summary</h2>
+            <div className="lg:col-span-1">
+              <div className="bg-card rounded-[2.5rem] p-8 border border-border shadow-2xl sticky top-28 space-y-8">
+                <h2 className="text-2xl font-black text-foreground">Order Summary</h2>
 
-                {/* Products */}
-                <div className="space-y-4 mb-6 max-h-64 overflow-y-auto">
+                {/* Products List - Improved UI */}
+                <div className="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                   {cartItems.map((item) => (
-                    <div key={item.id} className="flex gap-3">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                      />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-[#1E1E1E] line-clamp-2">
+                    <div key={item.id} className="flex gap-4 p-3 rounded-2xl bg-muted/20 border border-border/50">
+                      <div className="w-20 h-20 shrink-0 rounded-xl overflow-hidden border border-border/50">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-black text-foreground line-clamp-2 leading-tight mb-1">
                           {item.name}
                         </p>
-                        <p className="text-sm text-gray-500">Qty: {item.cartQuantity}</p>
-                        <p className="text-sm font-semibold text-[#FF7A00]">
-                          {formatSum(item.price * item.cartQuantity)}
-                        </p>
+                        <div className="flex justify-between items-end">
+                           <span className="text-[10px] font-black text-muted-foreground uppercase">Qty: {item.cartQuantity}</span>
+                           <span className="text-sm font-black text-primary italic">
+                             {formatSum(item.price * item.cartQuantity)}
+                           </span>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="border-t pt-4 space-y-3 mb-6">
-                  <div className="flex justify-between text-gray-600">
-                    <span>Subtotal</span>
-                    <span>{formatSum(subtotal)}</span>
+                <div className="space-y-4 pt-4 border-t border-border">
+                  <div className="flex justify-between items-center text-muted-foreground font-bold">
+                    <span className="text-sm uppercase tracking-widest italic">Subtotal</span>
+                    <span className="text-foreground">{formatSum(subtotal)}</span>
                   </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Shipping</span>
-                    <span>{shipping === 0 ? 'FREE' : formatSum(shipping)}</span>
+                  <div className="flex justify-between items-center text-muted-foreground font-bold">
+                    <span className="text-sm uppercase tracking-widest italic">Shipping</span>
+                    <span className={shipping === 0 ? 'text-emerald-500 font-black' : 'text-foreground'}>
+                      {shipping === 0 ? 'FREE DELIVERY' : formatSum(shipping)}
+                    </span>
                   </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Tax</span>
-                    <span>{formatSum(tax)}</span>
+                  <div className="flex justify-between items-center text-muted-foreground font-bold">
+                    <span className="text-sm uppercase tracking-widest italic">Est. Taxes</span>
+                    <span className="text-foreground">{formatSum(tax)}</span>
                   </div>
                 </div>
 
-                <div className="border-t pt-4 mb-6">
+                <div className="bg-muted/30 rounded-2xl p-6 border border-border/50">
                   <div className="flex justify-between items-center">
-                    <span className="text-xl font-bold text-[#1E1E1E]">Total</span>
-                    <span className="text-2xl font-bold text-[#FF7A00]">{formatSum(total)}</span>
+                    <span className="text-lg font-black text-foreground uppercase tracking-widest">Grand Total</span>
+                    <span className="text-3xl font-black text-primary italic tracking-tighter">{formatSum(total)}</span>
                   </div>
                 </div>
 
-                <Button type="submit" variant="primary" fullWidth className="mb-3">
-                  Place Order
-                </Button>
+                <div className="space-y-4">
+                  <Button 
+                    type="submit" 
+                    variant="primary" 
+                    size="lg" 
+                    fullWidth 
+                    className="h-16 rounded-2xl text-lg font-black shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                  >
+                    PLACE SECURE ORDER
+                  </Button>
+                  <div className="flex items-center justify-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                    <Lock className="w-3 h-3" />
+                    Encrypted Transaction
+                  </div>
+                </div>
 
-                <p className="text-xs text-gray-500 text-center">
-                  By placing your order, you agree to our Terms & Conditions
+                <p className="text-[10px] text-muted-foreground text-center font-medium leading-relaxed px-4">
+                  By reviewing and placing this order, you acknowledge our <span className="text-primary hover:underline cursor-pointer">Security Protocol</span> and <span className="text-primary hover:underline cursor-pointer">Processing Agreement</span>.
                 </p>
               </div>
             </div>
@@ -309,3 +304,4 @@ export function Checkout({ cartItems }: CheckoutProps) {
     </div>
   );
 }
+

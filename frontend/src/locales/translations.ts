@@ -28,7 +28,7 @@ export const translations = {
         title: "Nima uchun Bazaarcomni tanlaysiz?",
         shipping: {
           title: "Bepul yetkazib berish",
-          desc: "50$ dan ortiq barcha buyurtmalarda"
+          desc: "500 000 so'm dan ortiq barcha buyurtmalarda"
         },
         returns: {
           title: "30 kun ichida qaytarish",
@@ -69,10 +69,20 @@ export const translations = {
       inStock: "Sotuvda bor",
       sort: {
         popular: "Mashhur",
-        priceLow: "Narx: Pastdan balandga",
-        priceHigh: "Narx: Balanddan pastga",
-        rating: "Eng yuqori reyting"
-      }
+        priceLow: "Narx: Arzonroq",
+        priceHigh: "Narx: Qimmatroq",
+        rating: "Reytingi yuqori",
+        featured: "Tavsiya etilgan"
+      },
+      filters: "Filtrlar",
+      reset: "Tozalash",
+      found: "ta mahsulot topildi",
+      startingFrom: "Narxi:",
+      comparePrices: "Narxlarni solishtirish",
+      showFilters: "Filtrlarni ko'rsatish",
+      hideFilters: "Filtrlarni yashirish",
+      noMatches: "Hech narsa topilmadi",
+      clearFilters: "Filtrlarni tozalash"
     },
     
     // Product Detail
@@ -101,7 +111,7 @@ export const translations = {
       subtotal: "Oraliq jami",
       shipping: "Yetkazib berish",
       shippingFree: "Bepul",
-      shippingPrice: "$10",
+      shippingPrice: "15 000 so'm",
       total: "Jami",
       proceedToCheckout: "To'lovga o'tish",
       coupon: "Kupon kodi",

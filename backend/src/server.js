@@ -93,12 +93,20 @@ const getAllProducts = async () => {
                 .trim();
             
             
-            const rawPrice = p.actual_price || p.price || '0';
+            let rawPrice = p.actual_price || p.price || '0';
+            
+            // Critical fix: If rawPrice is a string containing installment indicators, try to find the real price
+            const priceStr = String(rawPrice).toLowerCase();
+            if (priceStr.includes('/oyiga') || priceStr.includes(' x ') || priceStr.includes('oyiga')) {
+              // If actual_price was mistakenly the installment, but old_price exists, use old_price as a fallback
+              rawPrice = p.old_price || '0';
+            }
+            
             const price = parseFloat(String(rawPrice).replace(/\s/g, '').replace(/[^\d.]/g, '')) || 0;
 
-            // Skip if price is too low (likely a parsing error, e.g., storage specs like "128/256GB" -> 128256)
-            // Minimum realistic price for smartphones is 500,000 UZS
-            if (price < 500000) {
+            // Skip if price is too low to be a real product (e.g. less than 50,000 so'm)
+            // or if it's likely an installment payment we couldn't filter out
+            if (price < 50000 && !file.includes('grocery')) {
                 return;
             }
 
@@ -111,11 +119,16 @@ const getAllProducts = async () => {
                 });
             }
 
+            let productUrl = p.url || p.link || '#';
+            if (source === 'uzum' && productUrl.startsWith('/')) {
+                productUrl = `https://uzum.uz${productUrl}`;
+            }
+
             const group = productGroups.get(normalizedTitle);
             group.markets.push({
-                source: source.charAt(0).toUpperCase() + source.slice(1),
+                source: source === 'wildberries' ? 'Wildberries' : source.charAt(0).toUpperCase() + source.slice(1),
                 price: price,
-                url: p.url || '#'
+                url: productUrl
             });
         });
     }

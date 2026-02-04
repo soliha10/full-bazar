@@ -1,15 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { SlidersHorizontal, ChevronDown, Loader2 } from 'lucide-react';
-import { ProductCard, Product } from '../components/ProductCard';
+import { ProductCard } from '../components/ProductCard';
 import { Button } from '../components/Button';
 import { useProducts } from '../hooks/useProducts';
 import { useSearchParams } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 
-interface ProductListingProps {
-  onAddToCart: (product: Product) => void;
-}
+interface ProductListingProps {}
 
-export function ProductListing({ onAddToCart }: ProductListingProps) {
+export function ProductListing({}: ProductListingProps) {
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const categoryParam = searchParams.get('category');
   const searchQuery = searchParams.get('search') || '';
@@ -64,213 +64,213 @@ export function ProductListing({ onAddToCart }: ProductListingProps) {
   }, [allProducts, selectedCategory, priceRange, minRating, sortBy]);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background selection:bg-primary/20 animate-fade-in">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-[#1E1E1E] mb-2">Discover Products</h1>
-          <p className="text-gray-600">Showing {filteredProducts.length} products</p>
+        <div className="mb-12 text-center md:text-left space-y-2">
+          <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">Bizning <span className="text-gradient">to'plamlarni</span> o'rganing</h1>
+          <p className="text-muted-foreground font-medium">Qidirishingiz bo'yicha {filteredProducts.length} {t.listing.found}</p>
         </div>
 
-        <div className="flex gap-8">
-          {/* Filters Sidebar */}
-          <div className={`${showFilters ? 'w-64' : 'w-0'} transition-all duration-300 overflow-hidden`}>
-            <div className="bg-white rounded-xl p-6 sticky top-24 border border-gray-200">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="font-semibold text-lg text-[#1E1E1E]">Filters</h2>
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Filters - Collapsible on Mobile */}
+          <aside className={`${showFilters ? 'w-full lg:w-72' : 'w-0 hidden lg:block overflow-hidden'} transition-all duration-500`}>
+            <div className="bg-card rounded-[2.5rem] p-8 sticky top-28 border border-border/50 shadow-sm space-y-8">
+              <div className="flex items-center justify-between">
+                <h2 className="font-black text-xl text-foreground">{t.listing.filters}</h2>
                 <button
                   onClick={() => {
                     setSelectedCategory('All');
                     setPriceRange('all');
                     setMinRating(0);
                   }}
-                  className="text-sm text-[#FF7A00] hover:underline"
+                  className="text-sm font-bold text-primary hover:underline transition-all"
                 >
-                  Clear All
+                  {t.listing.reset}
                 </button>
               </div>
 
               {/* Category Filter */}
-              <div className="mb-6">
-                <h3 className="font-medium text-[#1E1E1E] mb-3">Category</h3>
-                <div className="space-y-2">
+              <div className="space-y-4">
+                <h3 className="font-bold text-sm uppercase tracking-widest text-muted-foreground">{t.listing.categories}</h3>
+                <div className="space-y-3">
                   {categories.map(category => (
-                    <label key={category} className="flex items-center gap-2 cursor-pointer group">
-                      <input
-                        type="radio"
-                        name="category"
-                        checked={selectedCategory === category}
-                        onChange={() => setSelectedCategory(category)}
-                        className="w-4 h-4 text-[#FF7A00] focus:ring-[#FF7A00]"
-                      />
-                      <span className="text-sm text-gray-700 group-hover:text-[#FF7A00]">{category}</span>
+                    <label key={category} className="flex items-center gap-3 cursor-pointer group">
+                      <div className="relative flex items-center justify-center">
+                        <input
+                          type="radio"
+                          name="category"
+                          checked={selectedCategory === category}
+                          onChange={() => setSelectedCategory(category)}
+                          className="peer appearance-none w-5 h-5 rounded-lg border-2 border-border checked:border-primary checked:bg-primary transition-all"
+                        />
+                        <div className="absolute w-2 h-2 bg-white rounded-full opacity-0 peer-checked:opacity-100 transition-opacity" />
+                      </div>
+                      <span className={`text-sm font-bold transition-colors ${selectedCategory === category ? 'text-primary' : 'text-foreground group-hover:text-primary'}`}>
+                        {category}
+                      </span>
                     </label>
                   ))}
                 </div>
               </div>
 
               {/* Price Range Filter */}
-              <div className="mb-6">
-                <h3 className="font-medium text-[#1E1E1E] mb-3">Price Range</h3>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="price"
-                      checked={priceRange === 'all'}
-                      onChange={() => setPriceRange('all')}
-                      className="w-4 h-4 text-[#FF7A00] focus:ring-[#FF7A00]"
-                    />
-                    <span className="text-sm text-gray-700 group-hover:text-[#FF7A00]">All Prices</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="price"
-                      checked={priceRange === 'under1m'}
-                      onChange={() => setPriceRange('under1m')}
-                      className="w-4 h-4 text-[#FF7A00] focus:ring-[#FF7A00]"
-                    />
-                    <span className="text-sm text-gray-700 group-hover:text-[#FF7A00]">Under 1 mln so'm</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="price"
-                      checked={priceRange === '1to3m'}
-                      onChange={() => setPriceRange('1to3m')}
-                      className="w-4 h-4 text-[#FF7A00] focus:ring-[#FF7A00]"
-                    />
-                    <span className="text-sm text-gray-700 group-hover:text-[#FF7A00]">1 mln - 3 mln so'm</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="price"
-                      checked={priceRange === 'over3m'}
-                      onChange={() => setPriceRange('over3m')}
-                      className="w-4 h-4 text-[#FF7A00] focus:ring-[#FF7A00]"
-                    />
-                    <span className="text-sm text-gray-700 group-hover:text-[#FF7A00]">Over 3 mln so'm</span>
-                  </label>
+              <div className="space-y-4 pt-6 border-t border-border/50">
+                <h3 className="font-bold text-sm uppercase tracking-widest text-muted-foreground">{t.listing.priceRange}</h3>
+                <div className="space-y-3">
+                  {[
+                    { id: 'all', label: t.listing.all },
+                    { id: 'under1m', label: '1 mln so\'mdan past' },
+                    { id: '1to3m', label: '1 - 3 mln so\'m' },
+                    { id: 'over3m', label: '3 mln so\'mdan baland' }
+                  ].map(range => (
+                    <label key={range.id} className="flex items-center gap-3 cursor-pointer group">
+                      <div className="relative flex items-center justify-center">
+                        <input
+                          type="radio"
+                          name="price"
+                          checked={priceRange === range.id}
+                          onChange={() => setPriceRange(range.id)}
+                          className="peer appearance-none w-5 h-5 rounded-lg border-2 border-border checked:border-primary checked:bg-primary transition-all"
+                        />
+                        <div className="absolute w-2 h-2 bg-white rounded-full opacity-0 peer-checked:opacity-100 transition-opacity" />
+                      </div>
+                      <span className={`text-sm font-bold transition-colors ${priceRange === range.id ? 'text-primary' : 'text-foreground group-hover:text-primary'}`}>
+                        {range.label}
+                      </span>
+                    </label>
+                  ))}
                 </div>
               </div>
 
               {/* Rating Filter */}
-              <div>
-                <h3 className="font-medium text-[#1E1E1E] mb-3">Minimum Rating</h3>
-                <div className="space-y-2">
+              <div className="space-y-4 pt-6 border-t border-border/50">
+                <h3 className="font-bold text-sm uppercase tracking-widest text-muted-foreground">{t.listing.rating}</h3>
+                <div className="space-y-3">
                   {[0, 4, 4.5].map(rating => (
-                    <label key={rating} className="flex items-center gap-2 cursor-pointer group">
-                      <input
-                        type="radio"
-                        name="rating"
-                        checked={minRating === rating}
-                        onChange={() => setMinRating(rating)}
-                        className="w-4 h-4 text-[#FF7A00] focus:ring-[#FF7A00]"
-                      />
-                      <span className="text-sm text-gray-700 group-hover:text-[#FF7A00]">
-                        {rating === 0 ? 'All Ratings' : `${rating}★ & Up`}
+                    <label key={rating} className="flex items-center gap-3 cursor-pointer group">
+                      <div className="relative flex items-center justify-center">
+                        <input
+                          type="radio"
+                          name="rating"
+                          checked={minRating === rating}
+                          onChange={() => setMinRating(rating)}
+                          className="peer appearance-none w-5 h-5 rounded-lg border-2 border-border checked:border-primary checked:bg-primary transition-all"
+                        />
+                        <div className="absolute w-2 h-2 bg-white rounded-full opacity-0 peer-checked:opacity-100 transition-opacity" />
+                      </div>
+                      <span className={`text-sm font-bold transition-colors ${minRating === rating ? 'text-primary' : 'text-foreground group-hover:text-primary'}`}>
+                        {rating === 0 ? t.listing.all : `${rating}★ va undan yuqori`}
                       </span>
                     </label>
                   ))}
                 </div>
               </div>
             </div>
-          </div>
+          </aside>
 
-          {/* Product Grid */}
-          <div className="flex-1">
+          {/* Product Grid Area */}
+          <main className="flex-1 space-y-8">
             {/* Toolbar */}
-            <div className="bg-white rounded-xl p-4 mb-6 flex justify-between items-center border border-gray-200">
+            <div className="bg-card rounded-3xl p-4 flex flex-col md:flex-row justify-between items-center gap-4 border border-border/50 shadow-sm">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 text-[#1E1E1E] hover:text-[#FF7A00]"
+                className="flex items-center gap-2 font-bold text-foreground hover:text-primary transition-colors px-4 py-2"
               >
                 <SlidersHorizontal className="w-5 h-5" />
-                <span>{showFilters ? 'Hide' : 'Show'} Filters</span>
+                <span>{showFilters ? t.listing.hideFilters : t.listing.showFilters}</span>
               </button>
 
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Sort by:</span>
-                <div className="relative">
+              <div className="flex items-center gap-4 w-full md:w-auto">
+                <span className="text-sm font-bold text-muted-foreground whitespace-nowrap hidden sm:block">{t.listing.sortBy}:</span>
+                <div className="relative w-full md:w-64 group">
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="appearance-none bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-[#FF7A00] cursor-pointer"
+                    className="w-full appearance-none bg-muted/50 border border-border rounded-2xl px-5 py-3 pr-12 font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:bg-card transition-all cursor-pointer"
                   >
-                    <option value="featured">Featured</option>
-                    <option value="priceLow">Price: Low to High</option>
-                    <option value="priceHigh">Price: High to Low</option>
-                    <option value="rating">Highest Rated</option>
+                    <option value="featured">{t.listing.sort.featured}</option>
+                    <option value="priceLow">{t.listing.sort.priceLow}</option>
+                    <option value="priceHigh">{t.listing.sort.priceHigh}</option>
+                    <option value="rating">{t.listing.sort.rating}</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary pointer-events-none transition-colors" />
                 </div>
               </div>
             </div>
 
             {/* Products */}
             {loading && allProducts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <Loader2 className="w-12 h-12 text-[#FF7A00] animate-spin mb-4" />
-                <p className="text-gray-500">Loading amazing deals...</p>
+              <div className="flex flex-col items-center justify-center py-32 space-y-6">
+                <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center animate-bounce-subtle">
+                  <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                </div>
+                <p className="text-muted-foreground font-bold text-xl">Mahsulotlar qidirilmoqda...</p>
               </div>
             ) : error ? (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
-                <p className="text-red-600 font-medium mb-4">{error}</p>
-                <button
+              <div className="bg-red-50 dark:bg-red-900/10 border-2 border-red-100 dark:border-red-900/20 rounded-3xl p-12 text-center space-y-6">
+                <p className="text-red-600 dark:text-red-400 font-bold text-lg">{error}</p>
+                <Button
+                  variant="primary"
                   onClick={() => window.location.reload()}
-                  className="bg-[#FF7A00] text-white px-6 py-2 rounded-lg hover:bg-[#E66E00] transition-colors"
+                  className="rounded-2xl px-12 py-4"
                 >
                   Try Again
-                </button>
+                </Button>
               </div>
             ) : filteredProducts.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
                   {filteredProducts.map(product => (
-                    <ProductCard key={product.id} product={product} onAddToCart={onAddToCart} />
+                    <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
                 
                 {hasMore && (
-                  <div className="mt-12 text-center">
+                  <div className="mt-16 text-center">
                     <Button
                       variant="outline"
+                      size="lg"
                       onClick={loadMore}
                       disabled={loading}
-                      className="px-8 py-3"
+                      className="rounded-2xl px-16 py-5 border-2 hover:bg-primary hover:text-white transition-all font-black text-lg"
                     >
                       {loading ? (
-                        <span className="flex items-center gap-2">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Loading...
+                        <span className="flex items-center gap-3">
+                          <Loader2 className="w-6 h-6 animate-spin" />
+                          LOADING...
                         </span>
                       ) : (
-                        'Load More Products'
+                        'LOAD MORE PRODUCTS'
                       )}
                     </Button>
                   </div>
                 )}
               </>
             ) : (
-              <div className="bg-white rounded-xl p-12 text-center border border-gray-200">
-                <p className="text-xl text-gray-600">No products found matching your filters.</p>
-                <button
+              <div className="bg-card rounded-[3rem] p-20 text-center border-2 border-dashed border-border flex flex-col items-center space-y-6">
+                <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
+                   <SlidersHorizontal className="w-12 h-12 text-muted-foreground" />
+                </div>
+                <h3 className="text-2xl font-black text-foreground">{t.listing.noMatches}</h3>
+                <p className="text-muted-foreground font-medium max-w-md mx-auto">Siz tanlagan filtrlar bo'yicha hech qanday mahsulot topilmadi. Filtrni o'zgartirib ko'ring.</p>
+                <Button
+                  variant="ghost"
                   onClick={() => {
                     setSelectedCategory('All');
                     setPriceRange('all');
                     setMinRating(0);
                   }}
-                  className="mt-4 text-[#FF7A00] hover:underline"
+                  className="font-bold text-primary hover:underline px-8"
                 >
-                  Clear filters
-                </button>
+                  {t.listing.clearFilters}
+                </Button>
               </div>
             )}
-          </div>
+          </main>
         </div>
       </div>
     </div>
   );
 }
+
