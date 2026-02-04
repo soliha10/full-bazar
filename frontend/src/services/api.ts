@@ -1,5 +1,5 @@
 
-const API_BASE_URL = 'http://localhost:4000/api';
+const API_BASE_URL = '/api';
 
 export const fetchProducts = async (page = 1, limit = 12) => {
   try {
