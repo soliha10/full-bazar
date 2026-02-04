@@ -268,10 +268,20 @@ export const translations = {
       inStock: "В наличии",
       sort: {
         popular: "Популярные",
-        priceLow: "Цена: по возрастанию",
-        priceHigh: "Цена: по убыванию",
-        rating: "Высокий рейтинг"
-      }
+        priceLow: "Цена: Дешевле",
+        priceHigh: "Цена: Дороже",
+        rating: "Высокий рейтинг",
+        featured: "Рекомендуемые"
+      },
+      filters: "Фильтры",
+      reset: "Сбросить",
+      found: "товаров найдено",
+      startingFrom: "Цена:",
+      comparePrices: "Сравнить цены",
+      showFilters: "Показать фильтры",
+      hideFilters: "Скрыть фильтры",
+      noMatches: "Ничего не найдено",
+      clearFilters: "Очистить все фильтры"
     },
     
     // Product Detail
@@ -459,8 +469,18 @@ export const translations = {
         popular: "Popular",
         priceLow: "Price: Low to High",
         priceHigh: "Price: High to Low",
-        rating: "Highest Rated"
-      }
+        rating: "Highest Rated",
+        featured: "Featured"
+      },
+      filters: "Filters",
+      reset: "Reset",
+      found: "products found",
+      startingFrom: "Starting from",
+      comparePrices: "Compare Prices",
+      showFilters: "Show Filters",
+      hideFilters: "Hide Filters",
+      noMatches: "No matches found",
+      clearFilters: "Clear all filters"
     },
     
     // Product Detail
