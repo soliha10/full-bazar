@@ -8,6 +8,12 @@ export const CATEGORY_IMAGES: Record<string, string[]> = {
     'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=800&q=80',
     'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=800&q=80',
   ],
+  Products: [
+    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80',
+    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80',
+    'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800&q=80',
+    'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=800&q=80',
+  ],
   Electronics: [
     'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=800&q=80',
     'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80',

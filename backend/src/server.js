@@ -143,7 +143,8 @@ const getAllProducts = async () => {
             ...p,
             price: bestMarket.price,
             url: bestMarket.url,
-            source: bestMarket.source
+            source: bestMarket.source,
+            category: p.category // Add category to response
         };
     });
 };
