@@ -10,7 +10,12 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
-const DATA_DIR = path.join(__dirname, '../../data');
+let DATA_DIR = path.resolve(__dirname, '../../data');
+
+// Fallback for Vercel if root-level data is expected
+if (!fs.existsSync(DATA_DIR)) {
+    DATA_DIR = path.join(process.cwd(), 'data');
+}
 
 // Helper function to read and parse CSV
 const readCsv = (filename) => {
@@ -39,11 +44,18 @@ const readCsv = (filename) => {
 
 // Helper function to get all products
 const getAllProducts = async () => {
+    console.log(`Searching for CSV files in: ${DATA_DIR}`);
+    if (!fs.existsSync(DATA_DIR)) {
+        console.error(`DATA_DIR does not exist: ${DATA_DIR}`);
+        return [];
+    }
     const files = fs.readdirSync(DATA_DIR).filter(file => file.endsWith('.csv'));
+    console.log(`Found ${files.length} CSV files: ${files.join(', ')}`);
     const productGroups = new Map();
 
     for (const file of files) {
         const products = await readCsv(file);
+        console.log(`Read ${products.length} products from ${file}`);
         const source = file.split('-')[0];
         const category = file.split('-')[1]?.replace('.csv', '') || 'general';
 
