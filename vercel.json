@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/backend/src/server.js"
+      "destination": "/api/index.js"
     },
     {
       "source": "/(.*)",
@@ -15,7 +15,7 @@
     }
   ],
   "functions": {
-    "backend/src/server.js": {
+    "api/index.js": {
       "includeFiles": "data/**"
     }
   }
