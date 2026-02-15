@@ -42,6 +42,10 @@ export function ProductCard({ product }: ProductCardProps) {
           <img 
             src={product.image} 
             alt={product.name}
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80'; // Reliable fallback
+            }}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
           />
           

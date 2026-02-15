@@ -4,6 +4,33 @@ const fs = require('fs');
 const path = require('path');
 const { parse } = require('csv-parse');
 
+// Category-specific images from Unsplash
+const PRODUCT_IMAGES = {
+    Smartphones: [
+        'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=800&q=80',
+        'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=800&q=80',
+        'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&q=80',
+        'https://images.unsplash.com/photo-1616348436168-de43ad0db179?w=800&q=80',
+        'https://images.unsplash.com/photo-1523206489230-c012c64b2b48?w=800&q=80',
+        'https://images.unsplash.com/photo-1512499617640-c74ae3a79d37?w=800&q=80',
+    ],
+};
+
+function getProductImage(category, title, id) {
+    const list = PRODUCT_IMAGES[category] || PRODUCT_IMAGES.Smartphones;
+    
+    // Try to be smart about choosing the image based on title keywords
+    const lowerTitle = title.toLowerCase();
+    if (category === 'Smartphones') {
+        if (lowerTitle.includes('iphone')) return PRODUCT_IMAGES.Smartphones[4]; // iPhone
+    }
+
+    // Consistent hashing for others
+    const idHash = String(id).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const index = idHash % list.length;
+    return list[index];
+}
+
 const app = express();
 const PORT = process.env.PORT || 4000;
 
@@ -49,57 +76,50 @@ const getAllProducts = async () => {
         console.error(`DATA_DIR does not exist: ${DATA_DIR}`);
         return [];
     }
-    const files = fs.readdirSync(DATA_DIR).filter(file => file.endsWith('.csv'));
-    console.log(`Found ${files.length} CSV files: ${files.join(', ')}`);
+    const files = fs.readdirSync(DATA_DIR).filter(file => file.includes('smartphones') && file.endsWith('.csv'));
+    console.log(`Found ${files.length} smartphone CSV files: ${files.join(', ')}`);
     const productGroups = new Map();
 
     for (const file of files) {
         const products = await readCsv(file);
         console.log(`Read ${products.length} products from ${file}`);
         const source = file.split('-')[0];
-        const category = file.split('-')[1]?.replace('.csv', '') || 'general';
+        // Since we filtered for smartphone files, we can safely set the category to smartphones
+        let category = 'Smartphones';
 
         products.forEach((p, index) => {
             const title = p.title || p.product_name || 'Product';
             
-            // Improved normalization for better cross-marketplace matching
+            let detectCategory = category;
+            
+            // Normalize the title for matching
             const normalizedTitle = title.toLowerCase()
-                // Remove common prefixes
                 .replace(/^smartfon\s+/i, '')
-                // Normalize brand names
                 .replace(/\bvivo\b/gi, 'vivo')
                 .replace(/\bredmi\b/gi, 'redmi')
                 .replace(/\bsamsung\b/gi, 'samsung')
                 .replace(/\boppo\b/gi, 'oppo')
                 .replace(/\bhonor\b/gi, 'honor')
                 .replace(/\bxiaomi\b/gi, 'xiaomi')
-                // Remove storage specs (GB, TB, RAM variations)
                 .replace(/\d+\s*\/\s*\d+\s*(gb|tb)/gi, '')
                 .replace(/\d+\s*(gb|tb)\s*(ram|rom)?/gi, '')
                 .replace(/\d+gb\s*\+\s*\d+gb/gi, '')
-                // Remove battery specs
                 .replace(/\d+\s*mah/gi, '')
                 .replace(/\d+\s*ma\/soat/gi, '')
-                // Remove charging/power specs
                 .replace(/\d+\s*w\b/gi, '')
                 .replace(/\d+\s*v\b/gi, '')
-                // Remove display specs
                 .replace(/\d+\s*hz/gi, '')
                 .replace(/amoled/gi, '')
                 .replace(/oled/gi, '')
                 .replace(/lcd/gi, '')
                 .replace(/displey/gi, '')
                 .replace(/ekran/gi, '')
-                // Remove IP ratings
                 .replace(/ip\d+/gi, '')
-                // Remove colors and parentheses content
                 .replace(/\(.*?\)/g, '')
                 .replace(/\b(black|white|red|green|blue|gold|silver|purple|orange|pink|gray|grey|midnight|starlight|sierra|alpine|graphite|phantom|mystic|cosmic|aurora|nebula|agate|gleaming|starry|mist|jetblack)\b/gi, '')
                 .replace(/\b(qora|oq|qizil|yashil|ko'k|sabzirang|pushti|kulrang)\b/gi, '')
-                // Remove extra descriptive words
                 .replace(/\bxotira\b/gi, '')
                 .replace(/\bbatareya\b/gi, '')
-                // Clean up spaces and special characters
                 .replace(/[,\-_]+/g, ' ')
                 .replace(/\s+/g, ' ')
                 .trim();
@@ -123,10 +143,12 @@ const getAllProducts = async () => {
             }
 
             if (!productGroups.has(normalizedTitle)) {
+                const detectCategoryFormatted = detectCategory.charAt(0).toUpperCase() + detectCategory.slice(1).toLowerCase();
                 productGroups.set(normalizedTitle, {
                     id: `${source}-${index}`,
                     name: title,
-                    category: category.charAt(0).toUpperCase() + category.slice(1).toLowerCase(),
+                    category: detectCategoryFormatted,
+                    image: getProductImage(detectCategoryFormatted, title, `${source}-${index}`),
                     markets: []
                 });
             }

@@ -99,6 +99,10 @@ export function ProductDetail({}: ProductDetailProps) {
               <img
                 src={images[selectedImage]}
                 alt={product.name}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80';
+                }}
                 className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-700"
               />
               {product.originalPrice && product.price < product.originalPrice && (
@@ -116,7 +120,15 @@ export function ProductDetail({}: ProductDetailProps) {
                     selectedImage === idx ? 'border-primary ring-4 ring-primary/10' : 'border-border/50 hover:border-primary/30'
                   }`}
                 >
-                  <img src={img} alt={`${product.name} ${idx + 1}`} className="w-full h-full object-cover" />
+                  <img 
+                    src={img} 
+                    alt={`${product.name} ${idx + 1}`} 
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80';
+                    }}
+                    className="w-full h-full object-cover" 
+                  />
                 </button>
               ))}
             </div>
