@@ -61,7 +61,7 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
           <div className="lg:col-span-2 space-y-6">
             <div className="space-y-4">
               {cartItems.map((item) => (
-                <div key={item.id} className="group bg-card rounded-[2rem] p-6 border border-border/50 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300">
+                <div key={item.id} className="group bg-card rounded-4xl p-6 border border-border/50 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300">
                   <div className="flex flex-col sm:flex-row gap-8">
                     {/* Product Image */}
                     <Link to={`/product/${item.id}`} className="shrink-0">

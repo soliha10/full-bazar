@@ -170,7 +170,7 @@ export function ProductDetail({}: ProductDetailProps) {
             </div>
 
             {/* Price display for selected market */}
-            <div className="bg-muted/30 rounded-[2rem] p-8 border border-border/50 space-y-2">
+            <div className="bg-muted/30 rounded-4xl p-8 border border-border/50 space-y-2">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">Joriy tanlov: {selectedMarket?.source}</span>
                 <span className="text-xs font-black text-emerald-500 uppercase tracking-widest">Jonli narxlar</span>
@@ -252,7 +252,7 @@ export function ProductDetail({}: ProductDetailProps) {
                      variant="primary" 
                      size="lg"
                      fullWidth
-                     className="rounded-[2rem] h-20 text-xl font-black shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all group"
+                     className="rounded-4xl h-20 text-xl font-black shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all group"
                    >
                      {selectedMarket?.source.toUpperCase()} DO'KONIGA O'TISH
                      <ExternalLink className="ml-3 w-6 h-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />

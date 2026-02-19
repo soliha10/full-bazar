@@ -20,7 +20,7 @@ export function OrderSuccess() {
         <div className="bg-card rounded-[3rem] p-12 text-center border border-border shadow-2xl relative overflow-hidden mb-10 group">
           <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-accent/5 opacity-50" />
           <div className="relative z-10">
-            <div className="w-24 h-24 bg-emerald-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-8 animate-bounce-subtle">
+            <div className="w-24 h-24 bg-emerald-500/10 rounded-4xl flex items-center justify-center mx-auto mb-8 animate-bounce-subtle">
               <CheckCircle className="w-12 h-12 text-emerald-500" />
             </div>
             <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight mb-4">
@@ -37,11 +37,11 @@ export function OrderSuccess() {
 
         {/* Order Info Cards */}
         <div className="grid sm:grid-cols-2 gap-6 mb-10">
-           <div className="bg-card rounded-[2rem] p-8 border border-border shadow-sm group hover:border-primary/30 transition-all">
+           <div className="bg-card rounded-4xl p-8 border border-border shadow-sm group hover:border-primary/30 transition-all">
               <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-2">{t.success.orderNumber}</p>
               <p className="text-2xl font-black text-foreground italic tracking-tighter">{orderNumber}</p>
            </div>
-           <div className="bg-card rounded-[2rem] p-8 border border-border shadow-sm group hover:border-primary/30 transition-all">
+           <div className="bg-card rounded-4xl p-8 border border-border shadow-sm group hover:border-primary/30 transition-all">
               <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-2">Delivery Date</p>
               <p className="text-2xl font-black text-foreground">
                 {estimatedDelivery.toLocaleDateString('en-US', { 
@@ -100,7 +100,7 @@ export function OrderSuccess() {
                 { icon: Package, title: t.success.trackOrder, desc: "Real-time updates via SMS and App notifications", color: 'bg-accent' },
                 { icon: Shield, title: "Order Warranty", desc: "Premium protection included for 24 months", color: 'bg-emerald-500' }
               ].map((step, i) => (
-                <div key={i} className="flex items-center gap-6 p-6 rounded-[2rem] hover:bg-muted/30 transition-colors border border-transparent hover:border-border">
+                <div key={i} className="flex items-center gap-6 p-6 rounded-4xl hover:bg-muted/30 transition-colors border border-transparent hover:border-border">
                    <div className={`w-14 h-14 rounded-2xl ${step.color}/10 flex items-center justify-center shrink-0`}>
                       <step.icon className={`w-6 h-6 ${step.color.replace('bg-', 'text-')}`} />
                    </div>
