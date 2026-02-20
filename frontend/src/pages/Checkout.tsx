@@ -51,8 +51,8 @@ export function Checkout({ cartItems }: CheckoutProps) {
     <div className="min-h-screen bg-background selection:bg-primary/20 animate-fade-in py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-12 text-center md:text-left">
-           <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">Finalize Your <span className="text-gradient">Purchase</span></h1>
-           <p className="text-muted-foreground font-medium mt-2">Professional, secure, and encrypted checkout experience</p>
+           <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">Buyurtmani <span className="text-gradient">rasmiylashtirish</span></h1>
+           <p className="text-muted-foreground font-medium mt-2">   </p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -65,7 +65,7 @@ export function Checkout({ cartItems }: CheckoutProps) {
                    <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
                       <Truck className="w-6 h-6 text-primary" />
                    </div>
-                   <h2 className="text-2xl font-black text-foreground">Shipping Information</h2>
+                   <h2 className="text-2xl font-black text-foreground">Yetkazib berish</h2>
                 </div>
                 
                 <div className="grid md:grid-cols-2 gap-8">
@@ -133,18 +133,18 @@ export function Checkout({ cartItems }: CheckoutProps) {
                      <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
                         <CreditCard className="w-6 h-6 text-primary" />
                      </div>
-                     <h2 className="text-2xl font-black text-foreground">Payment Method</h2>
+                     <h2 className="text-2xl font-black text-foreground">To'lov usuli</h2>
                    </div>
                    <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/10 px-4 py-2 rounded-xl">
                       <Lock className="w-4 h-4 text-emerald-500" />
-                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Secure Payment</span>
+                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Xavfsiz to'lov</span>
                    </div>
                 </div>
 
                 <div className="space-y-8">
                   <div className="space-y-2">
                     <label className="block text-sm font-black text-muted-foreground uppercase tracking-widest">
-                      Card Number *
+                      Karta raqami *
                     </label>
                     <div className="relative group">
                       <input
@@ -162,7 +162,7 @@ export function Checkout({ cartItems }: CheckoutProps) {
                   </div>
                   <div className="space-y-2">
                     <label className="block text-sm font-black text-muted-foreground uppercase tracking-widest">
-                      Cardholder Name *
+                      Karta egasining ismi *
                     </label>
                     <input
                       type="text"
@@ -177,7 +177,7 @@ export function Checkout({ cartItems }: CheckoutProps) {
                   <div className="grid grid-cols-2 gap-8">
                     <div className="space-y-2">
                       <label className="block text-sm font-black text-muted-foreground uppercase tracking-widest">
-                        Expiry Date *
+                        Karta amal qilish muddati *
                       </label>
                       <input
                         type="text"
@@ -192,7 +192,7 @@ export function Checkout({ cartItems }: CheckoutProps) {
                     </div>
                     <div className="space-y-2">
                       <label className="block text-sm font-black text-muted-foreground uppercase tracking-widest">
-                        CVV Code *
+                        CVV kodi *
                       </label>
                       <input
                         type="password"
@@ -213,9 +213,9 @@ export function Checkout({ cartItems }: CheckoutProps) {
                     <Shield className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                     <p className="text-sm font-black text-foreground uppercase tracking-wide">Data Protection Guaranteed</p>
+                     <p className="text-sm font-black text-foreground uppercase tracking-wide">To'lov himoyasi</p>
                      <p className="text-xs text-muted-foreground font-medium leading-relaxed mt-1">
-                       Your payment information is handled via military-grade encryption. We do not store or process sensitive card details on our servers.
+                       To'lov ma'lumotlaringiz xavfsiz tarzda himoyalangan. Biz maxfiy karta ma'lumotlarini saqlamaymiz yoki qayta ishlamaymiz.
                      </p>
                   </div>
                 </div>
@@ -225,7 +225,7 @@ export function Checkout({ cartItems }: CheckoutProps) {
             {/* Order Summary */}
             <div className="lg:col-span-1">
               <div className="bg-card rounded-[2.5rem] p-8 border border-border shadow-2xl sticky top-28 space-y-8">
-                <h2 className="text-2xl font-black text-foreground">Order Summary</h2>
+                <h2 className="text-2xl font-black text-foreground">Buyurtma</h2>
 
                 {/* Products List - Improved UI */}
                 <div className="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
@@ -243,7 +243,7 @@ export function Checkout({ cartItems }: CheckoutProps) {
                           {item.name}
                         </p>
                         <div className="flex justify-between items-end">
-                           <span className="text-[10px] font-black text-muted-foreground uppercase">Qty: {item.cartQuantity}</span>
+                           <span className="text-[10px] font-black text-muted-foreground uppercase">Soni: {item.cartQuantity}</span>
                            <span className="text-sm font-black text-primary italic">
                              {formatSum(item.price * item.cartQuantity)}
                            </span>
@@ -255,24 +255,24 @@ export function Checkout({ cartItems }: CheckoutProps) {
 
                 <div className="space-y-4 pt-4 border-t border-border">
                   <div className="flex justify-between items-center text-muted-foreground font-bold">
-                    <span className="text-sm uppercase tracking-widest italic">Subtotal</span>
+                    <span className="text-sm uppercase tracking-widest italic"> Jami </span>
                     <span className="text-foreground">{formatSum(subtotal)}</span>
                   </div>
                   <div className="flex justify-between items-center text-muted-foreground font-bold">
-                    <span className="text-sm uppercase tracking-widest italic">Shipping</span>
+                    <span className="text-sm uppercase tracking-widest italic">Yetkazib berish</span>
                     <span className={shipping === 0 ? 'text-emerald-500 font-black' : 'text-foreground'}>
-                      {shipping === 0 ? 'FREE DELIVERY' : formatSum(shipping)}
+                      {shipping === 0 ? 'BEPUL' : formatSum(shipping)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-muted-foreground font-bold">
-                    <span className="text-sm uppercase tracking-widest italic">Est. Taxes</span>
+                    <span className="text-sm uppercase tracking-widest italic">   </span>
                     <span className="text-foreground">{formatSum(tax)}</span>
                   </div>
                 </div>
 
                 <div className="bg-muted/30 rounded-2xl p-6 border border-border/50">
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-black text-foreground uppercase tracking-widest">Grand Total</span>
+                    <span className="text-lg font-black text-foreground uppercase tracking-widest">Umumiy summa</span>
                     <span className="text-3xl font-black text-primary italic tracking-tighter">{formatSum(total)}</span>
                   </div>
                 </div>
@@ -285,16 +285,16 @@ export function Checkout({ cartItems }: CheckoutProps) {
                     fullWidth 
                     className="h-16 rounded-2xl text-lg font-black shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
                   >
-                    PLACE SECURE ORDER
+                    BUYURTMani rasmiylashtirish
                   </Button>
                   <div className="flex items-center justify-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                     <Lock className="w-3 h-3" />
-                    Encrypted Transaction
+                    To'lov himoyasi
                   </div>
                 </div>
 
                 <p className="text-[10px] text-muted-foreground text-center font-medium leading-relaxed px-4">
-                  By reviewing and placing this order, you acknowledge our <span className="text-primary hover:underline cursor-pointer">Security Protocol</span> and <span className="text-primary hover:underline cursor-pointer">Processing Agreement</span>.
+                  Buyurtmani rasmiylashtirish orqali siz bizning <span className="text-primary hover:underline cursor-pointer">  </span> va <span className="text-primary hover:underline cursor-pointer"></span>ga rozilik bildirasiz.
                 </p>
               </div>
             </div>

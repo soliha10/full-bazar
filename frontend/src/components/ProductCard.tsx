@@ -12,6 +12,7 @@ export interface Product {
   rating: number;
   reviews: number;
   image: string;
+  images?: string[];
   category: string;
   inStock: boolean;
   description?: string;
@@ -44,7 +45,9 @@ export function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80'; // Reliable fallback
+              if (!target.src.includes('placeholder')) {
+                target.src = 'https://via.placeholder.com/600x600?text=Rasm+mavjud+emas';
+              }
             }}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
           />

@@ -48,8 +48,8 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
           <div className="space-y-2 text-center md:text-left">
-            <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">Your <span className="text-gradient">Cart</span></h1>
-            <p className="text-muted-foreground font-medium">Review your items before proceeding to checkout</p>
+            <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">Sizning <span className="text-gradient">Savatingiz</span></h1>
+            <p className="text-muted-foreground font-medium">Buyurtma berishdan oldin tovarlarni ko'rib chiqing</p>
           </div>
           <Link to="/products" className="text-primary font-bold hover:underline">
              ← {t.cart.continueShopping}
@@ -88,7 +88,7 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
                                {item.category}
                             </span>
                             <span className="text-emerald-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                               <div className="w-1 h-1 bg-emerald-500 rounded-full" /> In Stock
+                               <div className="w-1 h-1 bg-emerald-500 rounded-full" /> Mavjud
                             </span>
                           </div>
                         </div>
