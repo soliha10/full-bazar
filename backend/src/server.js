@@ -52,8 +52,8 @@ const getAllProducts = async () => {
 
             const lowerTitle = title.toLowerCase();
             // Smartphone keywords only
-            const isSmartphone = (/\b(iphone|samsung|redmi|xiaomi|oppo|vivo|realme|honor|smartfon|pixel|huawei)\b/i.test(lowerTitle));
-            const isNotSmartphone = (/\b(televizor|noutbuk|laptop|planshet|tablet|konditsioner|pylesos|changyutgich|holodilnik|sovutgich|kir yuvish|gaz plita|kabel|chehol|case|zaryad|charger|adapter)\b/i.test(lowerTitle));
+            const isSmartphone = (/(iphone|samsung|redmi|xiaomi|oppo|vivo|realme|honor|smartfon|pixel|huawei|смартфон|телефон|telefon|spark|tecno|camon|poco|itel|infinix)/i.test(lowerTitle));
+            const isNotSmartphone = (/(televizor|noutbuk|laptop|planshet|tablet|konditsioner|pylesos|changyutgich|holodilnik|sovutgich|kir yuvish|gaz plita|kabel|chehol|case|zaryad|charger|adapter|планшет|чехол|кабель|заряд|наушник|quloqchin)/i.test(lowerTitle));
 
             if (!isSmartphone || isNotSmartphone) return;
 
