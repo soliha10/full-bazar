@@ -1,58 +1,65 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Product } from '../components/ProductCard';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { fetchProducts } from '../services/api';
 import { mapProduct } from '../utils/productMapper';
+import { Product } from '../components/ProductCard';
 
-export function useProducts(initialPage = 1, limit = 12, search = '') {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(initialPage);
-  const [hasMore, setHasMore] = useState(true);
+interface UseProductsResult {
+  products: Product[];
+  isLoading: boolean;
+  isFetchingNextPage: boolean;
+  isFetching: boolean; // Added isFetching
+  error: any;
+  hasMore: boolean;
+  total: number;
+  loadMore: () => void;
+  status: string;
+}
 
-  const loadProducts = useCallback(async (pageNum: number, isInitial = false) => {
-    try {
-      if (isInitial) {
-        setLoading(true);
-      } else {
-        setLoadingMore(true);
+export function useProducts(
+  _initialPage = 1,
+  limit = 12,
+  search = '',
+): UseProductsResult {
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetching, // Extract isFetching
+    isLoading,
+    status
+  } = useInfiniteQuery({
+    queryKey: ['products', search, limit],
+    queryFn: ({ pageParam = 1, signal }) => fetchProducts(pageParam, limit, search, signal),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.hasMore) {
+        return lastPage.page + 1;
       }
-      
-      const data = await fetchProducts(pageNum, limit, search);
-      // data: { products, total, page, limit, hasMore }
-      
-      const mappedNewProducts: Product[] = data.products.map((item: any) => mapProduct(item));
-      
-      setProducts(prev => isInitial ? mappedNewProducts : [...prev, ...mappedNewProducts]);
-      setHasMore(data.hasMore);
-      setError(null);
-    } catch (err) {
-      setError('Failed to load products. Please try again later.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [limit, search]);
+      return undefined;
+    },
+    staleTime: 0, // Ensure search results are always fresh
+    gcTime: 1000 * 60 * 5, // Keep in cache for 5 mins
+  });
 
-  useEffect(() => {
-    loadProducts(1, true);
-    setPage(1);
-  }, [search]); // Only on search change or manual reset
+  // Flatten the pages data into a single products array
+  const products: Product[] = data?.pages.flatMap((page) => 
+    (page.products ?? []).map((item: any) => mapProduct(item))
+  ) ?? [];
 
-  const loadMore = useCallback(() => {
-    if (!loadingMore && hasMore) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      loadProducts(nextPage);
-    }
-  }, [loadingMore, hasMore, page, loadProducts]);
+  // Get the latest total from the last page
+  const total = data?.pages[data.pages.length - 1]?.total ?? 0;
 
-  const refresh = useCallback(() => {
-    loadProducts(1, true);
-    setPage(1);
-  }, [loadProducts]);
-
-  return { products, loading, loadingMore, error, hasMore, loadMore, refresh };
+  return {
+    products,
+    isLoading,
+    isFetchingNextPage,
+    isFetching,
+    error,
+    hasMore: !!hasNextPage,
+    total,
+    loadMore: fetchNextPage,
+    status
+  };
 }

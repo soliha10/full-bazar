@@ -10,6 +10,10 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
+let productCache = null;
+let lastCacheUpdate = 0;
+const CACHE_TTL = 1000 * 60 * 5; // 5 minutes cache
+
 let DATA_DIR = path.resolve(__dirname, '../../data');
 if (!fs.existsSync(DATA_DIR)) {
     DATA_DIR = path.resolve(__dirname, '../data');
@@ -36,7 +40,12 @@ const readCsv = (filename) => {
   });
 };
 
-const getAllProducts = async () => {
+const getAllProducts = async (forceRefresh = false) => {
+    if (productCache && !forceRefresh && (Date.now() - lastCacheUpdate < CACHE_TTL)) {
+        return productCache;
+    }
+    
+    console.log('[Backend] Cache miss/stale. Re-indexing CSVs...');
     if (!fs.existsSync(DATA_DIR)) return [];
     
     const files = fs.readdirSync(DATA_DIR).filter(file => file.endsWith('.csv'));
@@ -97,18 +106,27 @@ const getAllProducts = async () => {
 
                 productGroups.set(norm, {
                     id: `prod-${stableId}`,
-                    name: displayName,
-                    category: 'Smartphones',
+                    name: displayName, // This is the displayed cleaned title
+                    title: title,     // Original title from CSV
+                    category: 'Phones',
                     rating: parseFloat(rating),
                     reviews: reviews,
                     image: imageUrl,
                     images: imageUrl ? [imageUrl] : [],
                     inStock: true,
-                    markets: []
+                    markets: [],
+                    keywords: title.toLowerCase()
                 });
             }
 
             const group = productGroups.get(norm);
+            if (!group.keywords.includes(title.toLowerCase())) {
+                group.keywords += " " + title.toLowerCase();
+            }
+            // Update title if this one is better (e.g. longer)
+            if (title.length > group.title.length) {
+                group.title = title;
+            }
             const marketIndex = group.markets.findIndex(m => m.source.toLowerCase() === sourceKey);
             
             // Collect all unique images for the group
@@ -133,7 +151,7 @@ const getAllProducts = async () => {
         });
     }
 
-    return Array.from(productGroups.values()).map(p => {
+    const finalProducts = Array.from(productGroups.values()).map(p => {
         const sortedMarkets = [...p.markets].sort((a, b) => a.price - b.price);
         const best = sortedMarkets[0];
         return {
@@ -144,29 +162,74 @@ const getAllProducts = async () => {
             source: best ? best.source : 'Unknown',
         };
     }).sort((a, b) => a.name.localeCompare(b.name));
+
+    productCache = finalProducts;
+    lastCacheUpdate = Date.now();
+    return finalProducts;
 };
 
 app.get('/api/products', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12;
-    const search = (req.query.search || '').toLowerCase();
+    const rawSearch = (req.query.search || '').trim();
     const skip = (page - 1) * limit;
 
     const allProducts = await getAllProducts();
     let filtered = allProducts;
-    if (search) filtered = allProducts.filter(p => p.name.toLowerCase().includes(search));
+
+    if (rawSearch) {
+      const searchLower = rawSearch.toLowerCase();
+      // Split the query into individual tokens so multi-word queries work better
+      const tokens = searchLower.split(/\s+/).filter(Boolean);
+
+      // Score each product and keep only those that match ALL tokens
+      const scored = allProducts.reduce((acc, p) => {
+        const haystack = [
+          p.name?.toLowerCase() ?? '',
+          p.title?.toLowerCase() ?? '',
+          p.category?.toLowerCase() ?? '',
+          p.keywords?.toLowerCase() ?? '',
+        ].join(' ');
+
+        // Every token must appear somewhere in the haystack
+        const allMatch = tokens.every(token => haystack.includes(token));
+        if (!allMatch) return acc;
+
+        // Relevance score: reward exact phrase > all-token match > partial
+        let score = 0;
+        if (haystack.includes(searchLower)) score += 100; // exact phrase
+        if (p.name?.toLowerCase().includes(searchLower)) score += 50; // phrase in name
+        tokens.forEach(token => {
+          if (p.name?.toLowerCase().includes(token)) score += 10;
+          if (p.title?.toLowerCase().includes(token)) score += 5;
+          if (p.keywords?.toLowerCase().includes(token)) score += 2;
+        });
+
+        acc.push({ product: p, score });
+        return acc;
+      }, []);
+
+      // Sort by relevance descending
+      scored.sort((a, b) => b.score - a.score);
+      filtered = scored.map(s => s.product);
+    }
+
+    console.log(`[API] Search: "${rawSearch}" | Results: ${filtered.length} | Page: ${page}`);
 
     res.json({
       products: filtered.slice(skip, skip + limit),
       total: filtered.length,
-      page, limit,
-      hasMore: skip + limit < filtered.length
+      page,
+      limit,
+      hasMore: skip + limit < filtered.length,
     });
   } catch (error) {
+    console.error('[API] Error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 app.get('/api/products/:id', async (req, res) => {
     try {

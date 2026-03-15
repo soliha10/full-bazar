@@ -6,7 +6,8 @@ export const translations = {
     nav: {
       searchPlaceholder: "Mahsulotlar, brendlar va boshqalarni qidirish...",
       account: "Hisob",
-      cart: "Savat"
+      cart: "Savat",
+      home: "Bosh sahifa"
     },
     
     // Landing Page
@@ -205,7 +206,8 @@ export const translations = {
     nav: {
       searchPlaceholder: "Искать товары, бренды и многое другое...",
       account: "Аккаунт",
-      cart: "Корзина"
+      cart: "Корзина",
+      home: "Главная"
     },
     
     // Landing Page
@@ -404,7 +406,8 @@ export const translations = {
     nav: {
       searchPlaceholder: "Search for products, brands and more...",
       account: "Account",
-      cart: "Cart"
+      cart: "Cart",
+      home: "Home"
     },
     
     // Landing Page

@@ -1,14 +1,15 @@
 
 const API_BASE_URL = '/api';
 
-export const fetchProducts = async (page = 1, limit = 12, search = '') => {
+export const fetchProducts = async (page = 1, limit = 12, search = '', signal?: AbortSignal) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/products?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
+    const response = await fetch(`${API_BASE_URL}/products?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`, { signal });
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
     return await response.json();
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') throw error;
     console.error('Error fetching products:', error);
     throw error;
   }

@@ -1,33 +1,35 @@
-import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   Star,
   Heart,
   Share2,
-  Shield,
   ChevronLeft,
   Loader2,
-  ExternalLink,
   Sparkles,
+  ChevronRight,
+  Info,
+  CheckCircle2,
+  ShoppingBag,
+  ArrowRight,
+  ExternalLink
 } from "lucide-react";
 import { Button } from "../components/Button";
 import { fetchProductById } from "../services/api";
 import { mapProduct, formatSum } from "../utils/productMapper";
 import { Product } from "../components/ProductCard";
-import { useLanguage } from "../contexts/LanguageContext";
 
-interface ProductDetailProps {
-  onAddToCart?: (product: Product) => void;
-}
-
-export function ProductDetail({}: ProductDetailProps) {
+export function ProductDetail() {
   const { id } = useParams();
-  const { t } = useLanguage();
+  const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedMarketIndex, setSelectedMarketIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState<'overview' | 'specs' | 'reviews'>('overview');
+  
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const getProduct = async () => {
@@ -41,7 +43,7 @@ export function ProductDetail({}: ProductDetailProps) {
           const sorted = [...mapped.markets].sort((a, b) => a.price - b.price);
           const cheapest = sorted[0];
           const index = mapped.markets.findIndex(
-            (m) => m.source === cheapest.source && m.price === cheapest.price,
+            (m) => m.source === cheapest.source && m.price === cheapest.price
           );
           setSelectedMarketIndex(index !== -1 ? index : 0);
         }
@@ -54,453 +56,434 @@ export function ProductDetail({}: ProductDetailProps) {
     getProduct();
   }, [id]);
 
+  const images = useMemo(() => {
+    if (!product) return [];
+    return product.images && product.images.length > 0
+      ? product.images.filter((img) => img && img !== "")
+      : [product.image];
+  }, [product]);
+
+  const selectedMarket = product?.markets?.[selectedMarketIndex];
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
-        <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center animate-bounce-subtle">
-          <Loader2 className="w-10 h-10 text-primary animate-spin" />
-        </div>
-        <p className="text-muted-foreground font-bold mt-4">
-          Bozor narxlari tahlil qilinmoqda...
-        </p>
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
+        <Loader2 className="w-12 h-12 text-[#0062FF] animate-spin mb-4" />
+        <p className="text-gray-500 font-bold animate-pulse">Analyzing market prices...</p>
       </div>
     );
   }
 
   if (error || !product) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="bg-card rounded-[2.5rem] p-12 text-center shadow-xl border border-border/50 max-w-lg w-full">
-          <h2 className="text-3xl font-black text-foreground mb-6">
-            {error || "Mahsulot topilmadi"}
-          </h2>
-          <Link to="/products">
-            <Button variant="primary" size="lg" className="rounded-2xl px-12">
-              Kolleksiyalarga qaytish
-            </Button>
-          </Link>
+      <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center p-4">
+        <div className="bg-white rounded-[3rem] p-12 text-center shadow-xl border border-gray-100 max-w-lg w-full">
+          <h2 className="text-3xl font-black text-gray-900 mb-6">{error || "Product Not Found"}</h2>
+          <Button variant="primary" onClick={() => navigate('/products')} className="rounded-2xl px-12">
+            Back to Marketplace
+          </Button>
         </div>
       </div>
     );
   }
 
-  const images =
-    product.images && product.images.length > 0
-      ? product.images.filter((img) => img && img !== "")
-      : [product.image];
-
-  const selectedMarket = product.markets?.[selectedMarketIndex];
-
   return (
-    <div className="min-h-screen bg-background selection:bg-primary/20 animate-fade-in relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] -z-10" />
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] -z-10" />
+    <div className="min-h-screen bg-[#F9FAFB] pb-24 md:pb-12">
+      {/* Mobile Top Bar */}
+      <div className="md:hidden bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-50 flex items-center justify-between">
+        <button onClick={() => navigate(-1)} className="p-1">
+          <ChevronLeft className="w-6 h-6 text-gray-900" />
+        </button>
+        <span className="font-bold text-gray-900 truncate max-w-[200px]">Product Details</span>
+        <button className="p-1"><Share2 className="w-5 h-5 text-gray-400" /></button>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8">
-          <Link
-            to="/products"
-            className="group flex items-center gap-2 text-muted-foreground hover:text-primary transition-all w-fit font-bold"
-          >
-            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-              <ChevronLeft className="w-4 h-4" />
-            </div>
-            <span>Boshqa mahsulotlarni ko'rish</span>
-          </Link>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
+        {/* Breadcrumbs - Desktop Only */}
+        <nav className="hidden md:flex items-center gap-2 text-sm text-gray-400 mb-8 overflow-hidden">
+          <Link to="/" className="hover:text-gray-600 shrink-0">Home</Link>
+          <ChevronRight className="w-4 h-4 shrink-0" />
+          <Link to={`/products?category=${product.category}`} className="hover:text-gray-600 shrink-0">{product.category}</Link>
+          <ChevronRight className="w-4 h-4 shrink-0" />
+          <span className="text-gray-900 font-medium truncate">{product.name}</span>
+        </nav>
 
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
-          <div className="space-y-6">
-            <div className="bg-card rounded-[2.5rem] overflow-hidden border border-border/50 shadow-2xl relative group">
-              <img
-                src={images[selectedImage]}
-                alt={product.name}
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  if (!target.src.includes("placeholder")) {
-                    target.src =
-                      "https://via.placeholder.com/600x600?text=Rasm+topilmadi";
-                  }
-                }}
-                className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-              {product.originalPrice &&
-                product.price < product.originalPrice && (
-                  <div className="absolute top-6 left-6 bg-primary text-primary-foreground px-4 py-2 rounded-2xl font-black shadow-lg">
-                    {Math.round(
-                      ((product.originalPrice - product.price) /
-                        product.originalPrice) *
-                        100,
-                    )}
-                    % {t.product.off}
+        <div className="flex flex-col lg:flex-row gap-12 lg:gap-16">
+          {/* Left Column: Visuals */}
+          <div className="lg:w-1/2 space-y-6">
+            <div className="relative bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden group">
+              {/* Product Badge */}
+              <div className="absolute top-6 left-6 z-10 flex flex-col gap-2">
+                <span className="bg-[#FFC107] text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
+                  BEST SELLER
+                </span>
+              </div>
+
+              {/* Mobile Carousel / Carousel Wrapper */}
+              <div 
+                ref={scrollContainerRef}
+                className="flex md:block overflow-x-auto snap-x snap-mandatory hide-scrollbar"
+              >
+                {/* Heart Icon for Mobile */}
+                <div className="md:hidden absolute top-4 right-4 z-10">
+                  <button className="w-10 h-10 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+                    <Heart className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+                {images.map((img, idx) => (
+                  <div key={idx} className="min-w-full md:min-w-0 snap-center">
+                    <img
+                      src={img}
+                      alt={product.name}
+                      className={`w-full aspect-square object-contain p-8 md:p-12 transition-opacity duration-500 ${
+                        selectedImage === idx ? 'opacity-100' : 'md:hidden'
+                      }`}
+                    />
                   </div>
-                )}
+                ))}
+              </div>
+
+              {/* Carousel Indicators (Mobile) */}
+              <div className="md:hidden flex justify-center gap-2 pb-6">
+                {images.map((_, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`h-1.5 rounded-full transition-all ${selectedImage === idx ? 'w-6 bg-[#0062FF]' : 'w-1.5 bg-gray-200'}`} 
+                  />
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+
+            {/* Desktop Thumbnails */}
+            <div className="hidden md:grid grid-cols-4 gap-4">
               {images.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedImage(idx)}
-                  className={`bg-card rounded-2xl overflow-hidden border-2 transition-all aspect-square ${
-                    selectedImage === idx
-                      ? "border-primary ring-4 ring-primary/10"
-                      : "border-border/50 hover:border-primary/30"
+                  className={`bg-white rounded-2xl p-2 border-2 transition-all aspect-square shrink-0 ${
+                    selectedImage === idx ? "border-[#0062FF]" : "border-gray-50 hover:border-gray-200"
                   }`}
                 >
-                  <img
-                    src={img}
-                    alt={`${product.name} ${idx + 1}`}
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      if (!target.src.includes("placeholder")) {
-                        target.src =
-                          "https://via.placeholder.com/600x600?text=Rasm+topilmadi";
-                      }
-                    }}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={img} alt="" className="w-full h-full object-contain" />
                 </button>
               ))}
             </div>
-          </div>
 
-          {/* Product Info */}
-          <div className="space-y-8">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <span className="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-black uppercase tracking-widest">
-                  {product.category}
-                </span>
-                <span className="text-emerald-500 text-sm font-bold flex items-center gap-1">
-                  <Shield className="w-4 h-4" /> Tasdiqlangan eng yaxshi narx
-                </span>
-              </div>
-              <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
-                {product.name}
-              </h1>
-
-              {/* Rating */}
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-5 h-5 ${
-                        i < Math.floor(product.rating)
-                          ? "fill-primary text-primary"
-                          : "text-muted"
-                      }`}
-                    />
-                  ))}
-                  <span className="ml-2 font-black text-lg">
-                    {product.rating}
-                  </span>
-                </div>
-                <div className="h-4 w-px bg-border" />
-                <span className="text-muted-foreground font-bold">
-                  {product.reviews} ta tahlil natijasi
-                </span>
-              </div>
-            </div>
-            <div className="bg-muted/30 rounded-4xl p-8 border border-border/50 space-y-2">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">
-                  Joriy tanlov: {selectedMarket?.source}
-                </span>
-                <span className="text-xs font-black text-emerald-500 uppercase tracking-widest">
-                  Jonli narxlar
-                </span>
-              </div>
-              <div className="flex items-baseline gap-4">
-                <span className="text-5xl font-black text-foreground tracking-tighter italic">
-                  {formatSum(selectedMarket?.price || product.price)}
-                </span>
-                {product.originalPrice && (
-                  <span className="text-2xl text-muted-foreground line-through decoration-primary/30 decoration-4">
-                    {formatSum(product.originalPrice)}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {product.markets && product.markets.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-black text-foreground flex items-center gap-2">
-                    <Sparkles className="w-6 h-6 text-primary" />
-                    Mavjud variantlar
-                  </h3>
-                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                    Solishtiring va tanlang
-                  </span>
-                </div>
-                <div className="grid gap-3">
-                  {product.markets
-                    .sort((a, b) => a.price - b.price)
-                    .map((market, idx) => {
-                      const isSelected =
-                        selectedMarketIndex ===
-                        product.markets?.indexOf(market);
-                      return (
-                        <button
-                          key={idx}
-                          onClick={() =>
-                            setSelectedMarketIndex(
-                              product.markets?.indexOf(market) ?? 0,
-                            )
-                          }
-                          className={`group w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 text-left ${
-                            isSelected
-                              ? "bg-primary/5 border-primary shadow-lg shadow-primary/10 ring-2 ring-primary/20"
-                              : "bg-card border-border/50 hover:border-primary/30"
-                          }`}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div
-                              className={`w-12 h-12 rounded-xl flex items-center justify-center font-black uppercase text-xs transition-colors ${
-                                isSelected
-                                  ? "bg-primary text-white"
-                                  : "bg-muted text-muted-foreground"
-                              }`}
-                            >
-                              {market.source.substring(0, 2)}
-                            </div>
-                            <div>
-                              <p className="font-bold text-foreground text-lg">
-                                {market.source}
-                              </p>
-                              {idx === 0 && (
-                                <div className="flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                                  <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">
-                                    Eng arzon variant
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-black text-xl text-foreground mb-1">
-                              {formatSum(market.price)}
-                            </p>
-                            <span className="text-[10px] font-black text-primary uppercase tracking-widest">
-                              Do'konni tanlash
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-6 pt-6 border-t border-border/50">
-              <div className="flex flex-col gap-4">
-                <a
-                  href={
-                    selectedMarket?.url.startsWith("/")
-                      ? `https://uzum.uz${selectedMarket.url}`
-                      : selectedMarket?.url
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full"
-                >
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    fullWidth
-                    className="rounded-4xl h-20 text-xl font-black shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all group"
-                  >
-                    {selectedMarket?.source.toUpperCase()} DO'KONIGA O'TISH
-                    <ExternalLink className="ml-3 w-6 h-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                  </Button>
-                </a>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <button className="flex items-center justify-center gap-2 py-4 rounded-2xl border border-border hover:bg-primary/5 hover:border-primary/30 transition-all font-black text-xs uppercase tracking-widest">
-                    <Heart className="w-5 h-5 text-primary" />
-                    Tahlilni saqlash
-                  </button>
-                  <button className="flex items-center justify-center gap-2 py-4 rounded-2xl border border-border hover:bg-primary/5 hover:border-primary/30 transition-all font-black text-xs uppercase tracking-widest">
-                    <Share2 className="w-5 h-5 text-primary" />
-                    Narxni ulashish
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-border/50">
-              <div className="flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <ExternalLink className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs font-black text-foreground uppercase">
-                    Tashqi do'konga havola
-                  </p>
-                  <p className="text-[10px] text-muted-foreground font-medium">
-                    Xavfsiz va shifrlangan
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs font-black text-foreground uppercase">
-                    Narx himoyasi
-                  </p>
-                  <p className="text-[10px] text-muted-foreground font-medium">
-                    Har 15 daqiqada yangilanadi
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Shield className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs font-black text-foreground uppercase">
-                    Tasdiqlangan sotuvchi
-                  </p>
-                  <p className="text-[10px] text-muted-foreground font-medium">
-                    Faqat ishonchli do'konlar
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-24 grid lg:grid-cols-3 gap-12">
-          <div className="lg:col-span-2 space-y-12">
-            <section className="bg-card rounded-[3rem] p-12 border border-border/50 shadow-sm space-y-6">
-              <h2 className="text-3xl font-black text-foreground flex items-center gap-4">
-                <div className="w-2 h-8 bg-primary rounded-full" />
-                Product Story
-              </h2>
-              <div className="prose prose-slate max-w-none">
-                <p className="text-lg text-muted-foreground leading-relaxed font-medium">
-                  {product.description ||
-                    "Experience premium quality with this exceptional product. Carefully crafted with attention to detail, it combines functionality with style to meet your everyday needs. Whether you're looking for performance, durability, or aesthetic appeal, this product delivers on all fronts."}
-                </p>
-              </div>
-            </section>
-
-            <section className="bg-card rounded-[3rem] p-12 border border-border/50 shadow-sm space-y-8">
-              <h2 className="text-3xl font-black text-foreground">
-                Specifications
-              </h2>
-              <div className="grid sm:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <h3 className="font-bold text-primary uppercase text-sm tracking-widest">
-                    Key Features
-                  </h3>
-                  <ul className="space-y-3">
-                    {[
-                      "Premium sifatli materiallar",
-                      "Uzoq vaqt xizmat qiladi",
-                      "Zamonaviy minimalist dizayn",
-                      "Foydalanish va saqlash oson",
-                    ].map((item, i) => (
-                      <li
-                        key={i}
-                        className="flex items-center gap-3 text-foreground font-medium"
-                      >
-                        <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="space-y-4">
-                  <h3 className="font-bold text-primary uppercase text-sm tracking-widest">
-                    What's in the Box
-                  </h3>
-                  <ul className="space-y-3">
-                    {[
-                      `1x ${product.name}`,
-                      "Qo'llanma",
-                      "Premium qadoq",
-                      "Kafolat kartasi",
-                    ].map((item, i) => (
-                      <li
-                        key={i}
-                        className="flex items-center gap-3 text-foreground font-medium"
-                      >
-                        <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          <div className="space-y-8">
-            <div className="bg-card rounded-[3rem] p-8 border border-border/50 shadow-sm">
-              <h2 className="text-2xl font-black text-foreground mb-8">
-                Tasdiqlangan sharhlar
-              </h2>
-              <div className="space-y-10">
+            {/* Quick Specs - Desktop Only */}
+            <div className="hidden md:block bg-blue-50/50 rounded-4xl p-8 border border-blue-100">
+              <h3 className="text-sm font-black text-gray-900 mb-6 uppercase tracking-widest flex items-center gap-2">
+                <Info className="w-4 h-4 text-[#0062FF]" />
+                Quick Specifications
+              </h3>
+              <div className="grid grid-cols-2 gap-y-6 gap-x-8">
                 {[
-                  {
-                    name: "John Smith",
-                    initials: "JS",
-                    text: "Yaxshi maxsulot ",
-                    rating: 5,
-                  },
-                  {
-                    name: "Anna Martinez",
-                    initials: "AM",
-                    text: " Ajoyib maxsulot ",
-                    rating: 5,
-                  },
-                  {
-                    name: "Robert Kim",
-                    initials: "RK",
-                    text: "Tavsiya qilaman",
-                    rating: 4,
-                  },
-                ].map((review, i) => (
-                  <div key={i} className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center font-black text-primary text-sm">
-                        {review.initials}
-                      </div>
-                      <div>
-                        <p className="font-bold text-foreground text-sm">
-                          {review.name}
-                        </p>
-                        <div className="flex items-center gap-0.5">
-                          {[...Array(5)].map((_, starI) => (
-                            <Star
-                              key={starI}
-                              className={`w-3 h-3 ${starI < review.rating ? "fill-primary text-primary" : "text-muted"}`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground font-medium italic leading-relaxed">
-                      "{review.text}"
-                    </p>
+                  { label: "Bluetooth", value: "v5.3 LE" },
+                  { label: "Battery Life", value: "30 Hours" },
+                  { label: "Charging", value: "USB-C Fast" },
+                  { label: "Weight", value: "250g" }
+                ].map((spec, i) => (
+                  <div key={i}>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{spec.label}</p>
+                    <p className="font-bold text-gray-900">{spec.value}</p>
                   </div>
                 ))}
               </div>
-              <Button
-                variant="ghost"
-                className="w-full mt-10 font-bold text-primary hover:bg-primary/10 rounded-2xl"
-              >
-                Barcha sharhlarni o'qish
-              </Button>
+            </div>
+          </div>
+
+          {/* Right Column: Info & Actions */}
+          <div className="lg:w-1/2 space-y-8">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <span className="text-[#0062FF] font-black text-xs uppercase tracking-widest">{product.category}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
+                <span className="text-emerald-500 font-bold text-xs flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4" /> In Stock & Ready to ship
+                </span>
+              </div>
+              <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-tight">
+                {product.name}
+              </h1>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1 bg-white border border-gray-100 px-3 py-1.5 rounded-xl shadow-sm">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className={`w-4 h-4 ${i < Math.floor(product.rating) ? "fill-[#FFC107] text-[#FFC107]" : "text-gray-200"}`} />
+                  ))}
+                  <span className="ml-2 font-black text-gray-900">{product.rating}</span>
+                </div>
+                <button className="text-xs font-bold text-gray-400 hover:text-gray-600 underline underline-offset-4 decoration-gray-200">
+                  {product.reviews} customer reviews
+                </button>
+              </div>
+            </div>
+
+            {/* Price Section */}
+            <div className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-gray-100 shadow-sm space-y-6">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Best Price Market: {selectedMarket?.source}</p>
+                  <div className="flex items-baseline gap-4">
+                    <span className="text-4xl md:text-5xl font-black text-[#0062FF] tracking-tighter">
+                      {formatSum(selectedMarket?.price || product.price)}
+                    </span>
+                    {product.originalPrice && (
+                      <span className="text-xl md:text-2xl text-gray-300 line-through decoration-gray-200 decoration-2 italic">
+                        {formatSum(product.originalPrice)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col items-start md:items-end">
+                   <span className="text-emerald-500 font-black text-[10px] uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 mb-2">
+                     Lowest price in 30 days
+                   </span>
+                   <p className="text-[10px] font-bold text-gray-400">Prices curated in real-time</p>
+                </div>
+              </div>
+
+              {/* Desktop Comparison Table */}
+              <div className="hidden md:block overflow-hidden pt-4">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left">
+                      <th className="text-[10px] font-black text-gray-400 uppercase pb-4">Marketplace</th>
+                      <th className="text-[10px] font-black text-gray-400 uppercase pb-4">Availability</th>
+                      <th className="text-[10px] font-black text-gray-400 uppercase pb-4">Price</th>
+                      <th className="text-right pb-4"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {product.markets?.sort((a,b) => a.price - b.price).map((market, idx) => (
+                      <tr key={idx} className={`group cursor-pointer ${selectedMarketIndex === product.markets?.indexOf(market) ? 'bg-blue-50/30' : 'hover:bg-gray-50'}`}>
+                        <td className="py-4 font-bold text-gray-900">{market.source}</td>
+                        <td className="py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                            <span className="text-xs font-bold text-gray-600 italic">In Stock</span>
+                          </div>
+                        </td>
+                        <td className="py-4 font-black text-gray-900">{formatSum(market.price)}</td>
+                        <td className="py-4 text-right">
+                          <a 
+                            href={market.url} 
+                            target="_blank" 
+                            className="bg-white border border-gray-200 text-gray-900 px-4 py-2 rounded-xl text-xs font-black shadow-sm group-hover:bg-[#0062FF] group-hover:text-white group-hover:border-[#0062FF] transition-all"
+                          >
+                           GO TO SHOP
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Mobile Market List - Updated with Buttons */}
+              <div className="md:hidden space-y-4">
+                 <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-black text-gray-900 text-sm uppercase tracking-wider">Compare Stores</h3>
+                    <button className="text-[10px] font-black text-[#0062FF] uppercase underline underline-offset-4">
+                      {product.markets?.length} stores available
+                    </button>
+                 </div>
+                 {product.markets?.sort((a,b) => a.price - b.price).slice(0, 4).map((market, idx) => (
+                   <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-4xl border border-gray-100 shadow-sm">
+                     <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center font-black text-[#0062FF] text-xs">
+                           {market.source.substring(0, 1)}
+                        </div>
+                        <div className="flex flex-col">
+                           <span className="font-bold text-gray-900 text-sm">{market.source}</span>
+                           <div className="flex items-center gap-1">
+                              <Star className="w-2.5 h-2.5 fill-[#FFC107] text-[#FFC107]" />
+                              <span className="text-[10px] font-black text-gray-400">4.5</span>
+                           </div>
+                        </div>
+                     </div>
+                     <div className="flex flex-col items-end gap-1">
+                        <span className="font-black text-gray-900 text-sm">{formatSum(market.price)}</span>
+                        <a 
+                          href={market.url} 
+                          target="_blank"
+                          className="bg-white border border-gray-200 text-gray-900 px-3 py-1.5 rounded-lg text-[10px] font-black flex items-center gap-1 active:bg-[#0062FF] active:text-white transition-colors"
+                        >
+                          SHOP <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                     </div>
+                   </div>
+                 ))}
+              </div>
+            </div>
+
+            {/* AI Smart Summary */}
+            <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-[#0062FF]" />
+                  AI Smart Review Summary
+                </h3>
+                <div className="bg-blue-50 text-[#0062FF] px-3 py-1.5 rounded-xl font-black text-sm">
+                  4.8 / 5.0
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { label: "Comfort", value: "4.9", color: "bg-emerald-500" },
+                  { label: "Sound Quality", value: "4.7", color: "bg-[#0062FF]" },
+                  { label: "Battery", value: "4.8", color: "bg-[#FFC107]" },
+                  { label: "Durability", value: "4.6", color: "bg-purple-500" }
+                ].map((item, i) => (
+                  <div key={i} className="flex flex-col gap-1.5">
+                    <div className="flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                      <span>{item.label}</span>
+                      <span className="text-gray-900">{item.value}</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-full ${item.color}`} style={{ width: `${parseFloat(item.value) * 20}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                 <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Executive Summary</h4>
+                 <p className="text-sm text-gray-600 font-medium leading-relaxed italic">
+                   "Users overwhelmingly praise the superior comfort and depth of sound. The 30-hour battery life is consistent across real-world tests, making this the best wireless headphone in its class for travelers and professionals alike."
+                 </p>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Tabs / Bottom Section */}
+        <div className="mt-16">
+          {/* Mobile Tabs */}
+          <div className="md:hidden flex items-center justify-between gap-2 mb-8 bg-gray-100 p-1 rounded-2xl">
+            {(['overview', 'specs', 'reviews'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-3 px-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                  activeTab === tab ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-16">
+            <div className={`lg:col-span-2 space-y-16 ${activeTab !== 'overview' && 'hidden md:block'}`}>
+               <section id="overview" className="space-y-6">
+                 <h2 className="text-2xl font-black text-gray-900 flex items-center gap-4">
+                   <div className="w-1.5 h-8 bg-[#0062FF] rounded-full" />
+                   Product Story
+                 </h2>
+                 <p className="text-lg text-gray-500 font-medium leading-relaxed">
+                   {product.description || "Designed for ultimate immersion, this product redefines the standard in its category. With cutting-edge technology and a focus on user ergonomics, it provides a seamless experience whether for work or play."}
+                 </p>
+               </section>
+
+               <section id="specs" className={`${activeTab !== 'specs' && 'hidden md:block'} space-y-8 bg-white rounded-[3rem] p-8 md:p-12 border border-gray-100 shadow-sm`}>
+                  <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Main Specifications</h2>
+                  <div className="grid sm:grid-cols-2 gap-12">
+                    <div className="space-y-6">
+                      <h3 className="text-sm font-black text-[#0062FF] uppercase tracking-widest border-b border-blue-100 pb-2">Technical Details</h3>
+                      <div className="space-y-4">
+                        {[
+                          { l: "Driver Unit", v: "40mm Dynamic" },
+                          { l: "Impedance", v: "32 Ohm" },
+                          { l: "Frequency Response", v: "20Hz - 20kHz" },
+                          { l: "Sensitivity", v: "105dB" }
+                        ].map((s, i) => (
+                          <div key={i} className="flex justify-between items-center text-sm">
+                            <span className="font-bold text-gray-400 italic">{s.l}</span>
+                            <span className="font-black text-gray-900">{s.v}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-black text-[#0062FF] uppercase tracking-widest border-b border-blue-100 pb-2">Inside the Box</h3>
+                      <ul className="grid grid-cols-1 gap-3">
+                        {["Primary Product", "Quick Start Guide", "USB-C Charging Cable", "Travel Case", "2-Year Warranty Card"].map((item, i) => (
+                          <li key={i} className="flex items-center gap-3 text-sm font-bold text-gray-700">
+                             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                             {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+               </section>
+            </div>
+
+            {/* Sidebar Column (Desktop) / Reviews (Mobile) */}
+            <div className={`space-y-8 ${activeTab !== 'reviews' && 'hidden lg:block'}`}>
+              <div className="bg-white rounded-[3rem] p-8 border border-gray-100 shadow-sm">
+                 <h2 className="text-xl font-black text-gray-900 mb-8 border-b border-gray-100 pb-4">Most Helpful Reviews</h2>
+                 <div className="space-y-8">
+                    {[
+                      { user: "Alex J.", rating: 5, date: "2 days ago", comment: "Absolutely worth the price. The noise cancellation is top notch!", color: "bg-blue-100" },
+                      { user: "Sarah K.", rating: 4, date: "1 week ago", comment: "Great sound, but a bit heavier than I expected. Still love it.", color: "bg-emerald-100" },
+                      { user: "Marcus L.", rating: 5, date: "2 weeks ago", comment: "The best tech purchase I've made this year. Period.", color: "bg-purple-100" }
+                    ].map((review, i) => (
+                      <div key={i} className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-3">
+                             <div className={`w-8 h-8 ${review.color} rounded-full flex items-center justify-center font-black text-xs text-gray-600`}>
+                               {review.user[0]}
+                             </div>
+                             <span className="font-bold text-sm text-gray-900">{review.user}</span>
+                          </div>
+                          <div className="flex gap-0.5">
+                            {[...Array(5)].map((_, s) => <Star key={s} className={`w-2.5 h-2.5 ${s < review.rating ? 'fill-[#FFC107] text-[#FFC107]' : 'text-gray-200'}`} />)}
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 font-medium leading-relaxed">"{review.comment}"</p>
+                        <p className="text-[10px] font-black text-gray-300 uppercase">{review.date}</p>
+                      </div>
+                    ))}
+                 </div>
+                 <button className="w-full mt-10 py-4 bg-gray-50 text-gray-400 font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-gray-100 transition-all">
+                   View 453 more reviews
+                 </button>
+              </div>
+
+              {/* Shipping Card */}
+              <div className="bg-emerald-500 rounded-[2.5rem] p-8 text-white shadow-xl shadow-emerald-200 overflow-hidden relative group">
+                 <ShoppingBag className="absolute -right-4 -bottom-4 w-32 h-32 opacity-15 rotate-12 transition-transform group-hover:scale-110" />
+                 <h3 className="text-lg font-black mb-2 italic">Fast Shipping</h3>
+                 <p className="text-sm font-bold text-white/90 mb-6">Order within 2h 45m and get it by tomorrow!</p>
+                 <div className="flex items-center gap-2">
+                   <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                   <span className="text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">UZUM LOGISTICS READY</span>
+                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Sticky Bottom Bar (Mobile) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 px-6 z-50 flex items-center justify-between shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+        <div className="flex flex-col">
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pricing From</span>
+          <span className="text-xl font-black text-[#0062FF]">{formatSum(selectedMarket?.price || product.price)}</span>
+        </div>
+        <a 
+          href={selectedMarket?.url} 
+          target="_blank" 
+          className="bg-[#0062FF] text-white px-8 py-4 rounded-full font-black text-sm shadow-xl shadow-blue-500/20 flex items-center gap-3 active:scale-95 transition-all"
+        >
+          GO TO SHOP
+          <ArrowRight className="w-4 h-4" />
+        </a>
       </div>
     </div>
   );
 }
+

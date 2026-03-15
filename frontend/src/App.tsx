@@ -3,11 +3,13 @@ import {
   Routes,
   Route,
   useNavigate,
+  useLocation,
 } from "react-router-dom";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
+import { MobileToolbar } from "./components/MobileToolbar";
 import { TestModeBanner } from "./components/TestModeBanner";
 import { Landing } from "./pages/Landing";
 import { ProductListing } from "./pages/ProductListing";
@@ -30,18 +32,25 @@ interface AppContentProps {}
 function AppContent({}: AppContentProps) {
   const navigate = useNavigate();
 
+  const location = useLocation();
+  const isSearchPage = location.pathname === '/products';
+  const isDetailPage = location.pathname.startsWith('/product/');
+  const hideNavbarOnMobile = isSearchPage || isDetailPage;
+
   const handleSearch = (value: string) => {
     if (value.trim()) {
-      navigate(`/products?search=${encodeURIComponent(value)}`);
+      navigate(`/products?search=${encodeURIComponent(value)}`, { replace: true });
     } else {
-      navigate("/products");
+      navigate("/products", { replace: true });
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       <TestModeBanner />
-      <Navbar onSearchChange={handleSearch} />
+      <div className={hideNavbarOnMobile ? 'hidden md:block' : 'block'}>
+        <Navbar onSearchChange={handleSearch} />
+      </div>
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Landing />} />
@@ -49,7 +58,8 @@ function AppContent({}: AppContentProps) {
           <Route path="/product/:id" element={<ProductDetail />} />
         </Routes>
       </main>
-      <Footer />
+      {!isSearchPage && !isDetailPage && <Footer />}
+      <MobileToolbar />
     </div>
   );
 }
