@@ -131,7 +131,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                   <Mic className="w-4 h-4 cursor-pointer" />
                 </button>
                 <button type="submit" className="bg-[#0062FF] hover:bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm">
-                  Qidirish
+                  {t.nav.search}
                 </button>
               </div>
             </form>
@@ -145,7 +145,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
               <div className="relative group">
                 <button className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 font-bold text-sm text-gray-700 hover:text-[#0062FF] transition-all">
                   <Globe className="w-4.5 h-4.5 text-gray-400" />
-                  <span>Language</span>
+                  <span>{t.nav.language}</span>
                   <ChevronDown className="w-4 h-4 text-gray-400 group-hover:rotate-180 transition-transform" />
                 </button>
                 <div className="absolute right-0 mt-2 w-36 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-2 group-hover:translate-y-0 transition-all duration-300 z-50">
@@ -176,7 +176,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             <button className="flex items-center gap-2 px-7 py-3 rounded-xl bg-[#0062FF] hover:bg-blue-600 text-white shadow-lg shadow-blue-500/25 transition-all active:scale-95 group ml-2">
               <User className="w-5 h-5 text-white/90 group-hover:scale-110 transition-transform" />
               <span className="text-sm font-black hidden lg:block tracking-wide">
-                Login
+                {t.nav.login}
               </span>
             </button>
           </div>
@@ -189,7 +189,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             <input
               type="text"
               value={searchValue}
-              placeholder="Search products, brands..."
+              placeholder={t.nav.searchPlaceholder}
               className="w-full bg-[#F3F4F6] pl-12 pr-28 py-4 rounded-full text-sm focus:outline-none placeholder-gray-400 text-gray-900 border border-transparent focus:border-blue-100 transition-all font-medium"
               onChange={(e) => handleTextChange(e.target.value)}
             />
@@ -207,7 +207,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                 type="submit"
                 className="bg-[#0062FF] text-white px-4 py-2.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all shadow-sm"
               >
-                Qidirish
+                {t.nav.search}
               </button>
             </div>
           </form>
@@ -234,8 +234,8 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                 <User className="w-6 h-6 text-[#0062FF]" />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900">Welcome</p>
-                <p className="text-xs text-gray-500">Join BAZARCOM today</p>
+                <p className="text-sm font-bold text-gray-900">{t.nav.welcome}</p>
+                <p className="text-xs text-gray-500">{t.nav.welcomeSubtitle}</p>
               </div>
             </div>
             <button 
@@ -252,7 +252,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
               <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 text-gray-900 transition-colors">
                 <div className="flex items-center gap-3 font-semibold">
                   <LogIn className="w-5 h-5 text-gray-400" />
-                  <span>Login / Sign In</span>
+                  <span>{t.nav.loginSignIn}</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-300" />
               </button>
@@ -265,7 +265,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
               >
                 <div className="flex items-center gap-3 font-semibold">
                   {theme === 'light' ? <Moon className="w-5 h-5 text-gray-400" /> : <Sun className="w-5 h-5 text-gray-400" />}
-                  <span>Dark Mode</span>
+                  <span>{t.nav.darkMode}</span>
                 </div>
                 <div className={`w-10 h-5 rounded-full relative transition-colors ${theme === 'dark' ? 'bg-[#0062FF]' : 'bg-gray-200'}`}>
                   <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${theme === 'dark' ? 'left-6' : 'left-1'}`} />
@@ -275,7 +275,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
               <div className="relative group px-1">
                 <div className="flex items-center gap-3 p-3 font-semibold text-gray-900">
                   <Globe className="w-5 h-5 text-gray-400" />
-                  <span>Language</span>
+                  <span>{t.nav.language}</span>
                   <span className="ml-auto text-xs text-[#0062FF] font-bold">
                     {languages.find(l => l.code === language)?.label === 'UZ' ? "O'zbekcha" : 
                      languages.find(l => l.code === language)?.label === 'RU' ? "Русский" : "English"}
@@ -305,11 +305,11 @@ export function Navbar({ onSearchChange }: NavbarProps) {
           <div className="p-6 border-t border-gray-100 space-y-4">
             <button className="w-full flex items-center gap-3 text-sm font-semibold text-gray-500 hover:text-[#0062FF] transition-colors">
               <HelpCircle className="w-5 h-5" />
-              <span>Help Center</span>
+              <span>{t.nav.helpCenter}</span>
             </button>
             <button className="w-full flex items-center gap-3 text-sm font-semibold text-gray-500 hover:text-[#0062FF] transition-colors">
               <Info className="w-5 h-5" />
-              <span>About Bazarcom</span>
+              <span>{t.nav.about}</span>
             </button>
             <p className="text-[10px] text-gray-400 font-medium">VERSION 2.4.0</p>
           </div>

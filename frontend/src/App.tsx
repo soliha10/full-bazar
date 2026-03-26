@@ -10,7 +10,6 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { MobileToolbar } from "./components/MobileToolbar";
-import { TestModeBanner } from "./components/TestModeBanner";
 import { Landing } from "./pages/Landing";
 import { ProductListing } from "./pages/ProductListing";
 import { ProductDetail } from "./pages/ProductDetail";
@@ -47,7 +46,7 @@ function AppContent({}: AppContentProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
-      <TestModeBanner />
+    
       <div className={hideNavbarOnMobile ? 'hidden md:block' : 'block'}>
         <Navbar onSearchChange={handleSearch} />
       </div>

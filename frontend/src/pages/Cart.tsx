@@ -48,8 +48,8 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
           <div className="space-y-2 text-center md:text-left">
-            <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">Sizning <span className="text-gradient">Savatingiz</span></h1>
-            <p className="text-muted-foreground font-medium">Buyurtma berishdan oldin tovarlarni ko'rib chiqing</p>
+            <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight"><span className="text-gradient">{t.cart.title}</span></h1>
+            <p className="text-muted-foreground font-medium">{t.cart.reviewItems}</p>
           </div>
           <Link to="/products" className="text-primary font-bold hover:underline">
              ← {t.cart.continueShopping}
@@ -88,7 +88,7 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
                                {item.category}
                             </span>
                             <span className="text-emerald-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                               <div className="w-1 h-1 bg-emerald-500 rounded-full" /> Mavjud
+                               <div className="w-1 h-1 bg-emerald-500 rounded-full" /> {t.cart.inStock}
                             </span>
                           </div>
                         </div>
@@ -173,15 +173,15 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
                   </Button>
                 </Link>
                 <p className="text-[10px] text-center text-muted-foreground font-black uppercase tracking-widest">
-                   Secure encrypted transaction
+                   {t.cart.secureTransaction}
                 </p>
               </div>
 
               {/* Trust Badges */}
               <div className="grid grid-cols-1 gap-4 pt-8 border-t border-border">
                 {[
-                  { icon: Shield, title: t.landing.features.secure.title, desc: "Payment handled by industry standard gateways" },
-                  { icon: RotateCcw, title: t.landing.features.returns.desc, desc: "Easy returns if not satisfied" }
+                  { icon: Shield, title: t.landing.features.secure.title, desc: t.landing.features.secure.desc },
+                  { icon: RotateCcw, title: t.landing.features.returns.title, desc: t.landing.features.returns.desc }
                 ].map((badge, i) => (
                   <div key={i} className="flex gap-4">
                      <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center shrink-0">

@@ -2,12 +2,14 @@ import { Smartphone, Shirt, Home, Sparkles, Star, Heart, Crosshair } from 'lucid
 import { Link } from 'react-router-dom';
 
 import { useProducts } from '../hooks/useProducts';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface LandingProps {}
 
 export function Landing({}: LandingProps) {
   const { products: allProducts, isLoading } = useProducts(1, 8);
   const featuredProducts = allProducts.slice(0, 4);
+  const { t } = useLanguage();
 
   return (
     <div className="min-h-screen bg-white pb-24 md:pb-0">
@@ -17,13 +19,13 @@ export function Landing({}: LandingProps) {
         <div className="bg-[#0062FF] rounded-3xl p-6 md:p-12 relative overflow-hidden shadow-lg shadow-blue-500/20">
           <div className="relative z-10 md:w-1/2">
             <h2 className="text-white text-3xl md:text-5xl font-bold leading-tight mb-3 md:mb-6 tracking-tight">
-              Find the best price across all marketplaces
+              {t.landing.hero.title}
             </h2>
             <p className="text-white/90 text-sm md:text-lg mb-6 md:mb-8 font-medium max-w-[280px] md:max-w-md">
-              Compare and save on millions of products instantly with AI-powered tracking.
+              {t.landing.hero.subtitle}
             </p>
             <button className="bg-white text-[#0062FF] font-bold rounded-full px-6 py-3 md:px-8 md:py-4 text-sm md:text-base shadow-sm hover:scale-105 transition-transform">
-              Start Comparing
+              {t.landing.hero.cta}
             </button>
           </div>
           {/* Decorative graphic for desktop */}
@@ -34,18 +36,18 @@ export function Landing({}: LandingProps) {
       {/* Popular Categories */}
       <section className="mt-8 md:mt-16 px-4 max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-5 md:mb-8">
-          <h2 className="font-bold text-gray-900 text-xl md:text-2xl">Popular Categories</h2>
+          <h2 className="font-bold text-gray-900 text-xl md:text-2xl">{t.landing.categories.title}</h2>
           <Link to="/products" className="text-sm md:text-base text-[#0062FF] font-medium hover:underline">
-            View All
+            {t.landing.categories.viewAll}
           </Link>
         </div>
         <div className="flex overflow-x-auto gap-4 md:gap-8 pb-4 hide-scrollbar snap-x">
           {[
-            { name: "Electronics", icon: Smartphone },
-            { name: "Fashion", icon: Shirt },
-            { name: "Home", icon: Home },
-            { name: "Beauty", icon: Sparkles },
-            { name: "Sports", icon: Crosshair },
+            { name: t.landing.categories.electronics, icon: Smartphone },
+            { name: t.landing.categories.fashion, icon: Shirt },
+            { name: t.landing.categories.home, icon: Home },
+            { name: t.landing.categories.beauty, icon: Sparkles },
+            { name: t.landing.categories.sports, icon: Crosshair },
           ].map((cat, i) => (
             <div key={i} className="flex flex-col items-center gap-2 snap-start min-w-[72px] md:min-w-[100px]">
               <div className="w-16 h-16 md:w-20 md:h-20 bg-[#F3F4F6] rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors">
@@ -60,9 +62,9 @@ export function Landing({}: LandingProps) {
       {/* Trending Products */}
       <section className="mt-8 md:mt-16 px-4 max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-5 md:mb-8">
-          <h2 className="font-bold text-gray-900 text-xl md:text-2xl">Trending Products</h2>
+          <h2 className="font-bold text-gray-900 text-xl md:text-2xl">{t.landing.trending.title}</h2>
           <Link to="/products" className="text-sm md:text-base text-[#0062FF] font-medium hover:underline">
-            View All
+            {t.landing.trending.viewAll}
           </Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
@@ -92,7 +94,7 @@ export function Landing({}: LandingProps) {
                     {product.price ? `From $${product.price}` : 'From $349.99'}
                   </div>
                   <button className="w-full border border-blue-200 text-[#0062FF] font-bold text-sm py-2 rounded-xl hover:bg-blue-50 transition-colors">
-                    Compare Prices
+                    {t.landing.trending.comparePrices}
                   </button>
                 </div>
               </div>
@@ -103,13 +105,9 @@ export function Landing({}: LandingProps) {
 
       {/* How Bazarcom Works */}
       <section className="mt-10 md:mt-24 px-4 pb-8 max-w-7xl mx-auto">
-        <h2 className="font-bold text-gray-900 text-xl md:text-2xl mb-6 text-center md:text-left">How Bazarcom Works</h2>
+        <h2 className="font-bold text-gray-900 text-xl md:text-2xl mb-6 text-center md:text-left">{t.landing.howItWorks.title}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { title: "Search or speak", desc: "Type your product or use voice search to find what you need instantly." },
-            { title: "Compare instantly", desc: "Our AI scans hundreds of marketplaces to find the absolute best deals." },
-            { title: "Save exactly", desc: "Get redirected to the cheapest verified seller and buy with confidence." },
-          ].map((item, idx) => (
+          {t.landing.howItWorks.steps.map((item, idx) => (
             <div key={idx} className="flex md:flex-col items-start gap-4 p-4 rounded-2xl bg-[#F9FAFB] md:bg-transparent">
               <div className="shrink-0 w-8 h-8 rounded-full bg-[#0062FF] text-white flex items-center justify-center font-bold text-sm">
                 {idx + 1}
@@ -122,8 +120,6 @@ export function Landing({}: LandingProps) {
           ))}
         </div>
       </section>
-
-
     </div>
   );
 }

@@ -135,7 +135,6 @@ export function ProductListing() {
   const {
     products: rawProducts,
     isLoading,
-    isFetching,
     isFetchingNextPage,
     hasMore,
     loadMore,
@@ -275,7 +274,7 @@ export function ProductListing() {
               type="text"
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
-              className="h-12 w-full rounded-2xl bg-[#F3F4F6] pl-12 pr-[7rem] text-sm text-gray-900 outline-none ring-0 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+              className="h-12 w-full rounded-2xl bg-[#F3F4F6] pl-12 pr-[28px] text-sm text-gray-900 outline-none ring-0 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
               placeholder={t.nav.searchPlaceholder || 'Search products.'}
             />
 
@@ -306,7 +305,7 @@ export function ProductListing() {
                 type="submit"
                 className="rounded-xl bg-[#0062FF] px-3 py-1.5 text-xs font-bold text-white"
               >
-                Qidirish
+                {t.nav.search}
               </button>
             </div>
           </form>
@@ -386,11 +385,11 @@ export function ProductListing() {
       <div className="mx-auto max-w-7xl px-4 py-4 pb-24 sm:px-6 lg:px-8 md:py-8 md:pb-12">
         <nav className="mb-6 hidden items-center gap-2 text-sm font-medium text-gray-400 md:flex">
           <Link to="/" className="transition-colors hover:text-gray-900">
-            Home
+            {t.nav.home}
           </Link>
           <ChevronRight className="h-4 w-4 opacity-50" />
           <span className="font-bold text-gray-900">
-            {debouncedSearch ? `Search: ${debouncedSearch}` : 'Products'}
+            {debouncedSearch ? `${t.listing.searchResults}: ${debouncedSearch}` : t.listing.products}
           </span>
         </nav>
 
@@ -435,7 +434,7 @@ export function ProductListing() {
                           <span>{cat}</span>
                           {isDisabled && (
                             <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-400">
-                              Tez kunda
+                              {t.listing.comingSoon}
                             </span>
                           )}
                         </button>
@@ -451,7 +450,7 @@ export function ProductListing() {
             <div className="mb-6 flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">
-                  {isLoading ? 'Loading...' : `${filteredProducts.length} / ${total} ta mahsulot`}
+                  {isLoading ? t.common.loading : `${filteredProducts.length} / ${total} ${t.listing.found}`}
                 </p>
 
                 <div className="hidden items-center gap-2 md:flex">
@@ -463,7 +462,7 @@ export function ProductListing() {
                         : 'border border-gray-200 bg-white text-gray-500'
                     }`}
                   >
-                    Relevance
+                    {t.listing.relevance}
                   </button>
                   <button
                     onClick={() => setSortBy('priceLow')}
@@ -473,7 +472,7 @@ export function ProductListing() {
                         : 'border border-gray-200 bg-white text-gray-500'
                     }`}
                   >
-                    Price ↑
+                    {t.listing.priceAsc}
                   </button>
                   <button
                     onClick={() => setSortBy('priceHigh')}
@@ -483,7 +482,7 @@ export function ProductListing() {
                         : 'border border-gray-200 bg-white text-gray-500'
                     }`}
                   >
-                    Price ↓
+                    {t.listing.priceDesc}
                   </button>
                   <button
                     onClick={() => setSortBy('rating')}
@@ -493,7 +492,7 @@ export function ProductListing() {
                         : 'border border-gray-200 bg-white text-gray-500'
                     }`}
                   >
-                    Rating
+                    {t.listing.rating}
                   </button>
                 </div>
               </div>
@@ -505,9 +504,9 @@ export function ProductListing() {
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className="rounded-3xl border border-gray-100 bg-white p-8 text-center md:p-10">
-                <h3 className="mb-2 text-xl font-bold text-gray-900">Mahsulot topilmadi</h3>
+                <h3 className="mb-2 text-xl font-bold text-gray-900">{t.listing.noProductsFound}</h3>
                 <p className="text-sm text-gray-500 md:text-base">
-                  Qidiruv so‘zini o‘zgartirib ko‘ring yoki filterlarni tozalang.
+                  {t.listing.noProductsDesc}
                 </p>
               </div>
             ) : viewMode === 'grid' ? (
@@ -521,7 +520,7 @@ export function ProductListing() {
                 {hasMore && (
                   <div className="mt-8 flex justify-center">
                     <Button onClick={loadMore} disabled={isFetchingNextPage}>
-                      {isFetchingNextPage ? 'Yuklanmoqda...' : 'Yana yuklash'}
+                      {isFetchingNextPage ? t.common.loading : t.listing.loadMore}
                     </Button>
                   </div>
                 )}
@@ -579,7 +578,7 @@ export function ProductListing() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <SlidersHorizontal className="h-5 w-5 text-gray-700" />
-                  <h3 className="text-lg font-bold text-gray-900">Filtrlar</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{t.listing.filters}</h3>
                 </div>
 
                 <button
@@ -594,7 +593,7 @@ export function ProductListing() {
             <div className="space-y-6 overflow-y-auto px-4 py-5 pb-28">
               <div>
                 <h4 className="mb-3 text-xs font-black uppercase tracking-widest text-gray-400">
-                  Category
+                  {t.listing.category}
                 </h4>
                 <div className="flex flex-wrap gap-2">
                   {categories.map((cat) => {
@@ -622,14 +621,14 @@ export function ProductListing() {
 
               <div>
                 <h4 className="mb-3 text-xs font-black uppercase tracking-widest text-gray-400">
-                  Sort by
+                  {t.listing.sortBy}
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { key: 'relevance', label: 'Relevance' },
-                    { key: 'priceLow', label: 'Price ↑' },
-                    { key: 'priceHigh', label: 'Price ↓' },
-                    { key: 'rating', label: 'Rating' },
+                    { key: 'relevance', label: t.listing.relevance },
+                    { key: 'priceLow', label: t.listing.priceAsc },
+                    { key: 'priceHigh', label: t.listing.priceDesc },
+                    { key: 'rating', label: t.listing.rating },
                   ].map((item) => (
                     <button
                       key={item.key}
@@ -650,7 +649,7 @@ export function ProductListing() {
 
               <div>
                 <h4 className="mb-3 text-xs font-black uppercase tracking-widest text-gray-400">
-                  Rating
+                  {t.listing.rating}
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
                   {[0, 3, 4, 4.5].map((rating) => (
@@ -663,7 +662,7 @@ export function ProductListing() {
                           : 'bg-gray-50 text-gray-700 ring-1 ring-gray-200'
                       }`}
                     >
-                      {rating === 0 ? 'Any rating' : `${rating}+`}
+                      {rating === 0 ? t.listing.anyRating : `${rating}+`}
                     </button>
                   ))}
                 </div>
@@ -675,13 +674,13 @@ export function ProductListing() {
                 onClick={handleResetFilters}
                 className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-gray-700"
               >
-                Reset
+                {t.listing.reset}
               </button>
               <button
                 onClick={() => setIsMobileFilterOpen(false)}
                 className="rounded-2xl bg-[#0062FF] px-4 py-3 text-sm font-bold text-white"
               >
-                Natijalarni ko‘rish
+                {t.listing.viewResults}
               </button>
             </div>
           </div>

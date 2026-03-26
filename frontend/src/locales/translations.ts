@@ -7,46 +7,52 @@ export const translations = {
       searchPlaceholder: "Mahsulotlar, brendlar va boshqalarni qidirish...",
       account: "Hisob",
       cart: "Savat",
-      home: "Bosh sahifa"
+      home: "Bosh sahifa",
+      search: "Qidirish",
+      language: "Til",
+      login: "Kirish",
+      welcome: "Xush kelibsiz",
+      welcomeSubtitle: "BAZARCOMga qo'shiling",
+      loginSignIn: "Kirish / Ro'yxatdan o'tish",
+      darkMode: "Tungi rejim",
+      helpCenter: "Yordam markazi",
+      about: "Bazarcom haqida"
     },
     
     // Landing Page
     landing: {
       hero: {
-        title: "Eng yaxshi takliflarni kashf eting",
-        subtitle: "Sifatli mahsulotlar, ishonchli sotuvchilar va tezkor yetkazib berish bilan eng yaxshi onlayn xarid qilish tajribasi",
-        cta: "Xarid qilishni boshlash",
-        topDeals: "Eng yaxshi takliflar"
+        title: "Barcha bozolarda eng yaxshi narxni toping",
+        subtitle: "AI-qo'llab-quvvatlangan kuzatuv bilan millionlab mahsulotlarni darhol solishtiring va tejang.",
+        cta: "Solishtirishni boshlash",
       },
       categories: {
-        title: "Toifalar bo'yicha xarid qilish",
+        title: "Mashhur toifalar",
+        viewAll: "Barchasini ko'rish",
         electronics: "Elektronika",
         fashion: "Moda",
-        home: "Uy buyumlari",
-        beauty: "Go'zallik"
-      },
-      features: {
-        title: "Nima uchun Bazaarcomni tanlaysiz?",
-        shipping: {
-          title: "Bepul yetkazib berish",
-          desc: "500 000 so'm dan ortiq barcha buyurtmalarda"
-        },
-        returns: {
-          title: "30 kun ichida qaytarish",
-          desc: "Savolsiz pulni qaytarish"
-        },
-        support: {
-          title: "24/7 qo'llab-quvvatlash",
-          desc: "Kuniga 24 soat yordam"
-        },
-        secure: {
-          title: "Xavfsiz to'lov",
-          desc: "100% xavfsiz tranzaksiyalar"
-        }
+        home: "Uy",
+        beauty: "Go'zallik",
+        sports: "Sport"
       },
       trending: {
         title: "Mashhur mahsulotlar",
-        viewAll: "Barchasini ko'rish"
+        viewAll: "Barchasini ko'rish",
+        comparePrices: "Narxlarni solishtirish",
+        fromPrice: "Boshlab {{price}} dan"
+      },
+      howItWorks: {
+        title: "Bazarcom qanday ishlaydi",
+        steps: [
+          { title: "Qidiring yoki gapiring", desc: "Mahsulotingizni yozing yoki kerakli narsani topish uchun ovozli qidiruvdan foydalaning." },
+          { title: "Tezda solishtiring", desc: "Bizning AI yuzlab bozorlarni skanerlab, eng yaxshi takliflarni topadi." },
+          { title: "Aniq tejang", desc: "Eng arzon tasdiqlangan sotuvchiga yo'naltiriling va ishonch bilan xarid qiling." }
+        ]
+      },
+      features: {
+        secure: { title: "Xavfsiz", desc: "Sanoat standartlari bo'yicha to'lov shlyuzlari" },
+        returns: { title: "Qaytarish", desc: "Mamnun bo'lmasangiz, oson qaytarish" },
+        support: { title: "Yordam", desc: "support@bazaarcom.com" }
       }
     },
     
@@ -73,7 +79,8 @@ export const translations = {
         priceLow: "Narx: Arzonroq",
         priceHigh: "Narx: Qimmatroq",
         rating: "Reytingi yuqori",
-        featured: "Tavsiya etilgan"
+        featured: "Tavsiya etilgan",
+        relevance: "Muvofiqlik"
       },
       filters: "Filtrlar",
       reset: "Tozalash",
@@ -83,7 +90,23 @@ export const translations = {
       showFilters: "Filtrlarni ko'rsatish",
       hideFilters: "Filtrlarni yashirish",
       noMatches: "Hech narsa topilmadi",
-      clearFilters: "Filtrlarni tozalash"
+      clearFilters: "Filtrlarni tozalash",
+      grid: "Setka",
+      list: "Ro'yxat",
+      relevance: "Muvofiqlik",
+      priceAsc: "Narx ↑",
+      priceDesc: "Narx ↓",
+      products: "Mahsulotlar",
+      searchResults: "Qidiruv natijalari",
+      comingSoon: "Tez kunda",
+      productsCount: "{{count}} / {{total}} ta mahsulot",
+      loading: "Yuklanmoqda...",
+      loadMore: "Yana yuklash",
+      noProductsFound: "Mahsulot topilmadi",
+      noProductsDesc: "Qidiruv so'zini o'zgartirib ko'ring yoki filterlarni tozalang.",
+      viewResults: "Natijalarni ko'rish",
+      category: "Kategoriya",
+      anyRating: "Istalgan reyting"
     },
     
     // Product Detail
@@ -98,7 +121,75 @@ export const translations = {
       specifications: "Xususiyatlar",
       customerReviews: "Mijozlar sharhlari",
       relatedProducts: "O'xshash mahsulotlar",
-      youSave: "Siz tejaydingiz"
+      youSave: "Siz tejaydingiz",
+      // Additional keys
+      analyzingPrices: "Narxlar tahlil qilinmoqda...",
+      productNotFound: "Mahsulot topilmadi",
+      backToMarketplace: "Bozorga qaytish",
+      productDetails: "Mahsulot tafsilotlari",
+      bestSeller: "ENG YAXSHI",
+      inStockReady: "Sotuvda bor va jo'natishga tayyor",
+      customerReviewsLabel: "mijoz sharhlari",
+      bestPriceMarket: "Eng yaxshi narx bozori",
+      lowestPrice30Days: "30 kun ichida eng arzon narx",
+      pricesRealTime: "Narxlar real vaqtda yangilanadi",
+      marketplace: "Bozor",
+      availability: "Mavjudlik",
+      price: "Narx",
+      goToShop: "DO'KONGA O'TISH",
+      compareStores: "Do'konlarni solishtirish",
+      storesAvailable: "ta do'kon mavjud",
+      shop: "DO'KON",
+      aiSmartSummary: "AI aqlli sharh xulosasi",
+      quickSpecifications: "Tezkor xususiyatlar",
+      productStory: "Mahsulot haqida",
+      mainSpecifications: "Asosiy xususiyatlar",
+      technicalDetails: "Texnik tafsilotlar",
+      insideBox: "Qutida nima bor",
+      mostHelpfulReviews: "Eng foydali sharhlar",
+      viewMoreReviews: "ta sharhni ko'rish",
+      fastShipping: "Tezkor yetkazib berish",
+      orderWithin: "soat ichida buyurtma bering va ertaga qo'lga oling!",
+      logisticsReady: "LOGISTIKA TAYYOR",
+      overview: "Umumiy",
+      specs: "Xususiyatlar",
+      reviewsTab: "Sharhlar",
+      fromPrice: "Boshlab",
+      // Spec labels
+      specLabels: {
+        bluetooth: "Bluetooth",
+        batteryLife: "Batareya",
+        charging: "Zaryadlash",
+        weight: "Og'irlik",
+        driverUnit: "Drayver",
+        impedance: "Impedans",
+        frequencyResponse: "Chastota",
+        sensitivity: "Sezuvchanlik"
+      },
+      // AI Summary labels
+      aiLabels: {
+        comfort: "Qulaylik",
+        soundQuality: "Ovoz sifati",
+        battery: "Batareya",
+        durability: "Chidamlilik"
+      },
+      // Inside box items
+      boxItems: {
+        primaryProduct: "Asosiy mahsulot",
+        quickStartGuide: "Boshlash qo'llanmasi",
+        usbCable: "USB-C zaryadlash kabeli",
+        travelCase: "Sayohat uchun qutisi",
+        warrantyCard: "2 yillik kafolat kartasi"
+      },
+      // Time labels
+      timeAgo: {
+        daysAgo: "kun oldin",
+        weeksAgo: "hafta oldin"
+      },
+      // Product story fallback
+      productStoryFallback: "Nihoyatda immersiv tajriba uchun mo'ljallangan, bu mahsulot o'z toifasidagi standartni qayta belgilaydi. Ilg'or texnologiya va foydalanuvchi ergonomikasiga e'tibor bilan, u ish va o'yin uchun birdek uzluksiz tajriba taqdim etadi.",
+      // Available on
+      availableOn: "ta bozorda mavjud"
     },
     
     // Cart
@@ -116,7 +207,10 @@ export const translations = {
       total: "Jami",
       proceedToCheckout: "To'lovga o'tish",
       coupon: "Kupon kodi",
-      applyCoupon: "Kuponni qo'llash"
+      applyCoupon: "Kuponni qo'llash",
+      reviewItems: "Buyurtma berishdan oldin tovarlarni ko'rib chiqing",
+      secureTransaction: "Xavfsiz shifrlangan tranzaksiya",
+      inStock: "Mavjud"
     },
     
     // Checkout
@@ -153,7 +247,16 @@ export const translations = {
       orderNumber: "Buyurtma raqami",
       email: "Tasdiqlash elektron pochtangizga yuborildi",
       continueShopping: "Xarid qilishni davom ettiring",
-      trackOrder: "Buyurtmani kuzatish"
+      trackOrder: "Buyurtmani kuzatish",
+      deliveryDate: "Yetkazib berish sanasi",
+      trackProgress: "Jarayonni kuzatish",
+      onTheWay: "Yo'lda",
+      delivered: "Yetkazildi",
+      nextPhases: "Keyingi bosqichlar",
+      realTimeUpdates: "SMS va ilova orqali real vaqt yangilanishlari",
+      orderWarranty: "Buyurtma kafolati",
+      premiumProtection: "24 oy davomida premium himoya kiritilgan",
+      prioritySupport: "Ustuvor yordamga kirish"
     },
     
     // Footer
@@ -207,46 +310,52 @@ export const translations = {
       searchPlaceholder: "Искать товары, бренды и многое другое...",
       account: "Аккаунт",
       cart: "Корзина",
-      home: "Главная"
+      home: "Главная",
+      search: "Поиск",
+      language: "Язык",
+      login: "Войти",
+      welcome: "Добро пожаловать",
+      welcomeSubtitle: "Присоединяйтесь к BAZARCOM",
+      loginSignIn: "Вход / Регистрация",
+      darkMode: "Темный режим",
+      helpCenter: "Центр помощи",
+      about: "О Bazarcom"
     },
     
     // Landing Page
     landing: {
       hero: {
-        title: "Откройте лучшие предложения",
-        subtitle: "Лучший опыт онлайн-покупок с качественными товарами, надежными продавцами и быстрой доставкой",
-        cta: "Начать покупки",
-        topDeals: "Лучшие предложения"
+        title: "Найдите лучшую цену на всех маркетплейсах",
+        subtitle: "Мгновенно сравнивайте и экономьте на миллионах товаров с отслеживанием на базе ИИ.",
+        cta: "Начать сравнение",
       },
       categories: {
-        title: "Покупки по категориям",
+        title: "Популярные категории",
+        viewAll: "Смотреть все",
         electronics: "Электроника",
         fashion: "Мода",
-        home: "Товары для дома",
-        beauty: "Красота"
-      },
-      features: {
-        title: "Почему выбирают Bazaarcom?",
-        shipping: {
-          title: "Бесплатная доставка",
-          desc: "На все заказы от $50"
-        },
-        returns: {
-          title: "Возврат в течение 30 дней",
-          desc: "Возврат денег без вопросов"
-        },
-        support: {
-          title: "Поддержка 24/7",
-          desc: "Помощь круглосуточно"
-        },
-        secure: {
-          title: "Безопасная оплата",
-          desc: "100% защищенные транзакции"
-        }
+        home: "Дом",
+        beauty: "Красота",
+        sports: "Спорт"
       },
       trending: {
         title: "Популярные товары",
-        viewAll: "Смотреть все"
+        viewAll: "Смотреть все",
+        comparePrices: "Сравнить цены",
+        fromPrice: "От {{price}}"
+      },
+      howItWorks: {
+        title: "Как работает Bazarcom",
+        steps: [
+          { title: "Ищите или говорите", desc: "Напишите свой товар или используйте голосовой поиск, чтобы мгновенно найти то, что вам нужно." },
+          { title: "Сравнивайте мгновенно", desc: "Наш ИИ сканирует сотни маркетплейсов, чтобы найти абсолютно лучшие предложения." },
+          { title: "Экономьте точно", desc: "Перенаправляйтесь к самому дешевому проверенному продавцу и покупайте с уверенностью." }
+        ]
+      },
+      features: {
+        secure: { title: "Безопасно", desc: "Платежные шлюзы промышленного стандарта" },
+        returns: { title: "Возврат", desc: "Легкий возврат, если не удовлетворены" },
+        support: { title: "Поддержка", desc: "support@bazaarcom.com" }
       }
     },
     
@@ -273,7 +382,8 @@ export const translations = {
         priceLow: "Цена: Дешевле",
         priceHigh: "Цена: Дороже",
         rating: "Высокий рейтинг",
-        featured: "Рекомендуемые"
+        featured: "Рекомендуемые",
+        relevance: "Релевантность"
       },
       filters: "Фильтры",
       reset: "Сбросить",
@@ -283,7 +393,23 @@ export const translations = {
       showFilters: "Показать фильтры",
       hideFilters: "Скрыть фильтры",
       noMatches: "Ничего не найдено",
-      clearFilters: "Очистить все фильтры"
+      clearFilters: "Очистить все фильтры",
+      grid: "Сетка",
+      list: "Список",
+      relevance: "Релевантность",
+      priceAsc: "Цена ↑",
+      priceDesc: "Цена ↓",
+      products: "Товары",
+      searchResults: "Результаты поиска",
+      comingSoon: "Скоро",
+      productsCount: "{{count}} / {{total}} товаров",
+      loading: "Загрузка...",
+      loadMore: "Загрузить еще",
+      noProductsFound: "Товары не найдены",
+      noProductsDesc: "Измените поисковый запрос или очистите фильтры.",
+      viewResults: "Посмотреть результаты",
+      category: "Категория",
+      anyRating: "Любой рейтинг"
     },
     
     // Product Detail
@@ -298,7 +424,75 @@ export const translations = {
       specifications: "Характеристики",
       customerReviews: "Отзывы покупателей",
       relatedProducts: "Похожие товары",
-      youSave: "Вы экономите"
+      youSave: "Вы экономите",
+      // Additional keys
+      analyzingPrices: "Анализ цен...",
+      productNotFound: "Товар не найден",
+      backToMarketplace: "Вернуться в магазин",
+      productDetails: "Детали товара",
+      bestSeller: "БЕСТСЕЛЛЕР",
+      inStockReady: "В наличии и готов к отправке",
+      customerReviewsLabel: "отзывов покупателей",
+      bestPriceMarket: "Лучшая цена на рынке",
+      lowestPrice30Days: "Самая низкая цена за 30 дней",
+      pricesRealTime: "Цены обновляются в реальном времени",
+      marketplace: "Маркетплейс",
+      availability: "Наличие",
+      price: "Цена",
+      goToShop: "В МАГАЗИН",
+      compareStores: "Сравнить магазины",
+      storesAvailable: "магазинов доступно",
+      shop: "МАГАЗИН",
+      aiSmartSummary: "AI обзор отзывов",
+      quickSpecifications: "Быстрые характеристики",
+      productStory: "О товаре",
+      mainSpecifications: "Основные характеристики",
+      technicalDetails: "Технические детали",
+      insideBox: "В коробке",
+      mostHelpfulReviews: "Самые полезные отзывы",
+      viewMoreReviews: "посмотреть отзывов",
+      fastShipping: "Быстрая доставка",
+      orderWithin: "Закажите в течение часов и получите завтра!",
+      logisticsReady: "ЛОГИСТИКА ГОТОВА",
+      overview: "Обзор",
+      specs: "Характеристики",
+      reviewsTab: "Отзывы",
+      fromPrice: "От",
+      // Spec labels
+      specLabels: {
+        bluetooth: "Bluetooth",
+        batteryLife: "Батарея",
+        charging: "Зарядка",
+        weight: "Вес",
+        driverUnit: "Драйвер",
+        impedance: "Импеданс",
+        frequencyResponse: "Частота",
+        sensitivity: "Чувствительность"
+      },
+      // AI Summary labels
+      aiLabels: {
+        comfort: "Комфорт",
+        soundQuality: "Качество звука",
+        battery: "Батарея",
+        durability: "Долговечность"
+      },
+      // Inside box items
+      boxItems: {
+        primaryProduct: "Основной товар",
+        quickStartGuide: "Руководство по началу работы",
+        usbCable: "USB-C кабель для зарядки",
+        travelCase: "Дорожный чехол",
+        warrantyCard: "Гарантийная карта на 2 года"
+      },
+      // Time labels
+      timeAgo: {
+        daysAgo: "дней назад",
+        weeksAgo: "недель назад"
+      },
+      // Product story fallback
+      productStoryFallback: "Разработан для максимального погружения, этот продукт переопределяет стандарт в своей категории. С передовыми технологиями и фокусом на эргономике пользователя, он обеспечивает бесшовный опыт как для работы, так и для развлечений.",
+      // Available on
+      availableOn: "магазинов доступно"
     },
     
     // Cart
@@ -316,7 +510,10 @@ export const translations = {
       total: "Итого",
       proceedToCheckout: "Перейти к оформлению",
       coupon: "Код купона",
-      applyCoupon: "Применить купон"
+      applyCoupon: "Применить купон",
+      reviewItems: "Проверьте товары перед оформлением заказа",
+      secureTransaction: "Безопасная зашифрованная транзакция",
+      inStock: "В наличии"
     },
     
     // Checkout
@@ -353,7 +550,16 @@ export const translations = {
       orderNumber: "Номер заказа",
       email: "Подтверждение отправлено на вашу почту",
       continueShopping: "Продолжить покупки",
-      trackOrder: "Отследить заказ"
+      trackOrder: "Отследить заказ",
+      deliveryDate: "Дата доставки",
+      trackProgress: "Отслеживание progress",
+      onTheWay: "В пути",
+      delivered: "Доставлено",
+      nextPhases: "Следующие этапы",
+      realTimeUpdates: "Обновления в реальном времени через SMS и уведомления в приложении",
+      orderWarranty: "Гарантия заказа",
+      premiumProtection: "Премиальная защита включена на 24 месяца",
+      prioritySupport: "Приоритетный доступ к поддержке"
     },
     
     // Footer
@@ -407,46 +613,52 @@ export const translations = {
       searchPlaceholder: "Search for products, brands and more...",
       account: "Account",
       cart: "Cart",
-      home: "Home"
+      home: "Home",
+      search: "Search",
+      language: "Language",
+      login: "Login",
+      welcome: "Welcome",
+      welcomeSubtitle: "Join BAZARCOM today",
+      loginSignIn: "Login / Sign In",
+      darkMode: "Dark Mode",
+      helpCenter: "Help Center",
+      about: "About Bazarcom"
     },
     
     // Landing Page
     landing: {
       hero: {
-        title: "Discover the Best Deals",
-        subtitle: "Your ultimate online shopping experience with quality products, trusted sellers, and fast delivery",
-        cta: "Start Shopping",
-        topDeals: "Top Deals"
+        title: "Find the best price across all marketplaces",
+        subtitle: "Compare and save on millions of products instantly with AI-powered tracking.",
+        cta: "Start Comparing",
       },
       categories: {
-        title: "Shop by Category",
+        title: "Popular Categories",
+        viewAll: "View All",
         electronics: "Electronics",
         fashion: "Fashion",
         home: "Home",
-        beauty: "Beauty"
-      },
-      features: {
-        title: "Why Choose Bazaarcom?",
-        shipping: {
-          title: "Free Shipping",
-          desc: "On all orders over $50"
-        },
-        returns: {
-          title: "30 Days Returns",
-          desc: "Money back guarantee"
-        },
-        support: {
-          title: "24/7 Support",
-          desc: "Round the clock assistance"
-        },
-        secure: {
-          title: "Secure Payment",
-          desc: "100% secure transactions"
-        }
+        beauty: "Beauty",
+        sports: "Sports"
       },
       trending: {
         title: "Trending Products",
-        viewAll: "View All"
+        viewAll: "View All",
+        comparePrices: "Compare Prices",
+        fromPrice: "From {{price}}"
+      },
+      howItWorks: {
+        title: "How Bazarcom Works",
+        steps: [
+          { title: "Search or speak", desc: "Type your product or use voice search to find what you need instantly." },
+          { title: "Compare instantly", desc: "Our AI scans hundreds of marketplaces to find the absolute best deals." },
+          { title: "Save exactly", desc: "Get redirected to the cheapest verified seller and buy with confidence." }
+        ]
+      },
+      features: {
+        secure: { title: "Secure", desc: "Payment handled by industry standard gateways" },
+        returns: { title: "Returns", desc: "Easy returns if not satisfied" },
+        support: { title: "Support", desc: "support@bazaarcom.com" }
       }
     },
     
@@ -473,7 +685,8 @@ export const translations = {
         priceLow: "Price: Low to High",
         priceHigh: "Price: High to Low",
         rating: "Highest Rated",
-        featured: "Featured"
+        featured: "Featured",
+        relevance: "Relevance"
       },
       filters: "Filters",
       reset: "Reset",
@@ -483,7 +696,23 @@ export const translations = {
       showFilters: "Show Filters",
       hideFilters: "Hide Filters",
       noMatches: "No matches found",
-      clearFilters: "Clear all filters"
+      clearFilters: "Clear all filters",
+      grid: "Grid",
+      list: "List",
+      relevance: "Relevance",
+      priceAsc: "Price ↑",
+      priceDesc: "Price ↓",
+      products: "Products",
+      searchResults: "Search Results",
+      comingSoon: "Coming Soon",
+      productsCount: "{{count}} / {{total}} products",
+      loading: "Loading...",
+      loadMore: "Load More",
+      noProductsFound: "No products found",
+      noProductsDesc: "Try changing your search or clearing filters.",
+      viewResults: "View Results",
+      category: "Category",
+      anyRating: "Any rating"
     },
     
     // Product Detail
@@ -498,7 +727,75 @@ export const translations = {
       specifications: "Specifications",
       customerReviews: "Customer Reviews",
       relatedProducts: "Related Products",
-      youSave: "You save"
+      youSave: "You save",
+      // Additional keys
+      analyzingPrices: "Analyzing market prices...",
+      productNotFound: "Product Not Found",
+      backToMarketplace: "Back to Marketplace",
+      productDetails: "Product Details",
+      bestSeller: "BEST SELLER",
+      inStockReady: "In Stock & Ready to ship",
+      customerReviewsLabel: "customer reviews",
+      bestPriceMarket: "Best Price Market",
+      lowestPrice30Days: "Lowest price in 30 days",
+      pricesRealTime: "Prices curated in real-time",
+      marketplace: "Marketplace",
+      availability: "Availability",
+      price: "Price",
+      goToShop: "GO TO SHOP",
+      compareStores: "Compare Stores",
+      storesAvailable: "stores available",
+      shop: "SHOP",
+      aiSmartSummary: "AI Smart Review Summary",
+      quickSpecifications: "Quick Specifications",
+      productStory: "Product Story",
+      mainSpecifications: "Main Specifications",
+      technicalDetails: "Technical Details",
+      insideBox: "Inside the Box",
+      mostHelpfulReviews: "Most Helpful Reviews",
+      viewMoreReviews: "View more reviews",
+      fastShipping: "Fast Shipping",
+      orderWithin: "Order within hours and get it by tomorrow!",
+      logisticsReady: "LOGISTICS READY",
+      overview: "Overview",
+      specs: "Specs",
+      reviewsTab: "Reviews",
+      fromPrice: "From",
+      // Spec labels
+      specLabels: {
+        bluetooth: "Bluetooth",
+        batteryLife: "Battery Life",
+        charging: "Charging",
+        weight: "Weight",
+        driverUnit: "Driver Unit",
+        impedance: "Impedance",
+        frequencyResponse: "Frequency Response",
+        sensitivity: "Sensitivity"
+      },
+      // AI Summary labels
+      aiLabels: {
+        comfort: "Comfort",
+        soundQuality: "Sound Quality",
+        battery: "Battery",
+        durability: "Durability"
+      },
+      // Inside box items
+      boxItems: {
+        primaryProduct: "Primary Product",
+        quickStartGuide: "Quick Start Guide",
+        usbCable: "USB-C Charging Cable",
+        travelCase: "Travel Case",
+        warrantyCard: "2-Year Warranty Card"
+      },
+      // Time labels
+      timeAgo: {
+        daysAgo: "days ago",
+        weeksAgo: "weeks ago"
+      },
+      // Product story fallback
+      productStoryFallback: "Designed for ultimate immersion, this product redefines the standard in its category. With cutting-edge technology and a focus on user ergonomics, it provides a seamless experience whether for work or play.",
+      // Available on
+      availableOn: "marketplaces available"
     },
     
     // Cart
@@ -516,7 +813,10 @@ export const translations = {
       total: "Total",
       proceedToCheckout: "Proceed to Checkout",
       coupon: "Coupon Code",
-      applyCoupon: "Apply Coupon"
+      applyCoupon: "Apply Coupon",
+      reviewItems: "Review items before placing your order",
+      secureTransaction: "Secure encrypted transaction",
+      inStock: "In Stock"
     },
     
     // Checkout
@@ -553,7 +853,16 @@ export const translations = {
       orderNumber: "Order Number",
       email: "A confirmation has been sent to your email",
       continueShopping: "Continue Shopping",
-      trackOrder: "Track Order"
+      trackOrder: "Track Order",
+      deliveryDate: "Delivery Date",
+      trackProgress: "Track Progress",
+      onTheWay: "On the way",
+      delivered: "Delivered",
+      nextPhases: "Next Phases",
+      realTimeUpdates: "Real-time updates via SMS and App notifications",
+      orderWarranty: "Order Warranty",
+      premiumProtection: "Premium protection included for 24 months",
+      prioritySupport: "Priority Support Access"
     },
     
     // Footer

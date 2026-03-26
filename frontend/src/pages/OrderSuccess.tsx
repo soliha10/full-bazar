@@ -42,7 +42,7 @@ export function OrderSuccess() {
               <p className="text-2xl font-black text-foreground italic tracking-tighter">{orderNumber}</p>
            </div>
            <div className="bg-card rounded-4xl p-8 border border-border shadow-sm group hover:border-primary/30 transition-all">
-              <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-2">Delivery Date</p>
+              <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-2">{t.success.deliveryDate}</p>
               <p className="text-2xl font-black text-foreground">
                 {estimatedDelivery.toLocaleDateString('en-US', { 
                   month: 'long', 
@@ -57,7 +57,7 @@ export function OrderSuccess() {
         <div className="bg-card rounded-[3rem] p-10 border border-border shadow-sm mb-10">
           <h2 className="text-2xl font-black text-foreground mb-12 flex items-center gap-3">
              <Package className="w-8 h-8 text-primary" />
-             Track Progress
+             {t.success.trackProgress}
           </h2>
           
           <div className="relative">
@@ -65,8 +65,8 @@ export function OrderSuccess() {
               {[
                 { icon: CheckCircle, label: t.checkout.placeOrder, done: true },
                 { icon: Package, label: t.checkout.processing, done: false },
-                { icon: Truck, label: "On the way", done: false },
-                { icon: Shield, label: "Delivered", done: false },
+                { icon: Truck, label: t.success.onTheWay, done: false },
+                { icon: Shield, label: t.success.delivered, done: false },
               ].map((step, idx, arr) => (
                 <div key={idx} className="flex flex-col items-center relative z-10 flex-1">
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-500 ${
@@ -93,12 +93,12 @@ export function OrderSuccess() {
 
         {/* Next Steps List */}
         <div className="bg-card rounded-[3rem] p-10 border border-border shadow-sm mb-10 space-y-8">
-           <h2 className="text-2xl font-black text-foreground">Next Phases</h2>
+           <h2 className="text-2xl font-black text-foreground">{t.success.nextPhases}</h2>
            <div className="grid gap-6">
               {[
                 { icon: Mail, title: t.checkout.email, desc: t.success.email, color: 'bg-primary' },
-                { icon: Package, title: t.success.trackOrder, desc: "Real-time updates via SMS and App notifications", color: 'bg-accent' },
-                { icon: Shield, title: "Order Warranty", desc: "Premium protection included for 24 months", color: 'bg-emerald-500' }
+                { icon: Package, title: t.success.trackOrder, desc: t.success.realTimeUpdates, color: 'bg-accent' },
+                { icon: Shield, title: t.success.orderWarranty, desc: t.success.premiumProtection, color: 'bg-emerald-500' }
               ].map((step, i) => (
                 <div key={i} className="flex items-center gap-6 p-6 rounded-4xl hover:bg-muted/30 transition-colors border border-transparent hover:border-border">
                    <div className={`w-14 h-14 rounded-2xl ${step.color}/10 flex items-center justify-center shrink-0`}>
@@ -130,7 +130,7 @@ export function OrderSuccess() {
         <div className="p-10 rounded-[3rem] bg-linear-to-br from-primary/10 to-accent/10 border border-primary/20 text-center space-y-4">
            <div className="inline-flex items-center gap-2 px-4 py-1 bg-white/50 backdrop-blur-md rounded-full border border-white/50 mb-2">
               <Shield className="w-3 h-3 text-primary" />
-              <span className="text-[10px] font-black text-primary uppercase tracking-widest">Priority Support Access</span>
+              <span className="text-[10px] font-black text-primary uppercase tracking-widest">{t.success.prioritySupport}</span>
            </div>
            <p className="text-muted-foreground font-medium uppercase tracking-widest text-xs">{t.footer.help}</p>
            <p className="text-2xl font-black text-foreground tracking-tight">

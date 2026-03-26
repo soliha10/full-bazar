@@ -18,10 +18,12 @@ import { Button } from "../components/Button";
 import { fetchProductById } from "../services/api";
 import { mapProduct, formatSum } from "../utils/productMapper";
 import { Product } from "../components/ProductCard";
+import { useLanguage } from "../contexts/LanguageContext";
 
 export function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export function ProductDetail() {
           setSelectedMarketIndex(index !== -1 ? index : 0);
         }
       } catch (err) {
-        setError("Product not found or failed to load.");
+        setError(t.detail.productNotFound);
       } finally {
         setLoading(false);
       }
@@ -69,7 +71,7 @@ export function ProductDetail() {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center">
         <Loader2 className="w-12 h-12 text-[#0062FF] animate-spin mb-4" />
-        <p className="text-gray-500 font-bold animate-pulse">Analyzing market prices...</p>
+        <p className="text-gray-500 font-bold animate-pulse">{t.detail.analyzingPrices}</p>
       </div>
     );
   }
@@ -78,9 +80,9 @@ export function ProductDetail() {
     return (
       <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center p-4">
         <div className="bg-white rounded-[3rem] p-12 text-center shadow-xl border border-gray-100 max-w-lg w-full">
-          <h2 className="text-3xl font-black text-gray-900 mb-6">{error || "Product Not Found"}</h2>
+          <h2 className="text-3xl font-black text-gray-900 mb-6">{error || t.detail.productNotFound}</h2>
           <Button variant="primary" onClick={() => navigate('/products')} className="rounded-2xl px-12">
-            Back to Marketplace
+            {t.detail.backToMarketplace}
           </Button>
         </div>
       </div>
@@ -94,14 +96,14 @@ export function ProductDetail() {
         <button onClick={() => navigate(-1)} className="p-1">
           <ChevronLeft className="w-6 h-6 text-gray-900" />
         </button>
-        <span className="font-bold text-gray-900 truncate max-w-[200px]">Product Details</span>
+        <span className="font-bold text-gray-900 truncate max-w-[200px]">{t.detail.productDetails}</span>
         <button className="p-1"><Share2 className="w-5 h-5 text-gray-400" /></button>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         {/* Breadcrumbs - Desktop Only */}
         <nav className="hidden md:flex items-center gap-2 text-sm text-gray-400 mb-8 overflow-hidden">
-          <Link to="/" className="hover:text-gray-600 shrink-0">Home</Link>
+          <Link to="/" className="hover:text-gray-600 shrink-0">{t.nav.home}</Link>
           <ChevronRight className="w-4 h-4 shrink-0" />
           <Link to={`/products?category=${product.category}`} className="hover:text-gray-600 shrink-0">{product.category}</Link>
           <ChevronRight className="w-4 h-4 shrink-0" />
@@ -115,7 +117,7 @@ export function ProductDetail() {
               {/* Product Badge */}
               <div className="absolute top-6 left-6 z-10 flex flex-col gap-2">
                 <span className="bg-[#FFC107] text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
-                  BEST SELLER
+                  {t.detail.bestSeller}
                 </span>
               </div>
 
@@ -173,14 +175,14 @@ export function ProductDetail() {
             <div className="hidden md:block bg-blue-50/50 rounded-4xl p-8 border border-blue-100">
               <h3 className="text-sm font-black text-gray-900 mb-6 uppercase tracking-widest flex items-center gap-2">
                 <Info className="w-4 h-4 text-[#0062FF]" />
-                Quick Specifications
+                {t.detail.quickSpecifications}
               </h3>
               <div className="grid grid-cols-2 gap-y-6 gap-x-8">
                 {[
-                  { label: "Bluetooth", value: "v5.3 LE" },
-                  { label: "Battery Life", value: "30 Hours" },
-                  { label: "Charging", value: "USB-C Fast" },
-                  { label: "Weight", value: "250g" }
+                  { label: t.detail.specLabels.bluetooth, value: "v5.3 LE" },
+                  { label: t.detail.specLabels.batteryLife, value: "30 Hours" },
+                  { label: t.detail.specLabels.charging, value: "USB-C Fast" },
+                  { label: t.detail.specLabels.weight, value: "250g" }
                 ].map((spec, i) => (
                   <div key={i}>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{spec.label}</p>
@@ -198,7 +200,7 @@ export function ProductDetail() {
                 <span className="text-[#0062FF] font-black text-xs uppercase tracking-widest">{product.category}</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
                 <span className="text-emerald-500 font-bold text-xs flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4" /> In Stock & Ready to ship
+                  <CheckCircle2 className="w-4 h-4" /> {t.detail.inStockReady}
                 </span>
               </div>
               <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-tight">
@@ -213,7 +215,7 @@ export function ProductDetail() {
                   <span className="ml-2 font-black text-gray-900">{product.rating}</span>
                 </div>
                 <button className="text-xs font-bold text-gray-400 hover:text-gray-600 underline underline-offset-4 decoration-gray-200">
-                  {product.reviews} customer reviews
+                  {product.reviews} {t.detail.customerReviewsLabel}
                 </button>
               </div>
             </div>
@@ -222,7 +224,7 @@ export function ProductDetail() {
             <div className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-gray-100 shadow-sm space-y-6">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Best Price Market: {selectedMarket?.source}</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t.detail.bestPriceMarket}: {selectedMarket?.source}</p>
                   <div className="flex items-baseline gap-4">
                     <span className="text-4xl md:text-5xl font-black text-[#0062FF] tracking-tighter">
                       {formatSum(selectedMarket?.price || product.price)}
@@ -236,9 +238,9 @@ export function ProductDetail() {
                 </div>
                 <div className="flex flex-col items-start md:items-end">
                    <span className="text-emerald-500 font-black text-[10px] uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 mb-2">
-                     Lowest price in 30 days
+                     {t.detail.lowestPrice30Days}
                    </span>
-                   <p className="text-[10px] font-bold text-gray-400">Prices curated in real-time</p>
+                   <p className="text-[10px] font-bold text-gray-400">{t.detail.pricesRealTime}</p>
                 </div>
               </div>
 
@@ -247,9 +249,9 @@ export function ProductDetail() {
                 <table className="w-full">
                   <thead>
                     <tr className="text-left">
-                      <th className="text-[10px] font-black text-gray-400 uppercase pb-4">Marketplace</th>
-                      <th className="text-[10px] font-black text-gray-400 uppercase pb-4">Availability</th>
-                      <th className="text-[10px] font-black text-gray-400 uppercase pb-4">Price</th>
+                      <th className="text-[10px] font-black text-gray-400 uppercase pb-4">{t.detail.marketplace}</th>
+                      <th className="text-[10px] font-black text-gray-400 uppercase pb-4">{t.detail.availability}</th>
+                      <th className="text-[10px] font-black text-gray-400 uppercase pb-4">{t.detail.price}</th>
                       <th className="text-right pb-4"></th>
                     </tr>
                   </thead>
@@ -260,7 +262,7 @@ export function ProductDetail() {
                         <td className="py-4">
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                            <span className="text-xs font-bold text-gray-600 italic">In Stock</span>
+                            <span className="text-xs font-bold text-gray-600 italic">{t.detail.inStock}</span>
                           </div>
                         </td>
                         <td className="py-4 font-black text-gray-900">{formatSum(market.price)}</td>
@@ -270,7 +272,7 @@ export function ProductDetail() {
                             target="_blank" 
                             className="bg-white border border-gray-200 text-gray-900 px-4 py-2 rounded-xl text-xs font-black shadow-sm group-hover:bg-[#0062FF] group-hover:text-white group-hover:border-[#0062FF] transition-all"
                           >
-                           GO TO SHOP
+                           {t.detail.goToShop}
                           </a>
                         </td>
                       </tr>
@@ -282,9 +284,9 @@ export function ProductDetail() {
               {/* Mobile Market List - Updated with Buttons */}
               <div className="md:hidden space-y-4">
                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-black text-gray-900 text-sm uppercase tracking-wider">Compare Stores</h3>
+                    <h3 className="font-black text-gray-900 text-sm uppercase tracking-wider">{t.detail.compareStores}</h3>
                     <button className="text-[10px] font-black text-[#0062FF] uppercase underline underline-offset-4">
-                      {product.markets?.length} stores available
+                      {product.markets?.length} {t.detail.storesAvailable}
                     </button>
                  </div>
                  {product.markets?.sort((a,b) => a.price - b.price).slice(0, 4).map((market, idx) => (
@@ -308,7 +310,7 @@ export function ProductDetail() {
                           target="_blank"
                           className="bg-white border border-gray-200 text-gray-900 px-3 py-1.5 rounded-lg text-[10px] font-black flex items-center gap-1 active:bg-[#0062FF] active:text-white transition-colors"
                         >
-                          SHOP <ExternalLink className="w-2.5 h-2.5" />
+                          {t.detail.shop} <ExternalLink className="w-2.5 h-2.5" />
                         </a>
                      </div>
                    </div>
@@ -321,7 +323,7 @@ export function ProductDetail() {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-[#0062FF]" />
-                  AI Smart Review Summary
+                  {t.detail.aiSmartSummary}
                 </h3>
                 <div className="bg-blue-50 text-[#0062FF] px-3 py-1.5 rounded-xl font-black text-sm">
                   4.8 / 5.0
@@ -330,10 +332,10 @@ export function ProductDetail() {
               
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { label: "Comfort", value: "4.9", color: "bg-emerald-500" },
-                  { label: "Sound Quality", value: "4.7", color: "bg-[#0062FF]" },
-                  { label: "Battery", value: "4.8", color: "bg-[#FFC107]" },
-                  { label: "Durability", value: "4.6", color: "bg-purple-500" }
+                  { label: t.detail.aiLabels.comfort, value: "4.9", color: "bg-emerald-500" },
+                  { label: t.detail.aiLabels.soundQuality, value: "4.7", color: "bg-[#0062FF]" },
+                  { label: t.detail.aiLabels.battery, value: "4.8", color: "bg-[#FFC107]" },
+                  { label: t.detail.aiLabels.durability, value: "4.6", color: "bg-purple-500" }
                 ].map((item, i) => (
                   <div key={i} className="flex flex-col gap-1.5">
                     <div className="flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-widest">
@@ -348,7 +350,7 @@ export function ProductDetail() {
               </div>
 
               <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-                 <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Executive Summary</h4>
+                 <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">{t.detail.quickSpecifications}</h4>
                  <p className="text-sm text-gray-600 font-medium leading-relaxed italic">
                    "Users overwhelmingly praise the superior comfort and depth of sound. The 30-hour battery life is consistent across real-world tests, making this the best wireless headphone in its class for travelers and professionals alike."
                  </p>
@@ -369,7 +371,7 @@ export function ProductDetail() {
                   activeTab === tab ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'
                 }`}
               >
-                {tab}
+                {tab === 'overview' ? t.detail.overview : tab === 'specs' ? t.detail.specs : t.detail.reviewsTab}
               </button>
             ))}
           </div>
@@ -379,24 +381,24 @@ export function ProductDetail() {
                <section id="overview" className="space-y-6">
                  <h2 className="text-2xl font-black text-gray-900 flex items-center gap-4">
                    <div className="w-1.5 h-8 bg-[#0062FF] rounded-full" />
-                   Product Story
+                   {t.detail.productStory}
                  </h2>
                  <p className="text-lg text-gray-500 font-medium leading-relaxed">
-                   {product.description || "Designed for ultimate immersion, this product redefines the standard in its category. With cutting-edge technology and a focus on user ergonomics, it provides a seamless experience whether for work or play."}
+                   {product.description || t.detail.productStoryFallback}
                  </p>
                </section>
 
                <section id="specs" className={`${activeTab !== 'specs' && 'hidden md:block'} space-y-8 bg-white rounded-[3rem] p-8 md:p-12 border border-gray-100 shadow-sm`}>
-                  <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Main Specifications</h2>
+                  <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">{t.detail.mainSpecifications}</h2>
                   <div className="grid sm:grid-cols-2 gap-12">
                     <div className="space-y-6">
-                      <h3 className="text-sm font-black text-[#0062FF] uppercase tracking-widest border-b border-blue-100 pb-2">Technical Details</h3>
+                      <h3 className="text-sm font-black text-[#0062FF] uppercase tracking-widest border-b border-blue-100 pb-2">{t.detail.technicalDetails}</h3>
                       <div className="space-y-4">
                         {[
-                          { l: "Driver Unit", v: "40mm Dynamic" },
-                          { l: "Impedance", v: "32 Ohm" },
-                          { l: "Frequency Response", v: "20Hz - 20kHz" },
-                          { l: "Sensitivity", v: "105dB" }
+                          { l: t.detail.specLabels.driverUnit, v: "40mm Dynamic" },
+                          { l: t.detail.specLabels.impedance, v: "32 Ohm" },
+                          { l: t.detail.specLabels.frequencyResponse, v: "20Hz - 20kHz" },
+                          { l: t.detail.specLabels.sensitivity, v: "105dB" }
                         ].map((s, i) => (
                           <div key={i} className="flex justify-between items-center text-sm">
                             <span className="font-bold text-gray-400 italic">{s.l}</span>
@@ -406,9 +408,9 @@ export function ProductDetail() {
                       </div>
                     </div>
                     <div className="space-y-4">
-                      <h3 className="text-sm font-black text-[#0062FF] uppercase tracking-widest border-b border-blue-100 pb-2">Inside the Box</h3>
+                      <h3 className="text-sm font-black text-[#0062FF] uppercase tracking-widest border-b border-blue-100 pb-2">{t.detail.insideBox}</h3>
                       <ul className="grid grid-cols-1 gap-3">
-                        {["Primary Product", "Quick Start Guide", "USB-C Charging Cable", "Travel Case", "2-Year Warranty Card"].map((item, i) => (
+                        {[t.detail.boxItems.primaryProduct, t.detail.boxItems.quickStartGuide, t.detail.boxItems.usbCable, t.detail.boxItems.travelCase, t.detail.boxItems.warrantyCard].map((item, i) => (
                           <li key={i} className="flex items-center gap-3 text-sm font-bold text-gray-700">
                              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                              {item}
@@ -423,12 +425,12 @@ export function ProductDetail() {
             {/* Sidebar Column (Desktop) / Reviews (Mobile) */}
             <div className={`space-y-8 ${activeTab !== 'reviews' && 'hidden lg:block'}`}>
               <div className="bg-white rounded-[3rem] p-8 border border-gray-100 shadow-sm">
-                 <h2 className="text-xl font-black text-gray-900 mb-8 border-b border-gray-100 pb-4">Most Helpful Reviews</h2>
+                 <h2 className="text-xl font-black text-gray-900 mb-8 border-b border-gray-100 pb-4">{t.detail.mostHelpfulReviews}</h2>
                  <div className="space-y-8">
                     {[
-                      { user: "Alex J.", rating: 5, date: "2 days ago", comment: "Absolutely worth the price. The noise cancellation is top notch!", color: "bg-blue-100" },
-                      { user: "Sarah K.", rating: 4, date: "1 week ago", comment: "Great sound, but a bit heavier than I expected. Still love it.", color: "bg-emerald-100" },
-                      { user: "Marcus L.", rating: 5, date: "2 weeks ago", comment: "The best tech purchase I've made this year. Period.", color: "bg-purple-100" }
+                      { user: "Alex J.", rating: 5, days: 2, comment: "Absolutely worth the price. The noise cancellation is top notch!", color: "bg-blue-100" },
+                      { user: "Sarah K.", rating: 4, weeks: 1, comment: "Great sound, but a bit heavier than I expected. Still love it.", color: "bg-emerald-100" },
+                      { user: "Marcus L.", rating: 5, weeks: 2, comment: "The best tech purchase I've made this year. Period.", color: "bg-purple-100" }
                     ].map((review, i) => (
                       <div key={i} className="space-y-3">
                         <div className="flex justify-between items-center">
@@ -443,23 +445,25 @@ export function ProductDetail() {
                           </div>
                         </div>
                         <p className="text-xs text-gray-500 font-medium leading-relaxed">"{review.comment}"</p>
-                        <p className="text-[10px] font-black text-gray-300 uppercase">{review.date}</p>
+                        <p className="text-[10px] font-black text-gray-300 uppercase">
+                          {review.days ? `${review.days} ${t.detail.timeAgo.daysAgo}` : `${review.weeks} ${t.detail.timeAgo.weeksAgo}`}
+                        </p>
                       </div>
                     ))}
                  </div>
                  <button className="w-full mt-10 py-4 bg-gray-50 text-gray-400 font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-gray-100 transition-all">
-                   View 453 more reviews
+                   {t.detail.viewMoreReviews}
                  </button>
               </div>
 
               {/* Shipping Card */}
               <div className="bg-emerald-500 rounded-[2.5rem] p-8 text-white shadow-xl shadow-emerald-200 overflow-hidden relative group">
                  <ShoppingBag className="absolute -right-4 -bottom-4 w-32 h-32 opacity-15 rotate-12 transition-transform group-hover:scale-110" />
-                 <h3 className="text-lg font-black mb-2 italic">Fast Shipping</h3>
-                 <p className="text-sm font-bold text-white/90 mb-6">Order within 2h 45m and get it by tomorrow!</p>
+                 <h3 className="text-lg font-black mb-2 italic">{t.detail.fastShipping}</h3>
+                 <p className="text-sm font-bold text-white/90 mb-6">{t.detail.orderWithin}</p>
                  <div className="flex items-center gap-2">
                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                   <span className="text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">UZUM LOGISTICS READY</span>
+                   <span className="text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">{t.detail.logisticsReady}</span>
                  </div>
               </div>
             </div>
@@ -471,19 +475,18 @@ export function ProductDetail() {
       {/* Sticky Bottom Bar (Mobile) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 px-6 z-50 flex items-center justify-between shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
         <div className="flex flex-col">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pricing From</span>
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t.detail.fromPrice}</span>
           <span className="text-xl font-black text-[#0062FF]">{formatSum(selectedMarket?.price || product.price)}</span>
         </div>
-        <a 
-          href={selectedMarket?.url} 
-          target="_blank" 
-          className="bg-[#0062FF] text-white px-8 py-4 rounded-full font-black text-sm shadow-xl shadow-blue-500/20 flex items-center gap-3 active:scale-95 transition-all"
-        >
-          GO TO SHOP
-          <ArrowRight className="w-4 h-4" />
-        </a>
+          <a 
+            href={selectedMarket?.url} 
+            target="_blank" 
+            className="bg-[#0062FF] text-white px-8 py-4 rounded-full font-black text-sm shadow-xl shadow-blue-500/20 flex items-center gap-3 active:scale-95 transition-all"
+          >
+            {t.detail.goToShop}
+            <ArrowRight className="w-4 h-4" />
+          </a>
       </div>
     </div>
   );
 }
-

@@ -2,6 +2,7 @@ import { Star, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from './Button';
 import { formatSum } from '../utils/productMapper';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export interface Product {
   id: string | number;
@@ -32,6 +33,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product, viewMode = 'grid' }: ProductCardProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const discount = product.originalPrice 
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
@@ -67,7 +69,7 @@ export function ProductCard({ product, viewMode = 'grid' }: ProductCardProps) {
           
           <div className="flex items-end justify-between">
             <div>
-               <p className="text-xs text-gray-400 font-medium leading-none mb-1">From</p>
+               <p className="text-xs text-gray-400 font-medium leading-none mb-1">{t.listing.startingFrom}</p>
                <p className="text-lg font-black text-gray-900 tracking-tight">{formatSum(product.price)}</p>
             </div>
             <button 
@@ -125,7 +127,7 @@ export function ProductCard({ product, viewMode = 'grid' }: ProductCardProps) {
         </Link>
 
         <div className="flex flex-col mb-6">
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Starting From</span>
+          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">{t.listing.startingFrom}</span>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-black text-gray-900 tracking-tighter">{formatSum(product.price)}</span>
             {product.originalPrice && (
@@ -146,7 +148,7 @@ export function ProductCard({ product, viewMode = 'grid' }: ProductCardProps) {
           className="group/btn flex items-center justify-center gap-2 rounded-2xl py-4 bg-[#0062FF] hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
         >
           <span className="font-bold tracking-tight text-white">
-            Compare Prices
+            {t.landing.trending.comparePrices}
           </span>
           <ArrowRight className="w-4 h-4 text-white group-hover/btn:translate-x-1 transition-transform" />
         </Button>
