@@ -2,30 +2,24 @@
 # Full-Bazar infrastructure
 #
 # Services:
-#   postgres          — shared PostgreSQL 15 (fullbazar + airflow_db databases)
-#   fastapi           — Python FastAPI that reads from PostgreSQL
-#   frontend          — React app built at startup, served by nginx on port 80
-#   airflow-init      — one-shot: initialises Airflow DB and creates admin user
-#   airflow-scheduler — runs DAGs (LocalExecutor, no Redis/Celery needed)
-#   airflow-webserver — Airflow UI on port 8080
+#   postgres          — PostgreSQL 15 (fullbazar + dagster_db databases)
+#   fastapi           — Python FastAPI reads from PostgreSQL
+#   frontend          — React built at startup, served by nginx on port 80
+#   dagster-webserver — Dagster UI on port 3000
+#   dagster-daemon    — runs hourly schedule (replaces Airflow)
 # ─────────────────────────────────────────────────────────────────────────────
 
-x-airflow-common: &airflow-common
-  image: apache/airflow:2.9.2-python3.12
-  environment: &airflow-env
-    AIRFLOW__CORE__EXECUTOR: LocalExecutor
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@postgres:5432/airflow_db
-    AIRFLOW__CORE__FERNET_KEY: "81HqDtbqAywKSOumSha3BhWNOdQ26slT6K0YaZeZyPs="
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
-    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
-    # ── env vars forwarded to the DAG ──────────────────────────────────────
+x-dagster-common: &dagster-common
+  build:
+    context: ./python/dagster_app
+    dockerfile: Dockerfile
+  environment:
+    DAGSTER_HOME: /opt/dagster/home
     PRODUCTS_DB_URL: postgresql://postgres:postgres@postgres:5432/fullbazar
-    DATA_DIR: /opt/airflow/data
+    DATA_DIR: /opt/dagster/data
   volumes:
-    - ./python/dags:/opt/airflow/dags
-    - ./data:/opt/airflow/data:ro
-    - airflow_logs:/opt/airflow/logs
+    - dagster_home:/opt/dagster/home
+    - ./data:/opt/dagster/data:ro
   depends_on:
     postgres:
       condition: service_healthy
@@ -64,7 +58,7 @@ services:
       postgres:
         condition: service_healthy
 
-  # ── Frontend (React → nginx) ────────────────────────────────────────────────
+  # ── Frontend (React → nginx) ─────────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
@@ -75,48 +69,20 @@ services:
     depends_on:
       - fastapi
 
-  # ── Airflow init (runs once) ────────────────────────────────────────────────
-  airflow-init:
-    <<: *airflow-common
-    entrypoint: /bin/bash
-    command:
-      - -c
-      - |
-        airflow db upgrade
-        airflow users create \
-          --username admin \
-          --password admin \
-          --firstname Admin \
-          --lastname User \
-          --role Admin \
-          --email admin@fullbazar.local || true
-    restart: "no"
-
-  # ── Airflow scheduler ───────────────────────────────────────────────────────
-  airflow-scheduler:
-    <<: *airflow-common
+  # ── Dagster webserver (UI) ──────────────────────────────────────────────────
+  dagster-webserver:
+    <<: *dagster-common
     restart: unless-stopped
-    command: scheduler
-    depends_on:
-      airflow-init:
-        condition: service_completed_successfully
-
-  # ── Airflow webserver ───────────────────────────────────────────────────────
-  airflow-webserver:
-    <<: *airflow-common
-    restart: unless-stopped
-    command: webserver
+    command: dagster-webserver -h 0.0.0.0 -p 3000 -w /app/workspace.yaml
     ports:
-      - "8080:8080"
-    depends_on:
-      airflow-init:
-        condition: service_completed_successfully
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      - "3000:3000"
+
+  # ── Dagster daemon (runs hourly schedule) ───────────────────────────────────
+  dagster-daemon:
+    <<: *dagster-common
+    restart: unless-stopped
+    command: dagster-daemon run
 
 volumes:
   postgres_data:
-  airflow_logs:
+  dagster_home:

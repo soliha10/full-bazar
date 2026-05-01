@@ -1,5 +1,5 @@
--- Create Airflow metadata database
-CREATE DATABASE airflow_db;
+-- Create Dagster metadata database
+CREATE DATABASE dagster_db;
 
 -- Create tables in the default (fullbazar) database
 CREATE TABLE IF NOT EXISTS products (
