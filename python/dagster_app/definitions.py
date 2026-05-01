@@ -8,14 +8,21 @@ from __future__ import annotations
 
 import base64
 import csv
+import logging
 import os
 import re
+import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import Generator
 
 import psycopg2
 import psycopg2.extras
 from dagster import Definitions, ScheduleDefinition, job, op
+
+sys.path.insert(0, os.path.dirname(__file__))
+
+logger = logging.getLogger(__name__)
 
 # ── Regex filters ─────────────────────────────────────────────────────────────
 _SMARTPHONE_RE = re.compile(
@@ -246,10 +253,41 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
 # ── Dagster op / job / schedule ───────────────────────────────────────────────
 
 @op
-def sync_products_op(context):
+def scrape_all_op(context) -> str:
     data_dir = os.getenv("DATA_DIR", "/opt/dagster/data")
-    db_url = os.getenv("PRODUCTS_DB_URL", "postgresql://postgres:postgres@postgres:5432/fullbazar")
+    os.makedirs(data_dir, exist_ok=True)
 
+    try:
+        from scrapers import ALL_SCRAPERS
+    except ImportError as exc:
+        context.log.warning(f"Scrapers not available: {exc}. Skipping scrape step.")
+        return data_dir
+
+    context.log.info(f"Starting {len(ALL_SCRAPERS)} scrapers → {data_dir}")
+
+    def _run_one(scraper_cls):
+        try:
+            s = scraper_cls(output_dir=data_dir, delay=1.0)
+            count = s.run()
+            return scraper_cls.store_name, count, None
+        except Exception as exc:
+            return scraper_cls.store_name, 0, str(exc)
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        futures = {pool.submit(_run_one, cls): cls for cls in ALL_SCRAPERS}
+        for fut in as_completed(futures):
+            name, count, err = fut.result()
+            if err:
+                context.log.warning(f"  [{name}] FAILED: {err}")
+            else:
+                context.log.info(f"  [{name}] {count} products")
+
+    return data_dir
+
+
+@op
+def sync_products_op(context, data_dir: str):
+    db_url = os.getenv("PRODUCTS_DB_URL", "postgresql://postgres:postgres@postgres:5432/fullbazar")
     context.log.info(f"Reading CSVs from: {data_dir}")
     n_products, n_markets = _run_sync(data_dir, db_url, context.log)
     context.log.info(f"Done — {n_products} products, {n_markets} market entries")
@@ -257,7 +295,7 @@ def sync_products_op(context):
 
 @job
 def product_sync_job():
-    sync_products_op()
+    sync_products_op(scrape_all_op())
 
 
 defs = Definitions(

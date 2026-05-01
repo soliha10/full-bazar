@@ -5,12 +5,17 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { formatSum } from '../utils/productMapper';
 
 const MARKET_LOGOS: { name: string; color: string }[] = [
-  { name: 'Texnomart', color: '#E31E24' },
-  { name: 'Uzum',      color: '#8B5CF6' },
-  { name: 'Olcha',     color: '#F97316' },
   { name: 'Asaxiy',    color: '#0EA5E9' },
+  { name: 'Texnomart', color: '#E31E24' },
+  { name: 'Olcha',     color: '#F97316' },
   { name: 'Mediapark', color: '#10B981' },
   { name: 'Glotr',     color: '#6366F1' },
+  { name: 'Idea',      color: '#F59E0B' },
+  { name: 'Ozon',      color: '#005BFF' },
+  { name: 'Discont',   color: '#EF4444' },
+  { name: 'Premier',   color: '#8B5CF6' },
+  { name: 'Beemarket', color: '#F59E0B' },
+  { name: 'Castore',   color: '#14B8A6' },
 ];
 
 export function Landing() {

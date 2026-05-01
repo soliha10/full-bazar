@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY dagster.yaml /app/dagster_config.yaml
 COPY workspace.yaml definitions.py ./
+COPY scrapers/ ./scrapers/
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

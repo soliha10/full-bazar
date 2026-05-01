@@ -1,3 +1,6 @@
 dagster==1.9.7
 dagster-webserver==1.9.7
 psycopg2-binary==2.9.9
+requests==2.32.3
+beautifulsoup4==4.12.3
+lxml==5.2.2

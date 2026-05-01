@@ -51,6 +51,26 @@ export function ProductListing() {
   const LIST_ITEMS_PER_PAGE = 10;
   const categories = ['All', 'Phones', 'Electronics', 'Laptops', 'Watch'];
 
+  const MARKETPLACES: { name: string; key: string; color: string }[] = [
+    { name: 'Asaxiy',    key: 'asaxiy',    color: '#0EA5E9' },
+    { name: 'Texnomart', key: 'texnomart', color: '#E31E24' },
+    { name: 'Olcha',     key: 'olcha',     color: '#F97316' },
+    { name: 'Mediapark', key: 'mediapark', color: '#10B981' },
+    { name: 'Glotr',     key: 'glotr',     color: '#6366F1' },
+    { name: 'Idea',      key: 'idea',      color: '#F59E0B' },
+    { name: 'Ozon',      key: 'ozon',      color: '#005BFF' },
+    { name: 'Discont',   key: 'discont',   color: '#EF4444' },
+    { name: 'Premier',   key: 'premier',   color: '#8B5CF6' },
+    { name: 'Beemarket', key: 'beemarket', color: '#F59E0B' },
+    { name: 'Castore',   key: 'castore',   color: '#14B8A6' },
+  ];
+
+  const toggleMarketplace = useCallback((key: string) => {
+    setSelectedMarketplaces((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
+  }, []);
+
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (selectedCategory !== 'All') count += 1;
@@ -158,9 +178,13 @@ export function ProductListing() {
     }
 
     if (selectedMarketplaces.length > 0) {
-      result = result.filter(
-        (p) => p.source && selectedMarketplaces.includes(p.source),
-      );
+      result = result.filter((p) => {
+        const inMarkets = p.markets?.some((m) =>
+          selectedMarketplaces.includes(m.source.toLowerCase()),
+        );
+        const inSource = p.source && selectedMarketplaces.includes(p.source.toLowerCase());
+        return inMarkets || inSource;
+      });
     }
 
     if (minRating > 0) {
@@ -442,6 +466,50 @@ export function ProductListing() {
                     })}
                   </div>
                 </div>
+
+                {/* Marketplace filter */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-gray-400">
+                      Marketlar
+                    </h4>
+                    {selectedMarketplaces.length > 0 && (
+                      <button
+                        onClick={() => setSelectedMarketplaces([])}
+                        className="text-[10px] font-bold uppercase tracking-wider text-[#0062FF] hover:underline"
+                      >
+                        Tozalash
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {MARKETPLACES.map(({ name, key, color }) => {
+                      const active = selectedMarketplaces.includes(key);
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => toggleMarketplace(key)}
+                          className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-semibold transition-all ${
+                            active ? 'bg-blue-50 text-[#0062FF]' : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span
+                            className="h-2.5 w-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: color }}
+                          />
+                          {name}
+                          {active && (
+                            <span className="ml-auto h-4 w-4 rounded-full bg-[#0062FF] flex items-center justify-center">
+                              <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 10 10">
+                                <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
           </aside>
@@ -665,6 +733,45 @@ export function ProductListing() {
                       {rating === 0 ? t.listing.anyRating : `${rating}+`}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Mobile marketplace filter */}
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <h4 className="text-xs font-black uppercase tracking-widest text-gray-400">
+                    Marketlar
+                  </h4>
+                  {selectedMarketplaces.length > 0 && (
+                    <button
+                      onClick={() => setSelectedMarketplaces([])}
+                      className="text-[10px] font-bold uppercase tracking-wider text-[#0062FF]"
+                    >
+                      Tozalash
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {MARKETPLACES.map(({ name, key, color }) => {
+                    const active = selectedMarketplaces.includes(key);
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => toggleMarketplace(key)}
+                        className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition-all ${
+                          active
+                            ? 'bg-[#0062FF] text-white'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        <span
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: active ? 'white' : color }}
+                        />
+                        {name}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>

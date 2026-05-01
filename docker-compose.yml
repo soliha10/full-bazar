@@ -19,7 +19,7 @@ x-dagster-common: &dagster-common
     DATA_DIR: /opt/dagster/data
   volumes:
     - dagster_home:/opt/dagster/home
-    - ./data:/opt/dagster/data:ro
+    - ./data:/opt/dagster/data
   depends_on:
     postgres:
       condition: service_healthy
