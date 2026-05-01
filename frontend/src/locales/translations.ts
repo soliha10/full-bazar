@@ -155,23 +155,19 @@ export const translations = {
       specs: "Xususiyatlar",
       reviewsTab: "Sharhlar",
       fromPrice: "Boshlab",
-      // Spec labels
+      // Spec labels (market overview)
       specLabels: {
-        bluetooth: "Bluetooth",
-        batteryLife: "Batareya",
-        charging: "Zaryadlash",
-        weight: "Og'irlik",
-        driverUnit: "Drayver",
-        impedance: "Impedans",
-        frequencyResponse: "Chastota",
-        sensitivity: "Sezuvchanlik"
+        marketsCount: "Do'konlar soni",
+        lowestPrice: "Eng arzon narx",
+        highestPrice: "Eng qimmat narx",
+        bestStore: "Eng yaxshi do'kon"
       },
       // AI Summary labels
       aiLabels: {
-        comfort: "Qulaylik",
-        soundQuality: "Ovoz sifati",
+        performance: "Ishlash tezligi",
+        camera: "Kamera",
         battery: "Batareya",
-        durability: "Chidamlilik"
+        display: "Ekran"
       },
       // Inside box items
       boxItems: {
@@ -458,23 +454,19 @@ export const translations = {
       specs: "Характеристики",
       reviewsTab: "Отзывы",
       fromPrice: "От",
-      // Spec labels
+      // Spec labels (market overview)
       specLabels: {
-        bluetooth: "Bluetooth",
-        batteryLife: "Батарея",
-        charging: "Зарядка",
-        weight: "Вес",
-        driverUnit: "Драйвер",
-        impedance: "Импеданс",
-        frequencyResponse: "Частота",
-        sensitivity: "Чувствительность"
+        marketsCount: "Количество магазинов",
+        lowestPrice: "Самая низкая цена",
+        highestPrice: "Самая высокая цена",
+        bestStore: "Лучший магазин"
       },
       // AI Summary labels
       aiLabels: {
-        comfort: "Комфорт",
-        soundQuality: "Качество звука",
+        performance: "Производительность",
+        camera: "Камера",
         battery: "Батарея",
-        durability: "Долговечность"
+        display: "Экран"
       },
       // Inside box items
       boxItems: {
@@ -761,23 +753,19 @@ export const translations = {
       specs: "Specs",
       reviewsTab: "Reviews",
       fromPrice: "From",
-      // Spec labels
+      // Spec labels (market overview)
       specLabels: {
-        bluetooth: "Bluetooth",
-        batteryLife: "Battery Life",
-        charging: "Charging",
-        weight: "Weight",
-        driverUnit: "Driver Unit",
-        impedance: "Impedance",
-        frequencyResponse: "Frequency Response",
-        sensitivity: "Sensitivity"
+        marketsCount: "Markets Available",
+        lowestPrice: "Lowest Price",
+        highestPrice: "Highest Price",
+        bestStore: "Best Store"
       },
       // AI Summary labels
       aiLabels: {
-        comfort: "Comfort",
-        soundQuality: "Sound Quality",
+        performance: "Performance",
+        camera: "Camera",
         battery: "Battery",
-        durability: "Durability"
+        display: "Display"
       },
       // Inside box items
       boxItems: {

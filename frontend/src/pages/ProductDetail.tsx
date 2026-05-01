@@ -32,6 +32,7 @@ export function ProductDetail() {
   const [activeTab, setActiveTab] = useState<'overview' | 'specs' | 'reviews'>('overview');
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     const getProduct = async () => {
@@ -64,6 +65,22 @@ export function ProductDetail() {
       ? product.images.filter((img) => img && img !== "")
       : [product.image];
   }, [product]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const idx = imageRefs.current.indexOf(entry.target as HTMLDivElement);
+            if (idx !== -1) setSelectedImage(idx);
+          }
+        });
+      },
+      { root: scrollContainerRef.current, threshold: 0.5 },
+    );
+    imageRefs.current.forEach((el) => { if (el) observer.observe(el); });
+    return () => observer.disconnect();
+  }, [images]);
 
   const selectedMarket = product?.markets?.[selectedMarketIndex];
 
@@ -171,18 +188,18 @@ export function ProductDetail() {
               ))}
             </div>
 
-            {/* Quick Specs - Desktop Only */}
+            {/* Market Overview - Desktop Only */}
             <div className="hidden md:block bg-blue-50/50 rounded-4xl p-8 border border-blue-100">
               <h3 className="text-sm font-black text-gray-900 mb-6 uppercase tracking-widest flex items-center gap-2">
                 <Info className="w-4 h-4 text-[#0062FF]" />
-                {t.detail.quickSpecifications}
+                {t.detail.compareStores}
               </h3>
               <div className="grid grid-cols-2 gap-y-6 gap-x-8">
                 {[
-                  { label: t.detail.specLabels.bluetooth, value: "v5.3 LE" },
-                  { label: t.detail.specLabels.batteryLife, value: "30 Hours" },
-                  { label: t.detail.specLabels.charging, value: "USB-C Fast" },
-                  { label: t.detail.specLabels.weight, value: "250g" }
+                  { label: t.detail.specLabels.marketsCount, value: `${product.markets?.length || 1} ta` },
+                  { label: t.detail.specLabels.lowestPrice, value: formatSum(product.price) },
+                  { label: t.detail.specLabels.highestPrice, value: formatSum(product.markets?.[Math.max(0, (product.markets?.length ?? 1) - 1)]?.price ?? product.price) },
+                  { label: t.detail.specLabels.bestStore, value: product.source || '—' }
                 ].map((spec, i) => (
                   <div key={i}>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{spec.label}</p>
@@ -332,10 +349,10 @@ export function ProductDetail() {
               
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { label: t.detail.aiLabels.comfort, value: "4.9", color: "bg-emerald-500" },
-                  { label: t.detail.aiLabels.soundQuality, value: "4.7", color: "bg-[#0062FF]" },
+                  { label: t.detail.aiLabels.performance, value: "4.9", color: "bg-emerald-500" },
+                  { label: t.detail.aiLabels.camera, value: "4.7", color: "bg-[#0062FF]" },
                   { label: t.detail.aiLabels.battery, value: "4.8", color: "bg-[#FFC107]" },
-                  { label: t.detail.aiLabels.durability, value: "4.6", color: "bg-purple-500" }
+                  { label: t.detail.aiLabels.display, value: "4.6", color: "bg-purple-500" }
                 ].map((item, i) => (
                   <div key={i} className="flex flex-col gap-1.5">
                     <div className="flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-widest">
@@ -352,7 +369,7 @@ export function ProductDetail() {
               <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">{t.detail.quickSpecifications}</h4>
                  <p className="text-sm text-gray-600 font-medium leading-relaxed italic">
-                   "Users overwhelmingly praise the superior comfort and depth of sound. The 30-hour battery life is consistent across real-world tests, making this the best wireless headphone in its class for travelers and professionals alike."
+                   "Foydalanuvchilar tez ishlash tezligi va kamera sifatini yuqori baholaydi. Batareya bir kun davomida yetarli, ekran esa yorqin va aniq. Bir nechta do'kondagi narxlarni solishtirish orqali eng yaxshi shartnomani topishingiz mumkin."
                  </p>
               </div>
             </div>
@@ -392,17 +409,12 @@ export function ProductDetail() {
                   <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">{t.detail.mainSpecifications}</h2>
                   <div className="grid sm:grid-cols-2 gap-12">
                     <div className="space-y-6">
-                      <h3 className="text-sm font-black text-[#0062FF] uppercase tracking-widest border-b border-blue-100 pb-2">{t.detail.technicalDetails}</h3>
+                      <h3 className="text-sm font-black text-[#0062FF] uppercase tracking-widest border-b border-blue-100 pb-2">{t.detail.compareStores}</h3>
                       <div className="space-y-4">
-                        {[
-                          { l: t.detail.specLabels.driverUnit, v: "40mm Dynamic" },
-                          { l: t.detail.specLabels.impedance, v: "32 Ohm" },
-                          { l: t.detail.specLabels.frequencyResponse, v: "20Hz - 20kHz" },
-                          { l: t.detail.specLabels.sensitivity, v: "105dB" }
-                        ].map((s, i) => (
+                        {(product.markets ?? []).slice(0, 4).map((market, i) => (
                           <div key={i} className="flex justify-between items-center text-sm">
-                            <span className="font-bold text-gray-400 italic">{s.l}</span>
-                            <span className="font-black text-gray-900">{s.v}</span>
+                            <span className="font-bold text-gray-400 italic">{market.source}</span>
+                            <span className="font-black text-gray-900">{formatSum(market.price)}</span>
                           </div>
                         ))}
                       </div>
@@ -428,9 +440,9 @@ export function ProductDetail() {
                  <h2 className="text-xl font-black text-gray-900 mb-8 border-b border-gray-100 pb-4">{t.detail.mostHelpfulReviews}</h2>
                  <div className="space-y-8">
                     {[
-                      { user: "Alex J.", rating: 5, days: 2, comment: "Absolutely worth the price. The noise cancellation is top notch!", color: "bg-blue-100" },
-                      { user: "Sarah K.", rating: 4, weeks: 1, comment: "Great sound, but a bit heavier than I expected. Still love it.", color: "bg-emerald-100" },
-                      { user: "Marcus L.", rating: 5, weeks: 2, comment: "The best tech purchase I've made this year. Period.", color: "bg-purple-100" }
+                      { user: "Akbar T.", rating: 5, days: 2, comment: "Narxni bir nechta do'kon bilan solishtirib, eng arzonidan oldim. Telefon sifati a'lo!", color: "bg-blue-100" },
+                      { user: "Malika R.", rating: 4, weeks: 1, comment: "Kamera sifati zo'r, batareya ham yaxshi ishlayapti. Narx/sifat nisbati yaxshi.", color: "bg-emerald-100" },
+                      { user: "Jasur K.", rating: 5, weeks: 2, comment: "Bu yil eng yaxshi xaridim. Tez va ishonchli, narxini bu yerda topdim!", color: "bg-purple-100" }
                     ].map((review, i) => (
                       <div key={i} className="space-y-3">
                         <div className="flex justify-between items-center">
