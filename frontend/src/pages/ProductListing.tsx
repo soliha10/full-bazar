@@ -159,7 +159,7 @@ export function ProductListing() {
     hasMore,
     loadMore,
     total,
-  } = useProducts(1, 20, debouncedSearch);
+  } = useProducts(1, 20, debouncedSearch, selectedMarketplaces);
 
   const filteredProducts = useMemo(() => {
     let result = [...rawProducts];
@@ -168,22 +168,11 @@ export function ProductListing() {
       result = result.filter((p) => {
         const cat = p.category?.toLowerCase() ?? '';
         const sel = selectedCategory.toLowerCase();
-
         return (
           cat === sel ||
           (sel === 'phones' && cat === 'smartphones') ||
           (sel === 'electronics' && cat === 'phones')
         );
-      });
-    }
-
-    if (selectedMarketplaces.length > 0) {
-      result = result.filter((p) => {
-        const inMarkets = p.markets?.some((m) =>
-          selectedMarketplaces.includes(m.source.toLowerCase()),
-        );
-        const inSource = p.source && selectedMarketplaces.includes(p.source.toLowerCase());
-        return inMarkets || inSource;
       });
     }
 

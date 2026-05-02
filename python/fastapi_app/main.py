@@ -88,54 +88,48 @@ async def _fetch_markets(pool: asyncpg.Pool, product_ids: list[str]) -> dict[str
 @app.get("/api/products")
 async def get_products(
     page: int = Query(1, ge=1),
-    limit: int = Query(12, ge=1, le=100),
+    limit: int = Query(12, ge=1, le=200),
     search: str = Query(""),
+    market: str = Query(""),
 ) -> dict:
     pool: asyncpg.Pool = app.state.pool
     offset = (page - 1) * limit
     search = search.strip()
+    market = market.strip().lower()
+
+    where_parts: list[str] = []
+    params: list = []
 
     if search:
-        tokens = search.lower().split()
-        # Build a WHERE clause that requires every token to appear in
-        # the concatenated name+keywords column (same logic as Node.js)
-        conditions = " AND ".join(
-            f"(lower(p.name) LIKE ${ i + 1 } OR lower(p.keywords) LIKE ${ i + 1 })"
-            for i in range(len(tokens))
-        )
-        params = [f"%{t}%" for t in tokens]
+        for token in search.lower().split():
+            params.append(f"%{token}%")
+            i = len(params)
+            where_parts.append(f"(lower(p.name) LIKE ${i} OR lower(p.keywords) LIKE ${i})")
 
-        count_row = await pool.fetchrow(
-            f"SELECT COUNT(*) FROM products p WHERE {conditions}",
-            *params,
-        )
-        total: int = count_row[0]
+    if market:
+        # filter: product must be available in at least one of the requested markets
+        markets_list = [m.strip() for m in market.split(",") if m.strip()]
+        if markets_list:
+            params.append(markets_list)
+            i = len(params)
+            where_parts.append(
+                f"EXISTS (SELECT 1 FROM product_markets pm WHERE pm.product_id = p.id AND lower(pm.source) = ANY(${i}))"
+            )
 
-        rows = await pool.fetch(
-            f"""
-            SELECT p.*
-            FROM products p
-            WHERE {conditions}
-            ORDER BY p.name
-            LIMIT ${len(params) + 1} OFFSET ${len(params) + 2}
-            """,
-            *params,
-            limit,
-            offset,
-        )
-    else:
-        count_row = await pool.fetchrow("SELECT COUNT(*) FROM products")
-        total = count_row[0]
+    where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
 
-        rows = await pool.fetch(
-            "SELECT * FROM products ORDER BY name LIMIT $1 OFFSET $2",
-            limit,
-            offset,
-        )
+    count_row = await pool.fetchrow(
+        f"SELECT COUNT(*) FROM products p {where_sql}", *params
+    )
+    total: int = count_row[0]
+
+    rows = await pool.fetch(
+        f"SELECT p.* FROM products p {where_sql} ORDER BY p.price ASC LIMIT ${len(params)+1} OFFSET ${len(params)+2}",
+        *params, limit, offset,
+    )
 
     product_ids = [r["id"] for r in rows]
     markets_map = await _fetch_markets(pool, product_ids)
-
     products = [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows]
 
     return {

@@ -6,8 +6,8 @@ Replaces Apache Airflow — much lighter RAM footprint (~300MB vs ~1.5GB).
 
 from __future__ import annotations
 
-import base64
 import csv
+import hashlib
 import logging
 import os
 import re
@@ -56,9 +56,7 @@ def _normalize_title(title: str) -> str:
 
 
 def _make_product_id(norm: str) -> str:
-    encoded = base64.b64encode(norm.encode()).decode()
-    clean = re.sub(r"[^a-zA-Z0-9]", "", encoded)[:24]
-    return f"prod-{clean}"
+    return "prod-" + hashlib.md5(norm.encode()).hexdigest()[:20]
 
 
 def _parse_price(raw: str) -> float:
@@ -83,7 +81,7 @@ def product_row_generator(data_dir: str) -> Generator[dict, None, None]:
         filepath = os.path.join(data_dir, filename)
         source_fallback = filename.replace("_products.csv", "").replace("-", "_").split("_")[0]
         try:
-            with open(filepath, "r", encoding="utf-8", errors="ignore") as fh:
+            with open(filepath, "r", encoding="utf-8-sig", errors="ignore") as fh:
                 reader = csv.DictReader(fh)
                 if reader.fieldnames is None:
                     continue
@@ -191,60 +189,49 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
         if src not in group["markets"] or price < group["markets"][src]["price"]:
             group["markets"][src] = {"source": src.capitalize(), "price": price, "url": row["market_url"]}
 
+    products_rows = []
+    markets_rows = []
+    for pid, group in product_groups.items():
+        sorted_markets = sorted(group["markets"].values(), key=lambda m: m["price"])
+        best = sorted_markets[0] if sorted_markets else {}
+        products_rows.append((
+            pid, group["name"], group["title"], group["category"],
+            group["rating"], group["reviews"], group["image"] or None,
+            group["images"] or None, True, group["keywords"][:5000],
+            best.get("source"), best.get("price", 0), best.get("url"),
+            datetime.utcnow(),
+        ))
+        for m in sorted_markets:
+            markets_rows.append((pid, m["source"], m["price"], m["url"]))
+
     conn = psycopg2.connect(db_url)
     try:
         with conn:
             with conn.cursor() as cur:
-                products_rows = []
-                markets_rows = []
-
-                for pid, group in product_groups.items():
-                    sorted_markets = sorted(group["markets"].values(), key=lambda m: m["price"])
-                    best = sorted_markets[0] if sorted_markets else {}
-                    products_rows.append((
-                        pid, group["name"], group["title"], group["category"],
-                        group["rating"], group["reviews"], group["image"] or None,
-                        group["images"] or None, True, group["keywords"][:5000],
-                        best.get("source"), best.get("price", 0), best.get("url"),
-                        datetime.utcnow(),
-                    ))
-                    for m in sorted_markets:
-                        markets_rows.append((pid, m["source"], m["price"], m["url"]))
-
-                psycopg2.extras.execute_values(
-                    cur,
-                    """
-                    INSERT INTO products
-                        (id, name, title, category, rating, reviews, image, images,
-                         in_stock, keywords, source, price, url, updated_at)
-                    VALUES %s
-                    ON CONFLICT (id) DO UPDATE SET
-                        name=EXCLUDED.name, title=EXCLUDED.title,
-                        rating=EXCLUDED.rating, reviews=EXCLUDED.reviews,
-                        image=EXCLUDED.image, images=EXCLUDED.images,
-                        keywords=EXCLUDED.keywords, source=EXCLUDED.source,
-                        price=EXCLUDED.price, url=EXCLUDED.url, updated_at=NOW()
-                    """,
-                    products_rows,
-                    page_size=500,
-                )
-
-                if product_groups:
-                    cur.execute(
-                        "DELETE FROM product_markets WHERE product_id = ANY(%s)",
-                        (list(product_groups.keys()),),
+                # Atomic full-replace: truncate old data then insert fresh
+                cur.execute("TRUNCATE product_markets, products")
+                if products_rows:
+                    psycopg2.extras.execute_values(
+                        cur,
+                        """
+                        INSERT INTO products
+                            (id, name, title, category, rating, reviews, image, images,
+                             in_stock, keywords, source, price, url, updated_at)
+                        VALUES %s
+                        """,
+                        products_rows,
+                        page_size=500,
                     )
-                psycopg2.extras.execute_values(
-                    cur,
-                    """
-                    INSERT INTO product_markets (product_id, source, price, url)
-                    VALUES %s
-                    ON CONFLICT (product_id, source) DO UPDATE SET
-                        price=EXCLUDED.price, url=EXCLUDED.url
-                    """,
-                    markets_rows,
-                    page_size=1000,
-                )
+                if markets_rows:
+                    psycopg2.extras.execute_values(
+                        cur,
+                        """
+                        INSERT INTO product_markets (product_id, source, price, url)
+                        VALUES %s
+                        """,
+                        markets_rows,
+                        page_size=1000,
+                    )
         return len(products_rows), len(markets_rows)
     finally:
         conn.close()
