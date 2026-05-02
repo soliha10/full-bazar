@@ -156,3 +156,26 @@ async def get_product(product_id: str) -> dict:
 @app.get("/health")
 async def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/api/stats")
+async def stats() -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    row = await pool.fetchrow(
+        """
+        SELECT
+            (SELECT COUNT(*) FROM products) AS total_products,
+            (SELECT MAX(updated_at) FROM products) AS last_sync,
+            (SELECT COUNT(DISTINCT source) FROM product_markets) AS total_markets,
+            (SELECT json_agg(r) FROM (
+                SELECT source, COUNT(*) AS count
+                FROM product_markets GROUP BY source ORDER BY count DESC
+            ) r) AS markets
+        """
+    )
+    return {
+        "total_products": row["total_products"],
+        "last_sync": row["last_sync"].isoformat() if row["last_sync"] else None,
+        "total_markets": row["total_markets"],
+        "markets": row["markets"] or [],
+    }
