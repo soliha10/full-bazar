@@ -9,65 +9,79 @@ from bs4 import BeautifulSoup
 from .base import BaseScraper, ProductRow
 
 logger = logging.getLogger(__name__)
-BASE = "https://www.texnomart.uz"
+BASE = "https://texnomart.uz"
+
+
+def _first_number(text: str) -> float:
+    """Extract the first integer run from a string, stripping so'm and spaces."""
+    nums = re.sub(r"[^\d]", "", text.split("so'm")[0])
+    return float(nums) if nums else 0.0
 
 
 class TexnomartScraper(BaseScraper):
     store_name = "texnomart"
 
-    def _parse_price(self, text: str) -> float:
-        nums = re.sub(r"[^\d]", "", text)
-        return float(nums) if nums else 0.0
-
     def scrape(self) -> Iterator[ProductRow]:
         page = 1
         while page <= 20:
+            url = f"{BASE}/katalog/smartfony/?page={page}"
             try:
-                resp = self.get(f"{BASE}/catalog/smartfony", params={"page": page})
+                resp = self.get(url)
+                if not resp.ok:
+                    logger.warning(f"[texnomart] page {page} HTTP {resp.status_code}, stopping")
+                    break
                 soup = BeautifulSoup(resp.text, "lxml")
 
-                cards = soup.select(".product-item, .product_item, [class*='product-card'], [class*='item-product']")
-                if not cards:
-                    # try alternative selectors
-                    cards = soup.select("article.item, .catalog-item, li.product")
-                if not cards:
+                cards = soup.select(".product-item-wrapper")
+                if len(cards) < 5:
+                    logger.info(f"[texnomart] page {page}: only {len(cards)} cards, stopping")
                     break
 
                 for card in cards:
-                    title_el = card.select_one("a.product-name, .item-title, h3 a, .product_name, [class*='name'] a")
-                    if not title_el:
+                    name_el = card.select_one(".product-name")
+                    title = name_el.get_text(strip=True) if name_el else ""
+                    if not title:
                         continue
-                    title = title_el.get_text(strip=True)
 
-                    price_el = card.select_one(".product-price, .price, [class*='price']")
-                    price_text = price_el.get_text(strip=True) if price_el else "0"
-                    price = self._parse_price(price_text)
+                    price_el = card.select_one(".product-price-wrap-2")
+                    price_text = price_el.get_text(separator=" ", strip=True) if price_el else ""
+                    price = _first_number(price_text)
 
-                    img_el = card.select_one("img")
-                    image = img_el.get("data-src") or img_el.get("src") or "" if img_el else ""
+                    # Image: find img whose alt equals product name (real product image, not SVG sticker)
+                    image = ""
+                    for img in card.find_all("img"):
+                        alt = (img.get("alt") or "").strip()
+                        src = img.get("src") or img.get("data-src") or ""
+                        if alt and alt == title and src and not src.endswith(".svg"):
+                            image = src
+                            break
+                    # Fallback: first img with a non-SVG src
+                    if not image:
+                        for img in card.find_all("img"):
+                            src = img.get("src") or img.get("data-src") or ""
+                            if src and not src.endswith(".svg"):
+                                image = src
+                                break
                     if image and not image.startswith("http"):
                         image = BASE + image
 
-                    href = title_el.get("href", "")
-                    url = href if href.startswith("http") else BASE + href
-
-                    rating_el = card.select_one(".rating, [class*='star'], [class*='rating']")
-                    rating = ""
-                    if rating_el:
-                        filled = rating_el.select("[class*='active'], [class*='filled'], [class*='full']")
-                        rating = str(len(filled)) if filled else ""
+                    # URL: first <a> tag in card
+                    a_el = card.find("a", href=True)
+                    href = a_el["href"] if a_el else ""
+                    product_url = href if href.startswith("http") else BASE + href
 
                     yield ProductRow(
                         title=title,
                         price=price,
                         store=self.store_name,
                         image_url=image,
-                        product_url=url,
-                        rating=rating,
+                        product_url=product_url,
+                        rating="",
                         review_count="",
                     )
 
             except Exception as exc:
                 logger.warning(f"[texnomart] page {page} error: {exc}")
                 break
+
             page += 1

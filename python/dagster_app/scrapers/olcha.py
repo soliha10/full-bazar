@@ -10,67 +10,68 @@ from .base import BaseScraper, ProductRow
 
 logger = logging.getLogger(__name__)
 BASE = "https://olcha.uz"
+CATEGORY_URL = f"{BASE}/ru/category/telefony-gadzhety-aksessuary/telefony"
+
+
+def _first_number(text: str) -> float:
+    """Extract the first run of digits from a string."""
+    m = re.search(r"\d[\d\s]*", text)
+    if not m:
+        return 0.0
+    digits = re.sub(r"\s", "", m.group())
+    return float(digits) if digits else 0.0
 
 
 class OlchaScraper(BaseScraper):
     store_name = "olcha"
 
-    def _parse_price(self, text: str) -> float:
-        nums = re.sub(r"[^\d]", "", text)
-        return float(nums) if nums else 0.0
-
     def scrape(self) -> Iterator[ProductRow]:
-        for category_slug in ("smartfony-mobile-phones", "smartfonlar"):
-            page = 1
-            found_any = False
-            while page <= 20:
-                try:
-                    resp = self.get(
-                        f"{BASE}/category/{category_slug}",
-                        params={"page": page},
-                    )
-                    soup = BeautifulSoup(resp.text, "lxml")
-
-                    cards = soup.select(
-                        ".product-card, .product_card, [class*='product-item'], "
-                        "[class*='catalog-item'], .item.col"
-                    )
-                    if not cards:
-                        break
-
-                    for card in cards:
-                        found_any = True
-                        title_el = card.select_one("a[class*='name'], .product-name, h3 a, .item-name a")
-                        if not title_el:
-                            continue
-                        title = title_el.get_text(strip=True)
-
-                        price_el = card.select_one("[class*='price'], .price")
-                        price = self._parse_price(price_el.get_text() if price_el else "0")
-
-                        img_el = card.select_one("img")
-                        image = ""
-                        if img_el:
-                            image = img_el.get("data-src") or img_el.get("src") or ""
-                        if image and not image.startswith("http"):
-                            image = BASE + image
-
-                        href = title_el.get("href", "")
-                        url = href if href.startswith("http") else BASE + href
-
-                        yield ProductRow(
-                            title=title,
-                            price=price,
-                            store=self.store_name,
-                            image_url=image,
-                            product_url=url,
-                            rating="",
-                            review_count="",
-                        )
-
-                except Exception as exc:
-                    logger.warning(f"[olcha] {category_slug} page {page} error: {exc}")
+        page = 1
+        while page <= 30:
+            url = f"{CATEGORY_URL}?page={page}"
+            try:
+                resp = self.get(url)
+                if not resp.ok:
+                    logger.warning(f"[olcha] page {page} HTTP {resp.status_code}, stopping")
                     break
-                page += 1
-            if found_any:
+                soup = BeautifulSoup(resp.text, "lxml")
+
+                catalog = soup.select_one(".all-products-catalog__content")
+                cards = (catalog or soup).select(".product-card")
+
+                if not cards:
+                    logger.info(f"[olcha] page {page}: no cards found, stopping")
+                    break
+
+                for card in cards:
+                    name_el = card.select_one(".product-card__brand-name")
+                    title = name_el.get_text(strip=True) if name_el else ""
+                    if not title:
+                        continue
+
+                    price_el = card.select_one(".price__main")
+                    price_text = price_el.get_text(separator=" ", strip=True) if price_el else ""
+                    price = _first_number(price_text)
+
+                    # Images are lazy-loaded base64 placeholders — skip
+                    image = ""
+
+                    a_el = card.select_one("a.product-card__link")
+                    href = a_el["href"] if a_el and a_el.get("href") else ""
+                    product_url = href if href.startswith("http") else BASE + href
+
+                    yield ProductRow(
+                        title=title,
+                        price=price,
+                        store=self.store_name,
+                        image_url=image,
+                        product_url=product_url,
+                        rating="",
+                        review_count="",
+                    )
+
+            except Exception as exc:
+                logger.warning(f"[olcha] page {page} error: {exc}")
                 break
+
+            page += 1

@@ -12,67 +12,82 @@ logger = logging.getLogger(__name__)
 BASE = "https://glotr.uz"
 
 
+def _first_number(text: str) -> float:
+    """Extract the first run of digits from a string."""
+    m = re.search(r"\d[\d\s]*", text)
+    if not m:
+        return 0.0
+    digits = re.sub(r"\s", "", m.group())
+    return float(digits) if digits else 0.0
+
+
 class GlotrScraper(BaseScraper):
     store_name = "glotr"
 
-    def _parse_price(self, text: str) -> float:
-        nums = re.sub(r"[^\d]", "", text)
-        return float(nums) if nums else 0.0
-
     def scrape(self) -> Iterator[ProductRow]:
-        for slug in ("catalog/smartfony", "search?q=smartfon", "category/smartfonlar"):
-            page = 1
-            found_any = False
-            while page <= 20:
-                try:
-                    sep = "&" if "?" in slug else "?"
-                    resp = self.get(f"{BASE}/{slug}{sep}page={page}")
-                    if resp.status_code == 404:
-                        break
-                    soup = BeautifulSoup(resp.text, "lxml")
-
-                    cards = soup.select(
-                        ".product-item, [class*='product-card'], .catalog-item, "
-                        "[class*='item-product'], li.product, .good-item"
-                    )
-                    if not cards:
-                        break
-
-                    for card in cards:
-                        found_any = True
-                        title_el = card.select_one(
-                            "a[class*='name'], .product-name, .item-name a, h3 a, h2 a"
-                        )
-                        if not title_el:
-                            continue
-                        title = title_el.get_text(strip=True)
-
-                        price_el = card.select_one("[class*='price'], .price")
-                        price = self._parse_price(price_el.get_text() if price_el else "0")
-
-                        img_el = card.select_one("img")
-                        image = ""
-                        if img_el:
-                            image = img_el.get("data-src") or img_el.get("src") or ""
-                        if image and not image.startswith("http"):
-                            image = BASE + image
-
-                        href = title_el.get("href", "")
-                        url = href if href.startswith("http") else BASE + href
-
-                        yield ProductRow(
-                            title=title,
-                            price=price,
-                            store=self.store_name,
-                            image_url=image,
-                            product_url=url,
-                            rating="",
-                            review_count="",
-                        )
-
-                except Exception as exc:
-                    logger.warning(f"[glotr] /{slug} page {page} error: {exc}")
+        page = 1
+        while page <= 10:
+            url = f"{BASE}/smartfoni/?page={page}"
+            try:
+                resp = self.get(url)
+                if not resp.ok:
+                    logger.warning(f"[glotr] page {page} HTTP {resp.status_code}, stopping")
                     break
-                page += 1
-            if found_any:
+                soup = BeautifulSoup(resp.text, "lxml")
+
+                cards = soup.select(".product-card")
+                if not cards:
+                    logger.info(f"[glotr] page {page}: no cards found, stopping")
+                    break
+
+                for card in cards:
+                    # Name: link text inside .product-card__content
+                    content = card.select_one(".product-card__content")
+                    name_el = content.select_one(".product-card__link") if content else None
+                    title = name_el.get_text(strip=True) if name_el else ""
+                    if not title:
+                        continue
+
+                    # Price: .price-retail.proposal-price
+                    price_el = card.select_one(".price-retail.proposal-price")
+                    price_text = price_el.get_text(separator=" ", strip=True) if price_el else ""
+                    price = _first_number(price_text)
+
+                    # Image: img.lazyload-img[data-src] inside .product-card__header
+                    image = ""
+                    header = card.select_one(".product-card__header")
+                    if header:
+                        img = header.select_one("img.lazyload-img[data-src]")
+                        if img:
+                            src = img.get("data-src", "")
+                            if src.startswith("https://"):
+                                image = src
+
+                    # URL: href from .product-card__link
+                    link_el = card.select_one(".product-card__link")
+                    href = link_el.get("href", "") if link_el else ""
+                    product_url = href if href.startswith("http") else BASE + href
+
+                    # Rating: span inside .product_company_rating
+                    rating = ""
+                    rating_el = card.select_one(".product_company_rating")
+                    if rating_el:
+                        span = rating_el.find("span")
+                        if span:
+                            rating = span.get_text(strip=True)
+
+                    yield ProductRow(
+                        title=title,
+                        price=price,
+                        store=self.store_name,
+                        image_url=image,
+                        product_url=product_url,
+                        rating=rating,
+                        review_count="",
+                    )
+
+            except Exception as exc:
+                logger.warning(f"[glotr] page {page} error: {exc}")
                 break
+
+            page += 1
