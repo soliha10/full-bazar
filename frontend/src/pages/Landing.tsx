@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Smartphone, Star, ArrowRight, TrendingUp, ShieldCheck, RefreshCw, Zap, Brain } from 'lucide-react';
+import { Smartphone, Star, ArrowRight, TrendingUp, ShieldCheck, RefreshCw, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -46,7 +46,7 @@ export function Landing() {
 
       {/* ── Hero ── */}
       <section className="px-4 pt-4 md:pt-10 max-w-7xl mx-auto">
-        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#0062FF] via-[#0047CC] to-[#1E3A8A] shadow-2xl shadow-blue-500/30 min-h-[320px] md:min-h-[420px] flex items-center">
+        <div className="relative rounded-3xl overflow-hidden bg-linear-to-br from-[#0062FF] via-[#0047CC] to-[#1E3A8A] shadow-2xl shadow-blue-500/30 min-h-[320px] md:min-h-[420px] flex items-center">
 
           {/* background decorations */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -353,7 +353,7 @@ export function Landing() {
 
       {/* ── Bottom CTA ── */}
       <section className="px-4 pb-10 max-w-7xl mx-auto">
-        <div className="bg-gradient-to-r from-[#0062FF] to-[#1E3A8A] rounded-3xl p-8 md:p-12 text-center relative overflow-hidden">
+        <div className="bg-linear-to-r from-[#0062FF] to-[#1E3A8A] rounded-3xl p-8 md:p-12 text-center relative overflow-hidden">
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-white/5" />
             <div className="absolute -bottom-10 -right-10 w-60 h-60 rounded-full bg-white/5" />

@@ -2,35 +2,49 @@ import pandas as pd
 import random
 import os
 
-def generate_synthetic_data(num_samples=10000):
+def generate_synthetic_data(num_samples=20000):
     """
     Generates synthetic product matching data for training the ML model.
-    1 = Match (Same product, slight name variations)
-    0 = Non-Match (Different products, similar categories)
+    Focuses on Apple, Samsung, and Redmi (Xiaomi) as requested.
     """
     brands = {
-        "Apple": ["iPhone 14 Pro", "iPhone 15", "MacBook Air M2", "AirPods Pro 2", "iPad Air 5", "iPhone 13 mini", "Apple Watch Ultra"],
-        "Samsung": ["Galaxy S23 Ultra", "Galaxy A54", "Galaxy Watch 6", "Galaxy Buds 2", "Galaxy Z Fold 5", "Galaxy Tab S9", "Samsung A04"],
-        "Xiaomi": ["Redmi Note 12", "Poco X5 Pro", "Xiaomi 13T", "Mi Band 8", "Redmi Pad", "Xiaomi 14", "Redmi 12C"],
-        "Sony": ["PlayStation 5", "WH-1000XM5", "Bravia XR", "Xperia 1 V", "WF-1000XM4", "DualSense Controller"],
-        "Google": ["Pixel 8 Pro", "Pixel 7a", "Pixel Watch 2", "Pixel Buds Pro"],
-        "Asus": ["ROG Phone 7", "Zenfone 10", "Vivobook S15", "TUF Gaming F15"],
-        "HP": ["Pavilion 15", "Victus 16", "Envy x360", "LaserJet Pro"]
+        "Apple": [
+            "iPhone 15 Pro Max", "iPhone 15 Pro", "iPhone 15", "iPhone 15 Plus",
+            "iPhone 14 Pro Max", "iPhone 14 Pro", "iPhone 14", 
+            "iPhone 13", "iPhone 13 mini", "iPhone 12", "iPhone 11",
+            "MacBook Pro M3", "MacBook Air M2", "iPad Pro 12.9", "AirPods Pro 2"
+        ],
+        "Samsung": [
+            "Galaxy S24 Ultra", "Galaxy S24+", "Galaxy S24",
+            "Galaxy S23 Ultra", "Galaxy S23 FE", "Galaxy S23",
+            "Galaxy A54 5G", "Galaxy A34", "Galaxy A14", "Galaxy A05s",
+            "Galaxy Z Fold 5", "Galaxy Z Flip 5", "Galaxy Tab S9"
+        ],
+        "Redmi": [
+            "Redmi Note 13 Pro+", "Redmi Note 13 Pro", "Redmi Note 13",
+            "Redmi Note 12 Pro", "Redmi Note 12", "Redmi 12", "Redmi 13C",
+            "Redmi K70 Pro", "Redmi K60", "Redmi Note 11S", "Redmi 10 2022"
+        ],
+        "Xiaomi": [
+            "Xiaomi 14 Ultra", "Xiaomi 14", "Xiaomi 13T Pro", "Xiaomi 13T",
+            "Xiaomi Pad 6", "Mi Band 8", "Xiaomi Watch S3"
+        ]
     }
 
-    colors = ["Black", "White", "Blue", "Green", "Silver", "Graphite", "Gold", "Midnight", "Purple"]
-    storages = ["64GB", "128GB", "256GB", "512GB", "1TB", "32GB"]
-    memories = ["4GB", "8GB", "12GB", "16GB", "32GB", "2GB"]
+    colors = ["Black", "White", "Blue", "Green", "Silver", "Graphite", "Gold", "Midnight", "Purple", "Titanium Grey", "Natural Titanium"]
+    storages = ["64GB", "128GB", "256GB", "512GB", "1TB"]
+    memories = ["4GB", "6GB", "8GB", "12GB", "16GB"]
     
     variations = [
         lambda name, b, c, s, m: f"{b} {name} {s} {c}",
         lambda name, b, c, s, m: f"{name} {s} ({c})",
         lambda name, b, c, s, m: f"{b} {name} {m}/{s} {c}",
-        lambda name, b, c, s, m: f"Смартфон {b} {name} {s}",
-        lambda name, b, c, s, m: f"{name} {c} {s}",
+        lambda name, b, c, s, m: f"Смартфон {b} {name} {s} {c}",
+        lambda name, b, c, s, m: f"Smartfon {b} {name} {s} {c}",
+        lambda name, b, c, s, m: f"{b} {name} {c} {s}",
+        lambda name, b, c, s, m: f"{name} {s} {c} {b}",
         lambda name, b, c, s, m: f"{b} {name}",
-        lambda name, b, c, s, m: f"{name} {s}",
-        lambda name, b, c, s, m: f"Noutbuk {b} {name} {m} {s}"
+        lambda name, b, c, s, m: f"{name} {s} - {c}"
     ]
 
     data = []
@@ -40,7 +54,6 @@ def generate_synthetic_data(num_samples=10000):
         brand = random.choice(list(brands.keys()))
         
         if is_match:
-            # Generate two matching products with different naming formats
             base_product = random.choice(brands[brand])
             color = random.choice(colors)
             storage = random.choice(storages)
@@ -52,7 +65,6 @@ def generate_synthetic_data(num_samples=10000):
             name_a = var1(base_product, brand, color, storage, memory)
             name_b = var2(base_product, brand, color, storage, memory)
         else:
-            # Generate two completely different products, or same product with different specs
             base_product_1 = random.choice(brands[brand])
             base_product_2 = random.choice(brands[brand])
             color1, color2 = random.sample(colors, 2)
@@ -62,15 +74,19 @@ def generate_synthetic_data(num_samples=10000):
             var1 = random.choice(variations)
             var2 = random.choice(variations)
             
-            # 50% chance they are the same model but different storage (non-match for price aggregation)
-            if random.choice([True, False]):
+            # Same model but different storage
+            if random.random() < 0.4:
                 name_a = var1(base_product_1, brand, color1, storage1, memory)
-                name_b = var2(base_product_1, brand, color2, storage2, memory) # Different storage
+                name_b = var2(base_product_1, brand, color2, storage2, memory)
+            # Different model same brand
+            elif random.random() < 0.8:
+                name_a = var1(base_product_1, brand, color1, storage1, memory)
+                name_b = var2(base_product_2, brand, color1, storage1, memory)
+            # Completely different
             else:
-                # Different model or brand
                 brand2 = random.choice(list(brands.keys()))
                 name_a = var1(base_product_1, brand, color1, storage1, memory)
-                name_b = var2(base_product_2, brand2, color2, storage1, memory) 
+                name_b = var2(base_product_2, brand2, color2, storage2, memory)
                 
         data.append({
             "name_a": name_a.strip(),
@@ -84,4 +100,4 @@ def generate_synthetic_data(num_samples=10000):
     print(f"✅ Generated {num_samples} synthetic matching pairs at data/synthetic_matching_data.csv")
 
 if __name__ == "__main__":
-    generate_synthetic_data(10000)
+    generate_synthetic_data(20000)
