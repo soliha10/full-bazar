@@ -1,0 +1,23 @@
+
+> Bazaarcom Marketplace UI Design@0.1.0 build
+> vite build
+
+vite v6.3.5 building for production...
+transforming...
+✓ 49 modules transformed.
+✗ Build failed in 153ms
+error during build:
+[vite]: Rollup failed to resolve import "framer-motion" from "/Users/gulshodatoxtamurodova/Desktop/startup/full-bazar/frontend/src/pages/AiMatcher.tsx".
+This is most likely unintended because it can break your application at runtime.
+If you do want to externalize this module explicitly add it to
+`build.rollupOptions.external`
+    at viteLog (file:///Users/gulshodatoxtamurodova/Desktop/startup/full-bazar/frontend/node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:46345:15)
+    at file:///Users/gulshodatoxtamurodova/Desktop/startup/full-bazar/frontend/node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:46403:18
+    at onwarn (/Users/gulshodatoxtamurodova/Desktop/startup/full-bazar/frontend/node_modules/@vitejs/plugin-react-swc/index.cjs:113:7)
+    at file:///Users/gulshodatoxtamurodova/Desktop/startup/full-bazar/frontend/node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:46401:7
+    at onRollupLog (file:///Users/gulshodatoxtamurodova/Desktop/startup/full-bazar/frontend/node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:46393:5)
+    at onLog (file:///Users/gulshodatoxtamurodova/Desktop/startup/full-bazar/frontend/node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:46043:7)
+    at file:///Users/gulshodatoxtamurodova/Desktop/startup/full-bazar/frontend/node_modules/rollup/dist/es/shared/node-entry.js:20958:32
+    at Object.logger [as onLog] (file:///Users/gulshodatoxtamurodova/Desktop/startup/full-bazar/frontend/node_modules/rollup/dist/es/shared/node-entry.js:22945:9)
+    at ModuleLoader.handleInvalidResolvedId (file:///Users/gulshodatoxtamurodova/Desktop/startup/full-bazar/frontend/node_modules/rollup/dist/es/shared/node-entry.js:21689:26)
+    at file:///Users/gulshodatoxtamurodova/Desktop/startup/full-bazar/frontend/node_modules/rollup/dist/es/shared/node-entry.js:21647:26
