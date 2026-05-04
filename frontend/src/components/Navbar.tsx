@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, User, Moon, Sun, Globe, ShoppingBag, Menu, Mic, X, LogIn, ChevronRight, HelpCircle, Info, ChevronDown, Brain } from 'lucide-react';
+import { Search, User, Moon, Sun, Globe, ShoppingBag, Menu, Mic, X, LogIn, ChevronRight, HelpCircle, Info, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -138,13 +138,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
           </div>
 
           {/* Right Side: Desktop Icons & Mobile Quick Actions */}
-          <div className="hidden md:flex items-center gap-2 md:gap-6">
-            <Link to="/ai-matcher" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-100 transition-all font-bold text-sm">
-              <Brain className="w-4 h-4" />
-              <span>AI Matcher</span>
-            </Link>
-            {/* Desktop Only Icons */}
-            <div className="hidden md:flex items-center gap-5">
+          <div className="flex items-center gap-2 md:gap-6">
               <div className="w-px h-8 bg-gray-100 mx-1" />
               <div className="relative group">
                 <button className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 font-bold text-sm text-gray-700 hover:text-[#0062FF] transition-all">
@@ -262,18 +256,6 @@ export function Navbar({ onSearchChange }: NavbarProps) {
               </button>
 
               <div className="h-px bg-gray-100 my-4 mx-2" />
-
-              <Link 
-                to="/ai-matcher"
-                onClick={() => setIsMenuOpen(false)}
-                className="w-full flex items-center justify-between p-3 rounded-xl bg-purple-50 text-purple-700 transition-colors"
-              >
-                <div className="flex items-center gap-3 font-semibold">
-                  <Brain className="w-5 h-5" />
-                  <span>AI Matcher Engine</span>
-                </div>
-                <ChevronRight className="w-4 h-4" />
-              </Link>
 
               <button 
                 onClick={toggleTheme}

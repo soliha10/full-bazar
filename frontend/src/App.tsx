@@ -13,7 +13,6 @@ import { MobileToolbar } from "./components/MobileToolbar";
 import { Landing } from "./pages/Landing";
 import { ProductListing } from "./pages/ProductListing";
 import { ProductDetail } from "./pages/ProductDetail";
-import { AiMatcher } from "./pages/AiMatcher";
 
 export default function App() {
   return (
@@ -56,7 +55,6 @@ function AppContent({}: AppContentProps) {
           <Route path="/" element={<Landing />} />
           <Route path="/products" element={<ProductListing />} />
           <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/ai-matcher" element={<AiMatcher />} />
         </Routes>
       </main>
       {!isSearchPage && !isDetailPage && <Footer />}

@@ -40,6 +40,7 @@ export function ProductListing() {
   const [selectedCategory, setSelectedCategory] = useState(categoryParam);
   const [selectedMarketplaces, setSelectedMarketplaces] = useState<string[]>([]);
   const [minRating, setMinRating] = useState(0);
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'relevance' | 'priceLow' | 'priceHigh' | 'rating'>(
     'relevance',
   );
@@ -64,6 +65,8 @@ export function ProductListing() {
     { name: 'Beemarket', key: 'beemarket', color: '#F59E0B' },
     { name: 'Castore',   key: 'castore',   color: '#14B8A6' },
   ];
+
+  const BRANDS = ['Apple', 'Samsung', 'Xiaomi', 'Google', 'Asus', 'HP', 'Sony'];
 
   const toggleMarketplace = useCallback((key: string) => {
     setSelectedMarketplaces((prev) =>
@@ -178,6 +181,10 @@ export function ProductListing() {
 
     if (minRating > 0) {
       result = result.filter((p) => p.rating >= minRating);
+    }
+
+    if (selectedBrand) {
+      result = result.filter((p) => p.name.toLowerCase().includes(selectedBrand.toLowerCase()));
     }
 
     if (sortBy === 'priceLow') {
@@ -456,6 +463,38 @@ export function ProductListing() {
                   </div>
                 </div>
 
+                {/* Brand filter */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-gray-400">
+                      Brendlar
+                    </h4>
+                    {selectedBrand && (
+                      <button
+                        onClick={() => setSelectedBrand(null)}
+                        className="text-[10px] font-bold uppercase tracking-wider text-[#0062FF] hover:underline"
+                      >
+                        Tozalash
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {BRANDS.map((brand) => (
+                      <button
+                        key={brand}
+                        onClick={() => setSelectedBrand(selectedBrand === brand ? null : brand)}
+                        className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                          selectedBrand === brand
+                            ? 'bg-blue-50 text-[#0062FF] ring-1 ring-blue-200'
+                            : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                        }`}
+                      >
+                        {brand}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Marketplace filter */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -720,6 +759,27 @@ export function ProductListing() {
                       }`}
                     >
                       {rating === 0 ? t.listing.anyRating : `${rating}+`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="mb-3 text-xs font-black uppercase tracking-widest text-gray-400">
+                  Brendlar
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {BRANDS.map((brand) => (
+                    <button
+                      key={brand}
+                      onClick={() => setSelectedBrand(selectedBrand === brand ? null : brand)}
+                      className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                        selectedBrand === brand
+                          ? 'bg-[#0062FF] text-white'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {brand}
                     </button>
                   ))}
                 </div>
