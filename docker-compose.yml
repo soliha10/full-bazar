@@ -86,6 +86,21 @@ services:
     restart: unless-stopped
     command: dagster-daemon run
 
+  # ── MLflow (Tracking Server) ────────────────────────────────────────────────
+  mlflow:
+    build:
+      context: ./python/mlflow_app
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5050:5000"
+    volumes:
+      - mlflow_data:/mlflow/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   dagster_home:
+  mlflow_data:
