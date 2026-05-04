@@ -28,14 +28,57 @@ async def lifespan(app: FastAPI):
     await app.state.pool.close()
 
 
+import re
+import math
+from collections import Counter
+
 app = FastAPI(title="Full-Bazar API", lifespan=lifespan)
+
+# ── AI Matching Logic (Lite Version for UI Demo) ──────────────────────────────
+def get_cosine_sim(s1: str, s2: str) -> float:
+    s1, s2 = s1.lower(), s2.lower()
+    vec1 = Counter(re.findall(r'\w+', s1))
+    vec2 = Counter(re.findall(r'\w+', s2))
+    
+    intersection = set(vec1.keys()) & set(vec2.keys())
+    numerator = sum([vec1[x] * vec2[x] for x in intersection])
+
+    sum1 = sum([vec1[x]**2 for x in vec1.keys()])
+    sum2 = sum([vec2[x]**2 for x in vec2.keys()])
+    denominator = math.sqrt(sum1) * math.sqrt(sum2)
+
+    if not denominator:
+        return 0.0
+    return float(numerator) / denominator
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+@app.get("/api/ml/match")
+async def ml_match(name_a: str, name_b: str):
+    score = get_cosine_sim(name_a, name_b)
+    # Simple threshold from our model analysis
+    is_match = score > 0.65
+    return {
+        "score": round(score, 4),
+        "is_match": is_match,
+        "recommendation": "Match" if is_match else "Different Product"
+    }
+
+@app.get("/api/ml/samples")
+async def ml_samples():
+    # Demonstrating logic with synthetic data patterns
+    return [
+        {"a": "Apple iPhone 14 Pro 128GB Black", "b": "iPhone 14 Pro 128 GB (Black)", "expected": True},
+        {"a": "Samsung Galaxy S23 Ultra", "b": "Samsung S23 Ultra 256GB", "expected": True},
+        {"a": "Xiaomi Redmi Note 12", "b": "Redmi Note 12 Pro", "expected": False},
+        {"a": "Sony PlayStation 5", "b": "PS5 Console Digital Edition", "expected": True},
+        {"a": "MacBook Air M2", "b": "MacBook Pro M2 13-inch", "expected": False},
+    ]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

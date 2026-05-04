@@ -14,7 +14,7 @@ import os
 MLFLOW_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5050")
 try:
     mlflow.set_tracking_uri(MLFLOW_URI)
-    mlflow.set_experiment("Product_Matching_Model")
+    mlflow.set_experiment("Product_Matching_Model_V3")
 except Exception as e:
     print(f"⚠️ Could not connect to MLflow at {MLFLOW_URI}: {e}")
     print("Logging locally instead.")

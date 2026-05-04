@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir mlflow psycopg2-binary
 
 EXPOSE 5000
 
-CMD ["mlflow", "server", "--backend-store-uri", "postgresql://postgres:postgres@postgres:5432/fullbazar", "--default-artifact-root", "/mlflow/artifacts", "--serve-artifacts", "--host", "0.0.0.0", "--port", "5000"]
+CMD ["mlflow", "server", "--backend-store-uri", "postgresql://postgres:postgres@postgres:5432/fullbazar", "--serve-artifacts", "--artifacts-destination", "/mlflow/artifacts", "--host", "0.0.0.0", "--port", "5000"]
