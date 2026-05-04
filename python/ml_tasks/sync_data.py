@@ -65,7 +65,7 @@ def run_standalone_sync():
                     "id": target_pid,
                     "name": title,
                     "title": title,
-                    "category": row.get("category", "Electronics"),
+                    "category": "Phones",
                     "price": row["price"],
                     "rating": 4.5,
                     "reviews": 25,

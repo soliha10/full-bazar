@@ -20,37 +20,37 @@ def generate_store_csvs():
     # Base products and their base prices (in UZS)
     products = [
         # Apple
-        {"brand": "Apple", "model": "iPhone 15 Pro Max", "price": 18000000, "cat": "Smartphones"},
-        {"brand": "Apple", "model": "iPhone 15 Pro", "price": 16000000, "cat": "Smartphones"},
-        {"brand": "Apple", "model": "iPhone 15", "price": 12000000, "cat": "Smartphones"},
-        {"brand": "Apple", "model": "iPhone 14 Pro Max", "price": 14500000, "cat": "Smartphones"},
-        {"brand": "Apple", "model": "iPhone 14", "price": 11000000, "cat": "Smartphones"},
-        {"brand": "Apple", "model": "iPhone 13", "price": 8500000, "cat": "Smartphones"},
-        {"brand": "Apple", "model": "MacBook Pro M3", "price": 25000000, "cat": "Laptops"},
-        {"brand": "Apple", "model": "MacBook Air M2", "price": 14000000, "cat": "Laptops"},
-        {"brand": "Apple", "model": "AirPods Pro 2", "price": 3100000, "cat": "Electronics"},
-        {"brand": "Apple", "model": "Apple Watch Ultra 2", "price": 10500000, "cat": "Electronics"},
+        {"brand": "Apple", "model": "iPhone 15 Pro Max", "price": 18000000, "cat": "Phones"},
+        {"brand": "Apple", "model": "iPhone 15 Pro", "price": 16000000, "cat": "Phones"},
+        {"brand": "Apple", "model": "iPhone 15", "price": 12000000, "cat": "Phones"},
+        {"brand": "Apple", "model": "iPhone 14 Pro Max", "price": 14500000, "cat": "Phones"},
+        {"brand": "Apple", "model": "iPhone 14", "price": 11000000, "cat": "Phones"},
+        {"brand": "Apple", "model": "iPhone 13", "price": 8500000, "cat": "Phones"},
+        {"brand": "Apple", "model": "MacBook Pro M3", "price": 25000000, "cat": "Phones"},
+        {"brand": "Apple", "model": "MacBook Air M2", "price": 14000000, "cat": "Phones"},
+        {"brand": "Apple", "model": "AirPods Pro 2", "price": 3100000, "cat": "Phones"},
+        {"brand": "Apple", "model": "Apple Watch Ultra 2", "price": 10500000, "cat": "Phones"},
         
         # Samsung
-        {"brand": "Samsung", "model": "Galaxy S24 Ultra", "price": 17500000, "cat": "Smartphones"},
-        {"brand": "Samsung", "model": "Galaxy S24 Plus", "price": 14000000, "cat": "Smartphones"},
-        {"brand": "Samsung", "model": "Galaxy S24", "price": 11000000, "cat": "Smartphones"},
-        {"brand": "Samsung", "model": "Galaxy S23 Ultra", "price": 13500000, "cat": "Smartphones"},
-        {"brand": "Samsung", "model": "Galaxy A54 5G", "price": 4800000, "cat": "Smartphones"},
-        {"brand": "Samsung", "model": "Galaxy A34", "price": 3600000, "cat": "Smartphones"},
-        {"brand": "Samsung", "model": "Galaxy Z Fold 5", "price": 18500000, "cat": "Smartphones"},
-        {"brand": "Samsung", "model": "Galaxy Z Flip 5", "price": 11000000, "cat": "Smartphones"},
+        {"brand": "Samsung", "model": "Galaxy S24 Ultra", "price": 17500000, "cat": "Phones"},
+        {"brand": "Samsung", "model": "Galaxy S24 Plus", "price": 14000000, "cat": "Phones"},
+        {"brand": "Samsung", "model": "Galaxy S24", "price": 11000000, "cat": "Phones"},
+        {"brand": "Samsung", "model": "Galaxy S23 Ultra", "price": 13500000, "cat": "Phones"},
+        {"brand": "Samsung", "model": "Galaxy A54 5G", "price": 4800000, "cat": "Phones"},
+        {"brand": "Samsung", "model": "Galaxy A34", "price": 3600000, "cat": "Phones"},
+        {"brand": "Samsung", "model": "Galaxy Z Fold 5", "price": 18500000, "cat": "Phones"},
+        {"brand": "Samsung", "model": "Galaxy Z Flip 5", "price": 11000000, "cat": "Phones"},
         
         # Redmi / Xiaomi
-        {"brand": "Redmi", "model": "Note 13 Pro Plus", "price": 5800000, "cat": "Smartphones"},
-        {"brand": "Redmi", "model": "Note 13 Pro", "price": 4800000, "cat": "Smartphones"},
-        {"brand": "Redmi", "model": "Note 13", "price": 3200000, "cat": "Smartphones"},
-        {"brand": "Redmi", "model": "Note 12 Pro", "price": 4000000, "cat": "Smartphones"},
-        {"brand": "Redmi", "model": "13C", "price": 1900000, "cat": "Smartphones"},
-        {"brand": "Xiaomi", "model": "14 Ultra", "price": 16000000, "cat": "Smartphones"},
-        {"brand": "Xiaomi", "model": "13T Pro", "price": 8800000, "cat": "Smartphones"},
-        {"brand": "Xiaomi", "model": "Poco F5 Pro", "price": 6500000, "cat": "Smartphones"},
-        {"brand": "Xiaomi", "model": "Poco X6 Pro", "price": 5000000, "cat": "Smartphones"}
+        {"brand": "Redmi", "model": "Note 13 Pro Plus", "price": 5800000, "cat": "Phones"},
+        {"brand": "Redmi", "model": "Note 13 Pro", "price": 4800000, "cat": "Phones"},
+        {"brand": "Redmi", "model": "Note 13", "price": 3200000, "cat": "Phones"},
+        {"brand": "Redmi", "model": "Note 12 Pro", "price": 4000000, "cat": "Phones"},
+        {"brand": "Redmi", "model": "13C", "price": 1900000, "cat": "Phones"},
+        {"brand": "Xiaomi", "model": "14 Ultra", "price": 16000000, "cat": "Phones"},
+        {"brand": "Xiaomi", "model": "13T Pro", "price": 8800000, "cat": "Phones"},
+        {"brand": "Xiaomi", "model": "Poco F5 Pro", "price": 6500000, "cat": "Phones"},
+        {"brand": "Xiaomi", "model": "Poco X6 Pro", "price": 5000000, "cat": "Phones"}
     ]
 
     colors = ["Black", "White", "Blue", "Natural Titanium", "Silver", "Graphite", "Gold", "Green"]
@@ -84,7 +84,7 @@ def generate_store_csvs():
                 store_data.append({
                     "title": title,
                     "price": price,
-                    "category": p['cat'],
+                    "category": "Phones",
                     "product_url": f"https://{store['name'].lower()}.uz/p/{random.randint(10000, 99999)}",
                     "image_url": f"https://picsum.photos/seed/{p['model'].replace(' ', '')}/400/400"
                 })
