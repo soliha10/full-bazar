@@ -18,7 +18,6 @@ from typing import Generator
 
 import psycopg2
 import psycopg2.extras
-import mlflow
 from dagster import Definitions, ScheduleDefinition, job, op
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -276,21 +275,9 @@ def scrape_all_op(context) -> str:
 @op
 def sync_products_op(context, data_dir: str):
     db_url = os.getenv("PRODUCTS_DB_URL", "postgresql://postgres:postgres@postgres:5432/fullbazar")
-    mlflow_url = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
-    
-    mlflow.set_tracking_uri(mlflow_url)
-    mlflow.set_experiment("Product_Sync_Pipeline")
-
-    with mlflow.start_run(run_name=f"Sync_{datetime.now().strftime('%Y%m%d_%H%M')}"):
-        context.log.info(f"Reading CSVs from: {data_dir}")
-        n_products, n_markets = _run_sync(data_dir, db_url, context.log)
-        
-        # Log metrics to MLflow
-        mlflow.log_metric("total_unique_products", n_products)
-        mlflow.log_metric("total_market_offers", n_markets)
-        mlflow.log_param("sync_date", datetime.now().isoformat())
-        
-        context.log.info(f"Done — {n_products} products, {n_markets} market entries")
+    context.log.info(f"Reading CSVs from: {data_dir}")
+    n_products, n_markets = _run_sync(data_dir, db_url, context.log)
+    context.log.info(f"Done — {n_products} products, {n_markets} market entries")
 
 
 @job
