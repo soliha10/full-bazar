@@ -50,6 +50,9 @@ def extract_features(df):
     
     return X, df['is_match'], vectorizer
 
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import GradientBoostingClassifier
+
 def train():
     data_path = "data/processed_matching_data.csv"
     if not os.path.exists(data_path):
@@ -61,40 +64,42 @@ def train():
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
-    with mlflow.start_run():
-        print("Training Random Forest Classifier...")
-        # Hyperparameters
-        n_estimators = 100
-        max_depth = 10
-        
-        clf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, random_state=42)
-        clf.fit(X_train, y_train)
-        
-        # Evaluate
-        y_pred = clf.predict(X_test)
-        acc = accuracy_score(y_test, y_pred)
-        prec = precision_score(y_test, y_pred)
-        rec = recall_score(y_test, y_pred)
-        f1 = f1_score(y_test, y_pred)
-        
-        print(f"✅ Accuracy: {acc:.4f} | Precision: {prec:.4f} | Recall: {rec:.4f} | F1: {f1:.4f}")
-        
-        # Log to MLflow
-        mlflow.log_param("n_estimators", n_estimators)
-        mlflow.log_param("max_depth", max_depth)
-        mlflow.log_param("dataset_size", len(df))
-        
-        mlflow.log_metric("accuracy", acc)
-        mlflow.log_metric("precision", prec)
-        mlflow.log_metric("recall", rec)
-        mlflow.log_metric("f1_score", f1)
-        
-        try:
-            mlflow.sklearn.log_model(clf, "random_forest_matcher")
-            print("🎉 Model successfully logged to MLflow!")
-        except Exception as e:
-            print(f"⚠️ Metrics were saved, but model file could not be uploaded to MLflow.")
-            print(f"   (This is normal if MLflow is running in Docker without --serve-artifacts). Error: {e}")
+    models = {
+        "RandomForest": RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42),
+        "LogisticRegression": LogisticRegression(random_state=42, max_iter=1000),
+        "GradientBoosting": GradientBoostingClassifier(n_estimators=100, random_state=42)
+    }
+    
+    for model_name, clf in models.items():
+        with mlflow.start_run(run_name=model_name):
+            print(f"\nTraining {model_name}...")
+            
+            clf.fit(X_train, y_train)
+            
+            # Evaluate
+            y_pred = clf.predict(X_test)
+            acc = accuracy_score(y_test, y_pred)
+            prec = precision_score(y_test, y_pred)
+            rec = recall_score(y_test, y_pred)
+            f1 = f1_score(y_test, y_pred)
+            
+            print(f"✅ [{model_name}] Accuracy: {acc:.4f} | Precision: {prec:.4f} | Recall: {rec:.4f} | F1: {f1:.4f}")
+            
+            # Log to MLflow
+            mlflow.log_param("model_type", model_name)
+            mlflow.log_param("dataset_size", len(df))
+            
+            mlflow.log_metric("accuracy", acc)
+            mlflow.log_metric("precision", prec)
+            mlflow.log_metric("recall", rec)
+            mlflow.log_metric("f1_score", f1)
+            
+            try:
+                mlflow.sklearn.log_model(clf, f"{model_name.lower()}_matcher")
+                print(f"🎉 {model_name} successfully logged to MLflow!")
+            except Exception as e:
+                print(f"⚠️ Metrics were saved, but {model_name} model file could not be uploaded to MLflow.")
+                print(f"   Error: {e}")
 
 if __name__ == "__main__":
     train()
