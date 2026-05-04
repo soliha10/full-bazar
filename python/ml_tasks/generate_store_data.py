@@ -23,57 +23,69 @@ def generate_store_csvs():
         {"brand": "Apple", "model": "iPhone 15 Pro Max", "price": 18000000, "cat": "Smartphones"},
         {"brand": "Apple", "model": "iPhone 15 Pro", "price": 16000000, "cat": "Smartphones"},
         {"brand": "Apple", "model": "iPhone 15", "price": 12000000, "cat": "Smartphones"},
-        {"brand": "Apple", "model": "iPhone 14 Pro", "price": 14000000, "cat": "Smartphones"},
-        {"brand": "Apple", "model": "iPhone 13", "price": 9000000, "cat": "Smartphones"},
-        {"brand": "Apple", "model": "MacBook Air M2", "price": 13000000, "cat": "Laptops"},
-        {"brand": "Apple", "model": "AirPods Pro 2", "price": 3000000, "cat": "Electronics"},
+        {"brand": "Apple", "model": "iPhone 14 Pro Max", "price": 14500000, "cat": "Smartphones"},
+        {"brand": "Apple", "model": "iPhone 14", "price": 11000000, "cat": "Smartphones"},
+        {"brand": "Apple", "model": "iPhone 13", "price": 8500000, "cat": "Smartphones"},
+        {"brand": "Apple", "model": "MacBook Pro M3", "price": 25000000, "cat": "Laptops"},
+        {"brand": "Apple", "model": "MacBook Air M2", "price": 14000000, "cat": "Laptops"},
+        {"brand": "Apple", "model": "AirPods Pro 2", "price": 3100000, "cat": "Electronics"},
+        {"brand": "Apple", "model": "Apple Watch Ultra 2", "price": 10500000, "cat": "Electronics"},
         
         # Samsung
-        {"brand": "Samsung", "model": "Galaxy S24 Ultra", "price": 17000000, "cat": "Smartphones"},
-        {"brand": "Samsung", "model": "Galaxy S24+", "price": 13000000, "cat": "Smartphones"},
-        {"brand": "Samsung", "model": "Galaxy A54 5G", "price": 4500000, "cat": "Smartphones"},
-        {"brand": "Samsung", "model": "Galaxy A34", "price": 3500000, "cat": "Smartphones"},
-        {"brand": "Samsung", "model": "Galaxy Z Fold 5", "price": 19000000, "cat": "Smartphones"},
+        {"brand": "Samsung", "model": "Galaxy S24 Ultra", "price": 17500000, "cat": "Smartphones"},
+        {"brand": "Samsung", "model": "Galaxy S24 Plus", "price": 14000000, "cat": "Smartphones"},
+        {"brand": "Samsung", "model": "Galaxy S24", "price": 11000000, "cat": "Smartphones"},
+        {"brand": "Samsung", "model": "Galaxy S23 Ultra", "price": 13500000, "cat": "Smartphones"},
+        {"brand": "Samsung", "model": "Galaxy A54 5G", "price": 4800000, "cat": "Smartphones"},
+        {"brand": "Samsung", "model": "Galaxy A34", "price": 3600000, "cat": "Smartphones"},
+        {"brand": "Samsung", "model": "Galaxy Z Fold 5", "price": 18500000, "cat": "Smartphones"},
+        {"brand": "Samsung", "model": "Galaxy Z Flip 5", "price": 11000000, "cat": "Smartphones"},
         
         # Redmi / Xiaomi
-        {"brand": "Redmi", "model": "Note 13 Pro+", "price": 5500000, "cat": "Smartphones"},
-        {"brand": "Redmi", "model": "Note 13 Pro", "price": 4500000, "cat": "Smartphones"},
-        {"brand": "Redmi", "model": "Note 13", "price": 3000000, "cat": "Smartphones"},
-        {"brand": "Redmi", "model": "13C", "price": 1800000, "cat": "Smartphones"},
-        {"brand": "Xiaomi", "model": "14 Ultra", "price": 15000000, "cat": "Smartphones"},
-        {"brand": "Xiaomi", "model": "13T Pro", "price": 8500000, "cat": "Smartphones"}
+        {"brand": "Redmi", "model": "Note 13 Pro Plus", "price": 5800000, "cat": "Smartphones"},
+        {"brand": "Redmi", "model": "Note 13 Pro", "price": 4800000, "cat": "Smartphones"},
+        {"brand": "Redmi", "model": "Note 13", "price": 3200000, "cat": "Smartphones"},
+        {"brand": "Redmi", "model": "Note 12 Pro", "price": 4000000, "cat": "Smartphones"},
+        {"brand": "Redmi", "model": "13C", "price": 1900000, "cat": "Smartphones"},
+        {"brand": "Xiaomi", "model": "14 Ultra", "price": 16000000, "cat": "Smartphones"},
+        {"brand": "Xiaomi", "model": "13T Pro", "price": 8800000, "cat": "Smartphones"},
+        {"brand": "Xiaomi", "model": "Poco F5 Pro", "price": 6500000, "cat": "Smartphones"},
+        {"brand": "Xiaomi", "model": "Poco X6 Pro", "price": 5000000, "cat": "Smartphones"}
     ]
 
-    colors = ["Black", "White", "Blue", "Titanium", "Silver", "Graphite"]
-    storages = ["128GB", "256GB", "512GB"]
+    colors = ["Black", "White", "Blue", "Natural Titanium", "Silver", "Graphite", "Gold", "Green"]
+    storages = ["128GB", "256GB", "512GB", "1TB"]
 
     os.makedirs("data", exist_ok=True)
 
     for store in stores:
         store_data = []
         for p in products:
-            # Generate 2-3 variants of each product per store to simulate real scraping noise
-            for _ in range(random.randint(1, 2)):
+            # Every store gets 2 variations of every product to show grouping works
+            for i in range(2):
                 color = random.choice(colors)
                 storage = random.choice(storages)
                 
-                # Naming variations
+                # Naming variations (Uzbek, Russian, English patterns)
                 formats = [
                     f"{p['brand']} {p['model']} {storage} {color}",
-                    f"Смартфон {p['brand']} {p['model']} {storage}",
-                    f"{p['model']} ({storage}) {color}",
-                    f"{p['brand']} {p['model']} - {color}",
+                    f"Смартфон {p['brand']} {p['model']} {storage} {color}",
+                    f"Smartfon {p['brand']} {p['model']} {storage}",
+                    f"{p['model']} {storage} ({color})",
+                    f"{p['brand']} {p['model']} {color}",
+                    f"{p['model']} - {color} - {storage}",
                 ]
                 title = random.choice(formats)
                 
                 # Price calculation (base price * store multiplier * random jitter)
-                price = int(p['price'] * store['price_mult'] * random.uniform(0.98, 1.02))
+                # Ensure different prices for same product across stores
+                price = int(p['price'] * store['price_mult'] * random.uniform(0.97, 1.03))
                 
                 store_data.append({
                     "title": title,
                     "price": price,
                     "category": p['cat'],
-                    "product_url": f"https://{store['name'].lower()}.uz/p/{random.randint(1000, 9999)}",
+                    "product_url": f"https://{store['name'].lower()}.uz/p/{random.randint(10000, 99999)}",
                     "image_url": f"https://picsum.photos/seed/{p['model'].replace(' ', '')}/400/400"
                 })
         
