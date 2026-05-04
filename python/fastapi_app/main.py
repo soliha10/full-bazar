@@ -196,6 +196,38 @@ async def get_product(product_id: str) -> dict:
     return _row_to_product(row, markets_map.get(product_id, []))
 
 
+@app.get("/api/recommendations")
+async def get_recommendations(limit: int = Query(4, ge=1, le=10)) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    
+    # Logic: Find products that have multiple markets and the highest (max_price - min_price)
+    rows = await pool.fetch(
+        """
+        WITH market_stats AS (
+            SELECT 
+                product_id, 
+                MIN(price) as min_price, 
+                MAX(price) as max_price,
+                COUNT(*) as market_count
+            FROM product_markets
+            GROUP BY product_id
+            HAVING COUNT(*) > 1
+        )
+        SELECT p.*, ms.max_price - ms.min_price as savings
+        FROM products p
+        JOIN market_stats ms ON p.id = ms.product_id
+        ORDER BY savings DESC
+        LIMIT $1
+        """,
+        limit
+    )
+    
+    product_ids = [r["id"] for r in rows]
+    markets_map = await _fetch_markets(pool, product_ids)
+    products = [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows]
+    
+    return {"products": products}
+
 @app.get("/health")
 async def health() -> dict:
     return {"status": "ok"}

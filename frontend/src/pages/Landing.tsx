@@ -1,8 +1,10 @@
-import { Smartphone, Star, ArrowRight, TrendingUp, ShieldCheck, RefreshCw, Zap } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Smartphone, Star, ArrowRight, TrendingUp, ShieldCheck, RefreshCw, Zap, Brain } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatSum } from '../utils/productMapper';
+import axios from 'axios';
 
 const MARKET_LOGOS: { name: string; color: string }[] = [
   { name: 'Asaxiy',    color: '#0EA5E9' },
@@ -21,7 +23,23 @@ const MARKET_LOGOS: { name: string; color: string }[] = [
 export function Landing() {
   const { products: allProducts, isLoading, total } = useProducts(1, 8);
   const featuredProducts = allProducts.slice(0, 4);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [loadingRecs, setLoadingRecs] = useState(true);
   const { t } = useLanguage();
+
+  useEffect(() => {
+    const fetchRecs = async () => {
+      try {
+        const res = await axios.get('/api/recommendations');
+        setRecommendations(res.data.products || []);
+      } catch (err) {
+        console.error("Failed to fetch recommendations", err);
+      } finally {
+        setLoadingRecs(false);
+      }
+    };
+    fetchRecs();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24 md:pb-0">
@@ -141,6 +159,65 @@ export function Landing() {
               <span className="text-sm font-black text-gray-800">{name}</span>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ── AI Recommendations: Best Deals ── */}
+      <section className="mt-14 px-4 max-w-7xl mx-auto">
+        <div className="bg-white rounded-[2.5rem] p-8 md:p-12 border border-blue-100 shadow-xl shadow-blue-500/5 relative overflow-hidden">
+           <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
+              <Zap size={200} className="text-[#0062FF]" />
+           </div>
+           
+           <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 rounded-2xl bg-[#0062FF]/10 text-[#0062FF]">
+                  <TrendingUp size={24} />
+                </div>
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">AI Tavsiyalari: Eng katta foyda</h2>
+                  <p className="text-gray-500 text-sm mt-1">Narxlar farqi eng yuqori bo'lgan mahsulotlar — hoziroq tejang!</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {loadingRecs ? (
+                  Array(4).fill(0).map((_, i) => (
+                    <div key={i} className="h-64 bg-gray-50 animate-pulse rounded-3xl" />
+                  ))
+                ) : (
+                  recommendations.map((p) => (
+                    <Link 
+                      key={p.id}
+                      to={`/product/${p.id}`}
+                      className="group bg-gray-50/50 hover:bg-white p-5 rounded-3xl border border-transparent hover:border-blue-100 hover:shadow-xl transition-all duration-500"
+                    >
+                      <div className="aspect-square bg-white rounded-2xl mb-4 overflow-hidden p-4">
+                        <img src={p.image} alt={p.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" />
+                      </div>
+                      <div className="bg-green-500/10 text-green-600 text-[10px] font-black px-2 py-1 rounded-lg inline-block mb-2">
+                         ENG KATTA FOYDA
+                      </div>
+                      <h3 className="text-sm font-bold text-gray-900 line-clamp-1 mb-2">{p.name}</h3>
+                      <div className="flex items-end justify-between">
+                         <div>
+                           <p className="text-[10px] text-gray-400 font-bold uppercase">Eng arzon narx</p>
+                           <p className="text-lg font-black text-[#0062FF]">{formatSum(p.price)}</p>
+                         </div>
+                         <div className="bg-[#0062FF] p-2 rounded-xl text-white">
+                            <ArrowRight size={16} />
+                         </div>
+                      </div>
+                    </Link>
+                  ))
+                )}
+                {!loadingRecs && recommendations.length === 0 && (
+                   <div className="col-span-full py-12 text-center text-gray-400">
+                      Hozircha tavsiyalar yo'q. Sync amalga oshirilganda paydo bo'ladi.
+                   </div>
+                )}
+              </div>
+           </div>
         </div>
       </section>
 

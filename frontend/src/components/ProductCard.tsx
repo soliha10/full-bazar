@@ -120,14 +120,21 @@ export function ProductCard({ product, viewMode = 'grid' }: ProductCardProps) {
           className="w-full h-full object-contain p-7 group-hover:scale-108 transition-transform duration-600 mix-blend-multiply"
         />
         {sortedMarkets.length > 1 && (
-          <div className="absolute top-3 left-3 bg-[#0062FF] text-white text-[9px] font-black px-2.5 py-1 rounded-full tracking-wide">
-            {sortedMarkets.length} DO'KON
+          <div className="absolute top-3 left-3 flex flex-col gap-1">
+            <div className="bg-[#0062FF] text-white text-[9px] font-black px-2.5 py-1 rounded-full tracking-wide">
+              {sortedMarkets.length} DO'KON
+            </div>
+            <div className="bg-green-500 text-white text-[9px] font-black px-2.5 py-1 rounded-full tracking-wide flex items-center gap-1">
+              <Star size={10} fill="white" />
+              TAVSIYA ETILADI
+            </div>
           </div>
         )}
         {product.source && (
-          <div className="absolute top-3 right-3 bg-white/85 backdrop-blur-sm px-2.5 py-1 rounded-xl border border-gray-100 shadow-sm">
+          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-xl border border-gray-100 shadow-sm flex items-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
             <span className="text-[9px] text-gray-800 font-black uppercase tracking-wider">
-              {product.source}
+              {product.source} (ARZON)
             </span>
           </div>
         )}

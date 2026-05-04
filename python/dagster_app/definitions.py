@@ -130,13 +130,38 @@ def product_row_generator(data_dir: str) -> Generator[dict, None, None]:
 
 def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
     product_groups: dict[str, dict] = {}
+    
+    # Pre-compiled list of normalized titles for faster matching
+    normalized_titles_map: dict[str, str] = {} # norm -> pid
 
     for row in product_row_generator(data_dir):
         title = row["title"]
         norm = _normalize_title(title)
-        product_id = _make_product_id(norm)
+        
+        # Smart Matching Logic: Find a similar existing product
+        target_pid = None
+        
+        # 1. Direct match check (Fast)
+        if norm in normalized_titles_map:
+            target_pid = normalized_titles_map[norm]
+        else:
+            # 2. Similarity match check (Smart)
+            # We look through existing groups for a highly similar title
+            # For performance in the prototype, we only check the last 200 groups
+            recent_groups = list(product_groups.values())[-200:]
+            for group in recent_groups:
+                # Use our similarity logic
+                score = _get_cosine_sim(norm, _normalize_title(group["title"]))
+                if score > 0.82: # Higher threshold for database grouping to avoid false positives
+                    target_pid = group["id"]
+                    normalized_titles_map[norm] = target_pid
+                    break
+        
+        if not target_pid:
+            product_id = _make_product_id(norm)
+            target_pid = product_id
+            normalized_titles_map[norm] = product_id
 
-        if product_id not in product_groups:
             raw_rating = row["raw_rating"]
             rating = 4.5
             if raw_rating:
@@ -147,7 +172,7 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
                 except ValueError:
                     pass
             else:
-                id_hash = sum(ord(c) for c in product_id)
+                id_hash = sum(ord(c) for c in target_pid)
                 rating = round(3.5 + (id_hash % 16) / 10, 1)
 
             raw_reviews = row["raw_reviews"]
@@ -158,12 +183,12 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
                 except ValueError:
                     pass
             else:
-                id_hash = sum(ord(c) for c in product_id)
+                id_hash = sum(ord(c) for c in target_pid)
                 base = 50 if rating >= 4.5 else (30 if rating >= 4.0 else 15)
                 reviews = base + (id_hash % 100)
 
-            product_groups[product_id] = {
-                "id": product_id,
+            product_groups[target_pid] = {
+                "id": target_pid,
                 "name": _make_display_name(title),
                 "title": title,
                 "category": "Phones",
@@ -175,7 +200,7 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
                 "markets": {},
             }
 
-        group = product_groups[product_id]
+        group = product_groups[target_pid]
         if len(title) > len(group["title"]):
             group["title"] = title
         group["keywords"] = group["keywords"] + " " + title.lower()
@@ -188,6 +213,18 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
         price = row["market_price"]
         if src not in group["markets"] or price < group["markets"][src]["price"]:
             group["markets"][src] = {"source": src.capitalize(), "price": price, "url": row["market_url"]}
+
+def _get_cosine_sim(s1: str, s2: str) -> float:
+    from collections import Counter
+    import math
+    vec1 = Counter(re.findall(r'\w+', s1.lower()))
+    vec2 = Counter(re.findall(r'\w+', s2.lower()))
+    intersection = set(vec1.keys()) & set(vec2.keys())
+    numerator = sum([vec1[x] * vec2[x] for x in intersection])
+    sum1 = sum([vec1[x]**2 for x in vec1.keys()])
+    sum2 = sum([vec2[x]**2 for x in vec2.keys()])
+    denominator = math.sqrt(sum1) * math.sqrt(sum2)
+    return float(numerator) / denominator if denominator else 0.0
 
     products_rows = []
     markets_rows = []
