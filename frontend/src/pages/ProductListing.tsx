@@ -184,7 +184,20 @@ export function ProductListing() {
     }
 
     if (selectedBrand) {
-      result = result.filter((p) => p.name.toLowerCase().includes(selectedBrand.toLowerCase()));
+      const brandKeywords: Record<string, string[]> = {
+        'Apple': ['apple', 'iphone', 'ipad', 'macbook', 'airpods', 'watch ultra'],
+        'Samsung': ['samsung', 'galaxy', 'z fold', 'z flip'],
+        'Xiaomi': ['xiaomi', 'redmi', 'poco', 'mi band', 'mi pad'],
+        'Redmi': ['redmi'],
+        'Sony': ['sony', 'playstation', 'bravia', 'xperia']
+      };
+
+      const keywords = brandKeywords[selectedBrand] || [selectedBrand.toLowerCase()];
+      
+      result = result.filter((p) => {
+        const productName = p.name.toLowerCase();
+        return keywords.some(keyword => productName.includes(keyword));
+      });
     }
 
     if (sortBy === 'priceLow') {
