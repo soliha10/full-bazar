@@ -164,11 +164,9 @@ export function Navbar({ onSearchChange }: NavbarProps) {
               <button
                 onClick={toggleTheme}
                 className="p-2.5 rounded-xl bg-gray-50 hover:bg-blue-50 text-gray-400 hover:text-[#0062FF] border border-transparent hover:border-blue-100 transition-all active:scale-95"
-                aria-label="Toggle theme"
               >
                 {theme === 'light' ? <Moon className="w-4.5 h-4.5" /> : <Sun className="w-4.5 h-4.5" />}
               </button>
-            </div>
 
             {/* Login Button (Figma node 1-761) */}
             <button className="flex items-center gap-2 px-7 py-3 rounded-xl bg-[#0062FF] hover:bg-blue-600 text-white shadow-lg shadow-blue-500/25 transition-all active:scale-95 group ml-2">
