@@ -50,7 +50,7 @@ export function ProductListing() {
   const [listPage, setListPage] = useState(1);
 
   const LIST_ITEMS_PER_PAGE = 10;
-  const categories = ['All', 'Phones', 'Electronics', 'Laptops', 'Watch'];
+  const categories = ['All', 'Phones'];
 
   const MARKETPLACES: { name: string; key: string; color: string }[] = [
     { name: 'Asaxiy',    key: 'asaxiy',    color: '#0EA5E9' },
