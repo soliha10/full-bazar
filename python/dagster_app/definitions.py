@@ -128,65 +128,80 @@ def product_row_generator(data_dir: str) -> Generator[dict, None, None]:
 
 # ── Sync logic ────────────────────────────────────────────────────────────────
 
+_DIFF_WORDS_RE = re.compile(r'\b(max|plus|ultra|pro|lite|mini|fe|note|edge|fold|\d+gb|\d+tb|\d+\/\d+)\b')
+
+
+def _get_cosine_sim(s1: str, s2: str) -> float:
+    from collections import Counter
+    import math
+    vec1 = Counter(re.findall(r'\w+', s1.lower()))
+    vec2 = Counter(re.findall(r'\w+', s2.lower()))
+    intersection = set(vec1.keys()) & set(vec2.keys())
+    numerator = sum(vec1[x] * vec2[x] for x in intersection)
+    denominator = math.sqrt(sum(v**2 for v in vec1.values())) * math.sqrt(sum(v**2 for v in vec2.values()))
+    return float(numerator) / denominator if denominator else 0.0
+
+
+def _can_merge(norm1: str, norm2: str) -> bool:
+    if _get_cosine_sim(norm1, norm2) < 0.85:
+        return False
+    return set(_DIFF_WORDS_RE.findall(norm1)) == set(_DIFF_WORDS_RE.findall(norm2))
+
+
 def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
     product_groups: dict[str, dict] = {}
-    brand_groups: dict[str, list[str]] = {} # brand -> list of pids
-    
-    # Pre-compiled list of normalized titles for faster matching
-    normalized_titles_map: dict[str, str] = {} # norm -> pid
+    brand_groups: dict[str, list[str]] = {}
+    norm_to_pid: dict[str, str] = {}
+
+    BRANDS = ["apple", "samsung", "redmi", "xiaomi", "oppo", "vivo",
+              "realme", "honor", "huawei", "tecno", "infinix", "itel", "poco"]
 
     for row in product_row_generator(data_dir):
         title = row["title"]
         norm = _normalize_title(title)
-        
-        # Extract brand for indexing
-        brand = "other"
-        for b in ["apple", "samsung", "redmi", "xiaomi", "sony", "google", "hp", "asus"]:
-            if b in norm:
-                brand = b
-                break
-        
-        # Smart Matching Logic: Find a similar existing product
-        target_pid = None
-        
-        # 1. Direct match check (Fast)
-        if norm in normalized_titles_map:
-            target_pid = normalized_titles_map[norm]
-        else:
-            # 2. Similarity match check (Smart)
-            # We only look through groups within the SAME brand
-            potential_pids = brand_groups.get(brand, [])
-            for pid in potential_pids:
-                group = product_groups[pid]
-                score = _get_cosine_sim(norm, _normalize_title(group["title"]))
-                # If very similar (>0.85) or reasonably similar (>0.75) AND it's the same brand
-                if score > 0.80: 
-                    target_pid = pid
-                    normalized_titles_map[norm] = target_pid
-                    break
-        
-        if not target_pid:
-            product_id = _make_product_id(norm)
-            target_pid = product_id
-            normalized_titles_map[norm] = product_id
-            
-            # Index it
-            if brand not in brand_groups:
-                brand_groups[brand] = []
-            brand_groups[brand].append(target_pid)
 
-            # Generate stats...
+        brand = next((b for b in BRANDS if b in norm), "other")
+
+        # 1. exact norm match
+        target_pid = norm_to_pid.get(norm)
+
+        # 2. cosine similarity within same brand (with keyword guard)
+        if not target_pid:
+            for pid in brand_groups.get(brand, []):
+                if _can_merge(norm, _normalize_title(product_groups[pid]["title"])):
+                    target_pid = pid
+                    norm_to_pid[norm] = pid
+                    break
+
+        # 3. new product
+        if not target_pid:
+            target_pid = _make_product_id(norm)
+            norm_to_pid[norm] = target_pid
+            brand_groups.setdefault(brand, []).append(target_pid)
+
             raw_rating = row["raw_rating"]
             rating = 4.5
-            # ... (rest of rating logic)
             if raw_rating:
                 try:
                     r = float(raw_rating)
-                    if 1 <= r <= 5: rating = round(r, 2)
-                except: pass
+                    if 1 <= r <= 5:
+                        rating = round(r, 2)
+                except (ValueError, TypeError):
+                    pass
             else:
                 id_hash = sum(ord(c) for c in target_pid)
                 rating = round(3.5 + (id_hash % 16) / 10, 1)
+
+            raw_reviews = row["raw_reviews"]
+            reviews = 10
+            if raw_reviews:
+                try:
+                    reviews = int(raw_reviews)
+                except (ValueError, TypeError):
+                    pass
+            else:
+                id_hash = sum(ord(c) for c in target_pid)
+                reviews = (50 if rating >= 4.5 else 30 if rating >= 4.0 else 15) + (id_hash % 100)
 
             product_groups[target_pid] = {
                 "id": target_pid,
@@ -194,32 +209,17 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
                 "title": title,
                 "category": "Phones",
                 "rating": rating,
-                "reviews": 15 + (sum(ord(c) for c in target_pid) % 50),
+                "reviews": reviews,
                 "image": row["image"],
                 "images": [row["image"]] if row["image"] else [],
                 "keywords": title.lower(),
                 "markets": {},
-                "market_count": 0
             }
-
-        # Add offer to group
-        market_name = row["market_name"]
-        product_groups[target_pid]["markets"][market_name] = {
-            "source": market_name,
-            "price": row["market_price"],
-            "url": row["market_url"]
-        }
-        product_groups[target_pid]["market_count"] = len(product_groups[target_pid]["markets"])
-        
-        # Keep track of the lowest price for the main display
-        current_price = product_groups[target_pid].get("price", 999999999)
-        if row["market_price"] < current_price:
-            product_groups[target_pid]["price"] = row["market_price"]
 
         group = product_groups[target_pid]
         if len(title) > len(group["title"]):
             group["title"] = title
-        group["keywords"] = group["keywords"] + " " + title.lower()
+        group["keywords"] += " " + title.lower()
         if row["image"] and row["image"] not in group["images"]:
             group["images"].append(row["image"])
         if row["image"] and not group["image"]:
@@ -229,18 +229,6 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
         price = row["market_price"]
         if src not in group["markets"] or price < group["markets"][src]["price"]:
             group["markets"][src] = {"source": src.capitalize(), "price": price, "url": row["market_url"]}
-
-def _get_cosine_sim(s1: str, s2: str) -> float:
-    from collections import Counter
-    import math
-    vec1 = Counter(re.findall(r'\w+', s1.lower()))
-    vec2 = Counter(re.findall(r'\w+', s2.lower()))
-    intersection = set(vec1.keys()) & set(vec2.keys())
-    numerator = sum([vec1[x] * vec2[x] for x in intersection])
-    sum1 = sum([vec1[x]**2 for x in vec1.keys()])
-    sum2 = sum([vec2[x]**2 for x in vec2.keys()])
-    denominator = math.sqrt(sum1) * math.sqrt(sum2)
-    return float(numerator) / denominator if denominator else 0.0
 
     products_rows = []
     markets_rows = []
@@ -261,7 +249,6 @@ def _get_cosine_sim(s1: str, s2: str) -> float:
     try:
         with conn:
             with conn.cursor() as cur:
-                # Atomic full-replace: truncate old data then insert fresh
                 cur.execute("TRUNCATE product_markets, products")
                 if products_rows:
                     psycopg2.extras.execute_values(
