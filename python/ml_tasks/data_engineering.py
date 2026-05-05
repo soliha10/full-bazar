@@ -41,7 +41,7 @@ def build_data_pipeline():
     all_titles = []
     for f in csv_files:
         try:
-            df = pd.read_csv(f)
+            df = pd.read_csv(f, encoding='utf-8-sig')
             if 'title' in df.columns:
                 all_titles.extend(df['title'].dropna().tolist())
         except Exception as e:

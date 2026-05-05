@@ -17,9 +17,12 @@ x-dagster-common: &dagster-common
     DAGSTER_HOME: /opt/dagster/home
     PRODUCTS_DB_URL: postgresql://postgres:postgres@postgres:5432/fullbazar
     DATA_DIR: /opt/dagster/data
+    MLFLOW_TRACKING_URI: http://mlflow:5000
+    ML_TASKS_DIR: /opt/dagster/ml_tasks
   volumes:
     - dagster_home:/opt/dagster/home
     - ./data:/opt/dagster/data
+    - ./python/ml_tasks:/opt/dagster/ml_tasks:ro
   depends_on:
     postgres:
       condition: service_healthy

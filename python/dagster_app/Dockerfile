@@ -13,4 +13,6 @@ COPY scrapers/ ./scrapers/
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+RUN mkdir -p /opt/dagster/ml_tasks /opt/dagster/data
+
 ENTRYPOINT ["/entrypoint.sh"]

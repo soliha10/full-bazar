@@ -326,16 +326,66 @@ def scrape_all_op(context) -> str:
 
 
 @op
-def sync_products_op(context, data_dir: str):
+def sync_products_op(context, data_dir: str) -> str:
     db_url = os.getenv("PRODUCTS_DB_URL", "postgresql://postgres:postgres@postgres:5432/fullbazar")
     context.log.info(f"Reading CSVs from: {data_dir}")
     n_products, n_markets = _run_sync(data_dir, db_url, context.log)
     context.log.info(f"Done — {n_products} products, {n_markets} market entries")
+    return data_dir
+
+
+@op
+def train_matcher_op(context, data_dir: str):
+    """Rebuild the product-matching ML model after each scrape cycle."""
+    mlflow_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
+    ml_tasks_dir = os.getenv("ML_TASKS_DIR", "/opt/dagster/ml_tasks")
+
+    if not os.path.isdir(ml_tasks_dir):
+        context.log.info(f"[train_matcher] ml_tasks dir not found at {ml_tasks_dir}, skipping")
+        return
+
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "data_engineering",
+            os.path.join(ml_tasks_dir, "data_engineering.py"),
+        )
+        de_mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(de_mod)
+
+        orig_cwd = os.getcwd()
+        os.chdir(ml_tasks_dir)
+        try:
+            de_mod.build_data_pipeline()
+        finally:
+            os.chdir(orig_cwd)
+
+        context.log.info("[train_matcher] data engineering done, starting training")
+
+        spec2 = importlib.util.spec_from_file_location(
+            "train_matcher",
+            os.path.join(ml_tasks_dir, "train_matcher.py"),
+        )
+        tm_mod = importlib.util.module_from_spec(spec2)
+
+        import mlflow as _mlflow
+        _mlflow.set_tracking_uri(mlflow_uri)
+
+        spec2.loader.exec_module(tm_mod)
+        os.chdir(ml_tasks_dir)
+        try:
+            tm_mod.train()
+        finally:
+            os.chdir(orig_cwd)
+
+        context.log.info("[train_matcher] training complete")
+    except Exception as exc:
+        context.log.warning(f"[train_matcher] skipped — {exc}")
 
 
 @job
 def product_sync_job():
-    sync_products_op(scrape_all_op())
+    train_matcher_op(sync_products_op(scrape_all_op()))
 
 
 defs = Definitions(
