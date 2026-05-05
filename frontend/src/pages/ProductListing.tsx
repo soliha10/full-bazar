@@ -66,7 +66,10 @@ export function ProductListing() {
     { name: 'Castore',   key: 'castore',   color: '#14B8A6' },
   ];
 
-  const BRANDS = ['Apple', 'Samsung', 'Xiaomi', 'Google', 'Asus', 'HP', 'Sony'];
+  const BRANDS = [
+    'Apple', 'Samsung', 'Redmi', 'Xiaomi', 'Poco',
+    'Honor', 'Vivo', 'Oppo', 'Realme', 'Tecno', 'Infinix',
+  ];
 
   const toggleMarketplace = useCallback((key: string) => {
     setSelectedMarketplaces((prev) =>
@@ -78,9 +81,10 @@ export function ProductListing() {
     let count = 0;
     if (selectedCategory !== 'All') count += 1;
     if (minRating > 0) count += 1;
+    if (selectedBrand) count += 1;
     if (selectedMarketplaces.length > 0) count += selectedMarketplaces.length;
     return count;
-  }, [selectedCategory, minRating, selectedMarketplaces]);
+  }, [selectedCategory, minRating, selectedBrand, selectedMarketplaces]);
 
   const updateUrlSearch = useCallback(
     (value: string) => {
@@ -185,11 +189,17 @@ export function ProductListing() {
 
     if (selectedBrand) {
       const brandKeywords: Record<string, string[]> = {
-        'Apple': ['apple', 'iphone', 'ipad', 'macbook', 'airpods', 'watch ultra'],
-        'Samsung': ['samsung', 'galaxy', 'z fold', 'z flip'],
-        'Xiaomi': ['xiaomi', 'redmi', 'poco', 'mi band', 'mi pad'],
-        'Redmi': ['redmi'],
-        'Sony': ['sony', 'playstation', 'bravia', 'xperia']
+        'Apple':   ['apple', 'iphone'],
+        'Samsung': ['samsung', 'galaxy'],
+        'Redmi':   ['redmi'],
+        'Xiaomi':  ['xiaomi', 'mi '],
+        'Poco':    ['poco'],
+        'Honor':   ['honor'],
+        'Vivo':    ['vivo'],
+        'Oppo':    ['oppo'],
+        'Realme':  ['realme'],
+        'Tecno':   ['tecno', 'camon', 'spark', 'pova'],
+        'Infinix': ['infinix'],
       };
 
       const keywords = brandKeywords[selectedBrand] || [selectedBrand.toLowerCase()];
@@ -261,6 +271,7 @@ export function ProductListing() {
     setSelectedCategory('All');
     setSelectedMarketplaces([]);
     setMinRating(0);
+    setSelectedBrand(null);
     setSortBy('relevance');
     setListPage(1);
     updateUrlCategory('All');
@@ -473,6 +484,38 @@ export function ProductListing() {
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+
+                {/* Rating filter */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-gray-400">
+                      {t.listing.rating}
+                    </h4>
+                    {minRating > 0 && (
+                      <button
+                        onClick={() => setMinRating(0)}
+                        className="text-[10px] font-bold uppercase tracking-wider text-[#0062FF] hover:underline"
+                      >
+                        Tozalash
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[0, 3, 4, 4.5].map((rating) => (
+                      <button
+                        key={rating}
+                        onClick={() => setMinRating(rating)}
+                        className={`rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                          minRating === rating
+                            ? 'bg-blue-50 text-[#0062FF] ring-1 ring-blue-200'
+                            : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                        }`}
+                      >
+                        {rating === 0 ? t.listing.anyRating : `${rating}★+`}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
