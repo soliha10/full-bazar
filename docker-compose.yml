@@ -117,7 +117,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    mem_limit: 512m
+    mem_limit: 1g
 
 volumes:
   postgres_data:
