@@ -7,6 +7,7 @@
 #   frontend          — React built at startup, served by nginx on port 80
 #   dagster-webserver — Dagster UI on port 3000
 #   dagster-daemon    — runs hourly schedule (replaces Airflow)
+#   mlflow            — ML experiment tracking (1 worker, 400 MB limit)
 # ─────────────────────────────────────────────────────────────────────────────
 
 x-dagster-common: &dagster-common
@@ -46,6 +47,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    mem_limit: 256m
 
   # ── FastAPI ─────────────────────────────────────────────────────────────────
   fastapi:
@@ -60,6 +62,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    mem_limit: 128m
 
   # ── Frontend (React → nginx) ─────────────────────────────────────────────────
   frontend:
@@ -74,6 +77,7 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - fastapi
+    mem_limit: 64m
 
   # ── Dagster webserver (UI) ──────────────────────────────────────────────────
   dagster-webserver:
@@ -82,12 +86,14 @@ services:
     command: dagster-webserver -h 0.0.0.0 -p 3000 -w /app/workspace.yaml
     ports:
       - "3000:3000"
+    mem_limit: 512m
 
   # ── Dagster daemon (runs hourly schedule) ───────────────────────────────────
   dagster-daemon:
     <<: *dagster-common
     restart: unless-stopped
     command: dagster-daemon run
+    mem_limit: 512m
 
   # ── MLflow (Tracking Server) ────────────────────────────────────────────────
   mlflow:
@@ -95,6 +101,15 @@ services:
       context: ./python/mlflow_app
       dockerfile: Dockerfile
     restart: unless-stopped
+    # Use 1 gunicorn worker to cut RAM from ~1.8 GB down to ~350 MB
+    command: >
+      mlflow server
+      --backend-store-uri postgresql://postgres:postgres@postgres:5432/fullbazar
+      --serve-artifacts
+      --artifacts-destination /mlflow/artifacts
+      --host 0.0.0.0
+      --port 5000
+      --gunicorn-opts "--workers 1 --timeout 120"
     ports:
       - "5050:5000"
     volumes:
@@ -102,6 +117,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    mem_limit: 512m
 
 volumes:
   postgres_data:

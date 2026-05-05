@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Search, User, Moon, Sun, Globe, ShoppingBag, Menu, Mic, X, LogIn, ChevronRight, HelpCircle, Info, ChevronDown } from 'lucide-react';
+import {
+  Search, User, Moon, Sun, Globe, ShoppingBag, Menu, Mic, X,
+  LogIn, ChevronRight, HelpCircle, Info, ChevronDown, Sparkles,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -11,68 +14,35 @@ interface NavbarProps {
 }
 
 export function Navbar({ onSearchChange }: NavbarProps) {
-  const { theme, toggleTheme } = useTheme();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-  // Local input value — tracks what the user is typing
   const [searchValue, setSearchValue] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('search') || '';
   });
-
   const [isListening, setIsListening] = useState(false);
 
-  // Keep input in sync when the URL changes externally
-  // (e.g. browser back/forward, or ProductListing clears search)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const urlQuery = params.get('search') || '';
-    setSearchValue(urlQuery);
+    setSearchValue(params.get('search') || '');
   }, [location.search]);
 
-  const startVoiceSearch = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser.");
-      return;
-    }
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = language === 'uz' ? 'uz-UZ' : language === 'ru' ? 'ru-RU' : 'en-US';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onerror = () => setIsListening(false);
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setSearchValue(transcript);
-      onSearchChange?.(transcript); // Voice search can be immediate
-    };
-
-    recognition.start();
-  };
-
-  const handleTextChange = (value: string) => {
-    setSearchValue(value);
-  };
-
-  // Debounced live-search in Navbar
+  // Debounced live search
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const urlQuery = params.get('search') || '';
-    
-    // Don't trigger if it matches current URL (initial sync or already committed)
-    if (searchValue.trim() === urlQuery) return;
-
-    const timer = setTimeout(() => {
-      onSearchChange?.(searchValue.trim());
-    }, 400);
-
+    if (searchValue.trim() === (params.get('search') || '')) return;
+    const timer = setTimeout(() => onSearchChange?.(searchValue.trim()), 400);
     return () => clearTimeout(timer);
   }, [searchValue, location.search, onSearchChange]);
 
@@ -81,127 +51,178 @@ export function Navbar({ onSearchChange }: NavbarProps) {
     onSearchChange?.(searchValue.trim());
   };
 
+  const startVoiceSearch = () => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    const r = new SR();
+    r.lang = language === 'uz' ? 'uz-UZ' : language === 'ru' ? 'ru-RU' : 'en-US';
+    r.onstart = () => setIsListening(true);
+    r.onend = () => setIsListening(false);
+    r.onerror = () => setIsListening(false);
+    r.onresult = (e: any) => {
+      const text = e.results[0][0].transcript;
+      setSearchValue(text);
+      onSearchChange?.(text.trim());
+    };
+    r.start();
+  };
+
+  const langLabels: Record<Language, string> = {
+    uz: "O'zbekcha",
+    ru: 'Русский',
+    en: 'English',
+  };
   const languages: { code: Language; label: string }[] = [
-    { code: 'uz', label: 'UZ' },
-    { code: 'ru', label: 'RU' },
-    { code: 'en', label: 'EN' }
+    { code: 'uz', label: "O'zbekcha" },
+    { code: 'ru', label: 'Русский' },
+    { code: 'en', label: 'English' },
   ];
+  const isDark = resolvedTheme === 'dark';
 
   return (
-    <nav className="bg-white sticky top-0 z-50 border-b border-gray-100">
+    <nav
+      className={`sticky top-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? 'shadow-lg shadow-violet-500/10 dark:shadow-violet-900/20'
+          : ''
+      } bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-b border-violet-100/60 dark:border-violet-900/30`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Desktop & Mobile Header Row */}
-        <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Left: Mobile Menu & Logo */}
-          <div className="flex items-center gap-3">
-            <button 
-              className="md:hidden text-gray-900 p-1.5 hover:bg-gray-100 rounded-xl transition-colors"
+        {/* ── Main row ── */}
+        <div className="flex items-center justify-between h-16 md:h-18 gap-4">
+          {/* Left: hamburger + logo */}
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              className="md:hidden p-2 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-900/30 text-gray-600 dark:text-gray-300 transition-colors"
               onClick={() => setIsMenuOpen(true)}
+              aria-label="Menu"
             >
-              <Menu className="w-6 h-6" />
+              <Menu className="w-5 h-5" />
             </button>
-            <Link to="/" className="flex items-center gap-2 group mr-8">
-              <div className="flex w-10 h-10 bg-[#0062FF] rounded-xl items-center justify-center group-hover:rotate-6 transition-transform shadow-lg shadow-blue-500/20">
-                <ShoppingBag className="w-6 h-6 text-white" />
+            <Link to="/" className="flex items-center gap-2.5 group mr-4 md:mr-8">
+              <div className="flex w-9 h-9 bg-linear-to-br from-violet-500 to-violet-700 rounded-xl items-center justify-center group-hover:rotate-6 transition-all duration-300 shadow-lg shadow-violet-500/30">
+                <ShoppingBag className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-xl font-black tracking-tight text-[#0062FF] ml-1">
-                BAZARCOM
-              </h1>
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-black tracking-tight text-gradient leading-none">
+                  BAZARCOM
+                </h1>
+                <p className="text-[9px] font-bold text-violet-400 dark:text-violet-500 tracking-widest uppercase leading-none mt-0.5">
+                  Price Compare
+                </p>
+              </div>
             </Link>
           </div>
 
-          <div className="hidden md:flex flex-1 max-w-xl">
+          {/* Center: search */}
+          <div className="hidden md:flex flex-1 max-w-2xl">
             <form onSubmit={handleSubmit} className="relative w-full group">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-[#0062FF] transition-colors" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400 group-focus-within:text-violet-500 transition-colors" />
               <input
                 type="text"
                 value={searchValue}
                 placeholder={t.nav.searchPlaceholder}
-                className="w-full pl-14 pr-[7.5rem] py-3.5 bg-gray-100 border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-[#0062FF]/20 focus:bg-white transition-all text-sm font-medium"
-                onChange={(e) => handleTextChange(e.target.value)}
+                onChange={(e) => setSearchValue(e.target.value)}
+                className="w-full pl-12 pr-32 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl text-sm font-medium text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 dark:focus:border-violet-500 focus:bg-white dark:focus:bg-gray-800 transition-all"
               />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                <button 
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <button
                   type="button"
                   onClick={startVoiceSearch}
-                  className={`p-1.5 rounded-full transition-all ${
-                    isListening ? 'bg-red-50 text-red-500 animate-pulse' : 'text-gray-400 hover:text-[#0062FF]'
+                  className={`p-2 rounded-xl transition-all ${
+                    isListening
+                      ? 'bg-red-50 text-red-500 animate-pulse'
+                      : 'text-gray-400 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/30'
                   }`}
                 >
-                  <Mic className="w-4 h-4 cursor-pointer" />
+                  <Mic className="w-4 h-4" />
                 </button>
-                <button type="submit" className="bg-[#0062FF] hover:bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm">
+                <button
+                  type="submit"
+                  className="bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white px-4 py-2 rounded-xl text-xs font-black tracking-wide transition-all shadow-sm shadow-violet-500/20"
+                >
                   {t.nav.search}
                 </button>
               </div>
             </form>
           </div>
 
-          {/* Right Side: Desktop Icons & Mobile Quick Actions */}
-          <div className="flex items-center gap-2 md:gap-6">
-              <div className="w-px h-8 bg-gray-100 mx-1" />
-              <div className="relative group">
-                <button className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 font-bold text-sm text-gray-700 hover:text-[#0062FF] transition-all">
-                  <Globe className="w-4.5 h-4.5 text-gray-400" />
-                  <span>{t.nav.language}</span>
-                  <ChevronDown className="w-4 h-4 text-gray-400 group-hover:rotate-180 transition-transform" />
-                </button>
-                <div className="absolute right-0 mt-2 w-36 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-2 group-hover:translate-y-0 transition-all duration-300 z-50">
-                  {languages.map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => setLanguage(lang.code)}
-                      className={`block w-full text-left px-5 py-3 text-sm hover:bg-blue-50 hover:text-[#0062FF] transition-colors ${
-                        language === lang.code ? 'text-[#0062FF] font-black' : 'text-gray-700 font-medium'
-                      }`}
-                    >
-                      {lang.code === 'uz' ? "O'zbekcha" : lang.code === 'ru' ? 'Русский' : 'English'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
+          {/* Right: lang + theme + login */}
+          <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+            {/* Language selector */}
+            <div className="relative">
               <button
-                onClick={toggleTheme}
-                className="p-2.5 rounded-xl bg-gray-50 hover:bg-blue-50 text-gray-400 hover:text-[#0062FF] border border-transparent hover:border-blue-100 transition-all active:scale-95"
+                onClick={() => setIsLangOpen(!isLangOpen)}
+                className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-900/30 text-gray-600 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400 font-semibold text-sm transition-all"
               >
-                {theme === 'light' ? <Moon className="w-4.5 h-4.5" /> : <Sun className="w-4.5 h-4.5" />}
+                <Globe className="w-4 h-4" />
+                <span className="font-black text-xs uppercase tracking-wider">{language}</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isLangOpen ? 'rotate-180' : ''}`} />
               </button>
+              {isLangOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsLangOpen(false)} />
+                  <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl shadow-violet-500/10 overflow-hidden z-50">
+                    {languages.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => { setLanguage(lang.code); setIsLangOpen(false); }}
+                        className={`flex items-center justify-between w-full px-4 py-3 text-sm transition-colors ${
+                          language === lang.code
+                            ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 font-black'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 font-medium'
+                        }`}
+                      >
+                        {lang.label}
+                        {language === lang.code && <div className="w-2 h-2 rounded-full bg-violet-600" />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
 
-            {/* Login Button (Figma node 1-761) */}
-            <button className="flex items-center gap-2 px-7 py-3 rounded-xl bg-[#0062FF] hover:bg-blue-600 text-white shadow-lg shadow-blue-500/25 transition-all active:scale-95 group ml-2">
-              <User className="w-5 h-5 text-white/90 group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-black hidden lg:block tracking-wide">
-                {t.nav.login}
-              </span>
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-violet-50 dark:hover:bg-violet-900/30 text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 border border-transparent hover:border-violet-200 dark:hover:border-violet-700/50 transition-all active:scale-95"
+            >
+              {isDark ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
+            </button>
+
+            {/* Login */}
+            <button className="flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-xl bg-linear-to-r from-violet-600 to-violet-700 hover:from-violet-700 hover:to-violet-800 text-white shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all active:scale-95 font-black text-sm ml-1">
+              <User className="w-4 h-4" />
+              <span className="hidden lg:block tracking-wide">{t.nav.login}</span>
             </button>
           </div>
         </div>
 
-        {/* Mobile Search Bar Row (Visible ONLY on mobile) */}
-        <div className="md:hidden pb-4 mt-1">
+        {/* ── Mobile search row ── */}
+        <div className="md:hidden pb-3">
           <form onSubmit={handleSubmit} className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
             <input
               type="text"
               value={searchValue}
               placeholder={t.nav.searchPlaceholder}
-              className="w-full bg-[#F3F4F6] pl-12 pr-28 py-4 rounded-full text-sm focus:outline-none placeholder-gray-400 text-gray-900 border border-transparent focus:border-blue-100 transition-all font-medium"
-              onChange={(e) => handleTextChange(e.target.value)}
+              onChange={(e) => setSearchValue(e.target.value)}
+              className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 pl-12 pr-32 py-3.5 rounded-2xl text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 transition-all"
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              <button 
+              <button
                 type="button"
                 onClick={startVoiceSearch}
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-                  isListening ? 'bg-red-50 text-red-500 animate-pulse' : 'text-gray-400 hover:text-[#0062FF]'
+                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                  isListening ? 'bg-red-50 text-red-500 animate-pulse' : 'text-gray-400 hover:text-violet-500'
                 }`}
               >
                 <Mic className="w-4 h-4" />
               </button>
-              <button 
+              <button
                 type="submit"
-                className="bg-[#0062FF] text-white px-4 py-2.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all shadow-sm"
+                className="bg-violet-600 hover:bg-violet-700 text-white px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wide"
               >
                 {t.nav.search}
               </button>
@@ -210,104 +231,105 @@ export function Navbar({ onSearchChange }: NavbarProps) {
         </div>
       </div>
 
-      {/* Mobile Menu Drawer (Figma Side Menu) */}
-      <div 
-        className={`fixed inset-0 bg-black/60 backdrop-blur-[2px] z-100 transition-opacity duration-300 md:hidden ${
-          isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+      {/* ── Mobile drawer ── */}
+      <div
+        className={`fixed inset-0 z-100 transition-all duration-300 md:hidden ${
+          isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
-        onClick={() => setIsMenuOpen(false)}
       >
-        <div 
-          className={`absolute left-0 top-0 bottom-0 w-[280px] bg-white shadow-2xl transition-transform duration-300 ease-out flex flex-col ${
-            isMenuOpen ? "translate-x-0" : "-translate-x-full"
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
+        <div
+          className={`absolute left-0 top-0 bottom-0 w-72 bg-white dark:bg-gray-950 shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
+            isMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Drawer Header */}
-          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+          {/* Drawer header */}
+          <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                <User className="w-6 h-6 text-[#0062FF]" />
+              <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-violet-500 to-violet-700 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                <User className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900">{t.nav.welcome}</p>
-                <p className="text-xs text-gray-500">{t.nav.welcomeSubtitle}</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">{t.nav.welcome}</p>
+                <p className="text-xs text-violet-500 font-medium">{t.nav.welcomeSubtitle}</p>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => setIsMenuOpen(false)}
-              className="p-2 text-gray-400 hover:text-gray-900"
+              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500 transition-colors"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Drawer Content */}
-          <div className="flex-1 overflow-y-auto py-4">
-            <div className="px-4 space-y-2">
-              <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 text-gray-900 transition-colors">
-                <div className="flex items-center gap-3 font-semibold">
-                  <LogIn className="w-5 h-5 text-gray-400" />
-                  <span>{t.nav.loginSignIn}</span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-gray-300" />
-              </button>
+          {/* Drawer body */}
+          <div className="flex-1 overflow-y-auto py-3 px-3 space-y-1">
+            <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-900/20 text-gray-800 dark:text-gray-200 transition-colors">
+              <div className="flex items-center gap-3 font-semibold text-sm">
+                <LogIn className="w-5 h-5 text-violet-500" />
+                {t.nav.loginSignIn}
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600" />
+            </button>
 
-              <div className="h-px bg-gray-100 my-4 mx-2" />
+            <div className="h-px bg-gray-100 dark:bg-gray-800 my-2 mx-1" />
 
-              <button 
-                onClick={toggleTheme}
-                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 text-gray-900 transition-colors"
-              >
-                <div className="flex items-center gap-3 font-semibold">
-                  {theme === 'light' ? <Moon className="w-5 h-5 text-gray-400" /> : <Sun className="w-5 h-5 text-gray-400" />}
-                  <span>{t.nav.darkMode}</span>
-                </div>
-                <div className={`w-10 h-5 rounded-full relative transition-colors ${theme === 'dark' ? 'bg-[#0062FF]' : 'bg-gray-200'}`}>
-                  <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${theme === 'dark' ? 'left-6' : 'left-1'}`} />
-                </div>
-              </button>
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+            >
+              <div className="flex items-center gap-3 font-semibold text-sm text-gray-800 dark:text-gray-200">
+                {isDark ? <Sun className="w-5 h-5 text-violet-500" /> : <Moon className="w-5 h-5 text-violet-500" />}
+                {t.nav.darkMode}
+              </div>
+              <div className={`w-11 h-6 rounded-full relative transition-colors ${isDark ? 'bg-violet-600' : 'bg-gray-200'}`}>
+                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${isDark ? 'left-6' : 'left-1'}`} />
+              </div>
+            </button>
 
-              <div className="relative group px-1">
-                <div className="flex items-center gap-3 p-3 font-semibold text-gray-900">
-                  <Globe className="w-5 h-5 text-gray-400" />
-                  <span>{t.nav.language}</span>
-                  <span className="ml-auto text-xs text-[#0062FF] font-bold">
-                    {languages.find(l => l.code === language)?.label === 'UZ' ? "O'zbekcha" : 
-                     languages.find(l => l.code === language)?.label === 'RU' ? "Русский" : "English"}
-                  </span>
-                </div>
-                <div className="mt-1 space-y-1 pl-11">
-                  {languages.map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => {
-                        setLanguage(lang.code);
-                        setIsMenuOpen(false);
-                      }}
-                      className={`block w-full text-left py-2 text-sm transition-colors ${
-                        language === lang.code ? 'text-[#0062FF] font-bold' : 'text-gray-500 hover:text-gray-900'
-                      }`}
-                    >
-                      {lang.code === 'uz' ? "O'zbekcha" : lang.code === 'ru' ? 'Русский' : 'English'}
-                    </button>
-                  ))}
-                </div>
+            {/* Language */}
+            <div className="px-1">
+              <p className="flex items-center gap-3 p-3 font-semibold text-sm text-gray-800 dark:text-gray-200">
+                <Globe className="w-5 h-5 text-violet-500" />
+                {t.nav.language}
+                <span className="ml-auto text-xs text-violet-600 dark:text-violet-400 font-black">
+                  {langLabels[language]}
+                </span>
+              </p>
+              <div className="grid grid-cols-3 gap-2 mt-1 pl-8">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => { setLanguage(lang.code); setIsMenuOpen(false); }}
+                    className={`py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                      language === lang.code
+                        ? 'bg-violet-600 text-white shadow-sm shadow-violet-500/30'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-violet-50 dark:hover:bg-violet-900/20'
+                    }`}
+                  >
+                    {lang.code.toUpperCase()}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Drawer Footer */}
-          <div className="p-6 border-t border-gray-100 space-y-4">
-            <button className="w-full flex items-center gap-3 text-sm font-semibold text-gray-500 hover:text-[#0062FF] transition-colors">
-              <HelpCircle className="w-5 h-5" />
-              <span>{t.nav.helpCenter}</span>
+          {/* Drawer footer */}
+          <div className="p-5 border-t border-gray-100 dark:border-gray-800 space-y-2">
+            <button className="w-full flex items-center gap-3 p-2.5 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors">
+              <HelpCircle className="w-4.5 h-4.5" />
+              {t.nav.helpCenter}
             </button>
-            <button className="w-full flex items-center gap-3 text-sm font-semibold text-gray-500 hover:text-[#0062FF] transition-colors">
-              <Info className="w-5 h-5" />
-              <span>{t.nav.about}</span>
+            <button className="w-full flex items-center gap-3 p-2.5 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors">
+              <Info className="w-4.5 h-4.5" />
+              {t.nav.about}
             </button>
-            <p className="text-[10px] text-gray-400 font-medium">VERSION 2.4.0</p>
+            <div className="flex items-center gap-2 pt-1">
+              <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+              <p className="text-[10px] text-gray-400 dark:text-gray-600 font-bold tracking-widest uppercase">Bazarcom v2.5</p>
+            </div>
           </div>
         </div>
       </div>

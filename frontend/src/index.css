@@ -1,37 +1,39 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #6D28D9;
-  --color-primary-hover: #5B21B6;
+  --color-primary: #7C3AED;
+  --color-primary-hover: #6D28D9;
   --color-primary-foreground: #ffffff;
-  
-  --color-secondary: #F3E8FF;
-  --color-secondary-foreground: #581C87;
-  
-  --color-accent: #C084FC;
+
+  --color-secondary: #F5F3FF;
+  --color-secondary-foreground: #4C1D95;
+
+  --color-accent: #A78BFA;
   --color-accent-foreground: #ffffff;
-  
+
   --color-background: #ffffff;
   --color-foreground: #0f172a;
-  
+
   --color-muted: #f1f5f9;
   --color-muted-foreground: #64748b;
-  
+
   --color-card: #ffffff;
   --color-card-foreground: #0f172a;
-  
+
   --color-border: #e2e8f0;
   --color-input: #e2e8f0;
-  --color-ring: #a855f7;
+  --color-ring: #7C3AED;
 
   --radius-lg: 0.75rem;
   --radius-md: 0.5rem;
   --radius-sm: 0.25rem;
 
   --animate-fade-in: fade-in 0.5s ease-out;
-  --animate-slide-up: slide-up 0.5s ease-out;
+  --animate-slide-up: slide-up 0.4s cubic-bezier(.16,1,.3,1);
   --animate-gradient-x: gradient-x 15s ease infinite;
   --animate-bounce-subtle: bounce-subtle 2s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-pulse-ring: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @keyframes gradient-x {
@@ -44,64 +46,122 @@
   50% { transform: translateY(-5px); }
 }
 
-@layer base {
-  body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
-  }
-}
-
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 @keyframes slide-up {
-  from { transform: translateY(20px); opacity: 0; }
+  from { transform: translateY(24px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-ring {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground antialiased;
+    @apply selection:bg-violet-100 selection:text-violet-700;
+  }
+
+  .dark body {
+    @apply bg-gray-950 text-white;
+  }
+}
+
+/* ── Glass morphism ── */
 .glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .dark .glass {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 10, 30, 0.75);
+  border: 1px solid rgba(124, 58, 237, 0.15);
 }
 
+/* ── Gradient text ── */
 .text-gradient {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  background: linear-gradient(135deg, #7C3AED 0%, #A78BFA 50%, #C084FC 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
+.text-gradient-hero {
+  background: linear-gradient(135deg, #4C1D95 0%, #7C3AED 40%, #A78BFA 70%, #E879F9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+/* ── Purple shimmer for skeleton ── */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #f3f4f6 25%,
+    #ede9fe 50%,
+    #f3f4f6 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
 }
 
+.dark .shimmer {
+  background: linear-gradient(
+    90deg,
+    #1f2937 25%,
+    #2e1065 50%,
+    #1f2937 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* ── Purple glow ── */
+.glow-violet {
+  box-shadow: 0 0 30px rgba(124, 58, 237, 0.25), 0 0 60px rgba(124, 58, 237, 0.1);
+}
+
+/* ── Custom Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #c4b5fd;
   border-radius: 4px;
 }
+::-webkit-scrollbar-thumb:hover { background: #7C3AED; }
+.dark ::-webkit-scrollbar-thumb { background: #4c1d95; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #7C3AED; }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+/* ── Thin scrollbar for filter panels ── */
+.scrollbar-thin { scrollbar-width: thin; scrollbar-color: #c4b5fd transparent; }
+.dark .scrollbar-thin { scrollbar-color: #4c1d95 transparent; }
+
+/* ── Purple price tag ── */
+.price-tag {
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
+  color: white;
+  font-weight: 900;
+  letter-spacing: -0.02em;
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: #334155;
+/* ── Range input purple ── */
+input[type="range"] {
+  accent-color: #7C3AED;
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+/* ── Focus visible ring ── */
+:focus-visible {
+  outline: 2px solid #7C3AED;
+  outline-offset: 2px;
 }
-
