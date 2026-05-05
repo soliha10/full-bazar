@@ -106,7 +106,11 @@ export const translations = {
       noProductsDesc: "Qidiruv so'zini o'zgartirib ko'ring yoki filterlarni tozalang.",
       viewResults: "Natijalarni ko'rish",
       category: "Kategoriya",
-      anyRating: "Istalgan reyting"
+      anyRating: "Istalgan reyting",
+      brands: "Brendlar",
+      marketplaces: "Marketlar",
+      minPrice: "Min narx",
+      maxPrice: "Max narx"
     },
     
     // Product Detail
@@ -405,7 +409,11 @@ export const translations = {
       noProductsDesc: "Измените поисковый запрос или очистите фильтры.",
       viewResults: "Посмотреть результаты",
       category: "Категория",
-      anyRating: "Любой рейтинг"
+      anyRating: "Любой рейтинг",
+      brands: "Бренды",
+      marketplaces: "Магазины",
+      minPrice: "Мин цена",
+      maxPrice: "Макс цена"
     },
     
     // Product Detail
@@ -704,7 +712,11 @@ export const translations = {
       noProductsDesc: "Try changing your search or clearing filters.",
       viewResults: "View Results",
       category: "Category",
-      anyRating: "Any rating"
+      anyRating: "Any rating",
+      brands: "Brands",
+      marketplaces: "Stores",
+      minPrice: "Min price",
+      maxPrice: "Max price"
     },
     
     // Product Detail

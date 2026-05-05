@@ -297,7 +297,7 @@ export function ProductListing() {
       {/* Brands */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Brendlar</h4>
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">{t.listing.brands}</h4>
           {selectedBrand && (
             <button onClick={() => setSelectedBrand(null)} className="text-[10px] font-bold text-violet-600 dark:text-violet-400 hover:underline">
               {t.listing.reset}
@@ -324,7 +324,7 @@ export function ProductListing() {
       {/* Marketplaces */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Marketlar</h4>
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">{t.listing.marketplaces}</h4>
           {selectedMarketplaces.length > 0 && (
             <button onClick={() => setSelectedMarketplaces([])} className="text-[10px] font-bold text-violet-600 dark:text-violet-400 hover:underline">
               {t.listing.reset}
