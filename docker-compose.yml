@@ -102,14 +102,23 @@ services:
       context: ./python/mlflow_app
       dockerfile: Dockerfile
     restart: always
-    # 1 worker, no artifact proxy, no max-requests (prevents 0-worker gap on restart)
-    command: >
-      mlflow server
-      --backend-store-uri postgresql://postgres:postgres@postgres:5432/fullbazar
-      --default-artifact-root /mlflow/artifacts
-      --host 0.0.0.0
-      --port 5000
-      --gunicorn-opts "--workers 1 --timeout 120"
+    # array form avoids YAML shell-quoting issues with --gunicorn-opts
+    # --allowed-hosts "*" lets dagster/fastapi reach mlflow across Docker network
+    command:
+      - mlflow
+      - server
+      - --backend-store-uri
+      - postgresql://postgres:postgres@postgres:5432/fullbazar
+      - --default-artifact-root
+      - /mlflow/artifacts
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "5000"
+      - --workers
+      - "1"
+      - --allowed-hosts
+      - "*"
     ports:
       - "5050:5000"
     volumes:
@@ -117,7 +126,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    mem_limit: 900m
+    mem_limit: 1.2g
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
