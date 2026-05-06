@@ -24,6 +24,12 @@ jobs:
             echo "=== syncing CSV data to PostgreSQL ==="
             docker exec full-bazar-dagster-webserver-1 \
               dagster job execute -j csv_sync_job -w /app/workspace.yaml
+            echo "=== launching full scrape job (background) ==="
+            curl -s -X POST http://localhost:3000/graphql \
+              -H "Content-Type: application/json" \
+              -d '{"query":"mutation{launchRun(executionParams:{selector:{repositoryLocationName:\"dagster_app.definitions\",repositoryName:\"__repository__\",jobName:\"product_sync_job\"},runConfigData:{}}){__typename...on LaunchRunSuccess{run{runId}}...on PythonError{message}}}"}' \
+              | python3 -c "import sys,json; d=json.load(sys.stdin); r=d.get('data',{}).get('launchRun',{}); print('runId:', r.get('run',{}).get('runId','?') if 'run' in r else r.get('message','failed'))" \
+              || echo "scrape trigger skipped"
             echo "=== deploy done ==="
             docker inspect full-bazar-frontend-1 --format 'frontend: running={{.State.Running}}'
             curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:80
