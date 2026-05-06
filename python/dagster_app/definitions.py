@@ -370,13 +370,26 @@ def train_matcher_op(context, data_dir: str):
         context.log.warning(f"[train_matcher] skipped — {exc}")
 
 
+@op
+def data_dir_op(context) -> str:
+    data_dir = os.getenv("DATA_DIR", "/opt/dagster/data")
+    context.log.info(f"Using data_dir: {data_dir}")
+    return data_dir
+
+
 @job
 def product_sync_job():
     train_matcher_op(sync_products_op(scrape_all_op()))
 
 
+@job
+def csv_sync_job():
+    """Sync git-committed CSVs → PostgreSQL (no scraping). Used by deploy."""
+    sync_products_op(data_dir_op())
+
+
 defs = Definitions(
-    jobs=[product_sync_job],
+    jobs=[product_sync_job, csv_sync_job],
     schedules=[
         ScheduleDefinition(
             name="product_sync_hourly",
