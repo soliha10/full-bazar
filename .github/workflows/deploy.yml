@@ -19,4 +19,12 @@ jobs:
             cd /home/${{ secrets.SERVER_USER }}/full-bazar
             git pull origin main
             docker compose build --no-cache frontend
+            docker compose up -d --force-recreate --no-deps frontend
             docker compose up --build -d
+            sleep 3
+            echo "=== frontend status ==="
+            docker inspect full-bazar-frontend-1 --format 'running={{.State.Running}} status={{.State.Status}}'
+            echo "=== nginx logs ==="
+            docker logs full-bazar-frontend-1 --tail=5
+            echo "=== built assets ==="
+            docker exec full-bazar-frontend-1 ls /usr/share/nginx/html/assets/ | head -5
