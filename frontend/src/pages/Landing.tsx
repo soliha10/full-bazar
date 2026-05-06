@@ -42,13 +42,12 @@ export function Landing() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-24 md:pb-0">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-gray-950 pb-24 md:pb-0 transition-colors">
 
       {/* ── Hero ── */}
       <section className="px-4 pt-4 md:pt-10 max-w-7xl mx-auto">
         <div className="relative rounded-3xl overflow-hidden bg-linear-to-br from-[#0062FF] via-[#0047CC] to-[#1E3A8A] shadow-2xl shadow-blue-500/30 min-h-[320px] md:min-h-[420px] flex items-center">
 
-          {/* background decorations */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/5" />
             <div className="absolute top-10 right-1/3 w-40 h-40 rounded-full bg-blue-300/10" />
@@ -56,7 +55,6 @@ export function Landing() {
           </div>
 
           <div className="relative z-10 px-6 py-10 md:px-14 md:py-16 w-full flex flex-col md:flex-row items-center gap-8">
-            {/* Left */}
             <div className="flex-1">
               <div className="inline-flex items-center gap-2 bg-white/15 rounded-full px-4 py-1.5 mb-5">
                 <Zap className="w-3.5 h-3.5 text-yellow-300" />
@@ -90,7 +88,6 @@ export function Landing() {
               </div>
             </div>
 
-            {/* Right — stats card */}
             <div className="hidden md:flex flex-col gap-4 shrink-0">
               <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-6 min-w-[240px]">
                 <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Live narxlar</p>
@@ -130,15 +127,15 @@ export function Landing() {
             { icon: ShieldCheck, title: 'Ishonchli',     desc: 'Tasdiqlangan do\'konlar' },
             { icon: TrendingUp,  title: 'Eng arzon',     desc: 'Kafolatlangan narx' },
           ].map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="flex items-center gap-3 bg-white rounded-2xl px-4 py-4 shadow-sm border border-gray-100">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+            <div key={title} className="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl px-4 py-4 shadow-sm border border-gray-100 dark:border-gray-800">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0">
                 <Icon className="w-4.5 h-4.5 text-[#0062FF]" />
               </div>
               <div className="hidden sm:block">
-                <p className="text-sm font-black text-gray-900">{title}</p>
-                <p className="text-xs text-gray-400 font-medium">{desc}</p>
+                <p className="text-sm font-black text-gray-900 dark:text-white">{title}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">{desc}</p>
               </div>
-              <p className="sm:hidden text-xs font-black text-gray-700">{title}</p>
+              <p className="sm:hidden text-xs font-black text-gray-700 dark:text-gray-300">{title}</p>
             </div>
           ))}
         </div>
@@ -146,17 +143,17 @@ export function Landing() {
 
       {/* ── Market logos ── */}
       <section className="mt-8 px-4 max-w-7xl mx-auto">
-        <p className="text-xs font-black uppercase tracking-widest text-gray-400 text-center mb-5">
+        <p className="text-xs font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 text-center mb-5">
           Quyidagi do'konlardan narxlar olinadi
         </p>
         <div className="flex flex-wrap justify-center gap-3">
           {MARKET_LOGOS.map(({ name, color }) => (
             <div
               key={name}
-              className="flex items-center gap-2 bg-white border border-gray-100 rounded-2xl px-5 py-3 shadow-sm hover:shadow-md transition-shadow"
+              className="flex items-center gap-2 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-5 py-3 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
-              <span className="text-sm font-black text-gray-800">{name}</span>
+              <span className="text-sm font-black text-gray-800 dark:text-gray-200">{name}</span>
             </div>
           ))}
         </div>
@@ -164,44 +161,44 @@ export function Landing() {
 
       {/* ── AI Recommendations: Best Deals ── */}
       <section className="mt-14 px-4 max-w-7xl mx-auto">
-        <div className="bg-white rounded-[2.5rem] p-8 md:p-12 border border-blue-100 shadow-xl shadow-blue-500/5 relative overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] p-8 md:p-12 border border-blue-100 dark:border-blue-900/30 shadow-xl shadow-blue-500/5 relative overflow-hidden">
            <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
               <Zap size={200} className="text-[#0062FF]" />
            </div>
-           
+
            <div className="relative z-10">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 rounded-2xl bg-[#0062FF]/10 text-[#0062FF]">
                   <TrendingUp size={24} />
                 </div>
                 <div>
-                  <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">AI Tavsiyalari: Eng katta foyda</h2>
-                  <p className="text-gray-500 text-sm mt-1">Narxlar farqi eng yuqori bo'lgan mahsulotlar — hoziroq tejang!</p>
+                  <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">AI Tavsiyalari: Eng katta foyda</h2>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Narxlar farqi eng yuqori bo'lgan mahsulotlar — hoziroq tejang!</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {loadingRecs ? (
                   Array(4).fill(0).map((_, i) => (
-                    <div key={i} className="h-64 bg-gray-50 animate-pulse rounded-3xl" />
+                    <div key={i} className="h-64 bg-gray-50 dark:bg-gray-800 animate-pulse rounded-3xl" />
                   ))
                 ) : (
                   recommendations.map((p) => (
-                    <Link 
+                    <Link
                       key={p.id}
                       to={`/product/${p.id}`}
-                      className="group bg-gray-50/50 hover:bg-white p-5 rounded-3xl border border-transparent hover:border-blue-100 hover:shadow-xl transition-all duration-500"
+                      className="group bg-gray-50/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 p-5 rounded-3xl border border-transparent hover:border-blue-100 dark:hover:border-blue-900/40 hover:shadow-xl transition-all duration-500"
                     >
-                      <div className="aspect-square bg-white rounded-2xl mb-4 overflow-hidden p-4">
+                      <div className="aspect-square bg-white dark:bg-gray-900 rounded-2xl mb-4 overflow-hidden p-4">
                         <img src={p.image} alt={p.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" />
                       </div>
-                      <div className="bg-green-500/10 text-green-600 text-[10px] font-black px-2 py-1 rounded-lg inline-block mb-2">
+                      <div className="bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-black px-2 py-1 rounded-lg inline-block mb-2">
                          ENG KATTA FOYDA
                       </div>
-                      <h3 className="text-sm font-bold text-gray-900 line-clamp-1 mb-2">{p.name}</h3>
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1 mb-2">{p.name}</h3>
                       <div className="flex items-end justify-between">
                          <div>
-                           <p className="text-[10px] text-gray-400 font-bold uppercase">Eng arzon narx</p>
+                           <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase">Eng arzon narx</p>
                            <p className="text-lg font-black text-[#0062FF]">{formatSum(p.price)}</p>
                          </div>
                          <div className="bg-[#0062FF] p-2 rounded-xl text-white">
@@ -212,7 +209,7 @@ export function Landing() {
                   ))
                 )}
                 {!loadingRecs && recommendations.length === 0 && (
-                   <div className="col-span-full py-12 text-center text-gray-400">
+                   <div className="col-span-full py-12 text-center text-gray-400 dark:text-gray-500">
                       Hozircha tavsiyalar yo'q. Sync amalga oshirilganda paydo bo'ladi.
                    </div>
                 )}
@@ -225,10 +222,10 @@ export function Landing() {
       <section className="mt-10 md:mt-16 px-4 max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6 md:mb-8">
           <div>
-            <h2 className="font-black text-gray-900 text-xl md:text-2xl tracking-tight">
+            <h2 className="font-black text-gray-900 dark:text-white text-xl md:text-2xl tracking-tight">
               {t.landing.trending.title}
             </h2>
-            <p className="text-gray-400 text-sm mt-1">
+            <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
               Bir mahsulot — bir nechta do'kon narxi
             </p>
           </div>
@@ -244,11 +241,11 @@ export function Landing() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
           {isLoading && featuredProducts.length === 0
             ? [...Array(4)].map((_, i) => (
-                <div key={i} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 animate-pulse">
-                  <div className="aspect-square bg-gray-100" />
+                <div key={i} className="bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 animate-pulse">
+                  <div className="aspect-square bg-gray-100 dark:bg-gray-800" />
                   <div className="p-4 space-y-2">
-                    <div className="h-3 bg-gray-100 rounded w-3/4" />
-                    <div className="h-4 bg-gray-100 rounded w-1/2" />
+                    <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-3/4" />
+                    <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded w-1/2" />
                   </div>
                 </div>
               ))
@@ -260,14 +257,13 @@ export function Landing() {
                   <Link
                     key={product.id}
                     to={`/product/${product.id}`}
-                    className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 flex flex-col"
+                    className="group bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 dark:border-gray-800 flex flex-col"
                   >
-                    {/* image */}
-                    <div className="aspect-square bg-gray-50 relative overflow-hidden">
+                    <div className="aspect-square bg-gray-50 dark:bg-gray-800 relative overflow-hidden">
                       <img
                         src={product.image || 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400'}
                         alt={product.name}
-                        className="w-full h-full object-contain p-6 group-hover:scale-105 transition-transform duration-500 mix-blend-multiply"
+                        className="w-full h-full object-contain p-6 group-hover:scale-105 transition-transform duration-500 mix-blend-multiply dark:mix-blend-normal"
                       />
                       {sortedMarkets.length > 1 && (
                         <div className="absolute top-3 left-3 bg-[#0062FF] text-white text-[10px] font-black px-2.5 py-1 rounded-full">
@@ -276,27 +272,37 @@ export function Landing() {
                       )}
                     </div>
 
-                    {/* info */}
                     <div className="p-4 flex flex-col flex-1">
                       <div className="flex items-center gap-1 mb-2">
                         <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                        <span className="text-xs font-black text-gray-700">{product.rating}</span>
-                        <span className="text-[10px] text-gray-400">({product.reviews})</span>
+                        <span className="text-xs font-black text-gray-700 dark:text-gray-300">{product.rating}</span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500">({product.reviews})</span>
                       </div>
 
-                      <h3 className="text-sm font-bold text-gray-900 line-clamp-2 leading-tight mb-3 flex-1">
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 leading-tight mb-3 flex-1">
                         {product.name}
                       </h3>
 
-                      {/* inline market prices */}
                       {sortedMarkets.length > 0 && (
                         <div className="space-y-1 mb-3">
                           {sortedMarkets.slice(0, 2).map((m, idx) => (
-                            <div key={m.source} className={`flex items-center justify-between rounded-xl px-2.5 py-1.5 ${idx === 0 ? 'bg-green-50' : 'bg-gray-50'}`}>
-                              <span className={`text-[10px] font-bold uppercase tracking-wide ${idx === 0 ? 'text-green-700' : 'text-gray-500'}`}>
+                            <div key={m.source} className={`flex items-center justify-between rounded-xl px-2.5 py-1.5 ${
+                              idx === 0
+                                ? 'bg-green-50 dark:bg-green-900/20'
+                                : 'bg-gray-50 dark:bg-gray-800'
+                            }`}>
+                              <span className={`text-[10px] font-bold uppercase tracking-wide ${
+                                idx === 0
+                                  ? 'text-green-700 dark:text-green-400'
+                                  : 'text-gray-500 dark:text-gray-400'
+                              }`}>
                                 {idx === 0 ? '✓ ' : ''}{m.source}
                               </span>
-                              <span className={`text-xs font-black ${idx === 0 ? 'text-green-700' : 'text-gray-500'}`}>
+                              <span className={`text-xs font-black ${
+                                idx === 0
+                                  ? 'text-green-700 dark:text-green-400'
+                                  : 'text-gray-500 dark:text-gray-400'
+                              }`}>
                                 {formatSum(m.price)}
                               </span>
                             </div>
@@ -309,12 +315,12 @@ export function Landing() {
                         </div>
                       )}
 
-                      <div className="border-t border-gray-50 pt-3 flex items-center justify-between">
+                      <div className="border-t border-gray-50 dark:border-gray-800 pt-3 flex items-center justify-between">
                         <div>
-                          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Eng arzon</p>
-                          <p className="text-base font-black text-gray-900">{formatSum(bestPrice)}</p>
+                          <p className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">Eng arzon</p>
+                          <p className="text-base font-black text-gray-900 dark:text-white">{formatSum(bestPrice)}</p>
                         </div>
-                        <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center group-hover:bg-[#0062FF] transition-colors">
+                        <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center group-hover:bg-[#0062FF] transition-colors">
                           <ArrowRight className="w-4 h-4 text-[#0062FF] group-hover:text-white transition-colors" />
                         </div>
                       </div>
@@ -327,22 +333,22 @@ export function Landing() {
 
       {/* ── How it works ── */}
       <section className="mt-14 md:mt-24 px-4 pb-10 max-w-7xl mx-auto">
-        <h2 className="font-black text-gray-900 text-xl md:text-2xl mb-8 text-center tracking-tight">
+        <h2 className="font-black text-gray-900 dark:text-white text-xl md:text-2xl mb-8 text-center tracking-tight">
           {t.landing.howItWorks.title}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           {t.landing.howItWorks.steps.map((item, idx) => (
             <div
               key={idx}
-              className="relative bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+              className="relative bg-white dark:bg-gray-900 rounded-3xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="w-10 h-10 rounded-2xl bg-[#0062FF] text-white flex items-center justify-center font-black text-lg mb-4 shadow-lg shadow-blue-500/20">
                 {idx + 1}
               </div>
-              <h3 className="font-black text-gray-900 text-base mb-2">{item.title}</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
+              <h3 className="font-black text-gray-900 dark:text-white text-base mb-2">{item.title}</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{item.desc}</p>
               {idx < 2 && (
-                <div className="hidden md:block absolute top-10 -right-4 z-10 text-gray-300">
+                <div className="hidden md:block absolute top-10 -right-4 z-10 text-gray-300 dark:text-gray-700">
                   <ArrowRight className="w-5 h-5" />
                 </div>
               )}

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Class-based dark mode for Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary: #7C3AED;
   --color-primary-hover: #6D28D9;
@@ -72,8 +75,23 @@
     @apply selection:bg-violet-100 selection:text-violet-700;
   }
 
+  /* Dark mode CSS variable overrides */
+  .dark {
+    --color-background: #030712;
+    --color-foreground: #f9fafb;
+    --color-card: #111827;
+    --color-card-foreground: #f9fafb;
+    --color-muted: #1f2937;
+    --color-muted-foreground: #9ca3af;
+    --color-border: #1f2937;
+    --color-input: #1f2937;
+    --color-secondary: #1e1b4b;
+    --color-secondary-foreground: #c4b5fd;
+  }
+
   .dark body {
     @apply bg-gray-950 text-white;
+    selection-color: #7c3aed;
   }
 }
 
