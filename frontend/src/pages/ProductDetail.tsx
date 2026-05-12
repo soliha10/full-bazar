@@ -87,7 +87,7 @@ export function ProductDetail() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col items-center justify-center transition-colors">
-        <Loader2 className="w-12 h-12 text-[#0062FF] animate-spin mb-4" />
+        <Loader2 className="w-12 h-12 text-violet-600 animate-spin mb-4" />
         <p className="text-gray-500 dark:text-gray-400 font-bold animate-pulse">{t.detail.analyzingPrices}</p>
       </div>
     );
@@ -120,9 +120,11 @@ export function ProductDetail() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         {/* Breadcrumbs - Desktop Only */}
         <nav className="hidden md:flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500 mb-8 overflow-hidden">
-          <Link to="/" className="hover:text-gray-600 dark:hover:text-gray-300 shrink-0">{t.nav.home}</Link>
+          <Link to="/" className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors shrink-0">{t.nav.home}</Link>
           <ChevronRight className="w-4 h-4 shrink-0" />
-          <Link to={`/products?category=${product.category}`} className="hover:text-gray-600 dark:hover:text-gray-300 shrink-0">{product.category}</Link>
+          <Link to={`/products?category=${product.category}`} className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors shrink-0 capitalize">
+            {(t.detail.categories as any)[(product.category ?? '').toLowerCase()] ?? product.category}
+          </Link>
           <ChevronRight className="w-4 h-4 shrink-0" />
           <span className="text-gray-900 dark:text-white font-medium truncate">{product.name}</span>
         </nav>
@@ -163,7 +165,7 @@ export function ProductDetail() {
                 {images.map((_, idx) => (
                   <div
                     key={idx}
-                    className={`h-1.5 rounded-full transition-all ${selectedImage === idx ? 'w-6 bg-[#0062FF]' : 'w-1.5 bg-gray-200 dark:bg-gray-700'}`}
+                    className={`h-1.5 rounded-full transition-all ${selectedImage === idx ? 'w-6 bg-violet-600' : 'w-1.5 bg-gray-200 dark:bg-gray-700'}`}
                   />
                 ))}
               </div>
@@ -177,8 +179,8 @@ export function ProductDetail() {
                   onClick={() => setSelectedImage(idx)}
                   className={`bg-white dark:bg-gray-900 rounded-2xl p-2 border-2 transition-all aspect-square shrink-0 ${
                     selectedImage === idx
-                      ? "border-[#0062FF]"
-                      : "border-gray-50 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700"
+                      ? "border-violet-600"
+                      : "border-gray-50 dark:border-gray-800 hover:border-violet-200 dark:hover:border-violet-700"
                   }`}
                 >
                   <img src={img} alt="" className="w-full h-full object-contain" />
@@ -187,9 +189,9 @@ export function ProductDetail() {
             </div>
 
             {/* Market Overview - Desktop Only */}
-            <div className="hidden md:block bg-blue-50/50 dark:bg-blue-900/10 rounded-4xl p-8 border border-blue-100 dark:border-blue-900/30">
+            <div className="hidden md:block bg-violet-50/50 dark:bg-violet-900/10 rounded-4xl p-8 border border-violet-100 dark:border-violet-900/30">
               <h3 className="text-sm font-black text-gray-900 dark:text-white mb-6 uppercase tracking-widest flex items-center gap-2">
-                <Info className="w-4 h-4 text-[#0062FF]" />
+                <Info className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                 {t.detail.compareStores}
               </h3>
               <div className="grid grid-cols-2 gap-y-6 gap-x-8">
@@ -212,7 +214,9 @@ export function ProductDetail() {
           <div className="lg:w-1/2 space-y-8">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <span className="text-[#0062FF] font-black text-xs uppercase tracking-widest">{product.category}</span>
+                <span className="text-violet-600 dark:text-violet-400 font-black text-xs uppercase tracking-widest">
+                  {(t.detail.categories as any)[(product.category ?? '').toLowerCase()] ?? product.category}
+                </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
                 <span className="text-emerald-500 font-bold text-xs flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4" /> {t.detail.inStockReady}
@@ -241,7 +245,7 @@ export function ProductDetail() {
                 <div>
                   <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">{t.detail.bestPriceMarket}: {selectedMarket?.source}</p>
                   <div className="flex items-baseline gap-4">
-                    <span className="text-4xl md:text-5xl font-black text-[#0062FF] tracking-tighter">
+                    <span className="text-4xl md:text-5xl font-black text-violet-600 dark:text-violet-400 tracking-tighter">
                       {formatSum(selectedMarket?.price || product.price)}
                     </span>
                     {product.originalPrice && (
@@ -274,7 +278,7 @@ export function ProductDetail() {
                     {product.markets?.sort((a,b) => a.price - b.price).map((market, idx) => (
                       <tr key={idx} className={`group cursor-pointer ${
                         selectedMarketIndex === product.markets?.indexOf(market)
-                          ? 'bg-blue-50/30 dark:bg-blue-900/10'
+                          ? 'bg-violet-50/30 dark:bg-violet-900/10'
                           : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
                       }`}>
                         <td className="py-4 font-bold text-gray-900 dark:text-white">{market.source}</td>
@@ -289,7 +293,7 @@ export function ProductDetail() {
                           <a
                             href={market.url}
                             target="_blank"
-                            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white px-4 py-2 rounded-xl text-xs font-black shadow-sm group-hover:bg-[#0062FF] group-hover:text-white group-hover:border-[#0062FF] transition-all"
+                            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white px-4 py-2 rounded-xl text-xs font-black shadow-sm group-hover:bg-violet-600 group-hover:text-white group-hover:border-violet-600 transition-all"
                           >
                            {t.detail.goToShop}
                           </a>
@@ -304,14 +308,14 @@ export function ProductDetail() {
               <div className="md:hidden space-y-4">
                  <div className="flex items-center justify-between mb-2">
                     <h3 className="font-black text-gray-900 dark:text-white text-sm uppercase tracking-wider">{t.detail.compareStores}</h3>
-                    <button className="text-[10px] font-black text-[#0062FF] uppercase underline underline-offset-4">
+                    <button className="text-[10px] font-black text-violet-600 dark:text-violet-400 uppercase underline underline-offset-4">
                       {product.markets?.length} {t.detail.storesAvailable}
                     </button>
                  </div>
                  {product.markets?.sort((a,b) => a.price - b.price).slice(0, 4).map((market, idx) => (
                    <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-4xl border border-gray-100 dark:border-gray-700 shadow-sm">
                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 flex items-center justify-center font-black text-[#0062FF] text-xs">
+                        <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-900/30 border border-violet-100 dark:border-violet-800/50 flex items-center justify-center font-black text-violet-600 dark:text-violet-400 text-xs">
                            {market.source.substring(0, 1)}
                         </div>
                         <div className="flex flex-col">
@@ -327,7 +331,7 @@ export function ProductDetail() {
                         <a
                           href={market.url}
                           target="_blank"
-                          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white px-3 py-1.5 rounded-lg text-[10px] font-black flex items-center gap-1 active:bg-[#0062FF] active:text-white transition-colors"
+                          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white px-3 py-1.5 rounded-lg text-[10px] font-black flex items-center gap-1 active:bg-violet-600 active:text-white transition-colors"
                         >
                           {t.detail.shop} <ExternalLink className="w-2.5 h-2.5" />
                         </a>
@@ -341,10 +345,10 @@ export function ProductDetail() {
             <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] p-8 border border-gray-100 dark:border-gray-800 shadow-sm space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-[#0062FF]" />
+                  <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                   {t.detail.aiSmartSummary}
                 </h3>
-                <div className="bg-blue-50 dark:bg-blue-900/20 text-[#0062FF] px-3 py-1.5 rounded-xl font-black text-sm">
+                <div className="bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-3 py-1.5 rounded-xl font-black text-sm">
                   4.8 / 5.0
                 </div>
               </div>
@@ -352,7 +356,7 @@ export function ProductDetail() {
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { label: t.detail.aiLabels.performance, value: "4.9", color: "bg-emerald-500" },
-                  { label: t.detail.aiLabels.camera, value: "4.7", color: "bg-[#0062FF]" },
+                  { label: t.detail.aiLabels.camera, value: "4.7", color: "bg-violet-500" },
                   { label: t.detail.aiLabels.battery, value: "4.8", color: "bg-[#FFC107]" },
                   { label: t.detail.aiLabels.display, value: "4.6", color: "bg-purple-500" }
                 ].map((item, i) => (
@@ -401,7 +405,7 @@ export function ProductDetail() {
             <div className={`lg:col-span-2 space-y-16 ${activeTab !== 'overview' && 'hidden md:block'}`}>
                <section id="overview" className="space-y-6">
                  <h2 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-4">
-                   <div className="w-1.5 h-8 bg-[#0062FF] rounded-full" />
+                   <div className="w-1.5 h-8 bg-violet-600 rounded-full" />
                    {t.detail.productStory}
                  </h2>
                  <p className="text-lg text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
@@ -413,7 +417,7 @@ export function ProductDetail() {
                   <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">{t.detail.mainSpecifications}</h2>
                   <div className="grid sm:grid-cols-2 gap-12">
                     <div className="space-y-6">
-                      <h3 className="text-sm font-black text-[#0062FF] uppercase tracking-widest border-b border-blue-100 dark:border-blue-900/30 pb-2">{t.detail.compareStores}</h3>
+                      <h3 className="text-sm font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest border-b border-violet-100 dark:border-violet-900/30 pb-2">{t.detail.compareStores}</h3>
                       <div className="space-y-4">
                         {(product.markets ?? []).slice(0, 4).map((market, i) => (
                           <div key={i} className="flex justify-between items-center text-sm">
@@ -424,7 +428,7 @@ export function ProductDetail() {
                       </div>
                     </div>
                     <div className="space-y-4">
-                      <h3 className="text-sm font-black text-[#0062FF] uppercase tracking-widest border-b border-blue-100 dark:border-blue-900/30 pb-2">{t.detail.insideBox}</h3>
+                      <h3 className="text-sm font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest border-b border-violet-100 dark:border-violet-900/30 pb-2">{t.detail.insideBox}</h3>
                       <ul className="grid grid-cols-1 gap-3">
                         {[t.detail.boxItems.primaryProduct, t.detail.boxItems.quickStartGuide, t.detail.boxItems.usbCable, t.detail.boxItems.travelCase, t.detail.boxItems.warrantyCard].map((item, i) => (
                           <li key={i} className="flex items-center gap-3 text-sm font-bold text-gray-700 dark:text-gray-300">
@@ -444,7 +448,7 @@ export function ProductDetail() {
                  <h2 className="text-xl font-black text-gray-900 dark:text-white mb-8 border-b border-gray-100 dark:border-gray-800 pb-4">{t.detail.mostHelpfulReviews}</h2>
                  <div className="space-y-8">
                     {[
-                      { user: "Akbar T.", rating: 5, days: 2, comment: "Narxni bir nechta do'kon bilan solishtirib, eng arzonidan oldim. Telefon sifati a'lo!", color: "bg-blue-100 dark:bg-blue-900/30" },
+                      { user: "Akbar T.", rating: 5, days: 2, comment: "Narxni bir nechta do'kon bilan solishtirib, eng arzonidan oldim. Telefon sifati a'lo!", color: "bg-violet-100 dark:bg-violet-900/30" },
                       { user: "Malika R.", rating: 4, weeks: 1, comment: "Kamera sifati zo'r, batareya ham yaxshi ishlayapti. Narx/sifat nisbati yaxshi.", color: "bg-emerald-100 dark:bg-emerald-900/30" },
                       { user: "Jasur K.", rating: 5, weeks: 2, comment: "Bu yil eng yaxshi xaridim. Tez va ishonchli, narxini bu yerda topdim!", color: "bg-purple-100 dark:bg-purple-900/30" }
                     ].map((review, i) => (
@@ -492,12 +496,12 @@ export function ProductDetail() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 p-4 px-6 z-50 flex items-center justify-between shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
         <div className="flex flex-col">
           <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t.detail.fromPrice}</span>
-          <span className="text-xl font-black text-[#0062FF]">{formatSum(selectedMarket?.price || product.price)}</span>
+          <span className="text-xl font-black text-violet-600 dark:text-violet-400">{formatSum(selectedMarket?.price || product.price)}</span>
         </div>
           <a
             href={selectedMarket?.url}
             target="_blank"
-            className="bg-[#0062FF] text-white px-8 py-4 rounded-full font-black text-sm shadow-xl shadow-blue-500/20 flex items-center gap-3 active:scale-95 transition-all"
+            className="bg-violet-600 hover:bg-violet-700 text-white px-8 py-4 rounded-full font-black text-sm shadow-xl shadow-violet-500/20 flex items-center gap-3 active:scale-95 transition-all"
           >
             {t.detail.goToShop}
             <ArrowRight className="w-4 h-4" />

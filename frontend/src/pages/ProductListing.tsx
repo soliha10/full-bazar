@@ -460,8 +460,9 @@ export function ProductListing() {
         <div className="flex flex-col gap-8 lg:flex-row">
           {/* ── Desktop sidebar ── */}
           <aside className="hidden w-72 shrink-0 lg:block">
-            <div className="sticky top-24 rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
+            <div className="sticky top-24 rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 7rem)' }}>
+              {/* Sidebar header */}
+              <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
                 <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
                   <SlidersHorizontal className="w-5 h-5 text-violet-500" />
                   {t.listing.filters}
@@ -481,7 +482,10 @@ export function ProductListing() {
                   </button>
                 )}
               </div>
-              <FilterPanel />
+              {/* Scrollable filter body */}
+              <div className="overflow-y-auto flex-1 p-6 scrollbar-thin">
+                <FilterPanel />
+              </div>
             </div>
           </aside>
 
