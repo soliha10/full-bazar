@@ -30,6 +30,8 @@ const MARKET_LOGOS: { name: string; color: string }[] = [
   { name: 'OLX',        color: '#3D9B35' },
 ];
 
+const TRUST_ICONS = [RefreshCw, ShieldCheck, TrendingUp];
+
 export function Landing() {
   const { products: allProducts, isLoading, total } = useProducts(1, 8);
   const featuredProducts = allProducts.slice(0, 4);
@@ -69,7 +71,9 @@ export function Landing() {
               <div className="inline-flex items-center gap-2 bg-white/15 rounded-full px-4 py-1.5 mb-5">
                 <Zap className="w-3.5 h-3.5 text-yellow-300" />
                 <span className="text-white/90 text-xs font-bold uppercase tracking-widest">
-                  {total > 0 ? `${total.toLocaleString()}+ mahsulot` : 'Real-time narxlar'}
+                  {total > 0
+                    ? t.landing.hero.productCount.replace('{{count}}', total.toLocaleString())
+                    : t.landing.hero.livePrices}
                 </span>
               </div>
 
@@ -93,14 +97,14 @@ export function Landing() {
                   className="inline-flex items-center justify-center gap-2 bg-white/15 border border-white/25 text-white font-bold rounded-2xl px-7 py-4 text-sm md:text-base hover:bg-white/20 transition-colors"
                 >
                   <TrendingUp className="w-4 h-4" />
-                  Narxlarni ko'rish
+                  {t.landing.hero.viewPrices}
                 </Link>
               </div>
             </div>
 
             <div className="hidden md:flex flex-col gap-4 shrink-0">
               <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-6 min-w-[240px]">
-                <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Live narxlar</p>
+                <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">{t.landing.hero.liveLabel}</p>
                 {['Texnomart', 'Uzum', 'Olcha'].map((store, i) => (
                   <div key={store} className="flex items-center justify-between mb-3 last:mb-0">
                     <div className="flex items-center gap-2">
@@ -108,7 +112,7 @@ export function Landing() {
                       <span className="text-white/80 text-sm font-medium">{store}</span>
                     </div>
                     <span className={`text-sm font-black ${i === 0 ? 'text-green-300' : 'text-white/60'}`}>
-                      {i === 0 ? '✓ Eng arzon' : `+${(i * 8)}%`}
+                      {i === 0 ? t.landing.hero.cheapest : `+${(i * 8)}%`}
                     </span>
                   </div>
                 ))}
@@ -117,11 +121,11 @@ export function Landing() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-white/10 border border-white/15 rounded-2xl p-4 text-center">
                   <p className="text-2xl font-black text-white">{total > 0 ? total : '500'}+</p>
-                  <p className="text-white/60 text-xs font-medium mt-1">Mahsulotlar</p>
+                  <p className="text-white/60 text-xs font-medium mt-1">{t.landing.hero.statsProducts}</p>
                 </div>
                 <div className="bg-white/10 border border-white/15 rounded-2xl p-4 text-center">
-                  <p className="text-2xl font-black text-white">6</p>
-                  <p className="text-white/60 text-xs font-medium mt-1">Do'konlar</p>
+                  <p className="text-2xl font-black text-white">21</p>
+                  <p className="text-white/60 text-xs font-medium mt-1">{t.landing.hero.statsStores}</p>
                 </div>
               </div>
             </div>
@@ -132,22 +136,21 @@ export function Landing() {
       {/* ── Trust bar ── */}
       <section className="mt-5 px-4 max-w-7xl mx-auto">
         <div className="grid grid-cols-3 gap-3 md:gap-6">
-          {[
-            { icon: RefreshCw,   title: 'Har soatda',    desc: 'Narxlar yangilanadi' },
-            { icon: ShieldCheck, title: 'Ishonchli',     desc: 'Tasdiqlangan do\'konlar' },
-            { icon: TrendingUp,  title: 'Eng arzon',     desc: 'Kafolatlangan narx' },
-          ].map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl px-4 py-4 shadow-sm border border-gray-100 dark:border-gray-800">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center shrink-0">
-                <Icon className="w-4.5 h-4.5 text-[#0062FF]" />
+          {t.landing.trustBar.map(({ title, desc }, idx) => {
+            const Icon = TRUST_ICONS[idx];
+            return (
+              <div key={idx} className="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl px-4 py-4 shadow-sm border border-gray-100 dark:border-gray-800">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center shrink-0">
+                  <Icon className="w-4.5 h-4.5 text-[#0062FF]" />
+                </div>
+                <div className="hidden sm:block">
+                  <p className="text-sm font-black text-gray-900 dark:text-white">{title}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{desc}</p>
+                </div>
+                <p className="sm:hidden text-xs font-black text-gray-800 dark:text-gray-200">{title}</p>
               </div>
-              <div className="hidden sm:block">
-                <p className="text-sm font-black text-gray-900 dark:text-white">{title}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{desc}</p>
-              </div>
-              <p className="sm:hidden text-xs font-black text-gray-800 dark:text-gray-200">{title}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -155,7 +158,7 @@ export function Landing() {
       <section className="mt-8 bg-gray-50 dark:bg-gray-900 py-8 border-y border-gray-100 dark:border-gray-800">
         <div className="px-4 max-w-7xl mx-auto">
           <p className="text-xs font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 text-center mb-5">
-            Quyidagi do'konlardan narxlar olinadi
+            {t.landing.markets.label}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             {MARKET_LOGOS.map(({ name, color }) => (
@@ -185,10 +188,10 @@ export function Landing() {
               </div>
               <div>
                 <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-                  AI Tavsiyalari: Eng katta foyda
+                  {t.landing.aiRecs.title}
                 </h2>
                 <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-                  Narxlar farqi eng yuqori bo'lgan mahsulotlar — hoziroq tejang!
+                  {t.landing.aiRecs.subtitle}
                 </p>
               </div>
             </div>
@@ -213,12 +216,12 @@ export function Landing() {
                       />
                     </div>
                     <div className="bg-green-100 dark:bg-green-950/60 text-green-700 dark:text-green-400 text-[10px] font-black px-2 py-1 rounded-lg inline-block mb-2">
-                      ENG KATTA FOYDA
+                      {t.landing.aiRecs.badge}
                     </div>
                     <h3 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1 mb-2">{p.name}</h3>
                     <div className="flex items-end justify-between">
                       <div>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase">Eng arzon narx</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase">{t.landing.aiRecs.lowestPrice}</p>
                         <p className="text-lg font-black text-[#0062FF]">{formatSum(p.price)}</p>
                       </div>
                       <div className="bg-[#0062FF] p-2 rounded-xl text-white">
@@ -230,7 +233,7 @@ export function Landing() {
               )}
               {!loadingRecs && recommendations.length === 0 && (
                 <div className="col-span-full py-12 text-center text-gray-400 dark:text-gray-500">
-                  Hozircha tavsiyalar yo'q. Sync amalga oshirilganda paydo bo'ladi.
+                  {t.landing.aiRecs.empty}
                 </div>
               )}
             </div>
@@ -246,7 +249,7 @@ export function Landing() {
               {t.landing.trending.title}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-              Bir mahsulot — bir nechta do'kon narxi
+              {t.landing.trending.subtitle}
             </p>
           </div>
           <Link
@@ -287,7 +290,7 @@ export function Landing() {
                       />
                       {sortedMarkets.length > 1 && (
                         <div className="absolute top-3 left-3 bg-[#0062FF] text-white text-[10px] font-black px-2.5 py-1 rounded-full">
-                          {sortedMarkets.length} do'kon
+                          {t.landing.trending.storesBadge.replace('{{count}}', String(sortedMarkets.length))}
                         </div>
                       )}
                     </div>
@@ -329,7 +332,7 @@ export function Landing() {
                           ))}
                           {sortedMarkets.length > 2 && (
                             <p className="text-[10px] text-[#0062FF] font-bold text-right px-1">
-                              +{sortedMarkets.length - 2} ta boshqa narx →
+                              {t.landing.trending.moreOffers.replace('{{count}}', String(sortedMarkets.length - 2))}
                             </p>
                           )}
                         </div>
@@ -337,7 +340,7 @@ export function Landing() {
 
                       <div className="border-t border-gray-100 dark:border-gray-800 pt-3 flex items-center justify-between">
                         <div>
-                          <p className="text-[9px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">Eng arzon</p>
+                          <p className="text-[9px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">{t.landing.trending.cheapest}</p>
                           <p className="text-base font-black text-gray-900 dark:text-white">{formatSum(bestPrice)}</p>
                         </div>
                         <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center group-hover:bg-[#0062FF] transition-colors">
@@ -389,16 +392,18 @@ export function Landing() {
           <div className="relative z-10">
             <Smartphone className="w-12 h-12 text-white/80 mx-auto mb-4" />
             <h2 className="text-white font-black text-2xl md:text-3xl mb-3 tracking-tight">
-              Eng yaxshi narxni hoziroq toping
+              {t.landing.cta.title}
             </h2>
             <p className="text-white/70 text-sm md:text-base mb-7 max-w-md mx-auto">
-              {total > 0 ? `${total.toLocaleString()} ta mahsulot` : '500+ mahsulot'} — 6 ta do'kon — real vaqt narxlari
+              {t.landing.cta.subtitle
+                .replace('{{count}}', total > 0 ? total.toLocaleString() : '500+')
+                .replace('{{stores}}', '21')}
             </p>
             <Link
               to="/products"
               className="inline-flex items-center gap-2 bg-white text-[#0062FF] font-black rounded-2xl px-8 py-4 text-base shadow-lg hover:scale-105 active:scale-95 transition-all"
             >
-              Barcha mahsulotlarni ko'rish
+              {t.landing.cta.button}
               <ArrowRight className="w-5 h-5" />
             </Link>
           </div>

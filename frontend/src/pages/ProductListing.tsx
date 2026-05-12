@@ -241,7 +241,7 @@ export function ProductListing() {
           <div className="relative">
             <input
               type="number"
-              placeholder="Min"
+              placeholder={t.listing.minPrice}
               value={minPrice}
               onChange={e => setMinPrice(e.target.value)}
               className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 transition-all"
@@ -250,14 +250,14 @@ export function ProductListing() {
           <div className="relative">
             <input
               type="number"
-              placeholder="Max"
+              placeholder={t.listing.maxPrice}
               value={maxPrice}
               onChange={e => setMaxPrice(e.target.value)}
               className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 transition-all"
             />
           </div>
         </div>
-        <p className="text-[9px] text-gray-400 dark:text-gray-600 font-medium mt-1.5 text-center">so'm</p>
+        <p className="text-[9px] text-gray-400 dark:text-gray-600 font-medium mt-1.5 text-center">{t.listing.currency}</p>
       </div>
 
       {/* Rating */}
