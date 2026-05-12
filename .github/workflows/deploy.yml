@@ -17,7 +17,8 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /home/${{ secrets.SERVER_USER }}/full-bazar
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
 
             echo "=== clearing Docker build cache ==="
             docker builder prune -f
