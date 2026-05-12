@@ -10,7 +10,7 @@ RUN NODE_OPTIONS=--max-old-space-size=4096 npm run build
 FROM nginx:1.27-alpine
 COPY --from=builder /app/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY nginx.prod.conf /etc/nginx/conf.d/nginx.prod.conf
+COPY nginx.prod.conf /etc/nginx/nginx.prod.conf
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 EXPOSE 80 443
