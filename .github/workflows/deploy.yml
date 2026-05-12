@@ -18,17 +18,29 @@ jobs:
           script: |
             cd /home/${{ secrets.SERVER_USER }}/full-bazar
             git pull origin main
+
+            echo "=== clearing Docker build cache ==="
+            docker builder prune -f
+
+            echo "=== building frontend (no cache) ==="
             docker compose build --no-cache frontend
+
+            echo "=== restarting frontend ==="
             docker compose up -d --force-recreate --no-deps frontend
-            docker compose up --build -d
+
+            echo "=== bringing up all other services ==="
+            docker compose up -d --no-build
+
             echo "=== syncing CSV data to PostgreSQL ==="
             docker exec full-bazar-dagster-webserver-1 \
-              dagster job execute -j csv_sync_job -w /app/workspace.yaml
+              dagster job execute -j csv_sync_job || true
+
             echo "=== launching full scrape job (background) ==="
             nohup docker exec full-bazar-dagster-webserver-1 \
-              dagster job execute -j product_sync_job -w /app/workspace.yaml \
+              dagster job execute -j product_sync_job \
               > /tmp/scrape.log 2>&1 &
             echo "scrape pid: $!"
+
             echo "=== deploy done ==="
             docker inspect full-bazar-frontend-1 --format 'frontend: running={{.State.Running}}'
             curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:80

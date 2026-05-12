@@ -7,17 +7,27 @@ import { formatSum } from '../utils/productMapper';
 import axios from 'axios';
 
 const MARKET_LOGOS: { name: string; color: string }[] = [
-  { name: 'Asaxiy',    color: '#0EA5E9' },
-  { name: 'Texnomart', color: '#E31E24' },
-  { name: 'Olcha',     color: '#F97316' },
-  { name: 'Mediapark', color: '#10B981' },
-  { name: 'Glotr',     color: '#6366F1' },
-  { name: 'Idea',      color: '#F59E0B' },
-  { name: 'Ozon',      color: '#005BFF' },
-  { name: 'Discont',   color: '#EF4444' },
-  { name: 'Premier',   color: '#8B5CF6' },
-  { name: 'Beemarket', color: '#F59E0B' },
-  { name: 'Castore',   color: '#14B8A6' },
+  { name: 'Asaxiy',     color: '#0EA5E9' },
+  { name: 'Texnomart',  color: '#E31E24' },
+  { name: 'Olcha',      color: '#F97316' },
+  { name: 'Mediapark',  color: '#10B981' },
+  { name: 'Glotr',      color: '#6366F1' },
+  { name: 'Idea',       color: '#F59E0B' },
+  { name: 'Ozon',       color: '#005BFF' },
+  { name: 'Discont',    color: '#EF4444' },
+  { name: 'Premier',    color: '#8B5CF6' },
+  { name: 'Beemarket',  color: '#F59E0B' },
+  { name: 'Castore',    color: '#14B8A6' },
+  { name: 'Macbro',     color: '#111827' },
+  { name: 'Radius',     color: '#DC2626' },
+  { name: 'Joybox',     color: '#7C3AED' },
+  { name: 'Openshop',   color: '#059669' },
+  { name: 'Mi Store',   color: '#FF6900' },
+  { name: 'Prom',       color: '#2563EB' },
+  { name: 'Alif',       color: '#0F766E' },
+  { name: 'Ucell Shop', color: '#16A34A' },
+  { name: 'Brandstore', color: '#9333EA' },
+  { name: 'OLX',        color: '#3D9B35' },
 ];
 
 export function Landing() {
