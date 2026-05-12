@@ -10,7 +10,7 @@ export function OrderSuccess() {
   estimatedDelivery.setDate(estimatedDelivery.getDate() + 5);
 
   return (
-    <div className="min-h-screen bg-background selection:bg-primary/20 animate-fade-in py-12 relative overflow-hidden">
+    <div className="min-h-screen bg-background selection:bg-primary/20 animate-fade-in py-12 pb-24 md:pb-12 relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[140px] -z-10 animate-pulse-slow" />
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[140px] -z-10 animate-pulse-slow" />

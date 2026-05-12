@@ -30,6 +30,7 @@ export function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedMarketIndex, setSelectedMarketIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'overview' | 'specs' | 'reviews'>('overview');
+  const [liked, setLiked] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -107,14 +108,27 @@ export function ProductDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] dark:bg-gray-950 pb-24 md:pb-12 transition-colors">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-36 md:pb-12 transition-colors">
       {/* Mobile Top Bar */}
       <div className="md:hidden bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-4 sticky top-0 z-50 flex items-center justify-between">
         <button onClick={() => navigate(-1)} className="p-1">
           <ChevronLeft className="w-6 h-6 text-gray-900 dark:text-white" />
         </button>
         <span className="font-bold text-gray-900 dark:text-white truncate max-w-[200px]">{t.detail.productDetails}</span>
-        <button className="p-1"><Share2 className="w-5 h-5 text-gray-400 dark:text-gray-500" /></button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setLiked(v => !v)}
+            className="p-2 active:scale-90 transition-transform"
+          >
+            <Heart className={`w-5 h-5 transition-all duration-200 ${liked ? 'fill-red-500 text-red-500 scale-110' : 'text-gray-400 dark:text-gray-500'}`} />
+          </button>
+          <button
+            onClick={() => navigator.share?.({ title: product?.name, url: window.location.href })}
+            className="p-2 active:scale-90 transition-transform"
+          >
+            <Share2 className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+          </button>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
@@ -144,8 +158,11 @@ export function ProductDetail() {
                 className="flex md:block overflow-x-auto snap-x snap-mandatory hide-scrollbar"
               >
                 <div className="md:hidden absolute top-4 right-4 z-10">
-                  <button className="w-10 h-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform">
-                    <Heart className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                  <button
+                    onClick={() => setLiked(v => !v)}
+                    className="w-10 h-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all"
+                  >
+                    <Heart className={`w-5 h-5 transition-all duration-200 ${liked ? 'fill-red-500 text-red-500 scale-110' : 'text-gray-400 dark:text-gray-500'}`} />
                   </button>
                 </div>
                 {images.map((img, idx) => (
@@ -222,9 +239,17 @@ export function ProductDetail() {
                   <CheckCircle2 className="w-4 h-4" /> {t.detail.inStockReady}
                 </span>
               </div>
-              <h1 className="text-3xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight leading-tight">
-                {product.name}
-              </h1>
+              <div className="flex items-start gap-3">
+                <h1 className="flex-1 text-3xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight leading-tight">
+                  {product.name}
+                </h1>
+                <button
+                  onClick={() => setLiked(v => !v)}
+                  className="hidden md:flex mt-2 w-11 h-11 shrink-0 items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-red-300 dark:hover:border-red-800 active:scale-90 transition-all shadow-sm"
+                >
+                  <Heart className={`w-5 h-5 transition-all duration-200 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-400 dark:text-gray-500'}`} />
+                </button>
+              </div>
 
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 px-3 py-1.5 rounded-xl shadow-sm">
@@ -492,8 +517,8 @@ export function ProductDetail() {
 
       </div>
 
-      {/* Sticky Bottom Bar (Mobile) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 p-4 px-6 z-50 flex items-center justify-between shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+      {/* Sticky Bottom Bar (Mobile) — sits above the MobileToolbar (~60px) */}
+      <div className="md:hidden fixed bottom-[60px] left-0 right-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 px-4 py-3 z-40 flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
         <div className="flex flex-col">
           <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t.detail.fromPrice}</span>
           <span className="text-xl font-black text-violet-600 dark:text-violet-400">{formatSum(selectedMarket?.price || product.price)}</span>

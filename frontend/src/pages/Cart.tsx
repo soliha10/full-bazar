@@ -24,7 +24,7 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-background py-32 animate-fade-in">
+      <div className="min-h-screen bg-background py-32 pb-24 md:pb-32 animate-fade-in">
         <div className="max-w-xl mx-auto px-4 text-center space-y-8">
           <div className="w-40 h-40 bg-primary/5 rounded-[3rem] flex items-center justify-center mx-auto border-2 border-dashed border-primary/20">
              <ShoppingBag className="w-20 h-20 text-primary animate-pulse" />
@@ -44,7 +44,7 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background selection:bg-primary/20 animate-fade-in py-12">
+    <div className="min-h-screen bg-background selection:bg-primary/20 animate-fade-in py-12 pb-24 md:pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
           <div className="space-y-2 text-center md:text-left">
