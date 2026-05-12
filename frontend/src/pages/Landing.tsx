@@ -57,7 +57,7 @@ export function Landing() {
     <div className="min-h-screen bg-white dark:bg-gray-950 pb-24 md:pb-0 transition-colors">
 
       {/* ── Hero ── */}
-      <section className="px-4 pt-4 md:pt-10 max-w-7xl mx-auto">
+      <section className="px-4 mt-[70px] pt-4 md:pt-10 max-w-7xl mx-auto">
         <div className="relative rounded-3xl overflow-hidden bg-linear-to-br from-violet-600 via-violet-700 to-violet-900 shadow-2xl shadow-violet-500/30 min-h-[320px] md:min-h-[420px] flex items-center">
 
           {/* Background blobs */}

@@ -81,7 +81,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
 
   return (
     <nav
-      className={`sticky top-0 z-50 transition-all duration-300 ${
+      className={`fixed w-full top-0 z-50 transition-all duration-300 ${
         scrolled
           ? 'shadow-lg shadow-violet-500/10 dark:shadow-violet-900/20'
           : ''
