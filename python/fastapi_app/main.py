@@ -228,6 +228,21 @@ async def get_recommendations(limit: int = Query(4, ge=1, le=10)) -> dict:
     
     return {"products": products}
 
+@app.get("/api/markets")
+async def get_markets() -> dict:
+    """Return distinct markets available in the DB with product counts."""
+    pool: asyncpg.Pool = app.state.pool
+    rows = await pool.fetch(
+        """
+        SELECT lower(source) AS key, source AS name, COUNT(*) AS count
+        FROM product_markets
+        GROUP BY source
+        ORDER BY count DESC
+        """
+    )
+    return {"markets": [{"key": r["key"], "name": r["name"], "count": r["count"]} for r in rows]}
+
+
 @app.get("/health")
 async def health() -> dict:
     return {"status": "ok"}
@@ -241,16 +256,15 @@ async def stats() -> dict:
         SELECT
             (SELECT COUNT(*) FROM products) AS total_products,
             (SELECT MAX(updated_at) FROM products) AS last_sync,
-            (SELECT COUNT(DISTINCT source) FROM product_markets) AS total_markets,
-            (SELECT json_agg(r) FROM (
-                SELECT source, COUNT(*) AS count
-                FROM product_markets GROUP BY source ORDER BY count DESC
-            ) r) AS markets
+            (SELECT COUNT(DISTINCT source) FROM product_markets) AS total_markets
         """
+    )
+    markets_rows = await pool.fetch(
+        "SELECT source, COUNT(*) AS count FROM product_markets GROUP BY source ORDER BY count DESC"
     )
     return {
         "total_products": row["total_products"],
         "last_sync": row["last_sync"].isoformat() if row["last_sync"] else None,
         "total_markets": row["total_markets"],
-        "markets": row["markets"] or [],
+        "markets": [{"source": r["source"], "count": r["count"]} for r in markets_rows],
     }

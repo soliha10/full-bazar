@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import json
 import logging
+import subprocess
+import time
 from typing import Iterator
+from urllib.parse import urlencode
 
 from .base import BaseScraper, ProductRow
 
@@ -13,30 +17,38 @@ ITEMS_PER_PAGE = 10  # server-side fixed limit
 MAX_PAGES = 100
 
 
+def _curl_json(url: str, delay: float = 1.0) -> dict | None:
+    """Fetch JSON via curl — works with TLS 1.3 on macOS LibreSSL 2.8.3."""
+    time.sleep(delay)
+    try:
+        r = subprocess.run(
+            ["curl", "-s", "--max-time", "15",
+             "-H", "Accept: application/json",
+             "-H", "Origin: https://mediapark.uz",
+             "-H", "User-Agent: Mozilla/5.0",
+             url],
+            capture_output=True, text=True, timeout=20,
+        )
+        if not r.stdout.strip():
+            return None
+        return json.loads(r.stdout)
+    except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError):
+        return None
+
+
 class MediaparkScraper(BaseScraper):
-    """Mediapark.uz — via internal API (api.client.mediapark.uz)."""
+    """Mediapark.uz — via internal API (TLS 1.3; uses curl subprocess on macOS)."""
 
     store_name = "mediapark"
 
     def scrape(self) -> Iterator[ProductRow]:
-        headers = {
-            "Accept": "application/json",
-            "Origin": "https://mediapark.uz",
-            "Referer": "https://mediapark.uz/ru/products/category/telefony-17/smartfony-40",
-        }
-
         for page in range(1, MAX_PAGES + 1):
-            resp = self.get(
-                API_URL,
-                params={"subcategory_id": SUBCATEGORY_ID, "page": page, "perPage": ITEMS_PER_PAGE},
-                headers=headers,
-                json_mode=True,
-            )
-            try:
-                data = resp.json()
-            except Exception:
-                break
+            qs = urlencode({"subcategory_id": SUBCATEGORY_ID, "page": page, "perPage": ITEMS_PER_PAGE})
+            url = f"{API_URL}?{qs}"
+
+            data = _curl_json(url, delay=self.delay)
             if not data:
+                logger.warning("[mediapark] page %d: empty response, stopping", page)
                 break
 
             products = (data.get("data") or {}).get("products", [])
