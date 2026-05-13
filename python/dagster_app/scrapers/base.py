@@ -4,6 +4,7 @@ import csv
 import logging
 import os
 import random
+import shutil
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -67,9 +68,10 @@ class BaseScraper(ABC):
     def run(self) -> int:
         os.makedirs(self.output_dir, exist_ok=True)
         filepath = os.path.join(self.output_dir, f"{self.store_name}_products.csv")
+        tmp_path = filepath + ".tmp"
         count = 0
         try:
-            with open(filepath, "w", newline="", encoding="utf-8") as fh:
+            with open(tmp_path, "w", newline="", encoding="utf-8") as fh:
                 writer = csv.DictWriter(fh, fieldnames=CSV_FIELDS)
                 writer.writeheader()
                 for row in self.scrape():
@@ -87,5 +89,12 @@ class BaseScraper(ABC):
                     count += 1
         except Exception as exc:
             logger.error(f"[{self.store_name}] Fatal: {exc}")
-        logger.info(f"[{self.store_name}] Saved {count} products → {filepath}")
+
+        if count > 0:
+            shutil.move(tmp_path, filepath)
+            logger.info(f"[{self.store_name}] Saved {count} products → {filepath}")
+        else:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            logger.warning(f"[{self.store_name}] 0 products — keeping existing CSV unchanged")
         return count
