@@ -35,6 +35,8 @@ export function ProductDetail() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   useEffect(() => {
     const getProduct = async () => {
       if (!id) return;

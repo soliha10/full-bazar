@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   ChevronLeft, LayoutGrid, List, ArrowLeft, Mic, X, ChevronRight,
   Search, Loader2, SlidersHorizontal, Star, RotateCcw, Tag,
@@ -60,6 +60,11 @@ const SORT_OPTIONS = [
 
 type SortKey = 'relevance' | 'priceLow' | 'priceHigh' | 'rating';
 
+const FILTER_KEY = 'productListingFilters';
+function getSavedFilters() {
+  try { return JSON.parse(sessionStorage.getItem(FILTER_KEY) || 'null'); } catch { return null; }
+}
+
 export function ProductListing() {
   const { t } = useLanguage();
   const navigate  = useNavigate();
@@ -69,16 +74,18 @@ export function ProductListing() {
   const searchQuery   = useMemo(() => new URLSearchParams(location.search).get('search') || '', [location.search]);
   const categoryParam = useMemo(() => new URLSearchParams(location.search).get('category') || 'All', [location.search]);
 
+  const saved = useRef(getSavedFilters());
+
   const [localSearch,     setLocalSearch]     = useState(searchQuery);
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
   const [selectedCategory,    setSelectedCategory]    = useState(categoryParam);
-  const [selectedMarketplaces, setSelectedMarketplaces] = useState<string[]>([]);
-  const [minRating,    setMinRating]    = useState(0);
-  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
-  const [minPrice,  setMinPrice]  = useState('');
-  const [maxPrice,  setMaxPrice]  = useState('');
-  const [sortBy,    setSortBy]    = useState<SortKey>('relevance');
-  const [viewMode,  setViewMode]  = useState<'grid' | 'list'>('grid');
+  const [selectedMarketplaces, setSelectedMarketplaces] = useState<string[]>(saved.current?.selectedMarketplaces ?? []);
+  const [minRating,    setMinRating]    = useState<number>(saved.current?.minRating ?? 0);
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(saved.current?.selectedBrand ?? null);
+  const [minPrice,  setMinPrice]  = useState<string>(saved.current?.minPrice ?? '');
+  const [maxPrice,  setMaxPrice]  = useState<string>(saved.current?.maxPrice ?? '');
+  const [sortBy,    setSortBy]    = useState<SortKey>(saved.current?.sortBy ?? 'relevance');
+  const [viewMode,  setViewMode]  = useState<'grid' | 'list'>(saved.current?.viewMode ?? 'grid');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [listPage,  setListPage]  = useState(1);
@@ -106,6 +113,12 @@ export function ProductListing() {
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [debouncedSearch, selectedCategory]);
   useEffect(() => { setListPage(1); }, [debouncedSearch, selectedCategory, selectedMarketplaces, minRating, sortBy, viewMode]);
+
+  useEffect(() => {
+    sessionStorage.setItem(FILTER_KEY, JSON.stringify({
+      selectedMarketplaces, minRating, selectedBrand, minPrice, maxPrice, sortBy, viewMode,
+    }));
+  }, [selectedMarketplaces, minRating, selectedBrand, minPrice, maxPrice, sortBy, viewMode]);
 
   const updateUrlCategory = useCallback((v: string) => {
     setSearchParams(prev => {
