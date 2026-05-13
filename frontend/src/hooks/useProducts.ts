@@ -42,8 +42,8 @@ export function useProducts(
     getNextPageParam: (lastPage) => {
       return lastPage?.hasMore ? lastPage.page + 1 : undefined;
     },
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 10,
+    staleTime: 0,
+    gcTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
