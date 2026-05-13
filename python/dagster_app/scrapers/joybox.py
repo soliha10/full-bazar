@@ -17,12 +17,15 @@ def _price(text: str) -> float:
     return float(nums) if nums else 0.0
 
 
+CATEGORY = f"{BASE}/magazin/smartfony-i-gadjety/smartfony"
+
+
 class JoyboxScraper(BaseScraper):
     store_name = "joybox"
 
     def scrape(self) -> Iterator[ProductRow]:
-        for page in range(1, 20):
-            url = f"{BASE}/catalog/smartfony/?page={page}"
+        for page in range(1, 25):
+            url = f"{CATEGORY}/page/{page}/" if page > 1 else f"{CATEGORY}/"
             try:
                 resp = self.get(url)
                 if not resp.ok:
@@ -30,22 +33,21 @@ class JoyboxScraper(BaseScraper):
                     break
                 soup = BeautifulSoup(resp.text, "lxml")
 
-                cards = soup.select(".product-card, .product-item, .catalog-item, [class*='product-card']")
+                cards = soup.select("div.wd-product")
                 if not cards:
                     logger.info("[joybox] page %d: no cards, stopping", page)
                     break
 
                 for card in cards:
-                    name_el = card.select_one(
-                        ".product-card__name, .product-name, [class*='name'], [class*='title']"
-                    )
+                    name_el = card.select_one(".wd-entities-title")
                     title = name_el.get_text(strip=True) if name_el else ""
+                    if not title:
+                        a_link = card.select_one("a[aria-label]")
+                        title = (a_link.get("aria-label") or "").strip() if a_link else ""
                     if not title:
                         continue
 
-                    price_el = card.select_one(
-                        "[class*='price']:not([class*='old']):not([class*='before'])"
-                    )
+                    price_el = card.select_one(".woocommerce-Price-amount")
                     price = _price(price_el.get_text() if price_el else "")
                     if not price:
                         continue

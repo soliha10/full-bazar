@@ -1,87 +1,89 @@
 from __future__ import annotations
 
 import logging
-import re
+import time
+import random
 from typing import Iterator
 
-from bs4 import BeautifulSoup
-
-from .base import BaseScraper, ProductRow
+from .base import BaseScraper, ProductRow, JSON_HEADERS
 
 logger = logging.getLogger(__name__)
 BASE = "https://openshop.uz"
-
-
-def _price(text: str) -> float:
-    nums = re.sub(r"[^\d]", "", text)
-    return float(nums) if nums else 0.0
+API_BASE = "https://web.openshop.uz/api/v1"
+# Subcategory slug for Smartphones (id=4, subcategory of Phones & Tablets id=11)
+SUBCATEGORY_SLUG = "4-smartfonlar"
 
 
 class OpenshopScraper(BaseScraper):
+    """openshop.uz — uses /shop/product/get_products REST API (POST, session-based pagination)."""
     store_name = "openshop"
 
-    def scrape(self) -> Iterator[ProductRow]:
-        category_urls = [
-            f"{BASE}/catalog/smartfony",
-            f"{BASE}/catalog/smartfonlar",
-            f"{BASE}/categories/smartfony",
-        ]
-        working_url = None
-        for cat_url in category_urls:
-            resp = self.get(cat_url)
-            if resp.ok and len(resp.text) > 2000:
-                working_url = cat_url
-                break
+    def _post(self, url: str) -> dict:
+        time.sleep(self.delay + random.uniform(0, 0.5))
+        resp = self.session.post(url, headers=JSON_HEADERS, timeout=20)
+        resp.raise_for_status()
+        return resp.json()
 
-        if not working_url:
-            logger.warning("[openshop] could not find working category URL")
+    def scrape(self) -> Iterator[ProductRow]:
+        # First request establishes session cookie with the category filter
+        first_url = f"{API_BASE}/shop/product/get_products?subcategory_slug={SUBCATEGORY_SLUG}"
+        try:
+            data = self._post(first_url)
+        except Exception as exc:
+            logger.warning("[openshop] initial request failed: %s", exc)
             return
 
-        for page in range(1, 20):
-            url = f"{working_url}?page={page}" if page > 1 else working_url
+        products = data.get("data", [])
+        meta = data.get("meta", {})
+        last_page = meta.get("last_page", 1) if isinstance(meta, dict) else 1
+
+        for prod in products:
+            row = self._parse(prod)
+            if row:
+                yield row
+
+        logger.info("[openshop] page 1/%d: %d products", last_page, len(products))
+
+        for page in range(2, last_page + 1):
+            url = f"{API_BASE}/shop/product/get_products?subcategory_slug={SUBCATEGORY_SLUG}&page={page}"
             try:
-                resp = self.get(url)
-                if not resp.ok:
-                    break
-                soup = BeautifulSoup(resp.text, "lxml")
+                data = self._post(url)
+                products = data.get("data", []) if isinstance(data, dict) else data
 
-                cards = soup.select(
-                    ".product-card, .catalog-item, .product-item, "
-                    "[class*='ProductCard'], [class*='product-card']"
-                )
-                if not cards:
-                    logger.info("[openshop] page %d: no cards, stopping", page)
+                if not products:
+                    logger.info("[openshop] page %d: no products, stopping", page)
                     break
 
-                for card in cards:
-                    name_el = card.select_one(
-                        "[class*='name'], [class*='title'], h3, h2"
-                    )
-                    title = name_el.get_text(strip=True) if name_el else ""
-                    if not title:
-                        continue
+                for prod in products:
+                    row = self._parse(prod)
+                    if row:
+                        yield row
 
-                    price_el = card.select_one(
-                        "[class*='price']:not([class*='old'])"
-                    )
-                    price = _price(price_el.get_text() if price_el else "")
-                    if not price:
-                        continue
-
-                    img = card.find("img")
-                    src = (img.get("src") or img.get("data-src") or "") if img else ""
-                    if src and not src.startswith("http"):
-                        src = BASE + src
-
-                    a_el = card.find("a", href=True)
-                    href = a_el["href"] if a_el else ""
-                    product_url = href if href.startswith("http") else BASE + href
-
-                    yield ProductRow(
-                        title=title, price=price, store=self.store_name,
-                        image_url=src, product_url=product_url,
-                    )
+                logger.info("[openshop] page %d/%d: %d products", page, last_page, len(products))
 
             except Exception as exc:
                 logger.warning("[openshop] page %d error: %s", page, exc)
                 break
+
+    def _parse(self, prod: dict) -> ProductRow | None:
+        name = (prod.get("name") or "").strip()
+        if not name:
+            return None
+
+        price_info = prod.get("price") or {}
+        price = float(price_info.get("total") or price_info.get("timer_price") or 0)
+        if not price:
+            return None
+
+        slug = prod.get("slug") or prod.get("id") or ""
+        product_url = f"{BASE}/shop/product/{slug}" if slug else ""
+
+        image_url = prod.get("thumbnail_img") or ""
+
+        return ProductRow(
+            title=name,
+            price=price,
+            store=self.store_name,
+            image_url=image_url,
+            product_url=product_url,
+        )

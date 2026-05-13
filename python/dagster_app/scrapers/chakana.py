@@ -1,86 +1,82 @@
 from __future__ import annotations
 
+import json
 import logging
-import re
+import subprocess
+import time
 from typing import Iterator
-
-from bs4 import BeautifulSoup
 
 from .base import BaseScraper, ProductRow
 
 logger = logging.getLogger(__name__)
 BASE = "https://chakana.uz"
+API_BASE = "https://api.chakana.uz"
+# Category 229 = Смартфоны и мобильные телефоны
+CATEGORY_ID = 229
 
 
-def _price(text: str) -> float:
-    nums = re.sub(r"[^\d]", "", text)
-    return float(nums) if nums else 0.0
+def _curl_json(url: str, delay: float = 1.0) -> list | dict | None:
+    """Fetch JSON via curl (works with TLS 1.3 unlike macOS LibreSSL 2.8.3)."""
+    time.sleep(delay)
+    try:
+        r = subprocess.run(
+            ["curl", "-s", "--max-time", "15", "-H", "Accept: application/json", url],
+            capture_output=True, text=True, timeout=20,
+        )
+        if not r.stdout.strip():
+            return None
+        return json.loads(r.stdout)
+    except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError):
+        return None
 
 
 class ChakanaScraper(BaseScraper):
+    """chakana.uz — uses https://api.chakana.uz REST API (JSON, no browser needed)."""
     store_name = "chakana"
 
     def scrape(self) -> Iterator[ProductRow]:
-        category_urls = [
-            f"{BASE}/catalog/smartfony",
-            f"{BASE}/catalog/smartfonlar",
-            f"{BASE}/c/smartfonlar",
-            f"{BASE}/phones",
-        ]
-        working_url = None
-        for cat_url in category_urls:
-            resp = self.get(cat_url)
-            if resp.ok and len(resp.text) > 2000:
-                working_url = cat_url
-                break
-
-        if not working_url:
-            logger.warning("[chakana] could not find working category URL")
-            return
-
-        for page in range(1, 20):
-            url = f"{working_url}?page={page}" if page > 1 else working_url
+        for page in range(1, 50):
+            url = f"{API_BASE}/v1/product/by-category?id={CATEGORY_ID}&page={page}&limit=100"
             try:
-                resp = self.get(url)
-                if not resp.ok:
-                    break
-                soup = BeautifulSoup(resp.text, "lxml")
+                # Try requests first (works in Docker/Linux with OpenSSL)
+                resp = self.get(url, json_mode=True)
+                if resp.ok:
+                    products = resp.json()
+                else:
+                    raise ValueError(f"HTTP {resp.status_code}")
+            except Exception:
+                # Fallback: use curl (handles TLS 1.3 on macOS)
+                products = _curl_json(url, delay=self.delay)
 
-                cards = soup.select(
-                    ".product-card, .product-item, .catalog-item, "
-                    "[class*='product-card'], [class*='ProductCard']"
-                )
-                if not cards:
-                    logger.info("[chakana] page %d: no cards, stopping", page)
-                    break
-
-                for card in cards:
-                    name_el = card.select_one("[class*='name'], [class*='title'], h3, h2")
-                    title = name_el.get_text(strip=True) if name_el else ""
-                    if not title:
-                        continue
-
-                    price_el = card.select_one(
-                        "[class*='price']:not([class*='old'])"
-                    )
-                    price = _price(price_el.get_text() if price_el else "")
-                    if not price:
-                        continue
-
-                    img = card.find("img")
-                    src = (img.get("src") or img.get("data-src") or "") if img else ""
-                    if src and not src.startswith("http"):
-                        src = BASE + src
-
-                    a_el = card.find("a", href=True)
-                    href = a_el["href"] if a_el else ""
-                    product_url = href if href.startswith("http") else BASE + href
-
-                    yield ProductRow(
-                        title=title, price=price, store=self.store_name,
-                        image_url=src, product_url=product_url,
-                    )
-
-            except Exception as exc:
-                logger.warning("[chakana] page %d error: %s", page, exc)
+            if not isinstance(products, list) or not products:
+                logger.info("[chakana] page %d: no products, stopping", page)
                 break
+
+            for prod in products:
+                name = (prod.get("name_ru") or prod.get("name") or "").strip()
+                if not name:
+                    continue
+
+                price = float(prod.get("price_full") or prod.get("offer", {}).get("price") or 0)
+                if not price:
+                    continue
+
+                image_url = prod.get("image") or ""
+                product_id = prod.get("id") or ""
+                product_url = f"{BASE}/uz/product/{product_id}" if product_id else ""
+
+                rating_data = prod.get("product_rating") or {}
+                rating = str(rating_data.get("total_rating", "")) if rating_data else ""
+                reviews = str(rating_data.get("count_rating", "")) if rating_data else ""
+
+                yield ProductRow(
+                    title=name,
+                    price=price,
+                    store=self.store_name,
+                    image_url=image_url,
+                    product_url=product_url,
+                    rating=rating,
+                    review_count=reviews,
+                )
+
+            logger.info("[chakana] page %d: %d products", page, len(products))

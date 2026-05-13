@@ -1,70 +1,111 @@
 from __future__ import annotations
 
+import json
 import logging
-import re
 from typing import Iterator
-
-from bs4 import BeautifulSoup
 
 from .base import BaseScraper, ProductRow
 
 logger = logging.getLogger(__name__)
 BASE = "https://radius.uz"
+GQL_URL = "https://new.api.radius.uz/graphql/"
+# Base64 encoded Saleor ID: Category:2314 = Смартфоны (level 1)
+CATEGORY_ID = "Q2F0ZWdvcnk6MjMxNA=="
 
-
-def _price(text: str) -> float:
-    nums = re.sub(r"[^\d]", "", text)
-    return float(nums) if nums else 0.0
+QUERY = """
+query Products($cursor: String) {
+  products(first: 100, filter: {categories: ["%s"]}, after: $cursor) {
+    edges {
+      node {
+        id
+        name
+        slug
+        pricing {
+          priceRange {
+            start {
+              amount
+              currency
+            }
+          }
+        }
+        media {
+          url
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+""" % CATEGORY_ID
 
 
 class RadiusScraper(BaseScraper):
+    """radius.uz — Saleor-based platform with GraphQL API at new.api.radius.uz/graphql/."""
     store_name = "radius"
 
     def scrape(self) -> Iterator[ProductRow]:
-        for page in range(1, 20):
-            url = f"{BASE}/catalog/smartfony/?page={page}"
+        cursor = None
+        page = 0
+
+        while True:
+            page += 1
+            payload = {"query": QUERY, "variables": {"cursor": cursor}}
             try:
-                resp = self.get(url)
+                resp = self.session.post(GQL_URL, json=payload, timeout=20)
                 if not resp.ok:
-                    logger.warning("[radius] page %d HTTP %d", page, resp.status_code)
-                    break
-                soup = BeautifulSoup(resp.text, "lxml")
-
-                cards = soup.select(".product-card, .catalog-item, .product-item")
-                if not cards:
-                    cards = soup.select("[class*='product'][class*='card'], [class*='catalog'][class*='item']")
-                if not cards:
-                    logger.info("[radius] page %d: no cards, stopping", page)
+                    logger.warning("[radius] page %d HTTP %d, stopping", page, resp.status_code)
                     break
 
-                for card in cards:
-                    name_el = card.select_one(
-                        ".product-card__name, .product-name, .item-name, [class*='name']"
-                    )
-                    title = name_el.get_text(strip=True) if name_el else ""
-                    if not title:
+                data = resp.json()
+                if "errors" in data:
+                    logger.warning("[radius] GraphQL errors: %s", data["errors"])
+                    break
+
+                products_conn = data.get("data", {}).get("products", {})
+                edges = products_conn.get("edges", [])
+                page_info = products_conn.get("pageInfo", {})
+
+                if not edges:
+                    logger.info("[radius] page %d: no products, stopping", page)
+                    break
+
+                for edge in edges:
+                    node = edge.get("node", {})
+                    name = node.get("name", "").strip()
+                    if not name:
                         continue
 
-                    price_el = card.select_one(
-                        ".price-current, .product-price, [class*='price']:not([class*='old'])"
-                    )
-                    price = _price(price_el.get_text() if price_el else "")
+                    pricing = node.get("pricing") or {}
+                    price_range = pricing.get("priceRange") or {}
+                    start = price_range.get("start") or {}
+                    price = float(start.get("amount") or 0)
                     if not price:
                         continue
 
-                    img = card.find("img")
-                    src = (img.get("src") or img.get("data-src") or "") if img else ""
-                    if src and not src.startswith("http"):
-                        src = BASE + src
+                    slug = node.get("slug") or ""
+                    product_url = f"{BASE}/catalog/smartfony/{slug}" if slug else ""
 
-                    a_el = card.find("a", href=True)
-                    href = a_el["href"] if a_el else ""
-                    product_url = href if href.startswith("http") else BASE + href
+                    media = node.get("media") or []
+                    image_url = media[0]["url"] if media else ""
 
                     yield ProductRow(
-                        title=title, price=price, store=self.store_name,
-                        image_url=src, product_url=product_url,
+                        title=name,
+                        price=price,
+                        store=self.store_name,
+                        image_url=image_url,
+                        product_url=product_url,
                     )
+
+                logger.info("[radius] page %d: %d products", page, len(edges))
+
+                if not page_info.get("hasNextPage"):
+                    break
+                cursor = page_info.get("endCursor")
+                if not cursor:
+                    break
 
             except Exception as exc:
                 logger.warning("[radius] page %d error: %s", page, exc)

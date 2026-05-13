@@ -26,7 +26,7 @@ class OlxScraper(BaseScraper):
 
     def scrape(self) -> Iterator[ProductRow]:
         for page in range(1, 15):
-            url = f"{BASE}/q/smartfon/?page={page}"
+            url = f"{BASE}/elektronika/telefony/mobilnye-telefony/?page={page}"
             try:
                 resp = self.get(url)
                 if not resp.ok:
@@ -34,19 +34,13 @@ class OlxScraper(BaseScraper):
                     break
                 soup = BeautifulSoup(resp.text, "lxml")
 
-                # OLX listing cards
-                cards = soup.select(
-                    "[data-cy='l-card'], .offer-wrapper, "
-                    "[class*='css-'][class*='offer'], li[class*='offer']"
-                )
+                cards = soup.select("[data-cy='l-card']")
                 if not cards:
                     logger.info("[olx] page %d: no cards, stopping", page)
                     break
 
                 for card in cards:
-                    name_el = card.select_one(
-                        "h6, h4, [class*='title'], [data-cy='ad-card-title']"
-                    )
+                    name_el = card.select_one("h4, h6")
                     title = name_el.get_text(strip=True) if name_el else ""
                     if not title:
                         continue

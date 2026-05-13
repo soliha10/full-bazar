@@ -29,17 +29,26 @@ const BRAND_KEYWORDS: Record<string, string[]> = {
 };
 
 const MARKETPLACES = [
-  { name: 'Asaxiy',    key: 'asaxiy',    color: '#7C3AED' },
-  { name: 'Texnomart', key: 'texnomart', color: '#E31E24' },
-  { name: 'Olcha',     key: 'olcha',     color: '#F97316' },
-  { name: 'Mediapark', key: 'mediapark', color: '#10B981' },
-  { name: 'Glotr',     key: 'glotr',     color: '#A78BFA' },
-  { name: 'Idea',      key: 'idea',      color: '#F59E0B' },
-  { name: 'Ozon',      key: 'ozon',      color: '#005BFF' },
-  { name: 'Discont',   key: 'discont',   color: '#EF4444' },
-  { name: 'Premier',   key: 'premier',   color: '#8B5CF6' },
-  { name: 'Beemarket', key: 'beemarket', color: '#EC4899' },
-  { name: 'Castore',   key: 'castore',   color: '#14B8A6' },
+  { name: 'Asaxiy',     key: 'asaxiy',     color: '#7C3AED' },
+  { name: 'Texnomart',  key: 'texnomart',  color: '#E31E24' },
+  { name: 'Olcha',      key: 'olcha',      color: '#F97316' },
+  { name: 'Mediapark',  key: 'mediapark',  color: '#10B981' },
+  { name: 'Chakana',    key: 'chakana',    color: '#0EA5E9' },
+  { name: 'Glotr',      key: 'glotr',      color: '#A78BFA' },
+  { name: 'Olx',        key: 'olx',        color: '#4ADE80' },
+  { name: 'Openshop',   key: 'openshop',   color: '#8B5CF6' },
+  { name: 'Idea',       key: 'idea',       color: '#F59E0B' },
+  { name: 'Brandstore', key: 'brandstore', color: '#6366F1' },
+  { name: 'Beemarket',  key: 'beemarket',  color: '#EC4899' },
+  { name: 'Castore',    key: 'castore',    color: '#14B8A6' },
+  { name: 'Joybox',     key: 'joybox',     color: '#F43F5E' },
+  { name: 'Alif',       key: 'alif',       color: '#0891B2' },
+  { name: 'Discont',    key: 'discont',    color: '#EF4444' },
+  { name: 'Macbro',     key: 'macbro',     color: '#1D4ED8' },
+  { name: 'Radius',     key: 'radius',     color: '#84CC16' },
+  { name: 'Mi',         key: 'mi',         color: '#FF6900' },
+  { name: 'Ucell',      key: 'ucell',      color: '#65A30D' },
+  { name: 'Prom',       key: 'prom',       color: '#B45309' },
 ];
 
 const SORT_OPTIONS = [

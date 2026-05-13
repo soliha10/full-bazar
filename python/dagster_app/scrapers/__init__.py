@@ -4,9 +4,7 @@ from .olcha import OlchaScraper
 from .mediapark import MediaparkScraper
 from .glotr import GlotrScraper
 from .idea import IdeaScraper
-from .ozon import OzonScraper
 from .discont import DiscontScraper
-from .premier import PremierScraper
 from .beemarket import BeemarketScraper
 from .castore import CastoreScraper
 from .macbro import MacbroScraper
@@ -28,12 +26,9 @@ ALL_SCRAPERS = [
     MediaparkScraper,
     GlotrScraper,
     IdeaScraper,
-    OzonScraper,
     DiscontScraper,
-    PremierScraper,
     BeemarketScraper,
     CastoreScraper,
-    # New marketplaces
     MacbroScraper,
     RadiusScraper,
     ChakanaScraper,
