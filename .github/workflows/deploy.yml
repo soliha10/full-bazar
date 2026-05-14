@@ -26,18 +26,21 @@ jobs:
             echo "=== building frontend (no cache) ==="
             docker compose build --no-cache frontend
 
-            echo "=== restarting frontend ==="
-            docker compose up -d --force-recreate --no-deps frontend
+            echo "=== building fastapi ==="
+            docker compose build fastapi
+
+            echo "=== restarting frontend and fastapi ==="
+            docker compose up -d --force-recreate --no-deps frontend fastapi
 
             echo "=== bringing up all other services ==="
             docker compose up -d --no-build
 
             echo "=== syncing CSV data to PostgreSQL ==="
-            docker exec full-bazar-dagster-webserver-1 \
+            docker compose exec -T dagster-webserver \
               dagster job execute -j csv_sync_job || true
 
             echo "=== launching full scrape job (background) ==="
-            nohup docker exec full-bazar-dagster-webserver-1 \
+            nohup docker compose exec -T dagster-webserver \
               dagster job execute -j product_sync_job \
               > /tmp/scrape.log 2>&1 &
             echo "scrape pid: $!"

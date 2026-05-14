@@ -156,7 +156,7 @@ async def get_products(
             params.append(markets_list)
             i = len(params)
             where_parts.append(
-                f"EXISTS (SELECT 1 FROM product_markets pm WHERE pm.product_id = p.id AND lower(pm.source) = ANY(${i}))"
+                f"EXISTS (SELECT 1 FROM product_markets pm WHERE pm.product_id = p.id AND lower(pm.source) = ANY(${i}::text[]))"
             )
 
     where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
