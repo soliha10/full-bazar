@@ -104,6 +104,10 @@ export function ProductListing() {
 
   const LIST_PER_PAGE = 10;
   const categories    = ['All', 'Phones'];
+  const categoryLabel: Record<string, string> = {
+    All:    t.listing.all,
+    Phones: t.detail.categories.phones,
+  };
 
   // ── Sync URL → state ──────────────────────────────────────────────────────
   useEffect(() => { setLocalSearch(searchQuery); setDebouncedSearch(searchQuery); }, [searchQuery]);
@@ -246,7 +250,7 @@ export function ProductListing() {
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                 }`}
               >
-                <span>{cat}</span>
+                <span>{categoryLabel[cat] ?? cat}</span>
                 {disabled && (
                   <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[9px] font-bold text-gray-400 dark:text-gray-500">
                     {t.listing.comingSoon}
