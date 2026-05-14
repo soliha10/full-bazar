@@ -159,6 +159,12 @@ export function ProductListing() {
         return c === s || (s === 'phones' && c === 'smartphones');
       });
     }
+    if (selectedMarketplaces.length > 0) {
+      const activeSet = new Set(selectedMarketplaces.map(m => m.toLowerCase()));
+      r = r.filter(p =>
+        p.markets?.some(m => activeSet.has(m.source.toLowerCase()))
+      );
+    }
     if (minRating > 0) r = r.filter(p => p.rating >= minRating);
     if (selectedBrand) {
       const kws = BRAND_KEYWORDS[selectedBrand] ?? [selectedBrand.toLowerCase()];
@@ -173,7 +179,7 @@ export function ProductListing() {
     if (sortBy === 'priceHigh') r.sort((a, b) => b.price - a.price);
     if (sortBy === 'rating')    r.sort((a, b) => b.rating - a.rating);
     return r;
-  }, [rawProducts, selectedCategory, minRating, selectedBrand, minPrice, maxPrice, sortBy]);
+  }, [rawProducts, selectedCategory, selectedMarketplaces, minRating, selectedBrand, minPrice, maxPrice, sortBy]);
 
   const paginatedList = useMemo(() => {
     if (viewMode !== 'list') return filteredProducts;
