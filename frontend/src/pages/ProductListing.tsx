@@ -89,6 +89,18 @@ export function ProductListing() {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [listPage,  setListPage]  = useState(1);
+  const [marketCounts, setMarketCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    fetch('/api/markets')
+      .then(r => r.json())
+      .then((d: { markets: { key: string; count: number }[] }) => {
+        const counts: Record<string, number> = {};
+        for (const m of d.markets) counts[m.key] = m.count;
+        setMarketCounts(counts);
+      })
+      .catch(() => {});
+  }, []);
 
   const LIST_PER_PAGE = 10;
   const categories    = ['All', 'Phones'];
@@ -368,6 +380,11 @@ export function ProductListing() {
               >
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                 <span className="flex-1">{name}</span>
+                {marketCounts[key] !== undefined && !active && (
+                  <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500">
+                    {marketCounts[key]}
+                  </span>
+                )}
                 {active && (
                   <div className="w-4 h-4 rounded-full bg-violet-600 flex items-center justify-center shrink-0">
                     <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 10 10">
@@ -616,7 +633,7 @@ export function ProductListing() {
             ) : viewMode === 'grid' ? (
               <>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3 md:gap-5">
-                  {filteredProducts.map(p => <ProductCard key={p.id} product={p} />)}
+                  {filteredProducts.map(p => <ProductCard key={p.id} product={p} activeMarkets={selectedMarketplaces} />)}
                 </div>
                 {hasMore && (
                   <div className="mt-10 flex justify-center">
@@ -635,7 +652,7 @@ export function ProductListing() {
             ) : (
               <>
                 <div className="grid grid-cols-1 gap-3">
-                  {paginatedList.map(p => <ProductCard key={p.id} product={p} viewMode="list" />)}
+                  {paginatedList.map(p => <ProductCard key={p.id} product={p} viewMode="list" activeMarkets={selectedMarketplaces} />)}
                 </div>
                 {listTotalPages > 1 && (
                   <div className="mt-8 flex items-center justify-center gap-2">

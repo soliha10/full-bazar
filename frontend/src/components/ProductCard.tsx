@@ -28,6 +28,7 @@ export interface Product {
 interface ProductCardProps {
   product: Product;
   viewMode?: 'grid' | 'list';
+  activeMarkets?: string[];
 }
 
 const storeLabels: Record<string, string> = {
@@ -42,11 +43,17 @@ const compareLabels: Record<string, string> = {
   en: 'View all',
 };
 
-export function ProductCard({ product, viewMode = 'grid' }: ProductCardProps) {
+export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: ProductCardProps) {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
 
-  const sortedMarkets = [...(product.markets ?? [])].sort((a, b) => a.price - b.price);
+  const activeSet = new Set(activeMarkets.map(m => m.toLowerCase()));
+  const sortedMarkets = [...(product.markets ?? [])].sort((a, b) => {
+    const aActive = activeSet.has(a.source.toLowerCase()) ? 0 : 1;
+    const bActive = activeSet.has(b.source.toLowerCase()) ? 0 : 1;
+    if (aActive !== bActive) return aActive - bActive;
+    return a.price - b.price;
+  });
   const bestPrice = sortedMarkets[0]?.price ?? product.price;
   const worstPrice = sortedMarkets[sortedMarkets.length - 1]?.price;
   const savings = worstPrice && worstPrice > bestPrice ? worstPrice - bestPrice : 0;
@@ -153,11 +160,11 @@ export function ProductCard({ product, viewMode = 'grid' }: ProductCardProps) {
           )}
         </div>
 
-        {product.source && (
+        {sortedMarkets[0]?.source && (
           <div className="absolute top-3 right-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-2.5 py-1 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-1">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[9px] text-gray-700 dark:text-gray-300 font-black uppercase tracking-wider">
-              {product.source}
+              {sortedMarkets[0].source}
             </span>
           </div>
         )}
