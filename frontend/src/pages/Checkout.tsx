@@ -63,7 +63,7 @@ export function Checkout({ cartItems }: CheckoutProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-background selection:bg-primary/20 animate-fade-in py-12 pb-24 md:pb-12">
+    <div className="min-h-screen bg-background selection:bg-primary/20 animate-fade-in py-8 pb-20 md:py-12 md:pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-12 text-center md:text-left">
           <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">

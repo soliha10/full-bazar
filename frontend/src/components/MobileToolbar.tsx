@@ -8,15 +8,18 @@ export function MobileToolbar() {
   const currentPath = location.pathname;
 
   const items = [
-    { icon: Home,   label: t.nav.home,        path: '/'         },
-    { icon: Search, label: t.nav.search,       path: '/products' },
-    { icon: Heart,  label: t.footer.wishlist,  path: '/wishlist' },
-    { icon: User,   label: t.nav.account,      path: '/profile'  },
+    { icon: Home,   label: t.nav.home,       path: '/'         },
+    { icon: Search, label: t.nav.search,      path: '/products' },
+    { icon: Heart,  label: t.footer.wishlist, path: '/wishlist' },
+    { icon: User,   label: t.nav.account,     path: '/profile'  },
   ];
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/98 dark:bg-gray-950/98 backdrop-blur-xl border-t border-gray-100 dark:border-gray-800/80 shadow-[0_-1px_0_rgba(0,0,0,0.04),0_-8px_32px_rgba(0,0,0,0.08)]">
-      <div className="flex items-end justify-around px-1 pt-2 pb-3">
+      <div
+        className="flex items-end justify-around px-1 pt-2"
+        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+      >
         {items.map((item, i) => {
           const isActive = item.path === '/'
             ? currentPath === '/'
@@ -26,12 +29,10 @@ export function MobileToolbar() {
             <Link
               key={i}
               to={item.path}
-              className="flex flex-col items-center gap-1 flex-1 transition-transform duration-100 active:scale-90"
+              className="flex flex-col items-center gap-1 flex-1 min-h-[44px] justify-center transition-transform duration-100 active:scale-90"
             >
-              <div className={`flex items-center justify-center w-14 h-8 rounded-full transition-all duration-200 ${
-                isActive
-                  ? 'bg-violet-100 dark:bg-violet-900/50'
-                  : ''
+              <div className={`flex items-center justify-center w-12 h-8 rounded-full transition-all duration-200 ${
+                isActive ? 'bg-violet-100 dark:bg-violet-900/50' : ''
               }`}>
                 <item.icon
                   className={`w-5 h-5 transition-colors duration-200 ${

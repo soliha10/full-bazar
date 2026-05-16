@@ -122,7 +122,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
             </div>
             <button
               onClick={() => navigate(`/product/${product.id}`)}
-              className="p-2 bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded-xl hover:bg-violet-600 hover:text-white dark:hover:bg-violet-600 dark:hover:text-white transition-all"
+              className="w-11 h-11 flex items-center justify-center bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded-xl hover:bg-violet-600 hover:text-white dark:hover:bg-violet-600 dark:hover:text-white transition-all"
             >
               <ArrowRight className="w-4 h-4" />
             </button>
@@ -147,13 +147,13 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5">
           {sortedMarkets.length > 1 && (
-            <div className="flex items-center gap-1 bg-violet-600 text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow-sm shadow-violet-500/30">
+            <div className="flex items-center gap-1 bg-violet-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-sm shadow-violet-500/30">
               <Store className="w-2.5 h-2.5" />
               {sortedMarkets.length} {storeLabels[language] ?? 'Stores'}
             </div>
           )}
           {savings > 0 && (
-            <div className="flex items-center gap-1 bg-emerald-500 text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow-sm shadow-emerald-500/30">
+            <div className="flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-sm shadow-emerald-500/30">
               <TrendingDown className="w-2.5 h-2.5" />
               -{formatSum(savings)}
             </div>
@@ -163,7 +163,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
         {sortedMarkets[0]?.source && (
           <div className="absolute top-3 right-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-2.5 py-1 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-1">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[9px] text-gray-700 dark:text-gray-300 font-black uppercase tracking-wider">
+            <span className="text-[10px] text-gray-700 dark:text-gray-300 font-black uppercase tracking-wider">
               {sortedMarkets[0].source}
             </span>
           </div>
@@ -240,7 +240,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
               {sortedMarkets.length > 3 && (
                 <button
                   onClick={() => navigate(`/product/${product.id}`)}
-                  className="w-full text-center py-1.5 text-[10px] font-black text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors uppercase tracking-wider mt-1"
+                  className="w-full text-center py-2.5 text-xs font-black text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors uppercase tracking-wider mt-1 min-h-[44px]"
                 >
                   {compareLabels[language] ?? 'View all'} ({sortedMarkets.length})
                 </button>
@@ -248,7 +248,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
             </div>
           ) : (
             <div>
-              <p className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider mb-0.5">
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider mb-0.5">
                 {t.listing.startingFrom}
               </p>
               <p className="text-lg font-black text-gray-900 dark:text-white tracking-tight">

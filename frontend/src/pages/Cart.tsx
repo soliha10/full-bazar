@@ -24,7 +24,7 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-background py-32 pb-24 md:pb-32 animate-fade-in">
+      <div className="min-h-screen bg-background py-32 pb-20 md:pb-8 animate-fade-in">
         <div className="max-w-xl mx-auto px-4 text-center space-y-8">
           <div className="w-40 h-40 bg-primary/5 rounded-[3rem] flex items-center justify-center mx-auto border-2 border-dashed border-primary/20">
              <ShoppingBag className="w-20 h-20 text-primary animate-pulse" />
@@ -44,7 +44,7 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background selection:bg-primary/20 animate-fade-in py-12 pb-24 md:pb-12">
+    <div className="min-h-screen bg-background selection:bg-primary/20 animate-fade-in py-8 pb-20 md:py-12 md:pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
           <div className="space-y-2 text-center md:text-left">
@@ -61,7 +61,7 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
           <div className="lg:col-span-2 space-y-6">
             <div className="space-y-4">
               {cartItems.map((item) => (
-                <div key={item.id} className="group bg-card rounded-4xl p-6 border border-border/50 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300">
+                <div key={item.id} className="group bg-card rounded-4xl p-4 sm:p-6 border border-border/50 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300">
                   <div className="flex flex-col sm:flex-row gap-8">
                     {/* Product Image */}
                     <Link to={`/product/${item.id}`} className="shrink-0">
@@ -94,7 +94,7 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
                         </div>
                         <button
                           onClick={() => onRemoveItem(item.id)}
-                          className="w-10 h-10 rounded-xl bg-muted/30 text-muted-foreground hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-all active:scale-90"
+                          className="w-11 h-11 rounded-xl bg-muted/30 text-muted-foreground hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-all active:scale-90"
                         >
                           <Trash2 className="w-5 h-5" />
                         </button>
@@ -105,14 +105,14 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
                         <div className="flex items-center bg-muted/50 rounded-xl p-1 border border-border/50">
                           <button
                             onClick={() => onUpdateQuantity(item.id, -1)}
-                            className="w-10 h-10 rounded-lg hover:bg-white text-foreground font-black text-lg transition-all active:scale-90"
+                            className="w-11 h-11 rounded-lg hover:bg-white text-foreground font-black text-lg transition-all active:scale-90"
                           >
                             <Minus className="w-4 h-4 mx-auto" />
                           </button>
                           <span className="w-12 text-center font-black text-lg">{item.cartQuantity}</span>
                           <button
                             onClick={() => onUpdateQuantity(item.id, 1)}
-                            className="w-10 h-10 rounded-lg hover:bg-white text-foreground font-black text-lg transition-all active:scale-90"
+                            className="w-11 h-11 rounded-lg hover:bg-white text-foreground font-black text-lg transition-all active:scale-90"
                           >
                             <Plus className="w-4 h-4 mx-auto" />
                           </button>
@@ -139,7 +139,7 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
 
           {/* Order Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-card rounded-[2.5rem] p-8 border border-border shadow-2xl sticky top-28 space-y-8">
+            <div className="bg-card rounded-[2.5rem] p-6 sm:p-8 border border-border shadow-2xl md:sticky md:top-24 space-y-8">
               <h2 className="text-2xl font-black text-foreground">{t.checkout.orderSummary}</h2>
 
               <div className="space-y-4">

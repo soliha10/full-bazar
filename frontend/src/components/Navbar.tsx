@@ -93,7 +93,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
           {/* Left: hamburger + logo */}
           <div className="flex items-center gap-3 shrink-0">
             <button
-              className="md:hidden p-2 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-900/30 text-gray-600 dark:text-gray-300 transition-colors"
+              className="md:hidden w-11 h-11 flex items-center justify-center rounded-xl hover:bg-violet-50 dark:hover:bg-violet-900/30 text-gray-600 dark:text-gray-300 transition-colors"
               onClick={() => setIsMenuOpen(true)}
               aria-label="Menu"
             >
@@ -195,13 +195,13 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             <button
               onClick={toggleTheme}
               aria-label="Toggle theme"
-              className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-violet-50 dark:hover:bg-violet-900/30 text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 border border-transparent hover:border-violet-200 dark:hover:border-violet-700/50 transition-all active:scale-95"
+              className="w-11 h-11 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-violet-50 dark:hover:bg-violet-900/30 text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 border border-transparent hover:border-violet-200 dark:hover:border-violet-700/50 transition-all active:scale-95"
             >
               {isDark ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
             </button>
 
             {/* Login */}
-            <button className="flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-xl bg-linear-to-r from-violet-600 to-violet-700 hover:from-violet-700 hover:to-violet-800 text-white shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all active:scale-95 font-black text-sm ml-1">
+            <button className="flex items-center gap-2 px-4 md:px-5 py-3 rounded-xl bg-linear-to-r from-violet-600 to-violet-700 hover:from-violet-700 hover:to-violet-800 text-white shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all active:scale-95 font-black text-sm ml-1">
               <User className="w-4 h-4" />
               <span className="hidden lg:block tracking-wide">{t.nav.login}</span>
             </button>
@@ -275,7 +275,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             </div>
             <button
               onClick={() => setIsMenuOpen(false)}
-              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500 transition-colors"
+              className="w-11 h-11 flex items-center justify-center rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -321,7 +321,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                   <button
                     key={lang.code}
                     onClick={() => { setLanguage(lang.code); setIsMenuOpen(false); }}
-                    className={`py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                    className={`py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all min-h-[44px] ${
                       language === lang.code
                         ? 'bg-violet-600 text-white shadow-sm shadow-violet-500/30'
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-violet-50 dark:hover:bg-violet-900/20'

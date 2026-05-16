@@ -77,7 +77,7 @@ function AppContent() {
         <Navbar onSearchChange={handleSearch} />
       </div>
 
-      <main className="flex-1 md:mt-[75px]">
+      <main className="flex-1 md:mt-[70px]">
         <Routes>
           <Route path="/"              element={<Landing />} />
           <Route path="/products"      element={<ProductListing />} />

@@ -499,7 +499,7 @@ export function ProductListing() {
       </div>
 
       {/* ── Main layout ── */}
-      <div className="mx-auto max-w-7xl px-4 py-4 pb-24 sm:px-6 lg:px-8 md:py-8 md:pb-12">
+      <div className="mx-auto max-w-7xl px-4 py-4 pb-20 sm:px-6 lg:px-8 md:py-8 md:pb-12">
         {/* Breadcrumb */}
         <nav className="mb-6 hidden items-center gap-2 text-sm font-medium text-gray-400 dark:text-gray-500 md:flex">
           <Link to="/" className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors">{t.nav.home}</Link>
@@ -701,7 +701,7 @@ export function ProductListing() {
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setIsMobileFilterOpen(false)}
           />
-          <div className="absolute bottom-0 left-0 right-0 max-h-[88vh] rounded-t-[28px] bg-white dark:bg-gray-950 shadow-2xl flex flex-col">
+          <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] rounded-t-[28px] bg-white dark:bg-gray-950 shadow-2xl flex flex-col">
             {/* Handle + header */}
             <div className="sticky top-0 rounded-t-[28px] border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 pb-4 pt-3 z-10">
               <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-gray-200 dark:bg-gray-700" />
@@ -715,7 +715,7 @@ export function ProductListing() {
                 </div>
                 <button
                   onClick={() => setIsMobileFilterOpen(false)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
                 >
                   <X className="h-4.5 w-4.5" />
                 </button>
@@ -726,7 +726,7 @@ export function ProductListing() {
               <FilterPanel mobile />
             </div>
 
-            <div className="absolute bottom-0 left-0 right-0 grid grid-cols-2 gap-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 py-4 safe-area-bottom">
+            <div className="absolute bottom-0 left-0 right-0 grid grid-cols-2 gap-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 py-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
               <button
                 onClick={handleResetFilters}
                 className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3.5 text-sm font-black text-gray-700 dark:text-gray-300 hover:border-violet-200 dark:hover:border-violet-800 transition-all"

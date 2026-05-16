@@ -74,7 +74,7 @@ export function Landing() {
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 pb-24 md:pb-0 transition-colors">
+    <div className="min-h-screen bg-white dark:bg-gray-950 pb-20 md:pb-0 transition-colors">
 
       {/* ── Hero ── */}
       {/* Mobile: full bleed, no side margins. Desktop: contained card */}
@@ -173,12 +173,12 @@ export function Landing() {
 
       {/* ── Quick category chips — mobile only ── */}
       <section className="md:hidden px-4 mt-5">
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="flex gap-2 overflow-x-auto pb-1 pr-4">
           {quickCategories.map(({ label, value }) => (
             <Link
               key={value}
               to={value ? `/products?category=${value}` : '/products'}
-              className={`shrink-0 px-5 py-2.5 rounded-2xl text-sm font-black transition-all active:scale-95 ${
+              className={`shrink-0 px-5 py-2.5 min-h-[44px] rounded-2xl text-sm font-black transition-all active:scale-95 flex items-center ${
                 value === ''
                   ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/30'
                   : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200'
@@ -231,12 +231,12 @@ export function Landing() {
           <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 text-center mb-4">
             {t.landing.markets.label}
           </p>
-          <div className="flex gap-2.5 overflow-x-auto pb-2 md:flex-wrap md:justify-center md:overflow-visible md:pb-0">
+          <div className="flex gap-2.5 overflow-x-auto pb-2 pr-4 md:flex-wrap md:justify-center md:overflow-visible md:pb-0 md:pr-0">
             {MARKET_LOGOS.map(({ name, color }) => (
               <Link
                 key={name}
                 to={`/products?source=${encodeURIComponent(name.toLowerCase())}`}
-                className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-violet-200 dark:hover:border-violet-700 rounded-2xl px-4 py-2.5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 shrink-0 active:scale-95"
+                className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-violet-200 dark:hover:border-violet-700 rounded-2xl px-4 py-3 min-h-[44px] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 shrink-0 active:scale-95"
               >
                 <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                 <span className="text-sm font-black text-gray-800 dark:text-gray-100">{name}</span>
@@ -294,7 +294,7 @@ export function Landing() {
           </div>
 
           {/* Cards: horizontal scroll on mobile, grid on desktop */}
-          <div className="flex gap-3 overflow-x-auto pb-3 mt-4 md:mt-0 md:grid md:grid-cols-4 md:gap-5 md:overflow-visible md:pb-0">
+          <div className="flex gap-3 overflow-x-auto pb-3 pr-4 mt-4 md:mt-0 md:grid md:grid-cols-4 md:gap-5 md:overflow-visible md:pb-0 md:pr-0">
             {loadingRecs ? (
               Array(4).fill(0).map((_, i) => (
                 <div key={i} className="shrink-0 w-[155px] md:w-auto h-60 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl md:rounded-3xl" />
@@ -313,10 +313,10 @@ export function Landing() {
                       className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 mix-blend-multiply dark:mix-blend-normal"
                     />
                   </div>
-                  <div className="bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-400 text-[9px] font-black px-2 py-0.5 rounded-lg inline-block mb-1.5">
+                  <div className="bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-400 text-[10px] font-black px-2 py-0.5 rounded-lg inline-block mb-1.5">
                     {t.landing.aiRecs.badge}
                   </div>
-                  <h3 className="text-[11px] md:text-sm font-bold text-gray-900 dark:text-white line-clamp-2 mb-2 leading-tight">{p.name}</h3>
+                  <h3 className="text-xs md:text-sm font-bold text-gray-900 dark:text-white line-clamp-2 mb-2 leading-tight">{p.name}</h3>
                   <div className="flex items-center justify-between gap-1">
                     <p className="text-sm font-black text-violet-600 dark:text-violet-400 truncate">{formatSum(p.price)}</p>
                     <div className="bg-violet-600 group-hover:bg-violet-700 p-1.5 rounded-lg text-white transition-colors shrink-0">
@@ -400,7 +400,7 @@ export function Landing() {
         </div>
 
         {/* Cards: horizontal scroll on mobile, grid on desktop */}
-        <div className="flex gap-3 overflow-x-auto pb-3 md:grid md:grid-cols-4 md:gap-5 md:overflow-visible md:pb-0">
+        <div className="flex gap-3 overflow-x-auto pb-3 pr-4 md:grid md:grid-cols-4 md:gap-5 md:overflow-visible md:pb-0 md:pr-0">
           {isLoading && featuredProducts.length === 0
             ? [...Array(4)].map((_, i) => (
                 <div key={i} className="shrink-0 w-[155px] md:w-auto bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 animate-pulse">

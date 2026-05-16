@@ -119,23 +119,23 @@ export function ProductDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-36 md:pb-12 transition-colors">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-28 md:pb-12 transition-colors">
       {/* Mobile Top Bar */}
       <div className="md:hidden bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-4 sticky top-0 z-50 flex items-center justify-between">
-        <button onClick={() => navigate(-1)} className="p-1">
+        <button onClick={() => navigate(-1)} className="w-11 h-11 flex items-center justify-center rounded-xl">
           <ChevronLeft className="w-6 h-6 text-gray-900 dark:text-white" />
         </button>
         <span className="font-bold text-gray-900 dark:text-white truncate max-w-[200px]">{t.detail.productDetails}</span>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             onClick={() => setLiked(v => !v)}
-            className="p-2 active:scale-90 transition-transform"
+            className="w-11 h-11 flex items-center justify-center rounded-xl active:scale-90 transition-transform"
           >
             <Heart className={`w-5 h-5 transition-all duration-200 ${liked ? 'fill-red-500 text-red-500 scale-110' : 'text-gray-400 dark:text-gray-500'}`} />
           </button>
           <button
             onClick={() => navigator.share?.({ title: product?.name, url: window.location.href })}
-            className="p-2 active:scale-90 transition-transform"
+            className="w-11 h-11 flex items-center justify-center rounded-xl active:scale-90 transition-transform"
           >
             <Share2 className="w-5 h-5 text-gray-400 dark:text-gray-500" />
           </button>
@@ -367,9 +367,9 @@ export function ProductDetail() {
                         <a
                           href={market.url}
                           target="_blank"
-                          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white px-3 py-1.5 rounded-lg text-[10px] font-black flex items-center gap-1 active:bg-violet-600 active:text-white transition-colors"
+                          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-1 min-h-[44px] active:bg-violet-600 active:text-white transition-colors"
                         >
-                          {t.detail.shop} <ExternalLink className="w-2.5 h-2.5" />
+                          {t.detail.shop} <ExternalLink className="w-3 h-3" />
                         </a>
                      </div>
                    </div>
