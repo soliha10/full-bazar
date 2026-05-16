@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS user_events (
     id BIGSERIAL PRIMARY KEY,
     session_id VARCHAR(64) NOT NULL,
     event_type VARCHAR(20) NOT NULL,
-    product_id VARCHAR(60) REFERENCES products(id) ON DELETE SET NULL,
+    product_id VARCHAR(60),
     search_query TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

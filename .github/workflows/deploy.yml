@@ -38,6 +38,21 @@ jobs:
             echo "=== restarting dagster (always force to fix stuck/crashed state) ==="
             docker compose up -d --force-recreate --no-deps --no-build dagster-daemon dagster-webserver
 
+            echo "=== applying DB migrations ==="
+            docker exec full-bazar-postgres-1 psql -U postgres -d fullbazar -c "
+              CREATE TABLE IF NOT EXISTS user_events (
+                id BIGSERIAL PRIMARY KEY,
+                session_id VARCHAR(64) NOT NULL,
+                event_type VARCHAR(20) NOT NULL,
+                product_id VARCHAR(60),
+                search_query TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+              );
+              CREATE INDEX IF NOT EXISTS idx_user_events_session ON user_events(session_id, created_at DESC);
+              CREATE INDEX IF NOT EXISTS idx_user_events_product ON user_events(product_id);
+              ALTER TABLE user_events DROP CONSTRAINT IF EXISTS user_events_product_id_fkey;
+            "
+
             echo "=== syncing CSV data to PostgreSQL ==="
             docker compose run --rm dagster-webserver python -c "import sys,os;sys.path.insert(0,'/app');from definitions import _run_sync;n_p,n_m=_run_sync(os.getenv('DATA_DIR','/opt/dagster/data'),os.getenv('PRODUCTS_DB_URL','postgresql://postgres:postgres@postgres:5432/fullbazar'),None);print(f'Synced {n_p} products {n_m} markets')"
 
