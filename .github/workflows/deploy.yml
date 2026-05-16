@@ -32,12 +32,16 @@ jobs:
             echo "=== restarting frontend and fastapi ==="
             docker compose up -d --force-recreate --no-deps frontend fastapi
 
-            echo "=== bringing up all other services ==="
-            docker compose up -d --no-build
+            echo "=== bringing up postgres, mlflow if not running ==="
+            docker compose up -d --no-build postgres mlflow
+
+            echo "=== restarting dagster (always force to fix stuck/crashed state) ==="
+            docker compose up -d --force-recreate --no-deps --no-build dagster-daemon dagster-webserver
 
             echo "=== syncing CSV data to PostgreSQL ==="
             docker compose run --rm dagster-webserver python -c "import sys,os;sys.path.insert(0,'/app');from definitions import _run_sync;n_p,n_m=_run_sync(os.getenv('DATA_DIR','/opt/dagster/data'),os.getenv('PRODUCTS_DB_URL','postgresql://postgres:postgres@postgres:5432/fullbazar'),None);print(f'Synced {n_p} products {n_m} markets')"
 
             echo "=== deploy done ==="
             docker inspect full-bazar-frontend-1 --format 'frontend: running={{.State.Running}}'
+            docker inspect full-bazar-dagster-daemon-1 --format 'dagster-daemon: running={{.State.Running}}'
             curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:80
