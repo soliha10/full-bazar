@@ -66,17 +66,7 @@ jobs:
 
             echo "=== syncing CSV data to PostgreSQL ==="
             sleep 5
-            docker compose run --rm --no-deps dagster-webserver python -c "
-              import sys, os
-              sys.path.insert(0, '/app')
-              from definitions import _run_sync
-              n_p, n_m = _run_sync(
-                os.getenv('DATA_DIR', '/opt/dagster/data'),
-                os.getenv('PRODUCTS_DB_URL', 'postgresql://postgres:postgres@postgres:5432/fullbazar'),
-                None
-              )
-              print(f'Synced {n_p} products, {n_m} markets')
-            "
+            docker compose run --rm --no-deps dagster-webserver python -c "import sys,os;sys.path.insert(0,'/app');from definitions import _run_sync;n_p,n_m=_run_sync(os.getenv('DATA_DIR','/opt/dagster/data'),os.getenv('PRODUCTS_DB_URL','postgresql://postgres:postgres@postgres:5432/fullbazar'),None);print(f'Synced {n_p} products, {n_m} markets')"
 
             echo "=== deploy status ==="
             docker ps --format 'table {{.Names}}\t{{.Status}}' | grep full-bazar
