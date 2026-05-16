@@ -249,7 +249,8 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
     try:
         with conn:
             with conn.cursor() as cur:
-                cur.execute("TRUNCATE product_markets, products")
+                cur.execute("ALTER TABLE IF EXISTS user_events DROP CONSTRAINT IF EXISTS user_events_product_id_fkey")
+                cur.execute("TRUNCATE product_markets, products CASCADE")
                 if products_rows:
                     psycopg2.extras.execute_values(
                         cur,
@@ -316,8 +317,12 @@ def scrape_all_op(context) -> str:
 def sync_products_op(context, data_dir: str) -> str:
     db_url = os.getenv("PRODUCTS_DB_URL", "postgresql://postgres:postgres@postgres:5432/fullbazar")
     context.log.info(f"Reading CSVs from: {data_dir}")
-    n_products, n_markets = _run_sync(data_dir, db_url, context.log)
-    context.log.info(f"Done — {n_products} products, {n_markets} market entries")
+    try:
+        n_products, n_markets = _run_sync(data_dir, db_url, context.log)
+        context.log.info(f"Done — {n_products} products, {n_markets} market entries")
+    except Exception as exc:
+        context.log.error(f"sync_products_op FAILED: {exc}")
+        raise
     return data_dir
 
 
