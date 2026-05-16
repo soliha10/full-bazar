@@ -7,11 +7,12 @@ from __future__ import annotations
 
 import os
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, Optional
 
 import asyncpg
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
@@ -241,6 +242,104 @@ async def get_markets() -> dict:
         """
     )
     return {"markets": [{"key": r["key"], "name": r["name"], "count": r["count"]} for r in rows]}
+
+
+class TrackEvent(BaseModel):
+    session_id: str
+    event_type: str  # 'view' | 'search' | 'cart_add'
+    product_id: Optional[str] = None
+    search_query: Optional[str] = None
+
+
+@app.post("/api/track")
+async def track_event(event: TrackEvent):
+    pool: asyncpg.Pool = app.state.pool
+    await pool.execute(
+        """
+        INSERT INTO user_events (session_id, event_type, product_id, search_query)
+        VALUES ($1, $2, $3, $4)
+        """,
+        event.session_id, event.event_type, event.product_id, event.search_query,
+    )
+    return {"ok": True}
+
+
+@app.get("/api/recommendations/personalized")
+async def get_personalized_recommendations(
+    session_id: str = Query(...),
+    limit: int = Query(8, ge=1, le=20),
+) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+
+    view_rows = await pool.fetch(
+        """
+        SELECT DISTINCT product_id
+        FROM user_events
+        WHERE session_id = $1
+          AND event_type = 'view'
+          AND product_id IS NOT NULL
+          AND created_at > NOW() - INTERVAL '7 days'
+        LIMIT 20
+        """,
+        session_id,
+    )
+    viewed_ids = [r["product_id"] for r in view_rows]
+
+    if not viewed_ids:
+        # No history → fallback to best price-diff products
+        rows = await pool.fetch(
+            """
+            WITH ms AS (
+                SELECT product_id, MIN(price) as lo, MAX(price) as hi
+                FROM product_markets GROUP BY product_id HAVING COUNT(*) > 1
+            )
+            SELECT p.* FROM products p
+            JOIN ms ON p.id = ms.product_id
+            ORDER BY (ms.hi - ms.lo) DESC
+            LIMIT $1
+            """,
+            limit,
+        )
+        product_ids = [r["id"] for r in rows]
+        markets_map = await _fetch_markets(pool, product_ids)
+        products = [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows]
+        return {"products": products, "type": "popular"}
+
+    # Build user profile: categories + avg price
+    profile_rows = await pool.fetch(
+        "SELECT category, AVG(price) as avg_price FROM products WHERE id = ANY($1) GROUP BY category",
+        viewed_ids,
+    )
+    if not profile_rows:
+        return {"products": [], "type": "empty"}
+
+    # Extract brands (first word of product name)
+    brand_rows = await pool.fetch(
+        "SELECT lower(split_part(name, ' ', 1)) as brand FROM products WHERE id = ANY($1)",
+        viewed_ids,
+    )
+    brands = list({r["brand"] for r in brand_rows if r["brand"]})
+    categories = [r["category"] for r in profile_rows]
+    avg_price = float(sum(r["avg_price"] for r in profile_rows) / len(profile_rows))
+
+    rows = await pool.fetch(
+        """
+        SELECT p.*,
+            CASE WHEN lower(split_part(p.name, ' ', 1)) = ANY($4::text[]) THEN 2 ELSE 1 END AS boost
+        FROM products p
+        WHERE p.category = ANY($1::text[])
+          AND p.id != ALL($2::text[])
+          AND p.price BETWEEN $3 * 0.4 AND $3 * 2.5
+        ORDER BY boost DESC, p.rating DESC
+        LIMIT $5
+        """,
+        categories, viewed_ids, avg_price, brands, limit,
+    )
+
+    product_ids = [r["id"] for r in rows]
+    markets_map = await _fetch_markets(pool, product_ids)
+    products = [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows]
+    return {"products": products, "type": "personalized"}
 
 
 @app.get("/health")

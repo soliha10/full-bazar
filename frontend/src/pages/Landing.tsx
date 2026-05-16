@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Smartphone, Star, ArrowRight, TrendingUp, ShieldCheck, RefreshCw, Zap } from 'lucide-react';
+import { Smartphone, Star, ArrowRight, TrendingUp, ShieldCheck, RefreshCw, Zap, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatSum } from '../utils/productMapper';
 import axios from 'axios';
+import { fetchPersonalizedRecommendations } from '../services/api';
+import { mapProduct } from '../utils/productMapper';
 
 const MARKET_LOGOS: { name: string; color: string }[] = [
   { name: 'Asaxiy',     color: '#7C3AED' },
@@ -37,6 +39,8 @@ export function Landing() {
   const featuredProducts = allProducts.slice(0, 4);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loadingRecs, setLoadingRecs] = useState(true);
+  const [personalizedRecs, setPersonalizedRecs] = useState<any[]>([]);
+  const [personalizedType, setPersonalizedType] = useState<string>('');
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -51,6 +55,15 @@ export function Landing() {
       }
     };
     fetchRecs();
+  }, []);
+
+  useEffect(() => {
+    fetchPersonalizedRecommendations(6)
+      .then((data) => {
+        setPersonalizedRecs((data.products ?? []).map(mapProduct));
+        setPersonalizedType(data.type ?? '');
+      })
+      .catch(() => {});
   }, []);
 
   const quickCategories = [
@@ -321,6 +334,50 @@ export function Landing() {
           </div>
         </div>
       </section>
+
+      {/* ── Personalized Recommendations ── */}
+      {personalizedRecs.length > 0 && personalizedType === 'personalized' && (
+        <section className="mt-8 md:mt-12 px-4 max-w-7xl mx-auto">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-3 rounded-2xl bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+              <Sparkles size={24} />
+            </div>
+            <div>
+              <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                Sizga maxsus
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                Ko'rgan mahsulotlaringizga asoslanib tavsiya etildi
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-3 md:grid md:grid-cols-6 md:gap-4 md:overflow-visible md:pb-0">
+            {personalizedRecs.map((p) => (
+              <Link
+                key={p.id}
+                to={`/product/${p.id}`}
+                className="shrink-0 w-[145px] md:w-auto group bg-gray-50 dark:bg-gray-800/60 p-3 rounded-2xl border border-gray-100 dark:border-gray-700 hover:border-violet-300 dark:hover:border-violet-600 hover:shadow-xl hover:shadow-violet-500/10 hover:-translate-y-1 active:scale-95 transition-all duration-300"
+              >
+                <div className="aspect-square bg-white dark:bg-gray-900 rounded-xl mb-2 overflow-hidden p-2 border border-gray-100 dark:border-gray-700">
+                  <img
+                    src={p.image}
+                    alt={p.name}
+                    className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 mix-blend-multiply dark:mix-blend-normal"
+                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/120x120?text=No+image'; }}
+                  />
+                </div>
+                <h3 className="text-[11px] md:text-xs font-bold text-gray-900 dark:text-white line-clamp-2 mb-1.5 leading-tight">{p.name}</h3>
+                <div className="flex items-center justify-between gap-1">
+                  <p className="text-xs font-black text-violet-600 dark:text-violet-400 truncate">{formatSum(p.price)}</p>
+                  <div className="bg-violet-600 group-hover:bg-violet-700 p-1 rounded-lg text-white transition-colors shrink-0">
+                    <ArrowRight size={10} />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Trending products ── */}
       <section className="mt-8 md:mt-16 px-4 max-w-7xl mx-auto">

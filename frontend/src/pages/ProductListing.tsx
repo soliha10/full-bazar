@@ -8,6 +8,7 @@ import { useProducts } from '../hooks/useProducts';
 import { useSearchParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatSum } from '../utils/productMapper';
+import { trackEvent } from '../services/tracking';
 
 const BRANDS = [
   'Apple', 'Samsung', 'Redmi', 'Xiaomi', 'Poco',
@@ -116,15 +117,17 @@ export function ProductListing() {
   // ── Debounced search ──────────────────────────────────────────────────────
   useEffect(() => {
     if (localSearch.trim() === searchQuery) return;
-    const t = setTimeout(() => {
-      setDebouncedSearch(localSearch.trim());
+    const timer = setTimeout(() => {
+      const q = localSearch.trim();
+      setDebouncedSearch(q);
       setSearchParams(prev => {
         const n = new URLSearchParams(prev);
-        localSearch.trim() ? n.set('search', localSearch.trim()) : n.delete('search');
+        q ? n.set('search', q) : n.delete('search');
         return n;
       }, { replace: true });
+      if (q) trackEvent('search', undefined, q);
     }, 300);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [localSearch, searchQuery, setSearchParams]);
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [debouncedSearch, selectedCategory]);

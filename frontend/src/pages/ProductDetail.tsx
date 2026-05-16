@@ -15,10 +15,11 @@ import {
   ExternalLink
 } from "lucide-react";
 import { Button } from "../components/Button";
-import { fetchProductById } from "../services/api";
+import { fetchProductById, fetchPersonalizedRecommendations } from "../services/api";
 import { mapProduct, formatSum } from "../utils/productMapper";
 import { Product } from "../components/ProductCard";
 import { useLanguage } from "../contexts/LanguageContext";
+import { trackEvent } from "../services/tracking";
 
 export function ProductDetail() {
   const { id } = useParams();
@@ -31,6 +32,7 @@ export function ProductDetail() {
   const [selectedMarketIndex, setSelectedMarketIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'overview' | 'specs' | 'reviews'>('overview');
   const [liked, setLiked] = useState(false);
+  const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -45,6 +47,7 @@ export function ProductDetail() {
         const data = await fetchProductById(id);
         const mapped = mapProduct(data);
         setProduct(mapped);
+        trackEvent('view', id);
         if (mapped.markets && mapped.markets.length > 0) {
           const sorted = [...mapped.markets].sort((a, b) => a.price - b.price);
           const cheapest = sorted[0];
@@ -60,6 +63,12 @@ export function ProductDetail() {
       }
     };
     getProduct();
+  }, [id]);
+
+  useEffect(() => {
+    fetchPersonalizedRecommendations(6)
+      .then((data) => setSimilarProducts((data.products ?? []).map(mapProduct)))
+      .catch(() => {});
   }, [id]);
 
   const images = useMemo(() => {
@@ -518,6 +527,34 @@ export function ProductDetail() {
         </div>
 
       </div>
+
+      {/* Similar Products */}
+      {similarProducts.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
+          <h2 className="text-xl font-black text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+            Sizga o'xshash mahsulotlar
+          </h2>
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            {similarProducts.map((p) => (
+              <Link
+                key={p.id}
+                to={`/products/${p.id}`}
+                className="shrink-0 w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-3 hover:shadow-md transition-shadow"
+              >
+                <img
+                  src={p.image}
+                  alt={p.name}
+                  className="w-full h-28 object-contain mb-2 rounded-xl bg-gray-50 dark:bg-gray-800"
+                  onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/160x112?text=No+image'; }}
+                />
+                <p className="text-xs font-bold text-gray-800 dark:text-white line-clamp-2 mb-1">{p.name}</p>
+                <p className="text-xs font-black text-violet-600 dark:text-violet-400">{formatSum(p.price)}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Sticky Bottom Bar (Mobile) — sits above the MobileToolbar (~60px) */}
       <div className="md:hidden fixed bottom-[60px] left-0 right-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 px-4 py-3 z-40 flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">

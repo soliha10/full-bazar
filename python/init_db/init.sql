@@ -34,3 +34,14 @@ CREATE INDEX IF NOT EXISTS idx_products_name ON products USING GIN (to_tsvector(
 CREATE INDEX IF NOT EXISTS idx_products_keywords ON products USING GIN (to_tsvector('simple', COALESCE(keywords, '')));
 CREATE INDEX IF NOT EXISTS idx_product_markets_product_id ON product_markets(product_id);
 CREATE INDEX IF NOT EXISTS idx_product_markets_price ON product_markets(price);
+
+CREATE TABLE IF NOT EXISTS user_events (
+    id BIGSERIAL PRIMARY KEY,
+    session_id VARCHAR(64) NOT NULL,
+    event_type VARCHAR(20) NOT NULL,
+    product_id VARCHAR(60) REFERENCES products(id) ON DELETE SET NULL,
+    search_query TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_user_events_session ON user_events(session_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_events_product ON user_events(product_id);

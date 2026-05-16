@@ -1,3 +1,4 @@
+import { sessionId } from './tracking';
 
 const API_BASE_URL = '/api';
 
@@ -33,6 +34,19 @@ export const fetchProductById = async (id: string | number) => {
     return await response.json();
   } catch (error) {
     console.error(`Error fetching product ${id}:`, error);
+    throw error;
+  }
+};
+
+export const fetchPersonalizedRecommendations = async (limit = 8) => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/recommendations/personalized?session_id=${sessionId}&limit=${limit}`,
+    );
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching personalized recommendations:', error);
     throw error;
   }
 };
