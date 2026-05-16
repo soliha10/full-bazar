@@ -15,28 +15,16 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 30m
           script: |
+            set -e
             cd /home/${{ secrets.SERVER_USER }}/full-bazar
             git fetch origin main
             git reset --hard origin/main
 
-            echo "=== clearing Docker build cache ==="
-            docker builder prune -f
-
-            echo "=== building frontend (no cache) ==="
-            docker compose build --no-cache frontend
-
-            echo "=== building fastapi ==="
-            docker compose build fastapi
-
-            echo "=== restarting frontend and fastapi ==="
-            docker compose up -d --force-recreate --no-deps frontend fastapi
-
-            echo "=== bringing up postgres, mlflow if not running ==="
-            docker compose up -d --no-build postgres mlflow
-
-            echo "=== restarting dagster (always force to fix stuck/crashed state) ==="
-            docker compose up -d --force-recreate --no-deps --no-build dagster-daemon dagster-webserver
+            echo "=== ensuring postgres is healthy ==="
+            docker compose up -d --no-build postgres
+            until docker exec full-bazar-postgres-1 pg_isready -U postgres -d fullbazar -q; do sleep 2; done
 
             echo "=== applying DB migrations ==="
             docker exec full-bazar-postgres-1 psql -U postgres -d fullbazar -c "
@@ -53,10 +41,44 @@ jobs:
               ALTER TABLE user_events DROP CONSTRAINT IF EXISTS user_events_product_id_fkey;
             "
 
-            echo "=== syncing CSV data to PostgreSQL ==="
-            docker compose run --rm dagster-webserver python -c "import sys,os;sys.path.insert(0,'/app');from definitions import _run_sync;n_p,n_m=_run_sync(os.getenv('DATA_DIR','/opt/dagster/data'),os.getenv('PRODUCTS_DB_URL','postgresql://postgres:postgres@postgres:5432/fullbazar'),None);print(f'Synced {n_p} products {n_m} markets')"
+            echo "=== cancelling stuck Dagster STARTED runs (older than 30 min) ==="
+            docker exec full-bazar-postgres-1 psql -U postgres -d dagster_db -c "
+              UPDATE runs
+              SET status = 'CANCELED'
+              WHERE status = 'STARTED'
+                AND create_timestamp < EXTRACT(EPOCH FROM (NOW() - INTERVAL '30 minutes'));
+            " 2>/dev/null && echo "Stuck runs cancelled" || echo "dagster_db not ready, skipping"
 
-            echo "=== deploy done ==="
-            docker inspect full-bazar-frontend-1 --format 'frontend: running={{.State.Running}}'
-            docker inspect full-bazar-dagster-daemon-1 --format 'dagster-daemon: running={{.State.Running}}'
-            curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:80
+            echo "=== building frontend (no cache) ==="
+            docker compose build --no-cache frontend
+
+            echo "=== building fastapi ==="
+            docker compose build fastapi
+
+            echo "=== restarting frontend, fastapi ==="
+            docker compose up -d --force-recreate --no-deps frontend fastapi
+
+            echo "=== bringing up mlflow ==="
+            docker compose up -d --no-build mlflow
+
+            echo "=== restarting dagster ==="
+            docker compose up -d --force-recreate --no-deps --no-build dagster-daemon dagster-webserver
+
+            echo "=== syncing CSV data to PostgreSQL ==="
+            sleep 5
+            docker compose run --rm --no-deps dagster-webserver python -c "
+              import sys, os
+              sys.path.insert(0, '/app')
+              from definitions import _run_sync
+              n_p, n_m = _run_sync(
+                os.getenv('DATA_DIR', '/opt/dagster/data'),
+                os.getenv('PRODUCTS_DB_URL', 'postgresql://postgres:postgres@postgres:5432/fullbazar'),
+                None
+              )
+              print(f'Synced {n_p} products, {n_m} markets')
+            "
+
+            echo "=== deploy status ==="
+            docker ps --format 'table {{.Names}}\t{{.Status}}' | grep full-bazar
+            curl -s -o /dev/null -w "site: HTTP %{http_code}\n" http://localhost:80
+            curl -s -o /dev/null -w "api:  HTTP %{http_code}\n" http://localhost:8000/health
