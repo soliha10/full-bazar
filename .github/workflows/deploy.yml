@@ -61,8 +61,20 @@ jobs:
             echo "=== bringing up mlflow ==="
             docker compose up -d --no-build mlflow
 
+            echo "=== building dagster (picks up updated dagster.yaml with run_monitoring) ==="
+            docker compose build dagster-daemon dagster-webserver
+
             echo "=== restarting dagster ==="
-            docker compose up -d --force-recreate --no-deps --no-build dagster-daemon dagster-webserver
+            docker compose up -d --force-recreate --no-deps dagster-daemon dagster-webserver
+
+            echo "=== cancelling any runs stuck in STARTED after restart ==="
+            sleep 5
+            docker exec full-bazar-postgres-1 psql -U postgres -d dagster_db -c "
+              UPDATE runs
+              SET status = 'CANCELED'
+              WHERE status = 'STARTED'
+                AND create_timestamp < EXTRACT(EPOCH FROM (NOW() - INTERVAL '10 minutes'));
+            " 2>/dev/null && echo "Post-restart stuck runs cancelled" || echo "dagster_db not ready, skipping"
 
             echo "=== syncing CSV data to PostgreSQL ==="
             sleep 5
