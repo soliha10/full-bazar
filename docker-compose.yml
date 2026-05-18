@@ -94,14 +94,14 @@ services:
     <<: *dagster-common
     restart: unless-stopped
     command: dagster-daemon run
-    mem_limit: 700m
+    mem_limit: 512m
 
   # ── MLflow (Tracking Server) ────────────────────────────────────────────────
   mlflow:
     build:
       context: ./python/mlflow_app
       dockerfile: Dockerfile
-    restart: always
+    restart: unless-stopped
     # array form avoids YAML shell-quoting issues with --gunicorn-opts
     # --allowed-hosts "*" lets dagster/fastapi reach mlflow across Docker network
     command:
@@ -126,7 +126,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    mem_limit: 1.2g
+    mem_limit: 400m
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
