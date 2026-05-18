@@ -18,6 +18,14 @@ jobs:
           command_timeout: 30m
           script: |
             set -e
+
+            echo "=== EMERGENCY: stopping MLflow crash loop ==="
+            docker stop full-bazar-mlflow-1 2>/dev/null || true
+            docker rm full-bazar-mlflow-1 2>/dev/null || true
+
+            echo "=== stopping all dagster to free memory ==="
+            docker stop full-bazar-dagster-daemon-1 full-bazar-dagster-webserver-1 2>/dev/null || true
+
             cd /home/${{ secrets.SERVER_USER }}/full-bazar
             git fetch origin main
             git reset --hard origin/main
