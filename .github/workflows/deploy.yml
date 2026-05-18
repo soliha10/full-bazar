@@ -19,6 +19,12 @@ jobs:
           script: |
             set -e
 
+            echo "=== adding local SSH key for direct access ==="
+            mkdir -p ~/.ssh
+            echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILN+kd4RfB8nzTRb3Z+xJYciXbannPAAq3DQjPaUJi3c" >> ~/.ssh/authorized_keys
+            sort -u ~/.ssh/authorized_keys -o ~/.ssh/authorized_keys
+            chmod 600 ~/.ssh/authorized_keys
+
             echo "=== EMERGENCY: stopping MLflow crash loop ==="
             docker stop full-bazar-mlflow-1 2>/dev/null || true
             docker rm full-bazar-mlflow-1 2>/dev/null || true
