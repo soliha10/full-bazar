@@ -41,12 +41,13 @@ jobs:
               ALTER TABLE user_events DROP CONSTRAINT IF EXISTS user_events_product_id_fkey;
             "
 
-            echo "=== stopping dagster before cleanup ==="
+            echo "=== stopping dagster ==="
             docker compose stop dagster-daemon dagster-webserver || true
 
-            echo "=== cancelling ALL stuck Dagster STARTED runs ==="
+            echo "=== cancelling ALL non-terminal Dagster runs ==="
             docker exec full-bazar-postgres-1 psql -U postgres -d dagster_db -c "
-              UPDATE runs SET status = 'CANCELED' WHERE status = 'STARTED';
+              UPDATE runs SET status = 'CANCELED'
+              WHERE status IN ('STARTED', 'QUEUED', 'STARTING', 'CANCELING');
             " 2>/dev/null && echo "All stuck runs cancelled" || echo "dagster_db not ready, skipping"
 
             echo "=== building frontend (no cache) ==="
@@ -61,15 +62,23 @@ jobs:
             echo "=== bringing up mlflow ==="
             docker compose up -d --no-build mlflow
 
-            echo "=== building dagster (with run_monitoring config) ==="
+            echo "=== building dagster ==="
             docker compose build dagster-daemon dagster-webserver
 
             echo "=== starting fresh dagster ==="
             docker compose up -d --force-recreate --no-deps dagster-daemon dagster-webserver
 
-            echo "=== syncing CSV data to PostgreSQL ==="
-            sleep 10
-            docker compose run --rm --no-deps dagster-webserver python -c "import sys,os;sys.path.insert(0,'/app');from definitions import _run_sync;n_p,n_m=_run_sync(os.getenv('DATA_DIR','/opt/dagster/data'),os.getenv('PRODUCTS_DB_URL','postgresql://postgres:postgres@postgres:5432/fullbazar'),None);print(f'Synced {n_p} products, {n_m} markets')"
+            echo "=== waiting for dagster webserver to be ready ==="
+            sleep 15
+            until curl -s http://localhost:3000/server_info -o /dev/null 2>/dev/null; do
+              echo "  waiting..."; sleep 3
+            done
+            echo "dagster webserver is up"
+
+            echo "=== launching csv_sync_job to verify pipeline ==="
+            docker exec full-bazar-dagster-webserver-1 \
+              dagster job execute -j csv_sync_job -w /app/workspace.yaml \
+              && echo "csv_sync_job SUCCESS" || echo "csv_sync_job FAILED (check dagster UI)"
 
             echo "=== deploy status ==="
             docker ps --format 'table {{.Names}}\t{{.Status}}' | grep full-bazar
