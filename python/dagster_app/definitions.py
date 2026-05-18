@@ -12,7 +12,7 @@ import logging
 import os
 import re
 import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, wait as futures_wait
 from datetime import datetime
 from typing import Generator
 
@@ -301,14 +301,20 @@ def scrape_all_op(context) -> str:
         except Exception as exc:
             return scraper_cls.store_name, 0, str(exc)
 
-    with ThreadPoolExecutor(max_workers=4) as pool:
+    SCRAPE_TIMEOUT = 20 * 60  # 20 minutes max for all scrapers combined
+    with ThreadPoolExecutor(max_workers=2) as pool:
         futures = {pool.submit(_run_one, cls): cls for cls in ALL_SCRAPERS}
-        for fut in as_completed(futures):
+        done, not_done = futures_wait(futures, timeout=SCRAPE_TIMEOUT)
+        for fut in done:
             name, count, err = fut.result()
             if err:
                 context.log.warning(f"  [{name}] FAILED: {err}")
             else:
                 context.log.info(f"  [{name}] {count} products")
+        for fut in not_done:
+            cls = futures[fut]
+            context.log.warning(f"  [{cls.store_name}] TIMEOUT after {SCRAPE_TIMEOUT}s — skipping")
+            fut.cancel()
 
     return data_dir
 
@@ -397,9 +403,9 @@ defs = Definitions(
     jobs=[product_sync_job, csv_sync_job],
     schedules=[
         ScheduleDefinition(
-            name="product_sync_hourly",
+            name="product_sync_schedule",
             job=product_sync_job,
-            cron_schedule="0 * * * *",
+            cron_schedule="0 */6 * * *",
         )
     ],
 )
