@@ -1,11 +1,6 @@
 telemetry:
   enabled: false
 
-storage:
-  postgres:
-    postgres_url:
-      env: DAGSTER_DB_URL
-
 run_monitoring:
   enabled: true
   max_resume_run_attempts: 0
