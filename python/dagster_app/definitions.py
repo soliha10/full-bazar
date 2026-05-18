@@ -403,9 +403,9 @@ defs = Definitions(
     jobs=[product_sync_job, csv_sync_job],
     schedules=[
         ScheduleDefinition(
-            name="product_sync_schedule",
+            name="product_sync_hourly",
             job=product_sync_job,
-            cron_schedule="0 */6 * * *",
+            cron_schedule="0 * * * *",
         )
     ],
 )
