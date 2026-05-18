@@ -18,7 +18,7 @@ from typing import Generator
 
 import psycopg2
 import psycopg2.extras
-from dagster import Definitions, ScheduleDefinition, job, op
+from dagster import Definitions, ScheduleDefinition, job, op, in_process_executor
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -388,12 +388,12 @@ def data_dir_op(context) -> str:
     return data_dir
 
 
-@job
+@job(executor_def=in_process_executor)
 def product_sync_job():
     train_matcher_op(sync_products_op(scrape_all_op()))
 
 
-@job
+@job(executor_def=in_process_executor)
 def csv_sync_job():
     """Sync git-committed CSVs → PostgreSQL (no scraping). Used by deploy."""
     sync_products_op(data_dir_op())
