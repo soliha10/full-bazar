@@ -10,7 +10,6 @@ import {
   ChevronRight,
   Info,
   CheckCircle2,
-  ShoppingBag,
   ArrowRight,
   ExternalLink
 } from "lucide-react";
@@ -513,7 +512,7 @@ export function ProductDetail() {
               </div>
 
               {/* Shipping Card */}
-              <div className="bg-emerald-500 rounded-[2.5rem] p-8 text-white shadow-xl shadow-emerald-200 dark:shadow-emerald-900/20 overflow-hidden relative group">
+              {/* <div className="bg-emerald-500 rounded-[2.5rem] p-8 text-white shadow-xl shadow-emerald-200 dark:shadow-emerald-900/20 overflow-hidden relative group">
                  <ShoppingBag className="absolute -right-4 -bottom-4 w-32 h-32 opacity-15 rotate-12 transition-transform group-hover:scale-110" />
                  <h3 className="text-lg font-black mb-2 italic">{t.detail.fastShipping}</h3>
                  <p className="text-sm font-bold text-white/90 mb-6">{t.detail.orderWithin}</p>
@@ -521,7 +520,7 @@ export function ProductDetail() {
                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                    <span className="text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">{t.detail.logisticsReady}</span>
                  </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
