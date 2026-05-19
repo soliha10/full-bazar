@@ -88,7 +88,7 @@ jobs:
 
             echo "=== launching csv_sync_job to verify pipeline ==="
             docker exec full-bazar-dagster-webserver-1 \
-              dagster job execute -j csv_sync_job -w /app/workspace.yaml \
+              dagster job execute -f /app/definitions.py -j csv_sync_job \
               && echo "csv_sync_job SUCCESS" || echo "csv_sync_job FAILED (check dagster UI)"
 
             echo "=== deploy status ==="
