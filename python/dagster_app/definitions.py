@@ -31,9 +31,18 @@ _SMARTPHONE_RE = re.compile(
     re.IGNORECASE,
 )
 _NOT_SMARTPHONE_RE = re.compile(
-    r"(televizor|noutbuk|laptop|planshet|tablet|konditsioner|pylesos|"
-    r"changyutgich|holodilnik|sovutgich|kir yuvish|gaz plita|kabel|chehol|"
-    r"case|zaryad|charger|adapter|планшет|чехол|кабель|заряд|наушник|quloqchin)",
+    r"(televizor|noutbuk|laptop|planshet|plansheti|tablet|ipad|"
+    r"galaxy\s*tab|galaxy\s*book|galaxy\s*watch|galaxy\s*buds|"
+    r"smart\s*watch|smartwatch|soat\b|watch\b|"
+    r"konditsioner|pylesos|changyutgich|holodilnik|sovutgich|"
+    r"kir\s*yuvish|gaz\s*plita|"
+    r"kabel|cable|провод|кабель|"
+    r"chehol|case\b|cover\b|himoya\s*shisha|plyonka|плёнка|чехол|"
+    r"zaryad|charger|adapter|адаптер|"
+    r"quloqchin|naushnik|earphone|earbud|airpod|airdot|headphone|headset|наушник|"
+    r"power\s*bank|powerbank|akkumulyator\b|"
+    r"router|modem|wi-?fi|"
+    r"macbook|планшет|ноутбук)",
     re.IGNORECASE,
 )
 

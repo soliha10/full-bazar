@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  LayoutGrid, List, ArrowLeft, Mic, X, ChevronRight,
-  Search, Loader2, SlidersHorizontal, Star, RotateCcw, Tag,
+  LayoutGrid, List, ArrowLeft, Mic, X, ChevronRight, ChevronDown,
+  Search, Loader2, SlidersHorizontal, RotateCcw, Tag,
 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { useProducts } from '../hooks/useProducts';
@@ -17,16 +17,16 @@ const BRANDS = [
 
 const BRAND_COLORS: Record<string, string> = {
   Apple:   '#6B7280',
-  Samsung: '#3B82F6',
-  Redmi:   '#EF4444',
+  Samsung: '#1428A0',
+  Redmi:   '#FF6900',
   Xiaomi:  '#F97316',
-  Poco:    '#EAB308',
-  Honor:   '#7C3AED',
-  Vivo:    '#06B6D4',
-  Oppo:    '#10B981',
-  Realme:  '#F43F5E',
-  Tecno:   '#14B8A6',
-  Infinix: '#2563EB',
+  Poco:    '#FFCD00',
+  Honor:   '#CF0A2C',
+  Vivo:    '#415FFF',
+  Oppo:    '#1D8348',
+  Realme:  '#FFD700',
+  Tecno:   '#00AEEF',
+  Infinix: '#E63946',
 };
 
 const MARKETPLACES = [
@@ -35,11 +35,11 @@ const MARKETPLACES = [
   { name: 'Olcha',      key: 'olcha',      color: '#F97316' },
   { name: 'Mediapark',  key: 'mediapark',  color: '#10B981' },
   { name: 'Chakana',    key: 'chakana',    color: '#0EA5E9' },
-  { name: 'Glotr',      key: 'glotr',      color: '#A78BFA' },
-  { name: 'Olx',        key: 'olx',        color: '#4ADE80' },
-  { name: 'Openshop',   key: 'openshop',   color: '#8B5CF6' },
+  { name: 'Glotr',      key: 'glotr',      color: '#8B5CF6' },
+  { name: 'Olx',        key: 'olx',        color: '#22C55E' },
+  { name: 'Openshop',   key: 'openshop',   color: '#6366F1' },
   { name: 'Idea',       key: 'idea',       color: '#F59E0B' },
-  { name: 'Brandstore', key: 'brandstore', color: '#6366F1' },
+  { name: 'Brandstore', key: 'brandstore', color: '#4F46E5' },
   { name: 'Beemarket',  key: 'beemarket',  color: '#EC4899' },
   { name: 'Castore',    key: 'castore',    color: '#14B8A6' },
   { name: 'Joybox',     key: 'joybox',     color: '#F43F5E' },
@@ -66,6 +66,72 @@ function getSavedFilters() {
   try { return JSON.parse(sessionStorage.getItem(FILTER_KEY) || 'null'); } catch { return null; }
 }
 
+// ── Accordion section — defined outside so hooks stay stable ─────────────────
+function FilterSection({
+  title, activeCount = 0, onReset, defaultOpen = true, children,
+}: {
+  title: string;
+  activeCount?: number;
+  onReset?: () => void;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-b border-gray-100 dark:border-gray-800 last:border-0 py-3 first:pt-0">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="flex w-full items-center justify-between group"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors">
+            {title}
+          </span>
+          {activeCount > 0 && (
+            <span className="bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-400 text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none">
+              {activeCount}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {activeCount > 0 && onReset && (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={e => { e.stopPropagation(); onReset(); }}
+              onKeyDown={e => e.key === 'Enter' && (e.stopPropagation(), onReset?.())}
+              className="text-[10px] font-bold text-violet-500 hover:text-violet-700 dark:hover:text-violet-300 hover:underline cursor-pointer"
+            >
+              Tozalash
+            </span>
+          )}
+          <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        </div>
+      </button>
+      {open && <div className="mt-2.5">{children}</div>}
+    </div>
+  );
+}
+
+// ── Custom checkbox ───────────────────────────────────────────────────────────
+function Checkbox({ checked }: { checked: boolean }) {
+  return (
+    <div className={`w-4 h-4 rounded border-[1.5px] flex items-center justify-center shrink-0 transition-all ${
+      checked
+        ? 'bg-violet-600 border-violet-600'
+        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
+    }`}>
+      {checked && (
+        <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 10 10">
+          <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 export function ProductListing() {
   const { t } = useLanguage();
   const navigate  = useNavigate();
@@ -88,23 +154,24 @@ export function ProductListing() {
   const [sortBy,    setSortBy]    = useState<SortKey>(saved.current?.sortBy ?? 'relevance');
   const [viewMode,  setViewMode]  = useState<'grid' | 'list'>(saved.current?.viewMode ?? 'grid');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-  const [isListening, setIsListening] = useState(false);
+  const [isListening,  setIsListening]  = useState(false);
   const [marketCounts, setMarketCounts] = useState<Record<string, number>>({});
+  const [brandSearch,   setBrandSearch]   = useState('');
+  const [marketSearch,  setMarketSearch]  = useState('');
 
   // ── Infinite scroll sentinel ──────────────────────────────────────────────
-  const sentinelRef   = useRef<HTMLDivElement>(null);
-  const hasMoreRef    = useRef(false);
-  const fetchingRef   = useRef(false);
-  const loadMoreRef   = useRef<() => void>(() => {});
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const hasMoreRef  = useRef(false);
+  const fetchingRef = useRef(false);
+  const loadMoreRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && hasMoreRef.current && !fetchingRef.current) {
+        if (entry.isIntersecting && hasMoreRef.current && !fetchingRef.current)
           loadMoreRef.current();
-        }
       },
       { rootMargin: '300px' },
     );
@@ -123,7 +190,7 @@ export function ProductListing() {
       .catch(() => {});
   }, []);
 
-  const categories    = ['All', 'Phones'];
+  const categories = ['All', 'Phones'];
   const categoryLabel: Record<string, string> = {
     All:    t.listing.all,
     Phones: t.detail.categories.phones,
@@ -167,7 +234,6 @@ export function ProductListing() {
   const { products: rawProducts, isLoading, isFetchingNextPage, hasMore, loadMore, total } =
     useProducts(1, 20, debouncedSearch, selectedMarketplaces, selectedBrand ?? '');
 
-  // keep refs in sync for IntersectionObserver closure
   hasMoreRef.current  = hasMore;
   fetchingRef.current = isFetchingNextPage;
   loadMoreRef.current = loadMore;
@@ -240,182 +306,199 @@ export function ProductListing() {
     r.start();
   };
 
-  // ── Shared filter panel ───────────────────────────────────────────────────
-  const FilterPanel = ({ mobile = false }: { mobile?: boolean }) => (
-    <div className={`space-y-5 ${mobile ? '' : ''}`}>
+  const filteredBrands   = brandSearch  ? BRANDS.filter(b => b.toLowerCase().includes(brandSearch.toLowerCase()))  : BRANDS;
+  const filteredMarkets  = marketSearch ? MARKETPLACES.filter(m => m.name.toLowerCase().includes(marketSearch.toLowerCase())) : MARKETPLACES;
+
+  // ── Filter panel ──────────────────────────────────────────────────────────
+  const FilterPanel = () => (
+    <div className="space-y-0">
 
       {/* Categories */}
-      <div>
-        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
-          {t.listing.categories}
-        </h4>
-        <div className="flex gap-1.5">
+      <FilterSection title={t.listing.categories} defaultOpen>
+        <div className="flex flex-col gap-0.5">
           {categories.map(cat => {
             const disabled = cat !== 'All' && cat !== 'Phones';
             const active   = selectedCategory === cat;
             return (
               <button
                 key={cat}
+                type="button"
                 onClick={() => !disabled && handleCategoryChange(cat)}
                 disabled={disabled}
-                className={`flex-1 rounded-lg px-3 py-2 text-xs font-bold transition-all ${
+                className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-all ${
                   active
-                    ? 'bg-violet-600 text-white'
+                    ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300'
                     : disabled
-                      ? 'cursor-not-allowed text-gray-300 dark:text-gray-600 bg-gray-50 dark:bg-gray-800'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      ? 'cursor-not-allowed opacity-40'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
                 }`}
               >
-                {categoryLabel[cat] ?? cat}
+                <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
+                  active ? 'border-violet-600' : 'border-gray-300 dark:border-gray-600'
+                }`}>
+                  {active && <div className="w-2 h-2 rounded-full bg-violet-600" />}
+                </div>
+                <span className="text-xs font-semibold">{categoryLabel[cat] ?? cat}</span>
+                {disabled && <span className="ml-auto text-[9px] bg-gray-100 dark:bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded-full">{t.listing.comingSoon}</span>}
               </button>
             );
           })}
         </div>
-      </div>
+      </FilterSection>
 
-      {/* Price range */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 flex items-center gap-1">
-            <Tag className="w-3 h-3" />{t.listing.priceRange}
-          </h4>
-          {(minPrice || maxPrice) && (
-            <button onClick={() => { setMinPrice(''); setMaxPrice(''); }} className="text-[10px] font-bold text-violet-500 hover:underline">
-              {t.listing.reset}
-            </button>
-          )}
+      {/* Price */}
+      <FilterSection
+        title={t.listing.priceRange}
+        activeCount={minPrice || maxPrice ? 1 : 0}
+        onReset={() => { setMinPrice(''); setMaxPrice(''); }}
+      >
+        <div className="grid grid-cols-2 gap-2">
+          <div className="relative">
+            <Tag className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
+            <input
+              type="number"
+              placeholder={t.listing.minPrice}
+              value={minPrice}
+              onChange={e => setMinPrice(e.target.value)}
+              className="w-full pl-7 pr-2 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-bold text-gray-800 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 transition-all"
+            />
+          </div>
+          <div className="relative">
+            <Tag className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
+            <input
+              type="number"
+              placeholder={t.listing.maxPrice}
+              value={maxPrice}
+              onChange={e => setMaxPrice(e.target.value)}
+              className="w-full pl-7 pr-2 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-bold text-gray-800 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 transition-all"
+            />
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-1.5">
-          <input
-            type="number"
-            placeholder={t.listing.minPrice}
-            value={minPrice}
-            onChange={e => setMinPrice(e.target.value)}
-            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-2 text-xs font-bold text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 transition-all"
-          />
-          <input
-            type="number"
-            placeholder={t.listing.maxPrice}
-            value={maxPrice}
-            onChange={e => setMaxPrice(e.target.value)}
-            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-2 text-xs font-bold text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 transition-all"
-          />
-        </div>
-        <p className="text-[9px] text-gray-400 dark:text-gray-600 font-medium mt-1 text-center">{t.listing.currency}</p>
-      </div>
+        <p className="text-[9px] text-gray-400 dark:text-gray-600 mt-1.5 text-center">{t.listing.currency}</p>
+      </FilterSection>
 
       {/* Rating */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 flex items-center gap-1">
-            <Star className="w-3 h-3 fill-current" />{t.listing.rating}
-          </h4>
-          {minRating > 0 && (
-            <button onClick={() => setMinRating(0)} className="text-[10px] font-bold text-violet-500 hover:underline">
-              {t.listing.reset}
-            </button>
-          )}
-        </div>
+      <FilterSection
+        title={t.listing.rating}
+        activeCount={minRating > 0 ? 1 : 0}
+        onReset={() => setMinRating(0)}
+      >
         <div className="grid grid-cols-4 gap-1">
           {[0, 3, 4, 4.5].map(r => (
             <button
               key={r}
+              type="button"
               onClick={() => setMinRating(r)}
               className={`rounded-lg py-2 text-[11px] font-black transition-all ${
                 minRating === r
-                  ? 'bg-violet-600 text-white'
-                  : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-600 dark:hover:text-violet-400'
+                  ? 'bg-violet-600 text-white shadow-sm'
+                  : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-600'
               }`}
             >
-              {r === 0 ? 'Any' : `★${r}+`}
+              {r === 0 ? 'Barchasi' : `★${r}+`}
             </button>
           ))}
         </div>
-      </div>
+      </FilterSection>
 
-      {/* ── Brands ── compact 2-col grid */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">{t.listing.brands}</h4>
-          {selectedBrand && (
-            <button onClick={() => setSelectedBrand(null)} className="text-[10px] font-bold text-violet-500 hover:underline">
-              {t.listing.reset}
-            </button>
-          )}
+      {/* ── Brands — accordion + searchable checkbox list ── */}
+      <FilterSection
+        title={t.listing.brands}
+        activeCount={selectedBrand ? 1 : 0}
+        onReset={() => setSelectedBrand(null)}
+      >
+        {/* Search within brands */}
+        <div className="relative mb-2">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Brend qidirish..."
+            value={brandSearch}
+            onChange={e => setBrandSearch(e.target.value)}
+            className="w-full pl-7 pr-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-800 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
+          />
         </div>
-        <div className="grid grid-cols-2 gap-1">
-          {BRANDS.map(brand => {
+        <div className="space-y-0.5 max-h-52 overflow-y-auto pr-0.5">
+          {filteredBrands.map(brand => {
             const isSelected = selectedBrand === brand;
             const color = BRAND_COLORS[brand] ?? '#6B7280';
             return (
               <button
                 key={brand}
+                type="button"
                 onClick={() => setSelectedBrand(isSelected ? null : brand)}
-                className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-bold transition-all text-left ${
+                className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-all ${
                   isSelected
-                    ? 'bg-violet-600 text-white shadow-sm'
-                    : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300'
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
                 }`}
               >
+                <Checkbox checked={isSelected} />
                 <span
-                  className="w-2 h-2 rounded-full shrink-0"
-                  style={{ backgroundColor: isSelected ? 'rgba(255,255,255,0.8)' : color }}
+                  className="w-2.5 h-2.5 rounded-full shrink-0 ring-1 ring-black/10"
+                  style={{ backgroundColor: color }}
                 />
-                <span className="truncate flex-1">{brand}</span>
-                {isSelected && (
-                  <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 10 10">
-                    <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
+                <span className="flex-1 text-xs font-semibold">{brand}</span>
               </button>
             );
           })}
-        </div>
-      </div>
-
-      {/* ── Marketplaces ── compact 2-col grid */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">{t.listing.marketplaces}</h4>
-          {selectedMarketplaces.length > 0 && (
-            <button onClick={() => setSelectedMarketplaces([])} className="text-[10px] font-bold text-violet-500 hover:underline">
-              {t.listing.reset}
-            </button>
+          {filteredBrands.length === 0 && (
+            <p className="py-3 text-center text-xs text-gray-400">Topilmadi</p>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-1">
-          {MARKETPLACES.map(({ name, key, color }) => {
+      </FilterSection>
+
+      {/* ── Marketplaces — accordion + searchable checkbox list ── */}
+      <FilterSection
+        title={t.listing.marketplaces}
+        activeCount={selectedMarketplaces.length}
+        onReset={() => setSelectedMarketplaces([])}
+      >
+        {/* Search within markets */}
+        <div className="relative mb-2">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Market qidirish..."
+            value={marketSearch}
+            onChange={e => setMarketSearch(e.target.value)}
+            className="w-full pl-7 pr-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-800 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
+          />
+        </div>
+        <div className="space-y-0.5 max-h-52 overflow-y-auto pr-0.5">
+          {filteredMarkets.map(({ name, key, color }) => {
             const active = selectedMarketplaces.includes(key);
+            const count  = marketCounts[key];
             return (
               <button
                 key={key}
+                type="button"
                 onClick={() => toggleMarketplace(key)}
-                className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold transition-all text-left ${
+                className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-all ${
                   active
-                    ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 ring-1 ring-violet-300 dark:ring-violet-700'
-                    : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300'
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
                 }`}
               >
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                <span className="truncate flex-1">{name}</span>
-                {active ? (
-                  <div className="w-3.5 h-3.5 rounded-full bg-violet-600 flex items-center justify-center shrink-0">
-                    <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 10 10">
-                      <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                ) : (
-                  marketCounts[key] !== undefined && (
-                    <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 shrink-0">
-                      {marketCounts[key]}
-                    </span>
-                  )
+                <Checkbox checked={active} />
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0 ring-1 ring-black/10"
+                  style={{ backgroundColor: color }}
+                />
+                <span className="flex-1 text-xs font-semibold">{name}</span>
+                {count !== undefined && (
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium tabular-nums">
+                    {count.toLocaleString()}
+                  </span>
                 )}
               </button>
             );
           })}
+          {filteredMarkets.length === 0 && (
+            <p className="py-3 text-center text-xs text-gray-400">Topilmadi</p>
+          )}
         </div>
-      </div>
+      </FilterSection>
     </div>
   );
 
@@ -447,12 +530,12 @@ export function ProductListing() {
           </div>
 
           <form onSubmit={e => { e.preventDefault(); setDebouncedSearch(localSearch.trim()); }} className="relative mb-3">
-            <Search className="absolute left-4 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={localSearch}
               onChange={e => setLocalSearch(e.target.value)}
-              className="h-12 w-full rounded-2xl bg-gray-100 dark:bg-gray-800 pl-12 pr-28 text-sm text-gray-900 dark:text-white outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-violet-400/30 transition-all"
+              className="h-11 w-full rounded-2xl bg-gray-100 dark:bg-gray-800 pl-11 pr-28 text-sm text-gray-900 dark:text-white outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-violet-400/30 transition-all"
               placeholder={t.nav.searchPlaceholder}
             />
             <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
@@ -513,36 +596,35 @@ export function ProductListing() {
         <div className="flex flex-col gap-8 lg:flex-row">
 
           {/* ── Desktop sidebar ── */}
-          <aside className="hidden w-64 shrink-0 lg:block">
+          <aside className="hidden w-60 shrink-0 lg:block">
             <div className="sticky top-24 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 7rem)' }}>
               <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800 shrink-0">
-                <h3 className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-1.5">
+                <span className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-1.5">
                   <SlidersHorizontal className="w-4 h-4 text-violet-500" />
                   {t.listing.filters}
                   {activeFilterCount > 0 && (
-                    <span className="ml-0.5 bg-violet-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                    <span className="bg-violet-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
                       {activeFilterCount}
                     </span>
                   )}
-                </h3>
+                </span>
                 {activeFilterCount > 0 && (
                   <button
                     onClick={handleResetFilters}
                     className="flex items-center gap-1 text-[11px] font-bold text-violet-500 hover:underline"
                   >
-                    <RotateCcw className="w-3 h-3" />{t.listing.reset}
+                    <RotateCcw className="w-3 h-3" /> Hammasi
                   </button>
                 )}
               </div>
-              <div className="overflow-y-auto flex-1 px-4 py-4 scrollbar-thin">
+              <div className="overflow-y-auto flex-1 px-4 py-3 scrollbar-thin">
                 <FilterPanel />
               </div>
             </div>
           </aside>
 
-          {/* ── Product area ── */}
+          {/* ── Products ── */}
           <section className="flex-1 min-w-0">
-            {/* Toolbar */}
             <div className="mb-5 flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
@@ -553,13 +635,13 @@ export function ProductListing() {
                 <div className="hidden md:flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-1 shadow-sm">
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-violet-600 text-white' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                    className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                   >
                     <LayoutGrid className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-violet-600 text-white' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                    className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                   >
                     <List className="h-4 w-4" />
                   </button>
@@ -569,9 +651,7 @@ export function ProductListing() {
                       key={key}
                       onClick={() => setSortBy(key)}
                       className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        sortBy === key
-                          ? 'bg-violet-600 text-white'
-                          : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                        sortBy === key ? 'bg-violet-600 text-white' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                     >
                       {(t.listing as any)[labelKey] ?? labelKey}
@@ -584,31 +664,31 @@ export function ProductListing() {
               {activeFilterCount > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {selectedBrand && (
-                    <span className="flex items-center gap-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-xs font-bold px-2.5 py-1 rounded-full">
-                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: BRAND_COLORS[selectedBrand] ?? '#6B7280' }} />
+                    <span className="flex items-center gap-1.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-xs font-bold px-2.5 py-1 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: BRAND_COLORS[selectedBrand] ?? '#6B7280' }} />
                       {selectedBrand}
-                      <button onClick={() => setSelectedBrand(null)} className="ml-0.5"><X className="w-3 h-3" /></button>
+                      <button onClick={() => setSelectedBrand(null)}><X className="w-3 h-3" /></button>
                     </span>
                   )}
                   {minRating > 0 && (
                     <span className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs font-bold px-2.5 py-1 rounded-full">
                       ★ {minRating}+
-                      <button onClick={() => setMinRating(0)} className="ml-0.5"><X className="w-3 h-3" /></button>
+                      <button onClick={() => setMinRating(0)}><X className="w-3 h-3" /></button>
                     </span>
                   )}
                   {(minPrice || maxPrice) && (
                     <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-full">
                       {minPrice ? formatSum(Number(minPrice)) : '0'} — {maxPrice ? formatSum(Number(maxPrice)) : '∞'}
-                      <button onClick={() => { setMinPrice(''); setMaxPrice(''); }} className="ml-0.5"><X className="w-3 h-3" /></button>
+                      <button onClick={() => { setMinPrice(''); setMaxPrice(''); }}><X className="w-3 h-3" /></button>
                     </span>
                   )}
                   {selectedMarketplaces.map(mk => {
                     const mp = MARKETPLACES.find(m => m.key === mk);
                     return (
-                      <span key={mk} className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold px-2.5 py-1 rounded-full">
-                        {mp && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: mp.color }} />}
+                      <span key={mk} className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold px-2.5 py-1 rounded-full">
+                        {mp && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: mp.color }} />}
                         {mp?.name ?? mk}
-                        <button onClick={() => toggleMarketplace(mk)} className="ml-0.5"><X className="w-3 h-3" /></button>
+                        <button onClick={() => toggleMarketplace(mk)}><X className="w-3 h-3" /></button>
                       </span>
                     );
                   })}
@@ -616,7 +696,6 @@ export function ProductListing() {
               )}
             </div>
 
-            {/* Products */}
             {isLoading ? (
               <div className="flex justify-center py-24">
                 <div className="flex flex-col items-center gap-4">
@@ -625,7 +704,7 @@ export function ProductListing() {
                     <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-violet-600 animate-spin" />
                     <Loader2 className="absolute inset-0 m-auto w-5 h-5 text-violet-500 animate-pulse" />
                   </div>
-                  <p className="text-sm font-bold text-gray-500 dark:text-gray-400">{t.common.loading}</p>
+                  <p className="text-sm font-bold text-gray-500">{t.common.loading}</p>
                 </div>
               </div>
             ) : filteredProducts.length === 0 ? (
@@ -634,7 +713,7 @@ export function ProductListing() {
                   <Search className="w-7 h-7 text-violet-500" />
                 </div>
                 <h3 className="mb-2 text-xl font-black text-gray-900 dark:text-white">{t.listing.noProductsFound}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{t.listing.noProductsDesc}</p>
+                <p className="text-sm text-gray-500 mb-6">{t.listing.noProductsDesc}</p>
                 {activeFilterCount > 0 && (
                   <button
                     onClick={handleResetFilters}
@@ -656,17 +735,17 @@ export function ProductListing() {
                   </div>
                 )}
 
-                {/* ── Infinite scroll sentinel ── */}
-                <div ref={sentinelRef} className="mt-8 flex items-center justify-center h-12">
+                {/* Infinite scroll sentinel */}
+                <div ref={sentinelRef} className="mt-8 flex items-center justify-center h-10">
                   {isFetchingNextPage && (
-                    <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500">
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
                       <Loader2 className="w-4 h-4 animate-spin text-violet-500" />
                       <span className="font-medium">{t.common.loading}</span>
                     </div>
                   )}
                   {!hasMore && filteredProducts.length > 0 && (
                     <p className="text-xs font-medium text-gray-400 dark:text-gray-600">
-                      — {total} ta mahsulot —
+                      — {total} ta mahsulot ko'rsatildi —
                     </p>
                   )}
                 </div>
@@ -683,7 +762,7 @@ export function ProductListing() {
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setIsMobileFilterOpen(false)}
           />
-          <div className="absolute bottom-0 left-0 right-0 max-h-[88vh] rounded-t-[24px] bg-white dark:bg-gray-950 shadow-2xl flex flex-col">
+          <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] rounded-t-[24px] bg-white dark:bg-gray-950 shadow-2xl flex flex-col">
             <div className="sticky top-0 rounded-t-[24px] border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 pb-3 pt-3 z-10">
               <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200 dark:bg-gray-700" />
               <div className="flex items-center justify-between">
@@ -696,27 +775,25 @@ export function ProductListing() {
                 </div>
                 <button
                   onClick={() => setIsMobileFilterOpen(false)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                 </button>
               </div>
             </div>
-
-            <div className="overflow-y-auto px-4 py-4 pb-32 flex-1">
-              <FilterPanel mobile />
+            <div className="overflow-y-auto px-4 py-3 pb-32 flex-1">
+              <FilterPanel />
             </div>
-
             <div className="absolute bottom-0 left-0 right-0 grid grid-cols-2 gap-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 py-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
               <button
                 onClick={handleResetFilters}
-                className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-black text-gray-700 dark:text-gray-300 transition-all"
+                className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-black text-gray-700 dark:text-gray-300"
               >
                 <RotateCcw className="w-4 h-4" />{t.listing.reset}
               </button>
               <button
                 onClick={() => setIsMobileFilterOpen(false)}
-                className="rounded-xl bg-violet-600 hover:bg-violet-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/20 transition-all"
+                className="rounded-xl bg-violet-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/20"
               >
                 {t.listing.viewResults}
               </button>
