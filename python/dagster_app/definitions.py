@@ -347,22 +347,18 @@ def train_matcher_op(context, data_dir: str):
 
     try:
         import importlib.util
+
+        # data_engineering: build training pairs from real CSVs in data_dir
         spec = importlib.util.spec_from_file_location(
             "data_engineering",
             os.path.join(ml_tasks_dir, "data_engineering.py"),
         )
         de_mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(de_mod)
-
-        orig_cwd = os.getcwd()
-        os.chdir(ml_tasks_dir)
-        try:
-            de_mod.build_data_pipeline()
-        finally:
-            os.chdir(orig_cwd)
-
+        de_mod.build_data_pipeline(data_dir=data_dir)
         context.log.info("[train_matcher] data engineering done, starting training")
 
+        # train_matcher: train models, save best to data_dir/models/
         spec2 = importlib.util.spec_from_file_location(
             "train_matcher",
             os.path.join(ml_tasks_dir, "train_matcher.py"),
@@ -373,12 +369,7 @@ def train_matcher_op(context, data_dir: str):
         _mlflow.set_tracking_uri(mlflow_uri)
 
         spec2.loader.exec_module(tm_mod)
-        os.chdir(ml_tasks_dir)
-        try:
-            tm_mod.train()
-        finally:
-            os.chdir(orig_cwd)
-
+        tm_mod.train(data_dir=data_dir)
         context.log.info("[train_matcher] training complete")
     except Exception as exc:
         context.log.warning(f"[train_matcher] skipped — {exc}")

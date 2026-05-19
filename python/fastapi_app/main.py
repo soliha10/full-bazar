@@ -1,11 +1,14 @@
 """
 FastAPI service — serves product data from PostgreSQL.
-Mirrors the Node.js /api/products and /api/products/:id endpoints.
 """
 
 from __future__ import annotations
 
+import math
 import os
+import pickle
+import re
+from collections import Counter
 from contextlib import asynccontextmanager
 from typing import Any, Optional
 
@@ -18,40 +21,120 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://postgres:postgres@postgres:5432/fullbazar",
 )
+MODEL_PATH = os.getenv("MODEL_PATH", "/app/data/models/best_matcher.pkl")
 
 
-# ── Lifespan (connection pool) ────────────────────────────────────────────────
+# ── ML matcher (loaded once at startup) ──────────────────────────────────────
+# Mirrors the feature set in python/ml_tasks/train_matcher.py exactly.
+# If the model file doesn't exist yet (before first training run), all
+# /api/ml/match requests fall back to plain cosine similarity.
+
+_BRANDS = [
+    "apple", "samsung", "xiaomi", "redmi", "oppo", "vivo", "realme",
+    "honor", "huawei", "tecno", "infinix", "poco", "itel",
+]
+_STORAGE_RE = re.compile(r"(\d+)\s*(?:gb|tb)", re.I)
+_DIFF_RE = re.compile(
+    r"\b(pro|max|plus|ultra|lite|mini|fe|note|edge|fold|se|\d+)\b", re.I
+)
+
+_matcher: dict | None = None  # {"model": ..., "vectorizer": ..., "features": [...]}
+
+
+def _load_matcher() -> dict | None:
+    global _matcher
+    if _matcher is not None:
+        return _matcher
+    if os.path.exists(MODEL_PATH):
+        try:
+            with open(MODEL_PATH, "rb") as f:
+                _matcher = pickle.load(f)
+            print(f"Loaded matcher model from {MODEL_PATH}")
+        except Exception as e:
+            print(f"Failed to load matcher model: {e}")
+    return _matcher
+
+
+def _extract_storage(text: str) -> str:
+    m = _STORAGE_RE.search(text)
+    return m.group(1).lower() if m else ""
+
+
+def _extract_brand(text: str) -> str:
+    text = text.lower()
+    for b in _BRANDS:
+        if b in text:
+            return b
+    return ""
+
+
+def _jaccard(a: str, b: str) -> float:
+    wa, wb = set(a.split()), set(b.split())
+    if not wa or not wb:
+        return 0.0
+    return len(wa & wb) / len(wa | wb)
+
+
+def _diff_tokens(text: str) -> frozenset:
+    return frozenset(_DIFF_RE.findall(text.lower()))
+
+
+def _cosine_sim_words(s1: str, s2: str) -> float:
+    """Word-level cosine similarity — fallback when no trained model."""
+    v1 = Counter(re.findall(r"\w+", s1.lower()))
+    v2 = Counter(re.findall(r"\w+", s2.lower()))
+    shared = set(v1) & set(v2)
+    num = sum(v1[x] * v2[x] for x in shared)
+    den = math.sqrt(sum(v ** 2 for v in v1.values())) * math.sqrt(sum(v ** 2 for v in v2.values()))
+    return float(num) / den if den else 0.0
+
+
+def _ml_match(name_a: str, name_b: str) -> tuple[float, bool, str]:
+    """Return (score, is_match, model_used)."""
+    matcher = _load_matcher()
+
+    if matcher is None:
+        score = _cosine_sim_words(name_a, name_b)
+        return score, score > 0.65, "cosine_baseline"
+
+    import numpy as np
+    from sklearn.metrics.pairwise import paired_cosine_distances
+
+    a, b = name_a.lower(), name_b.lower()
+    vec = matcher["vectorizer"]
+    va = vec.transform([a])
+    vb = vec.transform([b])
+    cosine_sim = float(1 - paired_cosine_distances(va, vb)[0])
+
+    features = np.array([[
+        cosine_sim,
+        _jaccard(a, b),
+        int(_extract_brand(a) == _extract_brand(b)),
+        int(bool(_extract_brand(a)) and bool(_extract_brand(b))),
+        int(
+            bool(_extract_storage(a)) and bool(_extract_storage(b))
+            and _extract_storage(a) != _extract_storage(b)
+        ),
+        1.0 if _diff_tokens(a) == _diff_tokens(b) else 0.0,
+        min(max(len(a) / max(len(b), 1), 0.0), 3.0),
+    ]])
+
+    score = float(matcher["model"].predict_proba(features)[0][1])
+    is_match = bool(matcher["model"].predict(features)[0] == 1)
+    return score, is_match, "trained_classifier"
+
+
+# ── Lifespan ──────────────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+    _load_matcher()  # warm up model at startup
     yield
     await app.state.pool.close()
 
 
-import re
-import math
-from collections import Counter
-
 app = FastAPI(title="Full-Bazar API", lifespan=lifespan)
-
-# ── AI Matching Logic (Lite Version for UI Demo) ──────────────────────────────
-def get_cosine_sim(s1: str, s2: str) -> float:
-    s1, s2 = s1.lower(), s2.lower()
-    vec1 = Counter(re.findall(r'\w+', s1))
-    vec2 = Counter(re.findall(r'\w+', s2))
-    
-    intersection = set(vec1.keys()) & set(vec2.keys())
-    numerator = sum([vec1[x] * vec2[x] for x in intersection])
-
-    sum1 = sum([vec1[x]**2 for x in vec1.keys()])
-    sum2 = sum([vec2[x]**2 for x in vec2.keys()])
-    denominator = math.sqrt(sum1) * math.sqrt(sum2)
-
-    if not denominator:
-        return 0.0
-    return float(numerator) / denominator
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -59,27 +142,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# ── ML endpoints ──────────────────────────────────────────────────────────────
+
 @app.get("/api/ml/match")
 async def ml_match(name_a: str, name_b: str):
-    score = get_cosine_sim(name_a, name_b)
-    # Simple threshold from our model analysis
-    is_match = score > 0.65
+    score, is_match, model_used = _ml_match(name_a, name_b)
     return {
         "score": round(score, 4),
         "is_match": is_match,
-        "recommendation": "Match" if is_match else "Different Product"
+        "model": model_used,
+        "recommendation": "Match" if is_match else "Different Product",
     }
+
 
 @app.get("/api/ml/samples")
 async def ml_samples():
-    # Demonstrating logic with synthetic data patterns
-    return [
+    """Test pairs with expected outcomes — useful for smoke-testing the model."""
+    cases = [
         {"a": "Apple iPhone 14 Pro 128GB Black", "b": "iPhone 14 Pro 128 GB (Black)", "expected": True},
         {"a": "Samsung Galaxy S23 Ultra", "b": "Samsung S23 Ultra 256GB", "expected": True},
         {"a": "Xiaomi Redmi Note 12", "b": "Redmi Note 12 Pro", "expected": False},
-        {"a": "Sony PlayStation 5", "b": "PS5 Console Digital Edition", "expected": True},
-        {"a": "MacBook Air M2", "b": "MacBook Pro M2 13-inch", "expected": False},
+        {"a": "iPhone 15 128GB", "b": "iPhone 15 256GB", "expected": False},
+        {"a": "Samsung Galaxy A54 128GB", "b": "Samsung Galaxy A54 256GB", "expected": False},
     ]
+    results = []
+    for c in cases:
+        score, is_match, model = _ml_match(c["a"], c["b"])
+        results.append({**c, "score": round(score, 4), "predicted": is_match, "model": model})
+    return results
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -109,12 +200,7 @@ async def _fetch_markets(pool: asyncpg.Pool, product_ids: list[str]) -> dict[str
     if not product_ids:
         return {}
     rows = await pool.fetch(
-        """
-        SELECT product_id, source, price, url
-        FROM product_markets
-        WHERE product_id = ANY($1)
-        ORDER BY price
-        """,
+        "SELECT product_id, source, price, url FROM product_markets WHERE product_id = ANY($1) ORDER BY price",
         product_ids,
     )
     result: dict[str, list[dict]] = {pid: [] for pid in product_ids}
@@ -127,7 +213,7 @@ async def _fetch_markets(pool: asyncpg.Pool, product_ids: list[str]) -> dict[str
     return result
 
 
-# ── Routes ────────────────────────────────────────────────────────────────────
+# ── Products ──────────────────────────────────────────────────────────────────
 
 @app.get("/api/products")
 async def get_products(
@@ -151,7 +237,6 @@ async def get_products(
             where_parts.append(f"(lower(p.name) LIKE ${i} OR lower(p.keywords) LIKE ${i})")
 
     if market:
-        # filter: product must be available in at least one of the requested markets
         markets_list = [m.strip() for m in market.split(",") if m.strip()]
         if markets_list:
             params.append(markets_list)
@@ -162,9 +247,7 @@ async def get_products(
 
     where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
 
-    count_row = await pool.fetchrow(
-        f"SELECT COUNT(*) FROM products p {where_sql}", *params
-    )
+    count_row = await pool.fetchrow(f"SELECT COUNT(*) FROM products p {where_sql}", *params)
     total: int = count_row[0]
 
     rows = await pool.fetch(
@@ -176,40 +259,31 @@ async def get_products(
     markets_map = await _fetch_markets(pool, product_ids)
     products = [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows]
 
-    return {
-        "products": products,
-        "total": total,
-        "page": page,
-        "limit": limit,
-        "hasMore": offset + limit < total,
-    }
+    return {"products": products, "total": total, "page": page, "limit": limit, "hasMore": offset + limit < total}
 
 
 @app.get("/api/products/{product_id}")
 async def get_product(product_id: str) -> dict:
     pool: asyncpg.Pool = app.state.pool
-
     row = await pool.fetchrow("SELECT * FROM products WHERE id = $1", product_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Not Found")
-
     markets_map = await _fetch_markets(pool, [product_id])
     return _row_to_product(row, markets_map.get(product_id, []))
 
 
+# ── Recommendations ───────────────────────────────────────────────────────────
+
 @app.get("/api/recommendations")
 async def get_recommendations(limit: int = Query(4, ge=1, le=10)) -> dict:
     pool: asyncpg.Pool = app.state.pool
-    
-    # Logic: Find products that have multiple markets and the highest (max_price - min_price)
     rows = await pool.fetch(
         """
         WITH market_stats AS (
-            SELECT 
-                product_id, 
-                MIN(price) as min_price, 
-                MAX(price) as max_price,
-                COUNT(*) as market_count
+            SELECT product_id,
+                   MIN(price) as min_price,
+                   MAX(price) as max_price,
+                   COUNT(*) as market_count
             FROM product_markets
             GROUP BY product_id
             HAVING COUNT(*) > 1
@@ -220,48 +294,11 @@ async def get_recommendations(limit: int = Query(4, ge=1, le=10)) -> dict:
         ORDER BY savings DESC
         LIMIT $1
         """,
-        limit
+        limit,
     )
-    
     product_ids = [r["id"] for r in rows]
     markets_map = await _fetch_markets(pool, product_ids)
-    products = [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows]
-    
-    return {"products": products}
-
-@app.get("/api/markets")
-async def get_markets() -> dict:
-    """Return distinct markets available in the DB with product counts."""
-    pool: asyncpg.Pool = app.state.pool
-    rows = await pool.fetch(
-        """
-        SELECT lower(source) AS key, source AS name, COUNT(*) AS count
-        FROM product_markets
-        GROUP BY source
-        ORDER BY count DESC
-        """
-    )
-    return {"markets": [{"key": r["key"], "name": r["name"], "count": r["count"]} for r in rows]}
-
-
-class TrackEvent(BaseModel):
-    session_id: str
-    event_type: str  # 'view' | 'search' | 'cart_add'
-    product_id: Optional[str] = None
-    search_query: Optional[str] = None
-
-
-@app.post("/api/track")
-async def track_event(event: TrackEvent):
-    pool: asyncpg.Pool = app.state.pool
-    await pool.execute(
-        """
-        INSERT INTO user_events (session_id, event_type, product_id, search_query)
-        VALUES ($1, $2, $3, $4)
-        """,
-        event.session_id, event.event_type, event.product_id, event.search_query,
-    )
-    return {"ok": True}
+    return {"products": [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows]}
 
 
 @app.get("/api/recommendations/personalized")
@@ -271,26 +308,28 @@ async def get_personalized_recommendations(
 ) -> dict:
     pool: asyncpg.Pool = app.state.pool
 
-    view_rows = await pool.fetch(
+    # Fetch recent events with timestamps for time-decay scoring
+    event_rows = await pool.fetch(
         """
-        SELECT DISTINCT product_id
+        SELECT product_id, event_type,
+               EXTRACT(EPOCH FROM (NOW() - created_at)) / 3600.0 AS hours_ago
         FROM user_events
         WHERE session_id = $1
-          AND event_type = 'view'
           AND product_id IS NOT NULL
+          AND event_type IN ('view', 'search', 'cart_add')
           AND created_at > NOW() - INTERVAL '7 days'
-        LIMIT 20
+        ORDER BY created_at DESC
+        LIMIT 50
         """,
         session_id,
     )
-    viewed_ids = [r["product_id"] for r in view_rows]
 
-    if not viewed_ids:
-        # No history → fallback to best price-diff products
+    if not event_rows:
+        # Cold start: fall back to best price-diff products
         rows = await pool.fetch(
             """
             WITH ms AS (
-                SELECT product_id, MIN(price) as lo, MAX(price) as hi
+                SELECT product_id, MIN(price) AS lo, MAX(price) AS hi
                 FROM product_markets GROUP BY product_id HAVING COUNT(*) > 1
             )
             SELECT p.* FROM products p
@@ -302,21 +341,35 @@ async def get_personalized_recommendations(
         )
         product_ids = [r["id"] for r in rows]
         markets_map = await _fetch_markets(pool, product_ids)
-        products = [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows]
-        return {"products": products, "type": "popular"}
+        return {"products": [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows], "type": "popular"}
 
-    # Build user profile: categories + avg price
+    # Score each product using event type weight + exponential time decay.
+    # cart_add is the strongest signal (3×), view is baseline (1×).
+    # Decay half-life ≈ 7 hours: score halves every 7 hours of inactivity.
+    EVENT_WEIGHTS = {"view": 1.0, "search": 1.5, "cart_add": 3.0}
+    DECAY_RATE = math.log(2) / 7.0  # λ for 7-hour half-life
+
+    product_scores: dict[str, float] = {}
+    for r in event_rows:
+        pid = r["product_id"]
+        weight = EVENT_WEIGHTS.get(r["event_type"], 1.0)
+        decay = math.exp(-DECAY_RATE * float(r["hours_ago"]))
+        product_scores[pid] = product_scores.get(pid, 0.0) + weight * decay
+
+    viewed_ids = list(product_scores.keys())
+    # Top-scored products define the user profile
+    top_viewed = sorted(viewed_ids, key=product_scores.get, reverse=True)[:10]
+
     profile_rows = await pool.fetch(
-        "SELECT category, AVG(price) as avg_price FROM products WHERE id = ANY($1) GROUP BY category",
-        viewed_ids,
+        "SELECT category, AVG(price) AS avg_price FROM products WHERE id = ANY($1) GROUP BY category",
+        top_viewed,
     )
     if not profile_rows:
         return {"products": [], "type": "empty"}
 
-    # Extract brands (first word of product name)
     brand_rows = await pool.fetch(
-        "SELECT lower(split_part(name, ' ', 1)) as brand FROM products WHERE id = ANY($1)",
-        viewed_ids,
+        "SELECT lower(split_part(name, ' ', 1)) AS brand FROM products WHERE id = ANY($1)",
+        top_viewed,
     )
     brands = list({r["brand"] for r in brand_rows if r["brand"]})
     categories = [r["category"] for r in profile_rows]
@@ -338,13 +391,44 @@ async def get_personalized_recommendations(
 
     product_ids = [r["id"] for r in rows]
     markets_map = await _fetch_markets(pool, product_ids)
-    products = [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows]
-    return {"products": products, "type": "personalized"}
+    return {
+        "products": [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows],
+        "type": "personalized",
+    }
+
+
+# ── Other endpoints ───────────────────────────────────────────────────────────
+
+@app.get("/api/markets")
+async def get_markets() -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    rows = await pool.fetch(
+        "SELECT lower(source) AS key, source AS name, COUNT(*) AS count FROM product_markets GROUP BY source ORDER BY count DESC"
+    )
+    return {"markets": [{"key": r["key"], "name": r["name"], "count": r["count"]} for r in rows]}
+
+
+class TrackEvent(BaseModel):
+    session_id: str
+    event_type: str  # 'view' | 'search' | 'cart_add'
+    product_id: Optional[str] = None
+    search_query: Optional[str] = None
+
+
+@app.post("/api/track")
+async def track_event(event: TrackEvent):
+    pool: asyncpg.Pool = app.state.pool
+    await pool.execute(
+        "INSERT INTO user_events (session_id, event_type, product_id, search_query) VALUES ($1, $2, $3, $4)",
+        event.session_id, event.event_type, event.product_id, event.search_query,
+    )
+    return {"ok": True}
 
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok"}
+    matcher = _load_matcher()
+    return {"status": "ok", "matcher_model": "loaded" if matcher else "not_trained_yet"}
 
 
 @app.get("/api/stats")

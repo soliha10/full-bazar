@@ -58,12 +58,15 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/fullbazar
+      MODEL_PATH: /app/data/models/best_matcher.pkl
+    volumes:
+      - ./data:/app/data:ro
     ports:
       - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
-    mem_limit: 128m
+    mem_limit: 200m
 
   # ── Frontend (React → nginx) ─────────────────────────────────────────────────
   frontend:
