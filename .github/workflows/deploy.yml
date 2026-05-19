@@ -58,11 +58,8 @@ jobs:
             echo "=== stopping dagster ==="
             docker compose stop dagster-daemon dagster-webserver || true
 
-            echo "=== cancelling ALL non-terminal Dagster runs ==="
-            docker exec full-bazar-postgres-1 psql -U postgres -d dagster_db -c "
-              UPDATE runs SET status = 'CANCELED'
-              WHERE status IN ('STARTED', 'QUEUED', 'STARTING', 'CANCELING');
-            " 2>/dev/null && echo "All stuck runs cancelled" || echo "dagster_db not ready, skipping"
+            echo "=== cancelling ALL non-terminal Dagster runs (SQLite) ==="
+            docker run --rm -v dagster_home:/opt/dagster/home python:3.11-alpine python3 -c "import sqlite3; c=sqlite3.connect('/opt/dagster/home/history/runs.db'); r=c.execute(\"UPDATE runs SET status='CANCELED' WHERE status IN ('STARTED','QUEUED','STARTING','CANCELING')\"); c.commit(); print('Cancelled', r.rowcount, 'runs'); c.close()" 2>/dev/null || echo "SQLite cancel skipped"
 
             echo "=== building frontend (no cache) ==="
             docker compose build --no-cache frontend

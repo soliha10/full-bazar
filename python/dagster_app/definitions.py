@@ -302,7 +302,8 @@ def scrape_all_op(context) -> str:
             return scraper_cls.store_name, 0, str(exc)
 
     SCRAPE_TIMEOUT = 20 * 60  # 20 minutes max for all scrapers combined
-    with ThreadPoolExecutor(max_workers=2) as pool:
+    pool = ThreadPoolExecutor(max_workers=2)
+    try:
         futures = {pool.submit(_run_one, cls): cls for cls in ALL_SCRAPERS}
         done, not_done = futures_wait(futures, timeout=SCRAPE_TIMEOUT)
         for fut in done:
@@ -315,6 +316,8 @@ def scrape_all_op(context) -> str:
             cls = futures[fut]
             context.log.warning(f"  [{cls.store_name}] TIMEOUT after {SCRAPE_TIMEOUT}s — skipping")
             fut.cancel()
+    finally:
+        pool.shutdown(wait=False)  # don't block on stuck scraper threads
 
     return data_dir
 
