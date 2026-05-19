@@ -280,8 +280,20 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
 
 # ── Dagster op / job / schedule ───────────────────────────────────────────────
 
+def _scrape_with_timeout(scraper_cls, data_dir: str):
+    try:
+        s = scraper_cls(output_dir=data_dir, delay=1.0)
+        count = s.run()
+        return scraper_cls.store_name, count, None
+    except Exception as exc:
+        return scraper_cls.store_name, 0, str(exc)
+
+
 @op
 def scrape_all_op(context) -> str:
+    import signal
+    import time
+
     data_dir = os.getenv("DATA_DIR", "/opt/dagster/data")
     os.makedirs(data_dir, exist_ok=True)
 
@@ -293,31 +305,38 @@ def scrape_all_op(context) -> str:
 
     context.log.info(f"Starting {len(ALL_SCRAPERS)} scrapers → {data_dir}")
 
-    def _run_one(scraper_cls):
-        try:
-            s = scraper_cls(output_dir=data_dir, delay=1.0)
-            count = s.run()
-            return scraper_cls.store_name, count, None
-        except Exception as exc:
-            return scraper_cls.store_name, 0, str(exc)
+    SCRAPE_TIMEOUT = 18 * 60  # 18 minutes hard limit
 
-    SCRAPE_TIMEOUT = 20 * 60  # 20 minutes max for all scrapers combined
-    pool = ThreadPoolExecutor(max_workers=2)
+    # SIGALRM sends signal to the main thread after SCRAPE_TIMEOUT seconds,
+    # which raises TimeoutError regardless of what threads are doing.
+    # This guarantees the op returns even if thread joins are blocking.
+    class _ScrapingTimeout(Exception):
+        pass
+
+    def _alarm_handler(signum, frame):
+        raise _ScrapingTimeout("Scraping hard timeout reached")
+
+    signal.signal(signal.SIGALRM, _alarm_handler)
+    signal.alarm(SCRAPE_TIMEOUT)
+
+    pool = ThreadPoolExecutor(max_workers=3)
     try:
-        futures = {pool.submit(_run_one, cls): cls for cls in ALL_SCRAPERS}
-        done, not_done = futures_wait(futures, timeout=SCRAPE_TIMEOUT)
+        futures = {pool.submit(_scrape_with_timeout, cls, data_dir): cls for cls in ALL_SCRAPERS}
+        done, not_done = futures_wait(futures, timeout=SCRAPE_TIMEOUT - 30)
         for fut in done:
             name, count, err = fut.result()
             if err:
                 context.log.warning(f"  [{name}] FAILED: {err}")
             else:
                 context.log.info(f"  [{name}] {count} products")
-        for fut in not_done:
-            cls = futures[fut]
-            context.log.warning(f"  [{cls.store_name}] TIMEOUT after {SCRAPE_TIMEOUT}s — skipping")
-            fut.cancel()
+        if not_done:
+            names = [futures[f].store_name for f in not_done]
+            context.log.warning(f"  TIMEOUT — skipped: {names}")
+    except _ScrapingTimeout:
+        context.log.warning(f"scrape_all_op: hard timeout ({SCRAPE_TIMEOUT}s) — moving on")
     finally:
-        pool.shutdown(wait=False)  # don't block on stuck scraper threads
+        signal.alarm(0)  # cancel alarm
+        pool.shutdown(wait=False)
 
     return data_dir
 
