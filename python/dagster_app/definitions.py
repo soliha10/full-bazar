@@ -319,7 +319,9 @@ def scrape_all_op(context) -> str:
     signal.signal(signal.SIGALRM, _alarm_handler)
     signal.alarm(SCRAPE_TIMEOUT)
 
-    pool = ThreadPoolExecutor(max_workers=3)
+    import gc
+
+    pool = ThreadPoolExecutor(max_workers=1)
     try:
         futures = {pool.submit(_scrape_with_timeout, cls, data_dir): cls for cls in ALL_SCRAPERS}
         done, not_done = futures_wait(futures, timeout=SCRAPE_TIMEOUT - 30)
@@ -329,14 +331,16 @@ def scrape_all_op(context) -> str:
                 context.log.warning(f"  [{name}] FAILED: {err}")
             else:
                 context.log.info(f"  [{name}] {count} products")
+            gc.collect()
         if not_done:
             names = [futures[f].store_name for f in not_done]
             context.log.warning(f"  TIMEOUT — skipped: {names}")
     except _ScrapingTimeout:
         context.log.warning(f"scrape_all_op: hard timeout ({SCRAPE_TIMEOUT}s) — moving on")
     finally:
-        signal.alarm(0)  # cancel alarm
+        signal.alarm(0)
         pool.shutdown(wait=False)
+        gc.collect()
 
     return data_dir
 
@@ -416,9 +420,14 @@ defs = Definitions(
     jobs=[product_sync_job, csv_sync_job],
     schedules=[
         ScheduleDefinition(
-            name="product_sync_hourly",
-            job=product_sync_job,
+            name="csv_sync_hourly",
+            job=csv_sync_job,
             cron_schedule="0 * * * *",
-        )
+        ),
+        ScheduleDefinition(
+            name="product_sync_daily",
+            job=product_sync_job,
+            cron_schedule="0 3 * * *",
+        ),
     ],
 )
