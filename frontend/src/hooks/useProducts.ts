@@ -21,6 +21,7 @@ export function useProducts(
   limit = 12,
   search = '',
   markets: string[] = [],
+  brand = '',
 ): UseProductsResult {
   const normalizedSearch = search.trim();
 
@@ -35,9 +36,9 @@ export function useProducts(
     status,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ['products', normalizedSearch, limit, markets],
+    queryKey: ['products', normalizedSearch, limit, markets, brand],
     queryFn: ({ pageParam = 1, signal }) =>
-      fetchProducts(pageParam, limit, normalizedSearch, signal, markets),
+      fetchProducts(pageParam, limit, normalizedSearch, signal, markets, brand),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       return lastPage?.hasMore ? lastPage.page + 1 : undefined;

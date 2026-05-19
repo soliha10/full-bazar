@@ -33,6 +33,20 @@ _BRANDS = [
     "apple", "samsung", "xiaomi", "redmi", "oppo", "vivo", "realme",
     "honor", "huawei", "tecno", "infinix", "poco", "itel",
 ]
+
+_BRAND_KWS: dict[str, list[str]] = {
+    "Apple":   ["apple", "iphone"],
+    "Samsung": ["samsung", "galaxy"],
+    "Redmi":   ["redmi"],
+    "Xiaomi":  ["xiaomi"],
+    "Poco":    ["poco"],
+    "Honor":   ["honor"],
+    "Vivo":    ["vivo"],
+    "Oppo":    ["oppo"],
+    "Realme":  ["realme"],
+    "Tecno":   ["tecno", "camon", "spark"],
+    "Infinix": ["infinix"],
+}
 _STORAGE_RE = re.compile(r"(\d+)\s*(?:gb|tb)", re.I)
 _DIFF_RE = re.compile(
     r"\b(pro|max|plus|ultra|lite|mini|fe|note|edge|fold|se|\d+)\b", re.I
@@ -221,11 +235,13 @@ async def get_products(
     limit: int = Query(12, ge=1, le=200),
     search: str = Query(""),
     market: str = Query(""),
+    brand: str = Query(""),
 ) -> dict:
     pool: asyncpg.Pool = app.state.pool
     offset = (page - 1) * limit
     search = search.strip()
     market = market.strip().lower()
+    brand = brand.strip()
 
     where_parts: list[str] = []
     params: list = []
@@ -235,6 +251,15 @@ async def get_products(
             params.append(f"%{token}%")
             i = len(params)
             where_parts.append(f"(lower(p.name) LIKE ${i} OR lower(p.keywords) LIKE ${i})")
+
+    if brand:
+        kws = _BRAND_KWS.get(brand, [brand.lower()])
+        brand_parts = []
+        for kw in kws:
+            params.append(f"%{kw}%")
+            i = len(params)
+            brand_parts.append(f"(lower(p.name) LIKE ${i} OR lower(p.keywords) LIKE ${i})")
+        where_parts.append(f"({' OR '.join(brand_parts)})")
 
     if market:
         markets_list = [m.strip() for m in market.split(",") if m.strip()]

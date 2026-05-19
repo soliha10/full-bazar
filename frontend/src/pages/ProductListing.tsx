@@ -15,18 +15,18 @@ const BRANDS = [
   'Honor', 'Vivo', 'Oppo', 'Realme', 'Tecno', 'Infinix',
 ];
 
-const BRAND_KEYWORDS: Record<string, string[]> = {
-  Apple:   ['apple', 'iphone'],
-  Samsung: ['samsung', 'galaxy'],
-  Redmi:   ['redmi'],
-  Xiaomi:  ['xiaomi', 'mi '],
-  Poco:    ['poco'],
-  Honor:   ['honor'],
-  Vivo:    ['vivo'],
-  Oppo:    ['oppo'],
-  Realme:  ['realme'],
-  Tecno:   ['tecno', 'camon', 'spark', 'pova'],
-  Infinix: ['infinix'],
+const BRAND_COLORS: Record<string, string> = {
+  Apple:   '#6B7280',
+  Samsung: '#3B82F6',
+  Redmi:   '#EF4444',
+  Xiaomi:  '#F97316',
+  Poco:    '#EAB308',
+  Honor:   '#7C3AED',
+  Vivo:    '#06B6D4',
+  Oppo:    '#10B981',
+  Realme:  '#F43F5E',
+  Tecno:   '#14B8A6',
+  Infinix: '#2563EB',
 };
 
 const MARKETPLACES = [
@@ -91,6 +91,7 @@ export function ProductListing() {
   const [isListening, setIsListening] = useState(false);
   const [listPage,  setListPage]  = useState(1);
   const [marketCounts, setMarketCounts] = useState<Record<string, number>>({});
+  const [showAllMarkets, setShowAllMarkets] = useState(false);
 
   useEffect(() => {
     fetch('/api/markets')
@@ -149,7 +150,7 @@ export function ProductListing() {
 
   // ── Data ─────────────────────────────────────────────────────────────────
   const { products: rawProducts, isLoading, isFetchingNextPage, hasMore, loadMore, total } =
-    useProducts(1, 20, debouncedSearch, selectedMarketplaces);
+    useProducts(1, 20, debouncedSearch, selectedMarketplaces, selectedBrand ?? '');
 
   // ── Client-side filters + sort ────────────────────────────────────────────
   const filteredProducts = useMemo(() => {
@@ -169,10 +170,6 @@ export function ProductListing() {
       );
     }
     if (minRating > 0) r = r.filter(p => p.rating >= minRating);
-    if (selectedBrand) {
-      const kws = BRAND_KEYWORDS[selectedBrand] ?? [selectedBrand.toLowerCase()];
-      r = r.filter(p => kws.some(k => p.name.toLowerCase().includes(k)));
-    }
     const mn = parseFloat(minPrice.replace(/\s/g, ''));
     const mx = parseFloat(maxPrice.replace(/\s/g, ''));
     if (!isNaN(mn) && mn > 0) r = r.filter(p => p.price >= mn);
@@ -182,7 +179,7 @@ export function ProductListing() {
     if (sortBy === 'priceHigh') r.sort((a, b) => b.price - a.price);
     if (sortBy === 'rating')    r.sort((a, b) => b.rating - a.rating);
     return r;
-  }, [rawProducts, selectedCategory, selectedMarketplaces, minRating, selectedBrand, minPrice, maxPrice, sortBy]);
+  }, [rawProducts, selectedCategory, selectedMarketplaces, minRating, minPrice, maxPrice, sortBy]);
 
   const paginatedList = useMemo(() => {
     if (viewMode !== 'list') return filteredProducts;
@@ -352,19 +349,32 @@ export function ProductListing() {
           )}
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {BRANDS.map(brand => (
-            <button
-              key={brand}
-              onClick={() => setSelectedBrand(selectedBrand === brand ? null : brand)}
-              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
-                selectedBrand === brand
-                  ? 'bg-violet-600 text-white shadow-sm shadow-violet-500/30'
-                  : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-600 dark:hover:text-violet-400'
-              }`}
-            >
-              {brand}
-            </button>
-          ))}
+          {BRANDS.map(brand => {
+            const isSelected = selectedBrand === brand;
+            const color = BRAND_COLORS[brand] ?? '#6B7280';
+            return (
+              <button
+                key={brand}
+                onClick={() => setSelectedBrand(isSelected ? null : brand)}
+                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                  isSelected
+                    ? 'bg-violet-600 text-white shadow-sm shadow-violet-500/30'
+                    : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-600 dark:hover:text-violet-400'
+                }`}
+              >
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: isSelected ? 'rgba(255,255,255,0.75)' : color }}
+                />
+                {brand}
+                {isSelected && (
+                  <svg className="w-3 h-3 ml-0.5 shrink-0" fill="none" viewBox="0 0 10 10">
+                    <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -379,7 +389,7 @@ export function ProductListing() {
           )}
         </div>
         <div className="space-y-1">
-          {MARKETPLACES.map(({ name, key, color }) => {
+          {(showAllMarkets ? MARKETPLACES : MARKETPLACES.slice(0, 8)).map(({ name, key, color }) => {
             const active = selectedMarketplaces.includes(key);
             return (
               <button
@@ -409,6 +419,24 @@ export function ProductListing() {
             );
           })}
         </div>
+        {MARKETPLACES.length > 8 && (
+          <button
+            onClick={() => setShowAllMarkets(v => !v)}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all"
+          >
+            {showAllMarkets ? (
+              <>
+                <ChevronLeft className="w-3 h-3 rotate-90" />
+                Show less
+              </>
+            ) : (
+              <>
+                <ChevronRight className="w-3 h-3 rotate-90" />
+                {`+${MARKETPLACES.length - 8} more`}
+              </>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );
