@@ -275,7 +275,7 @@ export function Landing() {
 
         {/* Desktop: card wrapper */}
         <div className="md:bg-white md:dark:bg-gray-900 md:rounded-[2.5rem] md:p-12 md:border md:border-violet-100 md:dark:border-violet-900/40 md:shadow-xl md:shadow-violet-500/5 md:mt-0 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none hidden md:block">
+          {/* <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none hidden md:block">
             <Zap size={200} className="text-violet-600" />
           </div>
 
@@ -291,7 +291,7 @@ export function Landing() {
                 {t.landing.aiRecs.subtitle}
               </p>
             </div>
-          </div>
+          </div> */}
 
           {/* Cards: horizontal scroll on mobile, grid on desktop */}
           <div className="flex gap-3 overflow-x-auto pb-3 pr-4 mt-4 md:mt-0 md:grid md:grid-cols-4 md:gap-5 md:overflow-visible md:pb-0 md:pr-0">

@@ -17,7 +17,7 @@ export const uz = {
 
   landing: {
     hero: {
-      title: "Barcha bozolarda eng yaxshi narxni toping",
+      title: "Barcha bozorlarda eng yaxshi narxni toping",
       subtitle: "AI-qo'llab-quvvatlangan kuzatuv bilan millionlab mahsulotlarni darhol solishtiring va tejang.",
       cta: "Solishtirishni boshlash",
       viewPrices: "Narxlarni ko'rish",
