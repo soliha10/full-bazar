@@ -19,6 +19,7 @@ import { mapProduct, formatSum } from "../utils/productMapper";
 import { Product } from "../components/ProductCard";
 import { useLanguage } from "../contexts/LanguageContext";
 import { trackEvent } from "../services/tracking";
+import { useFavorites } from "../hooks/useFavorites";
 
 export function ProductDetail() {
   const { id } = useParams();
@@ -30,7 +31,7 @@ export function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedMarketIndex, setSelectedMarketIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'overview' | 'specs' | 'reviews'>('overview');
-  const [liked, setLiked] = useState(false);
+  const { favorites, toggle, isLiked } = useFavorites();
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -98,6 +99,7 @@ export function ProductDetail() {
   const bestPrice = sortedMarkets[0]?.price ?? product?.price ?? 0;
   const worstPrice = sortedMarkets[sortedMarkets.length - 1]?.price;
   const savings = worstPrice && worstPrice > bestPrice ? worstPrice - bestPrice : 0;
+  const liked = product ? isLiked(product.id) : false;
 
   if (loading) {
     return (
@@ -140,7 +142,7 @@ export function ProductDetail() {
         </span>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setLiked(v => !v)}
+            onClick={() => product && toggle(product)}
             className="w-10 h-10 flex items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800 active:scale-90 transition-all"
           >
             <Heart className={`w-4.5 h-4.5 transition-all duration-200 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-500 dark:text-gray-400'}`} />
@@ -191,7 +193,7 @@ export function ProductDetail() {
               {/* Like on image (mobile overlay) */}
               <div className="md:hidden absolute top-4 right-4 z-10">
                 <button
-                  onClick={() => setLiked(v => !v)}
+                  onClick={() => product && toggle(product)}
                   className="w-9 h-9 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all"
                 >
                   <Heart className={`w-4 h-4 transition-all duration-200 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-400 dark:text-gray-500'}`} />
@@ -295,7 +297,7 @@ export function ProductDetail() {
                   {product.name}
                 </h1>
                 <button
-                  onClick={() => setLiked(v => !v)}
+                  onClick={() => product && toggle(product)}
                   className="hidden md:flex mt-1 w-11 h-11 shrink-0 items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-red-300 dark:hover:border-red-800 active:scale-90 transition-all shadow-sm"
                 >
                   <Heart className={`w-5 h-5 transition-all duration-200 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-400 dark:text-gray-500'}`} />
@@ -601,25 +603,66 @@ export function ProductDetail() {
         </div>
       </div>
 
-      {/* ── Similar products ── */}
-      {similarProducts.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 mt-4">
-          <h2 className="text-base font-black text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-            Sizga o'xshash mahsulotlar
-          </h2>
-          <div className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {similarProducts.map((p) => (
+      {/* ── Saved (liked) products ── */}
+      {favorites.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-2 mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
+              <Heart className="w-4 h-4 fill-red-500 text-red-500" />
+              Saqlangan mahsulotlar
+            </h2>
+            <span className="text-xs font-bold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-full">
+              {favorites.length} ta
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {favorites.map((p) => (
               <Link
                 key={p.id}
                 to={`/product/${p.id}`}
-                className="shrink-0 w-40 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-3 hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95"
+                className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-3 hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95"
+              >
+                <div className="relative">
+                  <img
+                    src={p.image}
+                    alt={p.name}
+                    className="w-full aspect-square object-contain rounded-xl bg-gray-50 dark:bg-gray-800 p-2 mb-2"
+                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/200x200?text=No+image'; }}
+                  />
+                  <button
+                    onClick={(e) => { e.preventDefault(); toggle(p); }}
+                    className="absolute top-1.5 right-1.5 w-7 h-7 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity"
+                  >
+                    <Heart className="w-3.5 h-3.5 fill-red-500 text-red-500" />
+                  </button>
+                </div>
+                <p className="text-xs font-bold text-gray-800 dark:text-white line-clamp-2 mb-1 leading-snug">{p.name}</p>
+                <p className="text-xs font-black text-violet-600 dark:text-violet-400">{formatSum(p.price)}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Similar products ── */}
+      {similarProducts.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 mt-8">
+          <h2 className="text-base font-black text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+            O'xshash mahsulotlar
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {similarProducts.slice(0, 10).map((p) => (
+              <Link
+                key={p.id}
+                to={`/product/${p.id}`}
+                className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-3 hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95"
               >
                 <img
                   src={p.image}
                   alt={p.name}
-                  className="w-full h-28 object-contain mb-2 rounded-xl bg-gray-50 dark:bg-gray-800 p-2"
-                  onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/160x112?text=No+image'; }}
+                  className="w-full aspect-square object-contain rounded-xl bg-gray-50 dark:bg-gray-800 p-2 mb-2"
+                  onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/200x200?text=No+image'; }}
                 />
                 <p className="text-xs font-bold text-gray-800 dark:text-white line-clamp-2 mb-1 leading-snug">{p.name}</p>
                 <p className="text-xs font-black text-violet-600 dark:text-violet-400">{formatSum(p.price)}</p>
