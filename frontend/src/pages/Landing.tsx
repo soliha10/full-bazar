@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   ArrowRight, TrendingUp, ShieldCheck, RefreshCw,
-  Zap, Sparkles, ChevronRight, Search,
+  Zap, Sparkles, ChevronRight,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
@@ -219,11 +219,6 @@ export function Landing() {
                     className="inline-flex items-center gap-2 bg-white text-violet-700 font-black rounded-2xl px-6 py-3 text-sm shadow-xl shadow-black/20 hover:scale-105 active:scale-95 transition-all">
                     {t.landing.hero.cta}
                     <ArrowRight className="w-4 h-4" />
-                  </Link>
-                  <Link to="/products"
-                    className="inline-flex items-center gap-2 bg-white/15 border border-white/25 text-white font-bold rounded-2xl px-5 py-3 text-sm backdrop-blur-sm hover:bg-white/25 active:scale-95 transition-all">
-                    <Search className="w-4 h-4" />
-                    <span className="hidden sm:inline">Qidirish</span>
                   </Link>
                 </div>
               </div>

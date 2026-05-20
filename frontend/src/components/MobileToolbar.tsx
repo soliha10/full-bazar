@@ -1,17 +1,19 @@
 import { Home, Search, Heart, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useFavorites } from '../hooks/useFavorites';
 
 export function MobileToolbar() {
   const location = useLocation();
   const { t } = useLanguage();
+  const { favorites } = useFavorites();
   const currentPath = location.pathname;
 
   const items = [
-    { icon: Home,   label: t.nav.home,       path: '/'         },
-    { icon: Search, label: t.nav.search,      path: '/products' },
-    { icon: Heart,  label: t.footer.wishlist, path: '/wishlist' },
-    { icon: User,   label: t.nav.account,     path: '/profile'  },
+    { icon: Home,   label: t.nav.home,       path: '/',         count: 0               },
+    { icon: Search, label: t.nav.search,      path: '/products', count: 0               },
+    { icon: Heart,  label: t.footer.wishlist, path: '/wishlist', count: favorites.length },
+    { icon: User,   label: t.nav.account,     path: '/profile',  count: 0               },
   ];
 
   return (
@@ -23,21 +25,21 @@ export function MobileToolbar() {
         className="flex items-center justify-around px-2 pt-2"
         style={{ paddingBottom: 'max(0.875rem, env(safe-area-inset-bottom))' }}
       >
-        {items.map((item, i) => {
+        {items.map((item) => {
           const isActive = item.path === '/'
             ? currentPath === '/'
             : currentPath === item.path || currentPath.startsWith(item.path + '/');
 
           return (
             <Link
-              key={i}
+              key={item.path}
               to={item.path}
               className="relative flex flex-col items-center gap-1 flex-1 min-h-[48px] justify-center"
             >
               {isActive && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-violet-600" />
               )}
-              <div className={`flex items-center justify-center w-11 h-8 rounded-2xl transition-all duration-200 ${
+              <div className={`relative flex items-center justify-center w-11 h-8 rounded-2xl transition-all duration-200 ${
                 isActive ? 'bg-violet-100 dark:bg-violet-900/50 scale-110' : ''
               }`}>
                 <item.icon
@@ -48,6 +50,11 @@ export function MobileToolbar() {
                   }`}
                   strokeWidth={isActive ? 2.5 : 1.8}
                 />
+                {item.count > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center leading-none">
+                    {item.count > 9 ? '9+' : item.count}
+                  </span>
+                )}
               </div>
               <span className={`text-[10px] font-bold leading-none transition-all duration-200 ${
                 isActive

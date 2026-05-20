@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Search, User, Moon, Sun, Globe, ShoppingBag, Menu, Mic, X,
   LogIn, HelpCircle, Info, Sparkles, Heart, ChevronRight,
-  Home, Package, ShoppingCart,
+  Home, Package,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
@@ -90,10 +90,9 @@ export function Navbar({ onSearchChange }: NavbarProps) {
   ];
 
   const navLinks = [
-    { icon: Home,         label: t.nav.home,        path: '/',         count: 0              },
-    { icon: Package,      label: 'Katalog',          path: '/products', count: 0              },
-    { icon: Heart,        label: t.footer.wishlist,  path: '/wishlist', count: favorites.length },
-    { icon: ShoppingCart, label: t.nav.cart,         path: '/cart',     count: 0              },
+    { icon: Home,    label: t.nav.home,       path: '/',         count: 0               },
+    { icon: Package, label: 'Katalog',         path: '/products', count: 0               },
+    { icon: Heart,   label: t.footer.wishlist, path: '/wishlist', count: favorites.length },
   ];
 
   return (
@@ -247,18 +246,6 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                   transition-all active:scale-90">
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
-
-              {/* Favorites — mobile quick access */}
-              <Link to="/wishlist"
-                className="md:hidden relative w-9 h-9 flex items-center justify-center rounded-xl
-                  text-gray-500 dark:text-gray-400 active:scale-90 transition-all">
-                <Heart className={`w-5 h-5 ${favorites.length > 0 ? 'fill-red-500 text-red-500' : ''}`} />
-                {favorites.length > 0 && (
-                  <span className="absolute top-0.5 right-0.5 w-[14px] h-[14px] rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center">
-                    {favorites.length > 9 ? '9+' : favorites.length}
-                  </span>
-                )}
-              </Link>
 
               {/* Login */}
               <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl
