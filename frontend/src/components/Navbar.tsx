@@ -106,7 +106,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-5">
 
           {/* ── Top row ── */}
-          <div className="flex items-center h-14 md:h-16 gap-2">
+          <div className="flex items-center justify-between h-14 md:h-16 gap-2">
 
             {/* Hamburger — mobile only */}
             <button
@@ -182,7 +182,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             <div className="flex-1 md:hidden" />
 
             {/* Right actions */}
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
 
               {/* Language dropdown — desktop */}
               <div className="relative hidden md:block">

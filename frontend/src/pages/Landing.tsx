@@ -39,9 +39,6 @@ const TRUST_ICONS = [RefreshCw, ShieldCheck, TrendingUp];
 
 const QUICK_CATEGORIES = [
   { emoji: '📱', label: 'Smartfonlar', value: 'smartphones' },
-  { emoji: '☎️', label: 'Telefonlar',  value: 'phones' },
-  { emoji: '💻', label: 'Noutbuklar',  value: 'electronics' },
-  { emoji: '🎧', label: 'Aksesuarlar', value: '' },
 ];
 
 /* ── Section header component ── */

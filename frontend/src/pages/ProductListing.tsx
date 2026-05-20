@@ -602,23 +602,23 @@ export function ProductListing() {
                     {filteredProducts.map(p => <ProductCard key={p.id} product={p} viewMode="list" activeMarkets={selectedMarketplaces} />)}
                   </div>
                 )}
-
-                {/* Infinite scroll sentinel */}
-                <div ref={sentinelRef} className="mt-8 flex items-center justify-center h-10">
-                  {isFetchingNextPage && (
-                    <div className="flex items-center gap-2 text-sm text-gray-400">
-                      <Loader2 className="w-4 h-4 animate-spin text-violet-500" />
-                      <span>{t.common.loading}</span>
-                    </div>
-                  )}
-                  {!hasMore && filteredProducts.length > 0 && (
-                    <p className="text-xs text-gray-400 dark:text-gray-600">
-                      — {total.toLocaleString()} ta mahsulot ko'rsatildi —
-                    </p>
-                  )}
-                </div>
               </>
             )}
+
+            {/* Infinite scroll sentinel — always mounted so observer fires on first load */}
+            <div ref={sentinelRef} className="mt-8 flex items-center justify-center h-10">
+              {isFetchingNextPage && (
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <Loader2 className="w-4 h-4 animate-spin text-violet-500" />
+                  <span>{t.common.loading}</span>
+                </div>
+              )}
+              {!hasMore && filteredProducts.length > 0 && (
+                <p className="text-xs text-gray-400 dark:text-gray-600">
+                  — {total.toLocaleString()} ta mahsulot ko'rsatildi —
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>
