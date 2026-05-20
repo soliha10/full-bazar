@@ -10,6 +10,9 @@ import { formatSum } from '../utils/productMapper';
 import axios from 'axios';
 import { fetchPersonalizedRecommendations } from '../services/api';
 import { mapProduct } from '../utils/productMapper';
+import { useRecommendations } from '../hooks/useRecommendations';
+import { useFavorites } from '../hooks/useFavorites';
+import { useAuth } from '../contexts/AuthContext';
 
 const MARKET_LOGOS: { name: string; color: string }[] = [
   { name: 'Asaxiy',     color: '#7C3AED' },
@@ -142,12 +145,16 @@ function MiniProductCard({
 }
 
 export function Landing() {
-  const { total } = useProducts(1, 1);
+  const { total, products: allProducts } = useProducts(1, 20);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loadingRecs, setLoadingRecs]         = useState(true);
   const [personalizedRecs, setPersonalizedRecs]   = useState<any[]>([]);
   const [personalizedType, setPersonalizedType]   = useState<string>('');
   const { t } = useLanguage();
+  const { favorites } = useFavorites();
+  const { user } = useAuth();
+  const clientRecs = useRecommendations(allProducts, 6);
+  const showClientRecs = clientRecs.length > 0 && (favorites.length > 0 || !!user?.profile.preferredBrands.length);
 
   useEffect(() => {
     axios.get('/api/recommendations')
@@ -394,9 +401,34 @@ export function Landing() {
       </section>
 
       {/* ══════════════════════════════════════
-          PERSONALIZED (when available)
+          PERSONALIZED — client-side AI recs
       ══════════════════════════════════════ */}
-      {personalizedRecs.length > 0 && personalizedType === 'personalized' && (
+      {showClientRecs && (
+        <section className="mt-6 md:mt-12 px-4 max-w-7xl mx-auto">
+          <SectionHeader
+            title="Siz uchun tavsiyalar"
+            subtitle={favorites.length > 0 ? "Sevimlilaringizga asoslanib tanlandi" : "Profilingizga mos mahsulotlar"}
+            icon={Sparkles}
+            linkTo="/products"
+            linkLabel={t.landing.trending.viewAll}
+          />
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-6 md:gap-4">
+            {clientRecs.map(p => (
+              <MiniProductCard
+                key={p.id}
+                id={p.id}
+                image={p.image}
+                name={p.name}
+                price={p.price}
+                storeCount={p.markets?.length}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* server personalized — shown only when client recs absent */}
+      {!showClientRecs && personalizedRecs.length > 0 && personalizedType === 'personalized' && (
         <section className="mt-6 md:mt-12 px-4 max-w-7xl mx-auto">
           <SectionHeader
             title="Sizga maxsus"
@@ -407,13 +439,7 @@ export function Landing() {
           />
           <div className="grid grid-cols-2 gap-3 md:grid-cols-6 md:gap-4">
             {personalizedRecs.map(p => (
-              <MiniProductCard
-                key={p.id}
-                id={p.id}
-                image={p.image}
-                name={p.name}
-                price={p.price}
-              />
+              <MiniProductCard key={p.id} id={p.id} image={p.image} name={p.name} price={p.price} />
             ))}
           </div>
         </section>

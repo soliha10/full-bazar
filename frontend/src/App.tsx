@@ -7,9 +7,12 @@ import {
 } from "react-router-dom";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { FavoritesProvider } from "./contexts/FavoritesContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { MobileToolbar } from "./components/MobileToolbar";
+import { AuthModal } from "./components/AuthModal";
 import { Landing } from "./pages/Landing";
 import { ProductListing } from "./pages/ProductListing";
 import { ProductDetail } from "./pages/ProductDetail";
@@ -19,9 +22,13 @@ export default function App() {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <AuthProvider>
+          <FavoritesProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </FavoritesProvider>
+        </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>
   );
@@ -62,6 +69,7 @@ function AppContent() {
 
       {!hideFooter && <Footer />}
       <MobileToolbar />
+      <AuthModal />
     </div>
   );
 }

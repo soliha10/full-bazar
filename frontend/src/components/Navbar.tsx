@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Search, User, Moon, Sun, Globe, ShoppingBag, Menu, Mic, X,
   LogIn, HelpCircle, Info, Sparkles, Heart, ChevronRight,
-  Home, Package,
+  Home, Package, LogOut,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../locales/translations';
 import { useFavorites } from '../hooks/useFavorites';
+import { useAuth } from '../contexts/AuthContext';
 
 interface NavbarProps {
   onSearchChange?: (value: string) => void;
@@ -19,6 +20,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
   const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
   const { favorites } = useFavorites();
+  const { user, openLogin, openRegister, logout } = useAuth();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
@@ -247,16 +249,32 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
 
-              {/* Login */}
-              <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl
-                bg-linear-to-r from-violet-600 to-violet-700
-                hover:from-violet-700 hover:to-violet-800
-                text-white font-black text-sm
-                shadow-md shadow-violet-500/20
-                active:scale-95 transition-all">
-                <User className="w-4 h-4" />
-                <span className="hidden sm:block tracking-wide">{t.nav.login}</span>
-              </button>
+              {/* Login / User */}
+              {user ? (
+                <div className="flex items-center gap-1">
+                  <div className="hidden sm:flex flex-col items-end leading-none mr-1">
+                    <span className="text-[11px] font-black text-gray-800 dark:text-gray-200 truncate max-w-[80px]">{user.name}</span>
+                    <span className="text-[9px] text-gray-400 truncate max-w-[80px]">{user.email}</span>
+                  </div>
+                  <div className="w-8 h-8 rounded-xl bg-violet-600 flex items-center justify-center text-white text-xs font-black shrink-0">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <button onClick={logout} aria-label="Chiqish"
+                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all active:scale-90">
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button onClick={openLogin} className="flex items-center gap-1.5 px-3 py-2 rounded-xl
+                  bg-linear-to-r from-violet-600 to-violet-700
+                  hover:from-violet-700 hover:to-violet-800
+                  text-white font-black text-sm
+                  shadow-md shadow-violet-500/20
+                  active:scale-95 transition-all">
+                  <User className="w-4 h-4" />
+                  <span className="hidden sm:block tracking-wide">{t.nav.login}</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -364,19 +382,43 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-violet-600 to-violet-800 p-4">
               <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/5" />
               <div className="absolute -bottom-8 -left-4 w-28 h-28 rounded-full bg-white/5" />
-              <div className="relative flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
-                  <User className="w-5 h-5 text-white" />
+              {user ? (
+                <div className="relative flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0 text-white text-base font-black">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-black text-white leading-none truncate">{user.name}</p>
+                    <p className="text-[11px] text-white/65 font-medium leading-none mt-1 truncate">{user.email}</p>
+                  </div>
+                  <button onClick={() => { logout(); closeMenu(); }}
+                    className="flex items-center gap-1.5 bg-white/15 border border-white/20 text-white text-[11px] font-black px-3 py-1.5 rounded-xl shrink-0 active:scale-95 transition-transform">
+                    <LogOut className="w-3 h-3" />
+                    Chiqish
+                  </button>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-black text-white leading-none truncate">{t.nav.welcome}</p>
-                  <p className="text-[11px] text-white/65 font-medium leading-none mt-1 truncate">{t.nav.welcomeSubtitle}</p>
+              ) : (
+                <div className="relative flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-black text-white leading-none truncate">{t.nav.welcome}</p>
+                    <p className="text-[11px] text-white/65 font-medium leading-none mt-1 truncate">{t.nav.welcomeSubtitle}</p>
+                  </div>
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <button onClick={() => { openLogin(); closeMenu(); }}
+                      className="flex items-center gap-1.5 bg-white text-violet-700 text-[11px] font-black px-3 py-1.5 rounded-xl shadow-sm active:scale-95 transition-transform">
+                      <LogIn className="w-3 h-3" />
+                      {t.nav.login}
+                    </button>
+                    <button onClick={() => { openRegister(); closeMenu(); }}
+                      className="flex items-center gap-1.5 bg-white/15 border border-white/20 text-white text-[11px] font-black px-3 py-1.5 rounded-xl active:scale-95 transition-transform">
+                      Ro'yxat
+                    </button>
+                  </div>
                 </div>
-                <button className="flex items-center gap-1.5 bg-white text-violet-700 text-[11px] font-black px-3 py-1.5 rounded-xl shadow-sm shrink-0 active:scale-95 transition-transform">
-                  <LogIn className="w-3 h-3" />
-                  {t.nav.login}
-                </button>
-              </div>
+              )}
             </div>
           </div>
 
