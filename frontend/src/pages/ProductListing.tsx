@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  LayoutGrid, List, ArrowLeft, X, ChevronRight,
-  Search, Loader2, SlidersHorizontal, RotateCcw,
+  LayoutGrid, List, X, ChevronRight,
+  Search, Loader2, SlidersHorizontal, RotateCcw, ArrowLeft,
 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { useProducts } from '../hooks/useProducts';
@@ -111,11 +111,11 @@ export function ProductListing() {
   const [marketCounts,   setMarketCounts]   = useState<Record<string, number>>({});
   const [showAllMarkets, setShowAllMarkets] = useState(false);
 
-  // ── infinite scroll (fix: track sentinel visibility so hasMore→true triggers load) ──
-  const sentinelRef      = useRef<HTMLDivElement>(null);
-  const hasMoreRef       = useRef(false);
-  const fetchingRef      = useRef(false);
-  const loadMoreRef      = useRef<() => void>(() => {});
+  // ── infinite scroll ──
+  const sentinelRef       = useRef<HTMLDivElement>(null);
+  const hasMoreRef        = useRef(false);
+  const fetchingRef       = useRef(false);
+  const loadMoreRef       = useRef<() => void>(() => {});
   const isIntersectingRef = useRef(false);
 
   useEffect(() => {
@@ -134,7 +134,6 @@ export function ProductListing() {
     return () => obs.disconnect();
   }, []);
 
-  // When hasMore becomes true while sentinel is already visible → trigger immediately
   useEffect(() => {
     if (hasMoreRef.current && !fetchingRef.current && isIntersectingRef.current) {
       loadMoreRef.current();
@@ -170,11 +169,9 @@ export function ProductListing() {
     }, { replace: true });
   }, [setSearchParams]);
 
-  // ── data ──────────────────────────────────────────────────────────────────
   const { products: rawProducts, isLoading, isFetchingNextPage, hasMore, loadMore, total } =
     useProducts(1, 20, searchQuery, selectedMarketplaces, selectedBrand ?? '');
 
-  // keep refs current every render
   hasMoreRef.current  = hasMore;
   fetchingRef.current = isFetchingNextPage;
   loadMoreRef.current = loadMore;
@@ -225,10 +222,9 @@ export function ProductListing() {
 
   const visibleMarkets = showAllMarkets ? MARKETPLACES : MARKETPLACES.slice(0, MARKETS_VISIBLE);
 
-  // ── filter panel (aggregator style) ──────────────────────────────────────
+  // ── filter panel ──
   const FilterPanel = () => (
     <div className="divide-y divide-gray-100 dark:divide-gray-800">
-
       {/* Kategoriya */}
       <div className="py-3">
         <SLabel>{t.listing.categories}</SLabel>
@@ -241,7 +237,7 @@ export function ProductListing() {
                 key={cat} type="button" disabled={disabled}
                 onClick={() => !disabled && (setSelectedCategory(cat), updateUrlCategory(cat))}
                 className={`flex w-full items-center gap-2.5 rounded px-1.5 py-[7px] text-left text-[13px] transition-colors ${
-                  active   ? 'text-violet-600 dark:text-violet-400 font-semibold'
+                  active    ? 'text-violet-600 dark:text-violet-400 font-semibold'
                   : disabled ? 'cursor-not-allowed text-gray-300 dark:text-gray-600'
                   : 'text-gray-700 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400'
                 }`}
@@ -264,9 +260,7 @@ export function ProductListing() {
           <SLabel>{t.listing.priceRange}</SLabel>
           {(minPrice || maxPrice) && (
             <button onClick={() => { setMinPrice(''); setMaxPrice(''); }}
-              className="text-[10px] text-violet-500 hover:underline leading-none">
-              tozalash
-            </button>
+              className="text-[10px] text-violet-500 hover:underline leading-none">tozalash</button>
           )}
         </div>
         <div className="flex items-center gap-1.5">
@@ -387,47 +381,61 @@ export function ProductListing() {
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950">
 
-      {/* ── mobile header (no search — it's in the global nav) ── */}
-      <div className="sticky top-0 z-40 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 md:hidden">
-        <div className="flex items-center gap-2 px-3 py-2.5">
-          <button onClick={() => navigate(-1)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-            <ArrowLeft className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+      {/* ── Mobile sticky header ── */}
+      <div className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-200/70 dark:border-gray-800/70 md:hidden">
+        {/* Top row */}
+        <div className="flex items-center gap-2 px-4 py-2.5">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-9 h-9 shrink-0 flex items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 active:scale-90 transition-all"
+          >
+            <ArrowLeft className="h-4 w-4" />
           </button>
 
           <span className="flex-1 text-sm font-bold text-gray-900 dark:text-white truncate">
             {searchQuery ? `"${searchQuery}"` : t.listing.title}
           </span>
 
-          <button onClick={() => setIsMobileFilterOpen(true)}
-            className="relative flex items-center gap-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 shrink-0"
+          {/* Filter button */}
+          <button
+            onClick={() => setIsMobileFilterOpen(true)}
+            className="relative flex items-center gap-1.5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 shrink-0 active:scale-95 transition-all"
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
             Filtrlar
             {activeFilterCount > 0 && (
-              <span className="absolute -right-1 -top-1 min-w-[16px] rounded-full bg-violet-600 px-1 text-[9px] font-black text-white text-center">
+              <span className="absolute -right-1.5 -top-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-violet-600 text-[9px] font-black text-white shadow-sm shadow-violet-500/30">
                 {activeFilterCount}
               </span>
             )}
           </button>
 
-          <div className="flex items-center gap-0.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5 shrink-0">
-            <button onClick={() => setViewMode('grid')} className={`rounded-full px-2 py-1 ${viewMode === 'grid' ? 'bg-violet-600 text-white' : 'text-gray-500'}`}>
+          {/* View toggle */}
+          <div className="flex items-center gap-0.5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5 shrink-0">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`rounded-xl px-2 py-1.5 transition-all ${viewMode === 'grid' ? 'bg-violet-600 text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
+            >
               <LayoutGrid className="h-3.5 w-3.5" />
             </button>
-            <button onClick={() => setViewMode('list')} className={`rounded-full px-2 py-1 ${viewMode === 'list' ? 'bg-violet-600 text-white' : 'text-gray-500'}`}>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`rounded-xl px-2 py-1.5 transition-all ${viewMode === 'list' ? 'bg-violet-600 text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
+            >
               <List className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
 
-        {/* sort chips */}
-        <div className="flex gap-1.5 overflow-x-auto px-3 pb-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* Sort chips */}
+        <div className="flex gap-1.5 overflow-x-auto px-4 pb-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {SORT_OPTIONS.map(({ key, labelKey }) => (
-            <button key={key} onClick={() => setSortBy(key)}
-              className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
+            <button
+              key={key}
+              onClick={() => setSortBy(key)}
+              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-[11px] font-bold transition-all active:scale-95 ${
                 sortBy === key
-                  ? 'border-violet-600 bg-violet-600 text-white'
+                  ? 'border-violet-600 bg-violet-600 text-white shadow-sm shadow-violet-500/20'
                   : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400'
               }`}
             >
@@ -437,10 +445,10 @@ export function ProductListing() {
         </div>
       </div>
 
-      {/* ── main ── */}
-      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8 pb-20">
+      {/* ── Main content ── */}
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 pb-24 md:pb-8">
 
-        {/* breadcrumb */}
+        {/* Breadcrumb — desktop */}
         <nav className="mb-4 hidden items-center gap-1.5 text-[12px] text-gray-400 dark:text-gray-500 md:flex">
           <Link to="/" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors">{t.nav.home}</Link>
           <ChevronRight className="h-3 w-3 opacity-60" />
@@ -451,9 +459,10 @@ export function ProductListing() {
 
         <div className="flex gap-6">
 
-          {/* ── sidebar ── */}
+          {/* ── Sidebar (desktop) ── */}
           <aside className="hidden w-[220px] shrink-0 lg:block">
-            <div className="sticky top-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-y-auto overflow-x-hidden"
+            <div
+              className="sticky top-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-y-auto overflow-x-hidden"
               style={{ maxHeight: 'calc(100vh - 3rem)' }}
             >
               <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-4 py-3">
@@ -467,8 +476,10 @@ export function ProductListing() {
                   )}
                 </span>
                 {activeFilterCount > 0 && (
-                  <button onClick={handleResetFilters}
-                    className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-500 transition-colors">
+                  <button
+                    onClick={handleResetFilters}
+                    className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-500 transition-colors"
+                  >
                     <RotateCcw className="w-3 h-3" /> Tozalash
                   </button>
                 )}
@@ -479,17 +490,16 @@ export function ProductListing() {
             </div>
           </aside>
 
-          {/* ── content ── */}
+          {/* ── Products ── */}
           <div className="flex-1 min-w-0">
 
-            {/* desktop toolbar */}
+            {/* Desktop toolbar */}
             <div className="hidden md:flex items-center justify-between mb-4">
               <p className="text-[13px] text-gray-500 dark:text-gray-400">
                 {isLoading ? '...' : (
                   <><b className="text-gray-800 dark:text-gray-200">{total.toLocaleString()}</b> ta mahsulot</>
                 )}
               </p>
-
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-0.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5">
                   {SORT_OPTIONS.map(({ key, labelKey }) => (
@@ -515,7 +525,7 @@ export function ProductListing() {
               </div>
             </div>
 
-            {/* active filter chips */}
+            {/* Active filter chips */}
             {activeFilterCount > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-4">
                 {selectedBrand && (
@@ -547,17 +557,19 @@ export function ProductListing() {
                     </span>
                   );
                 })}
-                <button onClick={handleResetFilters}
-                  className="flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2.5 py-1 text-[11px] font-semibold text-gray-500 hover:text-red-500 transition-colors">
+                <button
+                  onClick={handleResetFilters}
+                  className="flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2.5 py-1 text-[11px] font-semibold text-gray-500 hover:text-red-500 transition-colors"
+                >
                   <RotateCcw className="w-3 h-3" /> Barchasi
                 </button>
               </div>
             )}
 
-            {/* products */}
+            {/* Products grid/list */}
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-24 gap-3">
-                <div className="relative w-12 h-12">
+                <div className="relative w-10 h-10">
                   <div className="absolute inset-0 rounded-full border-4 border-violet-100 dark:border-violet-900/30" />
                   <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-violet-600 animate-spin" />
                 </div>
@@ -565,12 +577,16 @@ export function ProductListing() {
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-                <Search className="w-10 h-10 text-gray-300 dark:text-gray-600 mb-3" />
-                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-1">{t.listing.noProductsFound}</h3>
-                <p className="text-sm text-gray-400 mb-5">{t.listing.noProductsDesc}</p>
+                <div className="w-16 h-16 rounded-3xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center mb-4">
+                  <Search className="w-7 h-7 text-gray-300 dark:text-gray-600" />
+                </div>
+                <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-1">{t.listing.noProductsFound}</h3>
+                <p className="text-sm text-gray-400 mb-6 max-w-xs">{t.listing.noProductsDesc}</p>
                 {activeFilterCount > 0 && (
-                  <button onClick={handleResetFilters}
-                    className="inline-flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-5 py-2 rounded-lg transition">
+                  <button
+                    onClick={handleResetFilters}
+                    className="inline-flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
+                  >
                     <RotateCcw className="w-3.5 h-3.5" /> Filtrlarni tozalash
                   </button>
                 )}
@@ -578,16 +594,16 @@ export function ProductListing() {
             ) : (
               <>
                 {viewMode === 'grid' ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3 md:gap-4">
+                  <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 xl:grid-cols-3 md:gap-4">
                     {filteredProducts.map(p => <ProductCard key={p.id} product={p} activeMarkets={selectedMarketplaces} />)}
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2.5">
+                  <div className="flex flex-col gap-2">
                     {filteredProducts.map(p => <ProductCard key={p.id} product={p} viewMode="list" activeMarkets={selectedMarketplaces} />)}
                   </div>
                 )}
 
-                {/* infinite scroll sentinel */}
+                {/* Infinite scroll sentinel */}
                 <div ref={sentinelRef} className="mt-8 flex items-center justify-center h-10">
                   {isFetchingNextPage && (
                     <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -607,34 +623,63 @@ export function ProductListing() {
         </div>
       </div>
 
-      {/* ── mobile filter sheet ── */}
+      {/* ── Mobile filter bottom sheet ── */}
       {isMobileFilterOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <button className="absolute inset-0 bg-black/40" onClick={() => setIsMobileFilterOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 max-h-[92vh] rounded-t-2xl bg-white dark:bg-gray-950 shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+          {/* Backdrop */}
+          <button
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setIsMobileFilterOpen(false)}
+          />
+
+          {/* Sheet */}
+          <div className="absolute bottom-0 left-0 right-0 max-h-[92vh] bg-white dark:bg-gray-950 flex flex-col"
+            style={{ borderRadius: '24px 24px 0 0', boxShadow: '0 -8px 40px rgba(0,0,0,0.15)' }}
+          >
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-gray-200 dark:bg-gray-700" />
+            </div>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4 text-gray-400" />
+                <SlidersHorizontal className="h-4 w-4 text-violet-500" />
                 <span className="text-sm font-bold text-gray-900 dark:text-white">Filtrlar</span>
                 {activeFilterCount > 0 && (
-                  <span className="bg-violet-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{activeFilterCount}</span>
+                  <span className="bg-violet-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                    {activeFilterCount}
+                  </span>
                 )}
               </div>
-              <button onClick={() => setIsMobileFilterOpen(false)} className="rounded-full bg-gray-100 dark:bg-gray-800 p-1.5">
+              <button
+                onClick={() => setIsMobileFilterOpen(false)}
+                className="w-8 h-8 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
+              >
                 <X className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               </button>
             </div>
-            <div className="overflow-y-auto flex-1 px-4 py-2 pb-28">
+
+            {/* Content */}
+            <div className="overflow-y-auto flex-1 px-5 py-2 pb-32">
               <FilterPanel />
             </div>
-            <div className="absolute bottom-0 left-0 right-0 grid grid-cols-2 gap-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 py-3"
-              style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-              <button onClick={handleResetFilters}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+
+            {/* Footer actions */}
+            <div
+              className="absolute bottom-0 left-0 right-0 grid grid-cols-2 gap-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-5 py-4"
+              style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+            >
+              <button
+                onClick={handleResetFilters}
+                className="flex items-center justify-center gap-1.5 rounded-2xl border border-gray-200 dark:border-gray-700 py-3.5 text-sm font-semibold text-gray-700 dark:text-gray-300 active:scale-95 transition-all"
+              >
                 <RotateCcw className="w-4 h-4" /> Tozalash
               </button>
-              <button onClick={() => setIsMobileFilterOpen(false)}
-                className="rounded-xl bg-violet-600 py-3 text-sm font-semibold text-white shadow-md shadow-violet-500/20">
+              <button
+                onClick={() => setIsMobileFilterOpen(false)}
+                className="rounded-2xl bg-violet-600 hover:bg-violet-700 py-3.5 text-sm font-bold text-white shadow-md shadow-violet-500/20 active:scale-95 transition-all"
+              >
                 {t.listing.viewResults}
               </button>
             </div>
