@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Star, ArrowRight, TrendingUp, ShieldCheck, RefreshCw,
+  ArrowRight, TrendingUp, ShieldCheck, RefreshCw,
   Zap, Sparkles, ChevronRight, Search,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -36,8 +36,6 @@ const MARKET_LOGOS: { name: string; color: string }[] = [
 ];
 
 const TRUST_ICONS = [RefreshCw, ShieldCheck, TrendingUp];
-
-const SCROLL_CLASS = 'flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
 
 const QUICK_CATEGORIES = [
   { emoji: '📱', label: 'Smartfonlar', value: 'smartphones' },
@@ -107,7 +105,7 @@ function MiniProductCard({
   return (
     <Link
       to={`/product/${id}`}
-      className="shrink-0 w-[160px] md:w-auto group flex flex-col bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm hover:shadow-lg hover:shadow-violet-500/10 hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200"
+      className="group flex flex-col bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm hover:shadow-lg hover:shadow-violet-500/10 hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200"
     >
       {/* Image */}
       <div className="relative aspect-square bg-gray-50 dark:bg-gray-800/50 overflow-hidden">
@@ -147,8 +145,7 @@ function MiniProductCard({
 }
 
 export function Landing() {
-  const { products: allProducts, isLoading, total } = useProducts(1, 8);
-  const featuredProducts = allProducts.slice(0, 6);
+  const { total } = useProducts(1, 1);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loadingRecs, setLoadingRecs]         = useState(true);
   const [personalizedRecs, setPersonalizedRecs]   = useState<any[]>([]);
@@ -286,17 +283,17 @@ export function Landing() {
           CATEGORY CHIPS — mobile only
       ══════════════════════════════════════ */}
       <section className="md:hidden px-4 mt-4">
-        <div className={SCROLL_CLASS}>
+        <div className="flex flex-wrap gap-2">
           {/* All products */}
           <Link to="/products"
-            className="shrink-0 flex items-center gap-2 px-4 h-10 rounded-2xl bg-violet-600 text-white text-xs font-black shadow-sm shadow-violet-500/25 active:scale-95 transition-all">
+            className="flex items-center gap-2 px-4 h-10 rounded-2xl bg-violet-600 text-white text-xs font-black shadow-sm shadow-violet-500/25 active:scale-95 transition-all">
             🔥 Barchasi
           </Link>
           {QUICK_CATEGORIES.map(({ emoji, label, value }) => (
             <Link
               key={value + label}
               to={value ? `/products?category=${value}` : '/products'}
-              className="shrink-0 flex items-center gap-1.5 px-4 h-10 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-bold text-gray-700 dark:text-gray-200 active:scale-95 transition-all"
+              className="flex items-center gap-1.5 px-4 h-10 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-bold text-gray-700 dark:text-gray-200 active:scale-95 transition-all"
             >
               <span>{emoji}</span>
               <span>{label}</span>
@@ -309,12 +306,12 @@ export function Landing() {
           TRUST PILLS — mobile only
       ══════════════════════════════════════ */}
       <section className="md:hidden px-4 mt-3">
-        <div className={SCROLL_CLASS}>
+        <div className="flex flex-wrap gap-2">
           {t.landing.trustBar.map(({ title }, idx) => {
             const Icon = TRUST_ICONS[idx];
             return (
               <div key={idx}
-                className="shrink-0 flex items-center gap-1.5 bg-violet-50 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-900/40 rounded-full px-3.5 h-8">
+                className="flex items-center gap-1.5 bg-violet-50 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-900/40 rounded-full px-3.5 h-8">
                 <Icon className="w-3 h-3 text-violet-600 dark:text-violet-400 shrink-0" />
                 <span className="text-[11px] font-bold text-violet-700 dark:text-violet-300 whitespace-nowrap">{title}</span>
               </div>
@@ -353,12 +350,12 @@ export function Landing() {
           <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 text-center mb-3">
             {t.landing.markets.label}
           </p>
-          <div className={`${SCROLL_CLASS} md:flex-wrap md:justify-center md:overflow-visible md:pb-0 md:gap-2`}>
+          <div className="flex flex-wrap gap-1.5 justify-center">
             {MARKET_LOGOS.map(({ name, color }) => (
               <Link
                 key={name}
                 to={`/products?source=${encodeURIComponent(name.toLowerCase())}`}
-                className="shrink-0 flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-violet-200 dark:hover:border-violet-700 rounded-xl px-3 h-9 shadow-sm hover:shadow-md active:scale-95 transition-all duration-200"
+                className="flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-violet-200 dark:hover:border-violet-700 rounded-xl px-3 h-9 shadow-sm hover:shadow-md active:scale-95 transition-all duration-200"
               >
                 <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                 <span className="text-[13px] font-bold text-gray-800 dark:text-gray-100">{name}</span>
@@ -381,7 +378,7 @@ export function Landing() {
         />
 
         {/* Cards */}
-        <div className={`${SCROLL_CLASS} md:grid md:grid-cols-4 md:gap-5 md:overflow-visible md:pb-0`}>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
           {loadingRecs
             ? Array(4).fill(0).map((_, i) => (
                 <div key={i} className="shrink-0 w-[160px] md:w-auto aspect-3/4 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl" />
@@ -416,7 +413,7 @@ export function Landing() {
             linkTo="/products"
             linkLabel={t.landing.trending.viewAll}
           />
-          <div className={`${SCROLL_CLASS} md:grid md:grid-cols-6 md:gap-4 md:overflow-visible md:pb-0`}>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-6 md:gap-4">
             {personalizedRecs.map(p => (
               <MiniProductCard
                 key={p.id}
@@ -429,98 +426,6 @@ export function Landing() {
           </div>
         </section>
       )}
-
-      {/* ══════════════════════════════════════
-          TRENDING PRODUCTS
-      ══════════════════════════════════════ */}
-      <section className="mt-6 md:mt-14 px-4 max-w-7xl mx-auto">
-        <SectionHeader
-          title={t.landing.trending.title}
-          subtitle={t.landing.trending.subtitle}
-          linkTo="/products"
-          linkLabel={t.landing.trending.viewAll}
-        />
-
-        <div className={`${SCROLL_CLASS} md:grid md:grid-cols-4 md:gap-5 md:overflow-visible md:pb-0`}>
-          {isLoading && featuredProducts.length === 0
-            ? [...Array(4)].map((_, i) => (
-                <div key={i} className="shrink-0 w-[160px] md:w-auto bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 animate-pulse">
-                  <div className="aspect-square bg-gray-100 dark:bg-gray-800" />
-                  <div className="p-3 space-y-2">
-                    <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-3/4" />
-                    <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded w-1/2" />
-                  </div>
-                </div>
-              ))
-            : featuredProducts.map(product => {
-                const sm = [...(product.markets || [])].sort((a, b) => a.price - b.price);
-                return (
-                  <Link
-                    key={product.id}
-                    to={`/product/${product.id}`}
-                    className="shrink-0 w-[160px] md:w-auto group bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-violet-500/10 hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200 border border-gray-100 dark:border-gray-800 hover:border-violet-200 dark:hover:border-violet-700 flex flex-col"
-                  >
-                    {/* Image */}
-                    <div className="aspect-square bg-gray-50 dark:bg-gray-800 relative overflow-hidden">
-                      <img
-                        src={product.image || 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400'}
-                        alt={product.name}
-                        className="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-400 mix-blend-multiply dark:mix-blend-normal"
-                      />
-                      {sm.length > 1 && (
-                        <span className="absolute top-2 left-2 bg-violet-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm shadow-violet-500/30">
-                          {t.landing.trending.storesBadge.replace('{{count}}', String(sm.length))}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="p-2.5 flex flex-col flex-1">
-                      {/* Rating */}
-                      <div className="flex items-center gap-1 mb-1.5">
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        <span className="text-[11px] font-black text-gray-700 dark:text-gray-200">{product.rating}</span>
-                      </div>
-                      {/* Name */}
-                      <p className="text-[12px] font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug mb-2 flex-1 min-h-[30px]">
-                        {product.name}
-                      </p>
-                      {/* Desktop market rows */}
-                      {sm.length > 0 && (
-                        <div className="hidden md:block space-y-1 mb-2">
-                          {sm.slice(0, 2).map((m, idx) => (
-                            <div key={m.source} className={`flex items-center justify-between rounded-xl px-2 py-1.5 ${
-                              idx === 0 ? 'bg-violet-50 dark:bg-violet-950/50' : 'bg-gray-50 dark:bg-gray-800'
-                            }`}>
-                              <span className={`text-[10px] font-bold uppercase ${
-                                idx === 0 ? 'text-violet-700 dark:text-violet-400' : 'text-gray-400 dark:text-gray-500'
-                              }`}>
-                                {idx === 0 ? '✓ ' : ''}{m.source}
-                              </span>
-                              <span className={`text-[10px] font-black ${
-                                idx === 0 ? 'text-violet-700 dark:text-violet-400' : 'text-gray-500 dark:text-gray-400'
-                              }`}>
-                                {formatSum(m.price)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {/* Price + arrow */}
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-black text-gray-900 dark:text-white leading-none">
-                          {formatSum(sm[0]?.price ?? product.price)}
-                        </p>
-                        <div className="w-6 h-6 rounded-lg bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center group-hover:bg-violet-600 transition-colors shrink-0">
-                          <ArrowRight className="w-3 h-3 text-violet-600 dark:text-violet-400 group-hover:text-white transition-colors" />
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-        </div>
-      </section>
 
       {/* ══════════════════════════════════════
           HOW IT WORKS

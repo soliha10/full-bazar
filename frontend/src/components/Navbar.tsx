@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import {
   Search, User, Moon, Sun, Globe, ShoppingBag, Menu, Mic, X,
-  LogIn, ChevronRight, HelpCircle, Info, ChevronDown, Sparkles,
+  LogIn, ChevronRight, HelpCircle, Info, ChevronDown, Sparkles, Heart,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../locales/translations';
 import { useLocation } from 'react-router-dom';
+import { useFavorites } from '../hooks/useFavorites';
 
 interface NavbarProps {
   onSearchChange?: (value: string) => void;
@@ -17,6 +18,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
   const { resolvedTheme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
+  const { favorites } = useFavorites();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -171,6 +173,17 @@ export function Navbar({ onSearchChange }: NavbarProps) {
               )}
             </div>
 
+            {/* Favorites — desktop only */}
+            <Link to="/wishlist"
+              className="hidden md:flex relative w-9 h-9 items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-500 dark:text-gray-400 hover:text-red-500 transition-all active:scale-90">
+              <Heart className={`w-4 h-4 transition-colors ${favorites.length > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+              {favorites.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center">
+                  {favorites.length > 9 ? '9+' : favorites.length}
+                </span>
+              )}
+            </Link>
+
             {/* Theme toggle */}
             <button onClick={toggleTheme} aria-label="Toggle theme"
               className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-violet-50 dark:hover:bg-violet-900/30 text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all active:scale-90">
@@ -220,13 +233,13 @@ export function Navbar({ onSearchChange }: NavbarProps) {
       </div>
 
       {/* ── Mobile drawer ── */}
-      <div className={`fixed inset-0 z-100 transition-all duration-300 md:hidden ${
+      <div className={`fixed inset-0 z-200 transition-all duration-300 md:hidden ${
         isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
       }`}>
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
-        <div className={`absolute right-0 top-0 bottom-0 w-72 bg-white dark:bg-gray-950 flex flex-col transition-transform duration-300 ease-out ${
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
+        <div className={`absolute right-0 top-0 bottom-0 w-72 bg-white dark:bg-gray-900 flex flex-col transition-transform duration-300 ease-out ${
           isMenuOpen ? 'translate-x-0' : 'translate-x-full'
-        }`} onClick={(e) => e.stopPropagation()} style={{ boxShadow: '-4px 0 40px rgba(0,0,0,0.15)' }}>
+        }`} onClick={(e) => e.stopPropagation()} style={{ boxShadow: '-4px 0 40px rgba(0,0,0,0.25)' }}>
 
           {/* Drawer header */}
           <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3">

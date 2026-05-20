@@ -1,7 +1,8 @@
-import { Star, ArrowRight, ExternalLink, Store, TrendingDown } from 'lucide-react';
+import { Star, ArrowRight, ExternalLink, Store, TrendingDown, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatSum } from '../utils/productMapper';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useFavorites } from '../hooks/useFavorites';
 
 export interface Product {
   id: string | number;
@@ -40,6 +41,8 @@ const storeLabels: Record<string, string> = {
 export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: ProductCardProps) {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
+  const { toggle, isLiked } = useFavorites();
+  const liked = isLiked(product.id);
 
   const activeSet = new Set(activeMarkets.map(m => m.toLowerCase()));
   const sortedMarkets = [...(product.markets ?? [])].sort((a, b) => {
@@ -73,6 +76,12 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
               {sortedMarkets.length} ta
             </div>
           )}
+          <button
+            onClick={(e) => { e.stopPropagation(); toggle(product); }}
+            className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-lg bg-white/90 dark:bg-gray-900/90 shadow-sm transition-all active:scale-90"
+          >
+            <Heart className={`w-3.5 h-3.5 transition-colors ${liked ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
+          </button>
         </div>
 
         {/* Content */}
@@ -137,13 +146,23 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
           </div>
         )}
 
-        {/* Savings badge — top right */}
+        {/* Savings badge — top right (hidden when liked button occupies spot) */}
         {savings > 0 && (
           <div className="absolute top-2 right-2 flex items-center gap-0.5 bg-emerald-500 text-white text-[9px] font-black px-2 py-1 rounded-full shadow-sm shadow-emerald-500/30">
             <TrendingDown className="w-2.5 h-2.5" />
             -{formatSum(savings)}
           </div>
         )}
+
+        {/* Heart button */}
+        <button
+          onClick={(e) => { e.stopPropagation(); toggle(product); }}
+          className={`absolute bottom-2 right-2 w-7 h-7 flex items-center justify-center rounded-xl shadow-sm transition-all active:scale-90 ${
+            liked ? 'bg-red-50 dark:bg-red-900/30' : 'bg-white/90 dark:bg-gray-900/90'
+          }`}
+        >
+          <Heart className={`w-4 h-4 transition-colors ${liked ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
+        </button>
       </div>
 
       {/* Body */}

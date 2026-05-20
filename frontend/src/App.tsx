@@ -17,6 +17,7 @@ import { ProductDetail } from "./pages/ProductDetail";
 import { Cart } from "./pages/Cart";
 import { Checkout } from "./pages/Checkout";
 import { OrderSuccess } from "./pages/OrderSuccess";
+import { Wishlist } from "./pages/Wishlist";
 import { Product } from "./components/ProductCard";
 
 type CartItem = Product & { cartQuantity: number };
@@ -91,6 +92,7 @@ function AppContent() {
           } />
           <Route path="/checkout"      element={<Checkout cartItems={cartItems as any} />} />
           <Route path="/order-success" element={<OrderSuccess />} />
+          <Route path="/wishlist"      element={<Wishlist />} />
         </Routes>
       </main>
 
