@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import {
   Search, User, Moon, Sun, Globe, ShoppingBag, Menu, Mic, X,
-  LogIn, ChevronRight, HelpCircle, Info, ChevronDown, Sparkles, Heart,
+  LogIn, HelpCircle, Info, ChevronDown, Sparkles, Heart, ChevronRight,
+  Home, Package, ShoppingCart,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
@@ -68,11 +69,6 @@ export function Navbar({ onSearchChange }: NavbarProps) {
     r.start();
   };
 
-  const langLabels: Record<Language, string> = {
-    uz: "O'zbekcha",
-    ru: 'Русский',
-    en: 'English',
-  };
   const languages: { code: Language; label: string }[] = [
     { code: 'uz', label: "O'zbekcha" },
     { code: 'ru', label: 'Русский' },
@@ -236,71 +232,142 @@ export function Navbar({ onSearchChange }: NavbarProps) {
       <div className={`fixed inset-0 z-200 transition-all duration-300 md:hidden ${
         isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
       }`}>
+        {/* Backdrop */}
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
-        <div className={`absolute right-0 top-0 bottom-0 w-72 bg-white dark:bg-gray-900 flex flex-col transition-transform duration-300 ease-out ${
-          isMenuOpen ? 'translate-x-0' : 'translate-x-full'
-        }`} onClick={(e) => e.stopPropagation()} style={{ boxShadow: '-4px 0 40px rgba(0,0,0,0.25)' }}>
 
-          {/* Drawer header */}
-          <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-violet-500 to-violet-700 flex items-center justify-center shadow-md shadow-violet-500/25 shrink-0">
-              <User className="w-5 h-5 text-white" />
+        {/* Panel — slides from left */}
+        <div
+          className={`absolute left-0 top-0 bottom-0 w-72 bg-white dark:bg-gray-950 flex flex-col transition-transform duration-300 ease-out ${
+            isMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+          style={{ boxShadow: '4px 0 40px rgba(0,0,0,0.18)' }}
+        >
+          {/* Header — logo + close */}
+          <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-gray-800">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 bg-linear-to-br from-violet-500 to-violet-700 rounded-xl flex items-center justify-center shadow-md shadow-violet-500/25">
+                <ShoppingBag className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-black tracking-tight text-gray-900 dark:text-white leading-none">BAZARCOM</p>
+                <p className="text-[9px] font-bold text-violet-400 tracking-widest uppercase leading-none mt-0.5">Price Compare</p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight truncate">{t.nav.welcome}</p>
-              <p className="text-xs text-violet-500 font-medium leading-tight mt-0.5 truncate">{t.nav.welcomeSubtitle}</p>
-            </div>
-            <button onClick={() => setIsMenuOpen(false)}
-              className="w-8 h-8 shrink-0 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+            <button
+              onClick={() => setIsMenuOpen(false)}
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 active:scale-90 transition-all"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Drawer body */}
-          <div className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
-            <button className="w-full flex items-center justify-between px-3 py-3.5 rounded-2xl hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors active:scale-[0.98]">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
-                  <LogIn className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-                </div>
-                <span className="font-semibold text-sm text-gray-800 dark:text-gray-200">{t.nav.loginSignIn}</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0" />
+          {/* Login banner */}
+          <div className="mx-3 mt-3 rounded-2xl bg-linear-to-r from-violet-600 to-violet-700 p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <User className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black text-white leading-tight">{t.nav.welcome}</p>
+              <p className="text-[11px] text-white/70 font-medium leading-tight mt-0.5">{t.nav.welcomeSubtitle}</p>
+            </div>
+            <button className="flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white text-xs font-black px-3 py-1.5 rounded-xl transition-all shrink-0">
+              <LogIn className="w-3.5 h-3.5" />
+              {t.nav.login}
             </button>
+          </div>
 
-            <div className="h-px bg-gray-100 dark:bg-gray-800 mx-2 my-1" />
+          {/* Nav links */}
+          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
+            <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest px-3 mb-2">
+              Navigatsiya
+            </p>
 
-            {/* Theme */}
-            <button onClick={toggleTheme}
-              className="w-full flex items-center justify-between px-3 py-3.5 rounded-2xl hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors">
+            {[
+              { icon: Home,         label: t.nav.home,           path: '/'         },
+              { icon: Package,      label: 'Katalog',                  path: '/products' },
+              { icon: Heart,        label: t.footer.wishlist,    path: '/wishlist',
+                badge: favorites.length > 0 ? favorites.length : undefined },
+              { icon: ShoppingCart, label: t.nav.cart ?? 'Savat', path: '/cart'    },
+            ].map(({ icon: Icon, label, path, badge }) => {
+              const isActive = path === '/'
+                ? location.pathname === '/'
+                : location.pathname.startsWith(path);
+              return (
+                <Link
+                  key={path}
+                  to={path}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`flex items-center justify-between px-3 py-3 rounded-2xl transition-all active:scale-[0.98] ${
+                    isActive
+                      ? 'bg-violet-50 dark:bg-violet-900/30'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      isActive
+                        ? 'bg-violet-600 shadow-sm shadow-violet-500/30'
+                        : 'bg-gray-100 dark:bg-gray-800'
+                    }`}>
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`} />
+                    </div>
+                    <span className={`font-semibold text-sm ${isActive ? 'text-violet-700 dark:text-violet-300 font-black' : 'text-gray-800 dark:text-gray-200'}`}>
+                      {label}
+                    </span>
+                  </div>
+                  {badge ? (
+                    <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center">
+                      {badge > 9 ? '9+' : badge}
+                    </span>
+                  ) : (
+                    <ChevronRight className={`w-4 h-4 shrink-0 ${isActive ? 'text-violet-400' : 'text-gray-300 dark:text-gray-700'}`} />
+                  )}
+                </Link>
+              );
+            })}
+
+            <div className="h-px bg-gray-100 dark:bg-gray-800 mx-2 my-2" />
+
+            <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest px-3 mb-2">
+              Sozlamalar
+            </p>
+
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              className="w-full flex items-center justify-between px-3 py-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-all"
+            >
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
-                  {isDark ? <Sun className="w-4 h-4 text-violet-500" /> : <Moon className="w-4 h-4 text-violet-500" />}
+                  {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-violet-500" />}
                 </div>
                 <span className="font-semibold text-sm text-gray-800 dark:text-gray-200">{t.nav.darkMode}</span>
               </div>
-              <div className={`w-11 h-6 rounded-full relative transition-colors shrink-0 ${isDark ? 'bg-violet-600' : 'bg-gray-200'}`}>
+              <div className={`w-11 h-6 rounded-full relative transition-colors shrink-0 ${isDark ? 'bg-violet-600' : 'bg-gray-200 dark:bg-gray-700'}`}>
                 <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${isDark ? 'left-6' : 'left-1'}`} />
               </div>
             </button>
 
             {/* Language */}
             <div className="px-3 py-2">
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center gap-3 mb-2.5">
                 <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
                   <Globe className="w-4 h-4 text-violet-500" />
                 </div>
                 <span className="font-semibold text-sm text-gray-800 dark:text-gray-200 flex-1">{t.nav.language}</span>
-                <span className="text-xs text-violet-600 dark:text-violet-400 font-black">{langLabels[language]}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 pl-12">
                 {languages.map((lang) => (
-                  <button key={lang.code} onClick={() => { setLanguage(lang.code); setIsMenuOpen(false); }}
-                    className={`py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all min-h-[44px] ${
+                  <button
+                    key={lang.code}
+                    onClick={() => { setLanguage(lang.code); setIsMenuOpen(false); }}
+                    className={`py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all min-h-[40px] ${
                       language === lang.code
                         ? 'bg-violet-600 text-white shadow-sm shadow-violet-500/25'
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                    }`}>
+                    }`}
+                  >
                     {lang.code.toUpperCase()}
                   </button>
                 ))}
@@ -308,17 +375,17 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             </div>
           </div>
 
-          {/* Drawer footer */}
+          {/* Footer */}
           <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800 space-y-0.5">
-            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors">
+            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors">
               <HelpCircle className="w-4 h-4 shrink-0" />
               {t.nav.helpCenter}
             </button>
-            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors">
+            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors">
               <Info className="w-4 h-4 shrink-0" />
               {t.nav.about}
             </button>
-            <div className="flex items-center gap-2 px-3 pt-2">
+            <div className="flex items-center gap-2 px-3 pt-1.5">
               <Sparkles className="w-3 h-3 text-violet-400" />
               <p className="text-[10px] text-gray-400 dark:text-gray-600 font-bold tracking-widest uppercase">Bazarcom v2.5</p>
             </div>
