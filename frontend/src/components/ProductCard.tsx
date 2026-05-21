@@ -1,8 +1,10 @@
-import { Star, ArrowRight, ExternalLink, Store, TrendingDown, Heart } from 'lucide-react';
+import { Star, ArrowRight, ExternalLink, Store, TrendingDown, Heart, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatSum } from '../utils/productMapper';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useFavorites } from '../hooks/useFavorites';
+import { useAuth } from '../contexts/AuthContext';
+import { usePriceWatch } from '../hooks/usePriceWatch';
 
 export interface Product {
   id: string | number;
@@ -42,7 +44,10 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { toggle, isLiked } = useFavorites();
+  const { user } = useAuth();
+  const { toggle: toggleWatch, isWatched } = usePriceWatch();
   const liked = isLiked(product.id);
+  const watching = isWatched(product.id);
 
   const activeSet = new Set(activeMarkets.map(m => m.toLowerCase()));
   const sortedMarkets = [...(product.markets ?? [])].sort((a, b) => {
@@ -163,10 +168,24 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
         >
           <Heart className={`w-4 h-4 transition-colors ${liked ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
         </button>
+
+        {/* Bell — price watch, auth-gated */}
+        {user && (
+          <button
+            onClick={(e) => { e.stopPropagation(); toggleWatch(product); }}
+            className={`absolute bottom-2 left-2 w-7 h-7 flex items-center justify-center rounded-xl shadow-sm transition-all active:scale-90 ${
+              watching
+                ? 'bg-violet-600 text-white shadow-violet-500/30'
+                : 'bg-white/90 dark:bg-gray-900/90 text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/30'
+            }`}
+          >
+            <Bell className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {/* Body */}
-      <div className="p-3 flex flex-col flex-1 gap-2">
+      <div className="p-3 md:p-4 flex flex-col flex-1 gap-2">
         {/* Rating */}
         <div className="flex items-center gap-1.5">
           <div className="flex items-center gap-0.5">
@@ -179,7 +198,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
         </div>
 
         {/* Name */}
-        <h3 className="font-bold text-gray-900 dark:text-white text-[13px] md:text-sm leading-snug line-clamp-2 flex-1 min-h-[36px]">
+        <h3 className="font-bold text-gray-900 dark:text-white text-[13px] md:text-[15px] leading-snug line-clamp-2 flex-1 min-h-[36px] md:min-h-[42px]">
           {product.name}
         </h3>
 
@@ -188,7 +207,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
           {bestMarket && (
             <div className="flex items-center gap-1 mb-1">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium truncate">
+              <span className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium truncate">
                 {bestMarket.source}
               </span>
               {bestMarket.url && bestMarket.url !== '#' && (
@@ -204,7 +223,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
               )}
             </div>
           )}
-          <p className="text-lg md:text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
+          <p className="text-[18px] md:text-2xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
             {formatSum(bestPrice)}
           </p>
         </div>
@@ -212,7 +231,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
         {/* CTA */}
         <button
           onClick={(e) => { e.stopPropagation(); navigate(`/product/${product.id}`); }}
-          className="w-full flex items-center justify-center gap-1.5 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-black text-xs py-3 rounded-xl shadow-sm shadow-violet-500/20 hover:shadow-violet-500/30 active:scale-[0.98] transition-all mt-auto"
+          className="w-full flex items-center justify-center gap-1.5 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-black text-xs md:text-[13px] py-3 md:py-3.5 rounded-xl shadow-sm shadow-violet-500/20 hover:shadow-violet-500/30 active:scale-[0.98] transition-all mt-auto"
         >
           {t.landing.trending.comparePrices}
           <ArrowRight className="w-3.5 h-3.5" />

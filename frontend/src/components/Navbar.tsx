@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Search, User, Moon, Sun, Globe, ShoppingBag, Menu, Mic, X,
   LogIn, HelpCircle, Info, Sparkles, Heart, ChevronRight,
-  Home, Package, LogOut, ChevronDown, UserPlus,
+  Home, Package, LogOut, ChevronDown,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
@@ -25,6 +25,9 @@ export function Navbar({ onSearchChange }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isProfileSheetOpen, setIsProfileSheetOpen] = useState(false);
+
+  const BUDGET_LABELS: Record<string, string> = { budget: 'Tejamkor', mid: "O'rta", premium: 'Premium' };
   const [scrolled, setScrolled] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [searchValue, setSearchValue] = useState(() => {
@@ -255,7 +258,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                 <div className="relative hidden md:block">
                   <button
                     onClick={() => setIsUserMenuOpen(v => !v)}
-                    className="flex items-center gap-2 pl-1.5 pr-2 py-1.5 rounded-xl
+                    className="flex items-center gap-1 p-1 rounded-xl
                       hover:bg-gray-100 dark:hover:bg-gray-800
                       transition-all active:scale-[0.97]"
                   >
@@ -263,14 +266,6 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                       flex items-center justify-center text-white text-sm font-black shrink-0
                       shadow-sm shadow-violet-500/30">
                       {user.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="hidden lg:flex flex-col items-start leading-none gap-0.5">
-                      <span className="text-[12px] font-black text-gray-900 dark:text-white max-w-[96px] truncate">
-                        {user.name}
-                      </span>
-                      <span className="text-[10px] text-gray-400 max-w-[96px] truncate">
-                        {user.email}
-                      </span>
                     </div>
                     <ChevronDown className={`w-3.5 h-3.5 text-gray-400 shrink-0 transition-transform duration-200 ${
                       isUserMenuOpen ? 'rotate-180' : ''
@@ -280,14 +275,14 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                   {isUserMenuOpen && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
-                      <div className="absolute right-0 top-full mt-2 w-56
+                      <div className="absolute right-0 top-full mt-2 w-64
                         bg-white dark:bg-gray-900
                         border border-gray-100 dark:border-gray-700
                         rounded-2xl shadow-xl shadow-black/10
                         overflow-hidden z-50">
 
-                        {/* User info header */}
-                        <div className="px-4 py-3.5 bg-gray-50 dark:bg-gray-800/60
+                        {/* User header */}
+                        <div className="px-4 py-4 bg-gray-50 dark:bg-gray-800/60
                           border-b border-gray-100 dark:border-gray-700/60">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-linear-to-br from-violet-500 to-violet-700
@@ -295,17 +290,47 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                               {user.name.charAt(0).toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <p className="text-[13px] font-black text-gray-900 dark:text-white truncate leading-tight">
+                              <p className="text-sm font-black text-gray-900 dark:text-white truncate leading-tight">
                                 {user.name}
                               </p>
-                              <p className="text-[10px] text-gray-400 truncate leading-tight mt-0.5">
+                              <p className="text-[11px] text-gray-400 truncate leading-tight mt-0.5">
                                 {user.email}
                               </p>
                             </div>
                           </div>
                         </div>
 
-                        {/* Actions */}
+                        {/* Profile details */}
+                        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Profil</p>
+                          <div className="grid grid-cols-2 gap-2 mb-2.5">
+                            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
+                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Yosh</p>
+                              <p className="text-xs font-black text-gray-900 dark:text-white">{user.profile.ageGroup}</p>
+                            </div>
+                            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
+                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Byudjet</p>
+                              <p className="text-xs font-black text-gray-900 dark:text-white">{BUDGET_LABELS[user.profile.budgetLevel]}</p>
+                            </div>
+                          </div>
+                          {user.profile.preferredBrands.length > 0 && (
+                            <div>
+                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">Brendlar</p>
+                              <div className="flex flex-wrap gap-1">
+                                {user.profile.preferredBrands.slice(0, 4).map(b => (
+                                  <span key={b} className="text-[10px] font-bold bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full">
+                                    {b}
+                                  </span>
+                                ))}
+                                {user.profile.preferredBrands.length > 4 && (
+                                  <span className="text-[10px] text-gray-400 dark:text-gray-500">+{user.profile.preferredBrands.length - 4} ta</span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Logout */}
                         <div className="p-1.5">
                           <button
                             onClick={() => { logout(); setIsUserMenuOpen(false); }}
@@ -323,55 +348,37 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                   )}
                 </div>
               ) : (
-                <div className="hidden md:flex items-center gap-1.5">
-                  <button
-                    onClick={openLogin}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl
-                      border border-gray-200 dark:border-gray-700
-                      text-gray-700 dark:text-gray-300 font-bold text-sm
-                      hover:bg-gray-50 dark:hover:bg-gray-800
-                      active:scale-95 transition-all"
-                  >
-                    <LogIn className="w-4 h-4" />
-                    {t.nav.login}
-                  </button>
-                  <button
-                    onClick={openRegister}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl
-                      bg-linear-to-r from-violet-600 to-violet-700
-                      hover:from-violet-700 hover:to-violet-800
-                      text-white font-black text-sm
-                      shadow-md shadow-violet-500/20
-                      active:scale-95 transition-all"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Ro'yxat
-                  </button>
-                </div>
+                <button
+                  onClick={openLogin}
+                  className="hidden md:flex items-center gap-1.5 px-3.5 py-2 rounded-xl
+                    bg-violet-600 hover:bg-violet-700
+                    text-white font-black text-sm
+                    shadow-md shadow-violet-500/20
+                    active:scale-95 transition-all"
+                >
+                  <LogIn className="w-4 h-4" />
+                  {t.nav.login}
+                </button>
               )}
 
-              {/* ── Mobile auth (< md) — unchanged ── */}
+              {/* ── Mobile auth (< md) ── */}
               {user ? (
-                <div className="md:hidden flex items-center gap-1">
-                  <div className="hidden sm:flex flex-col items-end leading-none mr-1">
-                    <span className="text-[11px] font-black text-gray-800 dark:text-gray-200 truncate max-w-[80px]">{user.name}</span>
-                    <span className="text-[9px] text-gray-400 truncate max-w-[80px]">{user.email}</span>
-                  </div>
-                  <div className="w-8 h-8 rounded-xl bg-violet-600 flex items-center justify-center text-white text-xs font-black shrink-0">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                  <button onClick={logout} aria-label="Chiqish"
-                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all active:scale-90">
-                    <LogOut className="w-4 h-4" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => setIsProfileSheetOpen(true)}
+                  className="md:hidden w-9 h-9 rounded-xl bg-linear-to-br from-violet-500 to-violet-700
+                    flex items-center justify-center text-white text-sm font-black
+                    shadow-sm shadow-violet-500/30 active:scale-90 transition-all shrink-0"
+                >
+                  {user.name.charAt(0).toUpperCase()}
+                </button>
               ) : (
-                <button onClick={openLogin} className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl
-                  bg-linear-to-r from-violet-600 to-violet-700
-                  hover:from-violet-700 hover:to-violet-800
-                  text-white font-black text-sm
-                  shadow-md shadow-violet-500/20
-                  active:scale-95 transition-all">
+                <button onClick={openLogin}
+                  className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl
+                    bg-linear-to-r from-violet-600 to-violet-700
+                    hover:from-violet-700 hover:to-violet-800
+                    text-white font-black text-sm
+                    shadow-md shadow-violet-500/20
+                    active:scale-95 transition-all">
                   <User className="w-4 h-4" />
                   <span className="hidden sm:block tracking-wide">{t.nav.login}</span>
                 </button>
@@ -673,6 +680,79 @@ export function Navbar({ onSearchChange }: NavbarProps) {
 
         </div>
       </div>
+
+      {/* ═══ MOBILE PROFILE SHEET ═══ */}
+      {isProfileSheetOpen && user && (
+        <div className="fixed inset-0 z-200 md:hidden">
+          <button
+            className="absolute inset-0 bg-black/55 backdrop-blur-[3px]"
+            onClick={() => setIsProfileSheetOpen(false)}
+          />
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-950"
+            style={{ borderRadius: '24px 24px 0 0', boxShadow: '0 -8px 40px rgba(0,0,0,0.15)' }}
+          >
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-gray-200 dark:bg-gray-700" />
+            </div>
+
+            {/* User header */}
+            <div className="px-5 pt-3 pb-5 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-violet-500 to-violet-700 flex items-center justify-center text-white font-black text-2xl shrink-0 shadow-md shadow-violet-500/30">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-base font-black text-gray-900 dark:text-white truncate">{user.name}</p>
+                  <p className="text-xs text-gray-400 mt-0.5 truncate">{user.email}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Profile stats */}
+            <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <div className="grid grid-cols-2 gap-2.5 mb-3">
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl px-4 py-3">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Yosh guruh</p>
+                  <p className="text-sm font-black text-gray-900 dark:text-white mt-1">{user.profile.ageGroup}</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl px-4 py-3">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Byudjet</p>
+                  <p className="text-sm font-black text-gray-900 dark:text-white mt-1">{BUDGET_LABELS[user.profile.budgetLevel]}</p>
+                </div>
+              </div>
+              {user.profile.preferredBrands.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-2">Sevimli brendlar</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {user.profile.preferredBrands.map(b => (
+                      <span key={b} className="text-xs font-bold bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-3 py-1 rounded-full">
+                        {b}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Logout */}
+            <div className="px-5 py-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+              <button
+                onClick={() => { logout(); setIsProfileSheetOpen(false); }}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl
+                  border border-red-200 dark:border-red-900/40
+                  text-red-500 font-black text-sm
+                  hover:bg-red-50 dark:hover:bg-red-900/20
+                  transition-all active:scale-[0.98]"
+              >
+                <LogOut className="w-4 h-4" />
+                Chiqish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

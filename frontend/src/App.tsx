@@ -9,6 +9,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { FavoritesProvider } from "./contexts/FavoritesContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { PriceWatchProvider } from "./contexts/PriceWatchContext";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { MobileToolbar } from "./components/MobileToolbar";
@@ -24,9 +25,11 @@ export default function App() {
       <LanguageProvider>
         <AuthProvider>
           <FavoritesProvider>
-            <Router>
-              <AppContent />
-            </Router>
+            <PriceWatchProvider>
+              <Router>
+                <AppContent />
+              </Router>
+            </PriceWatchProvider>
           </FavoritesProvider>
         </AuthProvider>
       </LanguageProvider>
