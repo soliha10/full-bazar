@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Search, User, Moon, Sun, Globe, ShoppingBag, Menu, Mic, X,
   LogIn, HelpCircle, Info, Sparkles, Heart, ChevronRight,
-  Home, Package, LogOut,
+  Home, Package, LogOut, ChevronDown, UserPlus,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
@@ -24,6 +24,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [searchValue, setSearchValue] = useState(() => {
@@ -249,9 +250,109 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
 
-              {/* Login / User */}
+              {/* ── Desktop auth (md+) ── */}
               {user ? (
-                <div className="flex items-center gap-1">
+                <div className="relative hidden md:block">
+                  <button
+                    onClick={() => setIsUserMenuOpen(v => !v)}
+                    className="flex items-center gap-2 pl-1.5 pr-2 py-1.5 rounded-xl
+                      hover:bg-gray-100 dark:hover:bg-gray-800
+                      transition-all active:scale-[0.97]"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-linear-to-br from-violet-500 to-violet-700
+                      flex items-center justify-center text-white text-sm font-black shrink-0
+                      shadow-sm shadow-violet-500/30">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="hidden lg:flex flex-col items-start leading-none gap-0.5">
+                      <span className="text-[12px] font-black text-gray-900 dark:text-white max-w-[96px] truncate">
+                        {user.name}
+                      </span>
+                      <span className="text-[10px] text-gray-400 max-w-[96px] truncate">
+                        {user.email}
+                      </span>
+                    </div>
+                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 shrink-0 transition-transform duration-200 ${
+                      isUserMenuOpen ? 'rotate-180' : ''
+                    }`} />
+                  </button>
+
+                  {isUserMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
+                      <div className="absolute right-0 top-full mt-2 w-56
+                        bg-white dark:bg-gray-900
+                        border border-gray-100 dark:border-gray-700
+                        rounded-2xl shadow-xl shadow-black/10
+                        overflow-hidden z-50">
+
+                        {/* User info header */}
+                        <div className="px-4 py-3.5 bg-gray-50 dark:bg-gray-800/60
+                          border-b border-gray-100 dark:border-gray-700/60">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-violet-500 to-violet-700
+                              flex items-center justify-center text-white font-black text-base shrink-0">
+                              {user.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[13px] font-black text-gray-900 dark:text-white truncate leading-tight">
+                                {user.name}
+                              </p>
+                              <p className="text-[10px] text-gray-400 truncate leading-tight mt-0.5">
+                                {user.email}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="p-1.5">
+                          <button
+                            onClick={() => { logout(); setIsUserMenuOpen(false); }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl
+                              text-sm font-bold text-red-500
+                              hover:bg-red-50 dark:hover:bg-red-900/20
+                              transition-colors active:scale-[0.98]"
+                          >
+                            <LogOut className="w-4 h-4 shrink-0" />
+                            Chiqish
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="hidden md:flex items-center gap-1.5">
+                  <button
+                    onClick={openLogin}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl
+                      border border-gray-200 dark:border-gray-700
+                      text-gray-700 dark:text-gray-300 font-bold text-sm
+                      hover:bg-gray-50 dark:hover:bg-gray-800
+                      active:scale-95 transition-all"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    {t.nav.login}
+                  </button>
+                  <button
+                    onClick={openRegister}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl
+                      bg-linear-to-r from-violet-600 to-violet-700
+                      hover:from-violet-700 hover:to-violet-800
+                      text-white font-black text-sm
+                      shadow-md shadow-violet-500/20
+                      active:scale-95 transition-all"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Ro'yxat
+                  </button>
+                </div>
+              )}
+
+              {/* ── Mobile auth (< md) — unchanged ── */}
+              {user ? (
+                <div className="md:hidden flex items-center gap-1">
                   <div className="hidden sm:flex flex-col items-end leading-none mr-1">
                     <span className="text-[11px] font-black text-gray-800 dark:text-gray-200 truncate max-w-[80px]">{user.name}</span>
                     <span className="text-[9px] text-gray-400 truncate max-w-[80px]">{user.email}</span>
@@ -265,7 +366,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                   </button>
                 </div>
               ) : (
-                <button onClick={openLogin} className="flex items-center gap-1.5 px-3 py-2 rounded-xl
+                <button onClick={openLogin} className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl
                   bg-linear-to-r from-violet-600 to-violet-700
                   hover:from-violet-700 hover:to-violet-800
                   text-white font-black text-sm
