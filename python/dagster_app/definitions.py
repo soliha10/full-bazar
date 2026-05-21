@@ -1,7 +1,6 @@
 """
 Dagster job: Product Sync
 Runs every hour. Reads CSV files with a Python generator and writes to PostgreSQL.
-Replaces Apache Airflow — much lighter RAM footprint (~300MB vs ~1.5GB).
 """
 
 from __future__ import annotations
@@ -11,7 +10,10 @@ import hashlib
 import logging
 import os
 import re
+import subprocess
 import sys
+import traceback
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, wait as futures_wait
 from datetime import datetime
 from typing import Generator
@@ -23,6 +25,19 @@ from dagster import Definitions, ScheduleDefinition, job, op, in_process_executo
 sys.path.insert(0, os.path.dirname(__file__))
 
 logger = logging.getLogger(__name__)
+
+# ── Column limits (match DB schema) ──────────────────────────────────────────
+_MAX_URL     = 1999   # VARCHAR(2000)
+_MAX_NAME    = 999    # VARCHAR(1000)
+_MAX_KW      = 5000   # TEXT (kept short for performance)
+_MAX_SOURCE  = 99     # VARCHAR(100)
+
+
+def _trunc(s: str | None, limit: int) -> str | None:
+    if not s:
+        return s
+    return s[:limit] if len(s) > limit else s
+
 
 # ── Regex filters ─────────────────────────────────────────────────────────────
 _SMARTPHONE_RE = re.compile(
@@ -84,11 +99,16 @@ def _make_display_name(title: str) -> str:
 # ── Generator ─────────────────────────────────────────────────────────────────
 
 def product_row_generator(data_dir: str) -> Generator[dict, None, None]:
+    # Skip ML training files — they have different column schemas
+    _SKIP_FILES = {"processed_matching_data.csv", "synthetic_matching_data.csv"}
+
     for filename in sorted(os.listdir(data_dir)):
         if not filename.endswith(".csv"):
             continue
+        if filename in _SKIP_FILES:
+            continue
         filepath = os.path.join(data_dir, filename)
-        source_fallback = filename.replace("_products.csv", "").replace("-", "_").split("_")[0]
+        source_fallback = filename.replace("_products.csv", "").replace("_phones.csv", "").replace("-", "_").split("_")[0]
         try:
             with open(filepath, "r", encoding="utf-8-sig", errors="ignore") as fh:
                 reader = csv.DictReader(fh)
@@ -118,21 +138,22 @@ def product_row_generator(data_dir: str) -> Generator[dict, None, None]:
                     if price < 100_000:
                         continue
 
+                    image = (row.get("image_url") or row.get("image") or row.get("img") or "").strip()
+                    url = (row.get("product_url") or row.get("url") or row.get("link") or "#").strip().replace("\n", "")
+
                     yield {
                         "title": title,
-                        "image": (row.get("image_url") or row.get("image") or row.get("img") or "").strip(),
+                        "image": _trunc(image, _MAX_URL) or "",
                         "raw_rating": row.get("rating"),
                         "raw_reviews": row.get("review_count") or row.get("reviews"),
                         "market_source": (
                             row.get("store") or row.get("market") or row.get("source") or source_fallback
-                        ).lower(),
+                        ).lower().strip(),
                         "market_price": price,
-                        "market_url": (
-                            row.get("product_url") or row.get("url") or row.get("link") or "#"
-                        ).strip().replace("\n", ""),
+                        "market_url": _trunc(url, _MAX_URL) or "#",
                     }
         except Exception as exc:
-            print(f"[product_sync] Skipping {filename}: {exc}")
+            logger.warning(f"[product_sync] Skipping {filename}: {exc}")
 
 
 # ── Sync logic ────────────────────────────────────────────────────────────────
@@ -141,7 +162,6 @@ _DIFF_WORDS_RE = re.compile(r'\b(max|plus|ultra|pro|lite|mini|fe|note|edge|fold|
 
 
 def _get_cosine_sim(s1: str, s2: str) -> float:
-    from collections import Counter
     import math
     vec1 = Counter(re.findall(r'\w+', s1.lower()))
     vec2 = Counter(re.findall(r'\w+', s2.lower()))
@@ -157,6 +177,11 @@ def _can_merge(norm1: str, norm2: str) -> bool:
     return set(_DIFF_WORDS_RE.findall(norm1)) == set(_DIFF_WORDS_RE.findall(norm2))
 
 
+# Minimum products required before we allow TRUNCATE+INSERT.
+# Prevents wiping the DB when all scrapers fail or network is down.
+_MIN_PRODUCTS_TO_SYNC = 50
+
+
 def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
     product_groups: dict[str, dict] = {}
     brand_groups: dict[str, list[str]] = {}
@@ -170,11 +195,8 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
         norm = _normalize_title(title)
 
         brand = next((b for b in BRANDS if b in norm), "other")
-
-        # 1. exact norm match
         target_pid = norm_to_pid.get(norm)
 
-        # 2. cosine similarity within same brand (with keyword guard)
         if not target_pid:
             for pid in brand_groups.get(brand, []):
                 if _can_merge(norm, _normalize_title(product_groups[pid]["title"])):
@@ -182,7 +204,6 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
                     norm_to_pid[norm] = pid
                     break
 
-        # 3. new product
         if not target_pid:
             target_pid = _make_product_id(norm)
             norm_to_pid[norm] = target_pid
@@ -205,7 +226,7 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
             reviews = 10
             if raw_reviews:
                 try:
-                    reviews = int(raw_reviews)
+                    reviews = max(1, int(raw_reviews))
                 except (ValueError, TypeError):
                     pass
             else:
@@ -214,7 +235,7 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
 
             product_groups[target_pid] = {
                 "id": target_pid,
-                "name": _make_display_name(title),
+                "name": _trunc(_make_display_name(title), _MAX_NAME) or title[:_MAX_NAME],
                 "title": title,
                 "category": "Phones",
                 "rating": rating,
@@ -228,38 +249,88 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
         group = product_groups[target_pid]
         if len(title) > len(group["title"]):
             group["title"] = title
-        group["keywords"] += " " + title.lower()
+            group["name"] = _trunc(_make_display_name(title), _MAX_NAME) or group["name"]
+        group["keywords"] = (group["keywords"] + " " + title.lower())[:_MAX_KW]
         if row["image"] and row["image"] not in group["images"]:
             group["images"].append(row["image"])
         if row["image"] and not group["image"]:
             group["image"] = row["image"]
 
-        src = row["market_source"]
+        src = row["market_source"][:_MAX_SOURCE]
         price = row["market_price"]
         if src not in group["markets"] or price < group["markets"][src]["price"]:
-            group["markets"][src] = {"source": src.capitalize(), "price": price, "url": row["market_url"]}
+            group["markets"][src] = {
+                "source": src.capitalize(),
+                "price": price,
+                "url": row["market_url"],
+            }
+
+    n_products = len(product_groups)
+
+    # ── Safety guard: never truncate when we have too few products ──────────
+    if n_products < _MIN_PRODUCTS_TO_SYNC:
+        log.warning(
+            f"[sync] Only {n_products} products found — minimum is {_MIN_PRODUCTS_TO_SYNC}. "
+            f"Skipping TRUNCATE to preserve existing DB data."
+        )
+        return 0, 0
+
+    log.info(f"[sync] Building DB rows for {n_products} products…")
 
     products_rows = []
     markets_rows = []
+    seen_market_keys: set[tuple[str, str]] = set()
+
     for pid, group in product_groups.items():
         sorted_markets = sorted(group["markets"].values(), key=lambda m: m["price"])
         best = sorted_markets[0] if sorted_markets else {}
         products_rows.append((
-            pid, group["name"], group["title"], group["category"],
-            group["rating"], group["reviews"], group["image"] or None,
-            group["images"] or None, True, group["keywords"][:5000],
-            best.get("source"), best.get("price", 0), best.get("url"),
+            pid,
+            group["name"],
+            _trunc(group["title"], _MAX_NAME),
+            group["category"],
+            group["rating"],
+            group["reviews"],
+            group["image"] or None,
+            group["images"] or None,
+            True,
+            group["keywords"],
+            _trunc(best.get("source"), _MAX_SOURCE),
+            best.get("price", 0),
+            _trunc(best.get("url"), _MAX_URL),
             datetime.utcnow(),
         ))
         for m in sorted_markets:
-            markets_rows.append((pid, m["source"], m["price"], m["url"]))
+            key = (pid, m["source"])
+            if key in seen_market_keys:
+                continue   # deduplicate just in case
+            seen_market_keys.add(key)
+            markets_rows.append((
+                pid,
+                _trunc(m["source"], _MAX_SOURCE),
+                m["price"],
+                _trunc(m["url"], _MAX_URL),
+            ))
 
     conn = psycopg2.connect(db_url)
     try:
         with conn:
             with conn.cursor() as cur:
-                cur.execute("ALTER TABLE IF EXISTS user_events DROP CONSTRAINT IF EXISTS user_events_product_id_fkey")
+                # Drop the FK only if it actually exists — prevents lock on non-existent constraint
+                cur.execute("""
+                    DO $$
+                    BEGIN
+                        IF EXISTS (
+                            SELECT 1 FROM information_schema.table_constraints
+                            WHERE constraint_name = 'user_events_product_id_fkey'
+                              AND table_name = 'user_events'
+                        ) THEN
+                            ALTER TABLE user_events DROP CONSTRAINT user_events_product_id_fkey;
+                        END IF;
+                    END $$;
+                """)
                 cur.execute("TRUNCATE product_markets, products CASCADE")
+
                 if products_rows:
                     psycopg2.extras.execute_values(
                         cur,
@@ -268,26 +339,43 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
                             (id, name, title, category, rating, reviews, image, images,
                              in_stock, keywords, source, price, url, updated_at)
                         VALUES %s
+                        ON CONFLICT (id) DO UPDATE SET
+                            name       = EXCLUDED.name,
+                            title      = EXCLUDED.title,
+                            rating     = EXCLUDED.rating,
+                            reviews    = EXCLUDED.reviews,
+                            image      = EXCLUDED.image,
+                            images     = EXCLUDED.images,
+                            keywords   = EXCLUDED.keywords,
+                            source     = EXCLUDED.source,
+                            price      = EXCLUDED.price,
+                            url        = EXCLUDED.url,
+                            updated_at = EXCLUDED.updated_at
                         """,
                         products_rows,
                         page_size=500,
                     )
+
                 if markets_rows:
                     psycopg2.extras.execute_values(
                         cur,
                         """
                         INSERT INTO product_markets (product_id, source, price, url)
                         VALUES %s
+                        ON CONFLICT (product_id, source) DO UPDATE SET
+                            price = EXCLUDED.price,
+                            url   = EXCLUDED.url
                         """,
                         markets_rows,
                         page_size=1000,
                     )
+
         return len(products_rows), len(markets_rows)
     finally:
         conn.close()
 
 
-# ── Dagster op / job / schedule ───────────────────────────────────────────────
+# ── Dagster ops ───────────────────────────────────────────────────────────────
 
 def _scrape_with_timeout(scraper_cls, data_dir: str):
     try:
@@ -301,7 +389,7 @@ def _scrape_with_timeout(scraper_cls, data_dir: str):
 @op
 def scrape_all_op(context) -> str:
     import signal
-    import time
+    import gc
 
     data_dir = os.getenv("DATA_DIR", "/opt/dagster/data")
     os.makedirs(data_dir, exist_ok=True)
@@ -316,9 +404,6 @@ def scrape_all_op(context) -> str:
 
     SCRAPE_TIMEOUT = 18 * 60  # 18 minutes hard limit
 
-    # SIGALRM sends signal to the main thread after SCRAPE_TIMEOUT seconds,
-    # which raises TimeoutError regardless of what threads are doing.
-    # This guarantees the op returns even if thread joins are blocking.
     class _ScrapingTimeout(Exception):
         pass
 
@@ -328,29 +413,37 @@ def scrape_all_op(context) -> str:
     signal.signal(signal.SIGALRM, _alarm_handler)
     signal.alarm(SCRAPE_TIMEOUT)
 
-    import gc
-
+    total_ok = 0
+    total_fail = 0
     pool = ThreadPoolExecutor(max_workers=1)
     try:
         futures = {pool.submit(_scrape_with_timeout, cls, data_dir): cls for cls in ALL_SCRAPERS}
         done, not_done = futures_wait(futures, timeout=SCRAPE_TIMEOUT - 30)
+
         for fut in done:
             name, count, err = fut.result()
             if err:
                 context.log.warning(f"  [{name}] FAILED: {err}")
+                total_fail += 1
             else:
                 context.log.info(f"  [{name}] {count} products")
+                total_ok += 1
             gc.collect()
+
         if not_done:
             names = [futures[f].store_name for f in not_done]
-            context.log.warning(f"  TIMEOUT — skipped: {names}")
+            context.log.warning(f"  TIMEOUT — skipped scrapers: {names}")
+
     except _ScrapingTimeout:
         context.log.warning(f"scrape_all_op: hard timeout ({SCRAPE_TIMEOUT}s) — moving on")
+    except Exception as exc:
+        context.log.error(f"scrape_all_op unexpected error: {exc}\n{traceback.format_exc()}")
     finally:
         signal.alarm(0)
         pool.shutdown(wait=False)
         gc.collect()
 
+    context.log.info(f"Scraping done — {total_ok} ok, {total_fail} failed")
     return data_dir
 
 
@@ -358,72 +451,95 @@ def scrape_all_op(context) -> str:
 def sync_products_op(context, data_dir: str) -> str:
     db_url = os.getenv("PRODUCTS_DB_URL", "postgresql://postgres:postgres@postgres:5432/fullbazar")
     context.log.info(f"Reading CSVs from: {data_dir}")
+
     try:
         n_products, n_markets = _run_sync(data_dir, db_url, context.log)
-        context.log.info(f"Done — {n_products} products, {n_markets} market entries")
-    except Exception as exc:
-        context.log.error(f"sync_products_op FAILED: {exc}")
+        if n_products == 0:
+            context.log.warning("sync_products_op: no DB update performed (guard triggered or no data)")
+        else:
+            context.log.info(f"Done — {n_products} products, {n_markets} market entries written to DB")
+    except psycopg2.Error as exc:
+        # Full traceback so we can diagnose DB errors without SSH-ing in
+        context.log.error(
+            f"sync_products_op DB error: {exc}\n"
+            f"pgcode={getattr(exc, 'pgcode', '?')} pgerror={getattr(exc, 'pgerror', '?')}\n"
+            f"{traceback.format_exc()}"
+        )
         raise
+    except Exception as exc:
+        context.log.error(f"sync_products_op FAILED:\n{traceback.format_exc()}")
+        raise
+
     return data_dir
 
 
 @op
 def train_matcher_op(context, data_dir: str):
-    """Rebuild the product-matching ML model after each scrape cycle."""
-    mlflow_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
+    """
+    Rebuild the product-matching ML model after each scrape cycle.
+
+    Runs in a SUBPROCESS to isolate heavy ML imports (sklearn, pandas, mlflow)
+    from the dagster-daemon process — prevents OOM in the 512 MB container.
+    """
+    mlflow_uri  = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
     ml_tasks_dir = os.getenv("ML_TASKS_DIR", "/opt/dagster/ml_tasks")
+    script_path  = os.path.join(os.path.dirname(__file__), "_run_ml.py")
 
     if not os.path.isdir(ml_tasks_dir):
         context.log.info(f"[train_matcher] ml_tasks dir not found at {ml_tasks_dir}, skipping")
         return
 
+    if not os.path.exists(script_path):
+        context.log.warning(f"[train_matcher] _run_ml.py not found at {script_path}, skipping")
+        return
+
+    context.log.info(f"[train_matcher] Starting ML training subprocess…")
     try:
-        import importlib.util
-
-        # data_engineering: build training pairs from real CSVs in data_dir
-        spec = importlib.util.spec_from_file_location(
-            "data_engineering",
-            os.path.join(ml_tasks_dir, "data_engineering.py"),
+        result = subprocess.run(
+            [sys.executable, script_path, data_dir, mlflow_uri, ml_tasks_dir],
+            timeout=10 * 60,       # 10-minute hard cap
+            capture_output=True,
+            text=True,
+            env=os.environ.copy(),
         )
-        de_mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(de_mod)
-        de_mod.build_data_pipeline(data_dir=data_dir)
-        context.log.info("[train_matcher] data engineering done, starting training")
-
-        # train_matcher: train models, save best to data_dir/models/
-        spec2 = importlib.util.spec_from_file_location(
-            "train_matcher",
-            os.path.join(ml_tasks_dir, "train_matcher.py"),
-        )
-        tm_mod = importlib.util.module_from_spec(spec2)
-
-        import mlflow as _mlflow
-        _mlflow.set_tracking_uri(mlflow_uri)
-
-        spec2.loader.exec_module(tm_mod)
-        tm_mod.train(data_dir=data_dir)
-        context.log.info("[train_matcher] training complete")
+        if result.stdout:
+            context.log.info(f"[train_matcher] stdout:\n{result.stdout[-3000:]}")
+        if result.returncode != 0:
+            context.log.warning(
+                f"[train_matcher] subprocess exited {result.returncode}.\n"
+                f"stderr: {result.stderr[-3000:]}"
+            )
+        else:
+            context.log.info("[train_matcher] training complete")
+    except subprocess.TimeoutExpired:
+        context.log.warning("[train_matcher] subprocess timed out after 10 min — skipping")
     except Exception as exc:
-        context.log.warning(f"[train_matcher] skipped — {exc}")
+        context.log.warning(f"[train_matcher] skipped — {exc}\n{traceback.format_exc()}")
 
 
 @op
 def data_dir_op(context) -> str:
     data_dir = os.getenv("DATA_DIR", "/opt/dagster/data")
+    os.makedirs(data_dir, exist_ok=True)
     context.log.info(f"Using data_dir: {data_dir}")
     return data_dir
 
 
+# ── Jobs ──────────────────────────────────────────────────────────────────────
+
 @job(executor_def=in_process_executor)
 def product_sync_job():
+    """Scrape → sync DB → train ML model (ML runs in subprocess)."""
     train_matcher_op(sync_products_op(scrape_all_op()))
 
 
 @job(executor_def=in_process_executor)
 def csv_sync_job():
-    """Sync git-committed CSVs → PostgreSQL (no scraping). Used by deploy."""
+    """Sync git-committed CSVs → PostgreSQL (no scraping). Used after deploy."""
     sync_products_op(data_dir_op())
 
+
+# ── Definitions ───────────────────────────────────────────────────────────────
 
 defs = Definitions(
     jobs=[product_sync_job, csv_sync_job],
