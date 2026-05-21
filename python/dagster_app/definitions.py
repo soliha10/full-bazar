@@ -14,7 +14,7 @@ import subprocess
 import sys
 import traceback
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor, wait as futures_wait
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import Generator
 
@@ -377,73 +377,93 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
 
 # ── Dagster ops ───────────────────────────────────────────────────────────────
 
-def _scrape_with_timeout(scraper_cls, data_dir: str):
+_SCRAPER_TIMEOUT = 5 * 60   # 5 min per scraper subprocess
+_PARALLEL_SCRAPERS = 3      # subprocesses in flight at once (memory-safe)
+
+
+def _run_scraper_subprocess(
+    store_name: str, script_path: str, data_dir: str
+) -> tuple[str, int, str | None]:
+    """
+    Run a single scraper in an isolated subprocess.
+    Returns (store_name, product_count, error_or_None).
+    Memory used by BeautifulSoup/lxml is freed when the subprocess exits.
+    """
     try:
-        s = scraper_cls(output_dir=data_dir, delay=1.0)
-        count = s.run()
-        return scraper_cls.store_name, count, None
+        result = subprocess.run(
+            [sys.executable, script_path, store_name, data_dir],
+            timeout=_SCRAPER_TIMEOUT,
+            capture_output=True,
+            text=True,
+            env=os.environ.copy(),
+        )
+        count = 0
+        for line in result.stdout.splitlines():
+            m = re.search(r"\bOK\s+(\d+)", line)
+            if m:
+                count = int(m.group(1))
+                break
+        if result.returncode != 0:
+            err_text = (result.stderr or result.stdout)[-1000:].strip()
+            return store_name, 0, err_text or f"exit code {result.returncode}"
+        return store_name, count, None
+    except subprocess.TimeoutExpired:
+        return store_name, 0, f"timeout after {_SCRAPER_TIMEOUT}s"
     except Exception as exc:
-        return scraper_cls.store_name, 0, str(exc)
+        return store_name, 0, str(exc)
 
 
 @op
 def scrape_all_op(context) -> str:
-    import signal
-    import gc
-
+    """
+    Run every scraper as its own subprocess so BeautifulSoup/lxml memory
+    never accumulates inside dagster-daemon.  Up to _PARALLEL_SCRAPERS run
+    concurrently; each has a hard 5-minute timeout.
+    """
     data_dir = os.getenv("DATA_DIR", "/opt/dagster/data")
     os.makedirs(data_dir, exist_ok=True)
+
+    script_path = os.path.join(os.path.dirname(__file__), "_run_scraper.py")
+    if not os.path.exists(script_path):
+        context.log.warning("[scrape] _run_scraper.py not found — skipping scrape step")
+        return data_dir
 
     try:
         from scrapers import ALL_SCRAPERS
     except ImportError as exc:
-        context.log.warning(f"Scrapers not available: {exc}. Skipping scrape step.")
+        context.log.warning(f"[scrape] Scrapers not available: {exc}. Skipping.")
         return data_dir
 
-    context.log.info(f"Starting {len(ALL_SCRAPERS)} scrapers → {data_dir}")
+    scraper_names = [cls.store_name for cls in ALL_SCRAPERS]
+    context.log.info(
+        f"[scrape] Launching {len(scraper_names)} scrapers "
+        f"(max {_PARALLEL_SCRAPERS} parallel, {_SCRAPER_TIMEOUT}s timeout each) → {data_dir}"
+    )
 
-    SCRAPE_TIMEOUT = 18 * 60  # 18 minutes hard limit
+    total_ok = total_fail = 0
 
-    class _ScrapingTimeout(Exception):
-        pass
+    with ThreadPoolExecutor(max_workers=_PARALLEL_SCRAPERS) as pool:
+        futures_map = {
+            pool.submit(_run_scraper_subprocess, name, script_path, data_dir): name
+            for name in scraper_names
+        }
+        for fut in as_completed(futures_map):
+            try:
+                store, count, err = fut.result()
+            except Exception as exc:
+                store = futures_map[fut]
+                context.log.warning(f"  [{store}] future error: {exc}")
+                total_fail += 1
+                continue
 
-    def _alarm_handler(signum, frame):
-        raise _ScrapingTimeout("Scraping hard timeout reached")
-
-    signal.signal(signal.SIGALRM, _alarm_handler)
-    signal.alarm(SCRAPE_TIMEOUT)
-
-    total_ok = 0
-    total_fail = 0
-    pool = ThreadPoolExecutor(max_workers=1)
-    try:
-        futures = {pool.submit(_scrape_with_timeout, cls, data_dir): cls for cls in ALL_SCRAPERS}
-        done, not_done = futures_wait(futures, timeout=SCRAPE_TIMEOUT - 30)
-
-        for fut in done:
-            name, count, err = fut.result()
             if err:
-                context.log.warning(f"  [{name}] FAILED: {err}")
+                context.log.warning(f"  [{store}] FAILED: {err}")
                 total_fail += 1
             else:
-                context.log.info(f"  [{name}] {count} products")
+                context.log.info(f"  [{store}] {count} products")
                 total_ok += 1
-            gc.collect()
 
-        if not_done:
-            names = [futures[f].store_name for f in not_done]
-            context.log.warning(f"  TIMEOUT — skipped scrapers: {names}")
-
-    except _ScrapingTimeout:
-        context.log.warning(f"scrape_all_op: hard timeout ({SCRAPE_TIMEOUT}s) — moving on")
-    except Exception as exc:
-        context.log.error(f"scrape_all_op unexpected error: {exc}\n{traceback.format_exc()}")
-    finally:
-        signal.alarm(0)
-        pool.shutdown(wait=False)
-        gc.collect()
-
-    context.log.info(f"Scraping done — {total_ok} ok, {total_fail} failed")
+    context.log.info(f"[scrape] Done — {total_ok} ok, {total_fail} failed")
     return data_dir
 
 

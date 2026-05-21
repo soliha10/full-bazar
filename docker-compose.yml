@@ -97,7 +97,7 @@ services:
     <<: *dagster-common
     restart: unless-stopped
     command: dagster-daemon run
-    mem_limit: 512m
+    mem_limit: 768m
 
   # ── MLflow (Tracking Server) ────────────────────────────────────────────────
   mlflow:
