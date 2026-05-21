@@ -594,7 +594,7 @@ export function ProductListing() {
             ) : (
               <>
                 {viewMode === 'grid' ? (
-                  <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 xl:grid-cols-3 md:gap-4">
+                  <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 md:gap-4">
                     {filteredProducts.map(p => <ProductCard key={p.id} product={p} activeMarkets={selectedMarketplaces} />)}
                   </div>
                 ) : (

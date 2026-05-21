@@ -168,7 +168,7 @@ export function ProductDetail() {
           <span className="text-gray-900 dark:text-white font-medium truncate">{product.name}</span>
         </nav>
 
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-16">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
 
           {/* ── Left: Image ── */}
           <div className="lg:w-1/2 space-y-4">

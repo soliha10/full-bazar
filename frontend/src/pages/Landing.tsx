@@ -229,7 +229,7 @@ export function Landing() {
 
               {/* Desktop right card */}
               <div className="hidden md:flex flex-col gap-3 shrink-0">
-                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-6 min-w-[230px]">
+                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-6 min-w-[260px]">
                   <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-4">
                     {t.landing.hero.liveLabel}
                   </p>
@@ -412,7 +412,7 @@ export function Landing() {
             linkTo="/products"
             linkLabel={t.landing.trending.viewAll}
           />
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-6 md:gap-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
             {clientRecs.map(p => (
               <MiniProductCard
                 key={p.id}
@@ -437,7 +437,7 @@ export function Landing() {
             linkTo="/products"
             linkLabel={t.landing.trending.viewAll}
           />
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-6 md:gap-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
             {personalizedRecs.map(p => (
               <MiniProductCard key={p.id} id={p.id} image={p.image} name={p.name} price={p.price} />
             ))}

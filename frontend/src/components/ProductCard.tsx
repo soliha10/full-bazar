@@ -179,7 +179,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
         </div>
 
         {/* Name */}
-        <h3 className="font-bold text-gray-900 dark:text-white text-[13px] leading-snug line-clamp-2 flex-1 min-h-[36px]">
+        <h3 className="font-bold text-gray-900 dark:text-white text-[13px] md:text-sm leading-snug line-clamp-2 flex-1 min-h-[36px]">
           {product.name}
         </h3>
 
@@ -204,7 +204,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
               )}
             </div>
           )}
-          <p className="text-lg font-black text-gray-900 dark:text-white tracking-tight leading-none">
+          <p className="text-lg md:text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
             {formatSum(bestPrice)}
           </p>
         </div>
