@@ -98,7 +98,7 @@ services:
     <<: *dagster-common
     restart: unless-stopped
     command: dagster-daemon run
-    mem_limit: 768m
+    mem_limit: 1200m
 
   # ── MLflow (Tracking Server) ────────────────────────────────────────────────
   mlflow:
@@ -106,13 +106,18 @@ services:
       context: ./python/mlflow_app
       dockerfile: Dockerfile
     restart: unless-stopped
-    # array form avoids YAML shell-quoting issues with --gunicorn-opts
-    # --allowed-hosts "*" lets dagster/fastapi reach mlflow across Docker network
+    environment:
+      MLFLOW_PG_HOST: postgres
+      MLFLOW_PG_USER: postgres
+      MLFLOW_PG_PASSWORD: postgres
+      MLFLOW_PG_DB: mlflow
+    # Dedicated `mlflow` database prevents Alembic schema conflicts with app tables.
+    # --allowed-hosts "*" lets dagster/fastapi reach mlflow across Docker network.
     command:
       - mlflow
       - server
       - --backend-store-uri
-      - postgresql://postgres:postgres@postgres:5432/fullbazar
+      - postgresql://postgres:postgres@postgres:5432/mlflow
       - --default-artifact-root
       - /mlflow/artifacts
       - --host
@@ -130,7 +135,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    mem_limit: 400m
+    mem_limit: 300m
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s

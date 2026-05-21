@@ -1,6 +1,9 @@
 -- Create Dagster metadata database
 CREATE DATABASE dagster_db;
 
+-- Create MLflow tracking database (isolated from app schema to prevent Alembic conflicts)
+CREATE DATABASE mlflow;
+
 -- Create tables in the default (fullbazar) database
 CREATE TABLE IF NOT EXISTS products (
     id VARCHAR(60) PRIMARY KEY,

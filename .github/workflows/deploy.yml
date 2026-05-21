@@ -25,10 +25,6 @@ jobs:
             sort -u ~/.ssh/authorized_keys -o ~/.ssh/authorized_keys
             chmod 600 ~/.ssh/authorized_keys
 
-            echo "=== EMERGENCY: stopping MLflow crash loop ==="
-            docker stop full-bazar-mlflow-1 2>/dev/null || true
-            docker rm full-bazar-mlflow-1 2>/dev/null || true
-
             echo "=== stopping all dagster to free memory ==="
             docker stop full-bazar-dagster-daemon-1 full-bazar-dagster-webserver-1 2>/dev/null || true
 
@@ -79,8 +75,10 @@ jobs:
             echo "=== stopping dagster ==="
             docker compose stop dagster-daemon dagster-webserver || true
 
-            echo "=== cancelling ALL non-terminal Dagster runs (SQLite) ==="
-            docker run --rm -v full-bazar_dagster_home:/opt/dagster/home python:3.11-alpine python3 -c "import sqlite3; c=sqlite3.connect('/opt/dagster/home/history/runs.db'); r=c.execute(\"UPDATE runs SET status='CANCELED' WHERE status IN ('STARTED','QUEUED','STARTING','CANCELING')\"); c.commit(); print('Cancelled', r.rowcount, 'runs'); c.close()" 2>/dev/null || echo "SQLite cancel skipped"
+            echo "=== creating mlflow database if not exists ==="
+            docker exec full-bazar-postgres-1 psql -U postgres -tc \
+              "SELECT 1 FROM pg_database WHERE datname='mlflow'" | grep -q 1 || \
+              docker exec full-bazar-postgres-1 psql -U postgres -c "CREATE DATABASE mlflow"
 
             echo "=== building frontend (no cache) ==="
             docker compose build --no-cache frontend
@@ -91,8 +89,15 @@ jobs:
             echo "=== restarting frontend, fastapi ==="
             docker compose up -d --force-recreate --no-deps frontend fastapi
 
-            echo "=== bringing up mlflow ==="
-            docker compose up -d --no-build mlflow
+            echo "=== building and starting mlflow ==="
+            docker compose build mlflow
+            docker compose up -d --force-recreate --no-deps mlflow
+
+            echo "=== waiting for mlflow to be healthy ==="
+            until curl -sf http://localhost:5050/health > /dev/null 2>&1; do
+              echo "  mlflow not ready..."; sleep 5
+            done
+            echo "mlflow is up"
 
             echo "=== building dagster ==="
             docker compose build dagster-daemon dagster-webserver

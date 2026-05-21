@@ -1,11 +1,25 @@
 telemetry:
   enabled: false
 
+# Use PostgreSQL so webserver + daemon share the same state reliably.
+# SQLite cannot handle concurrent access from two containers on a shared volume.
+storage:
+  postgres:
+    postgres_db:
+      username: postgres
+      password: postgres
+      hostname: postgres
+      db_name: dagster_db
+      port: 5432
+
 run_monitoring:
   enabled: true
-  max_resume_run_attempts: 0
-  poll_interval_seconds: 60
-  start_timeout_seconds: 180
+  # Auto-resume runs that were in STARTED state when the daemon was OOM-killed/restarted.
+  max_resume_run_attempts: 2
+  poll_interval_seconds: 30
+  start_timeout_seconds: 300
+  # Hard-kill any run that exceeds 90 min — prevents zombie runs from blocking the queue.
+  cancel_run_over_threshold_minutes: 90
 
 run_coordinator:
   module: dagster.core.run_coordinator

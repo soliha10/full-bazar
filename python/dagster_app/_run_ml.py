@@ -41,7 +41,24 @@ def main():
         sys.exit(0)
 
     import mlflow as _mlflow
-    _mlflow.set_tracking_uri(mlflow_uri)
+
+    # Verify MLflow is reachable before committing to it; fall back to local
+    # file tracking so a downed MLflow container never aborts training.
+    def _mlflow_reachable(uri: str) -> bool:
+        try:
+            import urllib.request
+            urllib.request.urlopen(f"{uri.rstrip('/')}/health", timeout=5)
+            return True
+        except Exception:
+            return False
+
+    if _mlflow_reachable(mlflow_uri):
+        _mlflow.set_tracking_uri(mlflow_uri)
+        print(f"[ml] mlflow tracking: {mlflow_uri}", flush=True)
+    else:
+        fallback = f"file://{data_dir}/mlruns"
+        _mlflow.set_tracking_uri(fallback)
+        print(f"[ml] mlflow unreachable — falling back to {fallback}", flush=True)
 
     spec2 = importlib.util.spec_from_file_location("train_matcher", tm_path)
     tm_mod = importlib.util.module_from_spec(spec2)

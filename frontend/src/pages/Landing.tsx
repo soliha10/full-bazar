@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
+import { motion } from 'framer-motion';
 import {
   ArrowRight, TrendingUp, ShieldCheck, RefreshCw,
-  Zap, Sparkles, ChevronRight,
+  Zap, Sparkles, ChevronRight, ChevronLeft,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
@@ -44,40 +46,38 @@ const QUICK_CATEGORIES = [
   { emoji: '📱', label: 'Smartfonlar', value: 'smartphones' },
 ];
 
-/* ── Section header component ── */
+const fadeUp = {
+  hidden:  { opacity: 0, y: 28 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: 'easeOut' } },
+};
+
+/* ── Section header ── */
 function SectionHeader({
-  title,
-  subtitle,
-  icon: Icon,
-  linkTo,
-  linkLabel,
+  title, subtitle, icon: Icon, linkTo, linkLabel,
 }: {
-  title: string;
-  subtitle?: string;
-  icon?: React.ElementType;
-  linkTo: string;
-  linkLabel: string;
+  title: string; subtitle?: string; icon?: React.ElementType;
+  linkTo: string; linkLabel: string;
 }) {
   return (
-    <div className="flex items-center justify-between mb-3.5">
+    <div className="flex items-center justify-between mb-4 md:mb-5">
       <div className="flex items-center gap-2.5 min-w-0">
         {Icon && (
-          <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
-            <Icon className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+          <div className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
+            <Icon className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400" />
           </div>
         )}
         <div className="min-w-0">
-          <h2 className="text-[17px] md:text-2xl font-black text-gray-900 dark:text-white tracking-tight leading-tight truncate">
+          <h2 className="text-[17px] md:text-[22px] font-black text-gray-900 dark:text-white tracking-tight leading-tight truncate">
             {title}
           </h2>
           {subtitle && (
-            <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5 hidden md:block">{subtitle}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-xs md:text-[13px] mt-0.5 hidden md:block">{subtitle}</p>
           )}
         </div>
       </div>
       <Link
         to={linkTo}
-        className="flex items-center gap-1 text-xs font-bold text-violet-600 dark:text-violet-400 shrink-0 ml-3 whitespace-nowrap"
+        className="flex items-center gap-1 text-xs md:text-[13px] font-bold text-violet-600 dark:text-violet-400 shrink-0 ml-3 whitespace-nowrap hover:underline"
       >
         {linkLabel}
         <ChevronRight className="w-3.5 h-3.5" />
@@ -86,34 +86,73 @@ function SectionHeader({
   );
 }
 
-/* ── Small product card for horizontal scroll ── */
+/* ── Embla carousel wrapper with desktop prev/next arrows ── */
+function Carousel({ children }: { children: React.ReactNode[] }) {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'start', dragFree: true });
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(true);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setCanPrev(emblaApi.canScrollPrev());
+    setCanNext(emblaApi.canScrollNext());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.on('select', onSelect);
+    onSelect();
+  }, [emblaApi, onSelect]);
+
+  return (
+    <div className="relative">
+      <div className="overflow-hidden -mx-4 px-4 md:mx-0 md:px-0" ref={emblaRef}>
+        <div className="flex gap-3 md:gap-4">
+          {children}
+        </div>
+      </div>
+
+      {canPrev && (
+        <button
+          onClick={() => emblaApi?.scrollPrev()}
+          className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-5 w-9 h-9 items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full shadow-md hover:bg-violet-50 dark:hover:bg-violet-900/40 hover:border-violet-300 dark:hover:border-violet-700 transition-all z-10"
+          aria-label="Previous"
+        >
+          <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+        </button>
+      )}
+      {canNext && (
+        <button
+          onClick={() => emblaApi?.scrollNext()}
+          className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-5 w-9 h-9 items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full shadow-md hover:bg-violet-50 dark:hover:bg-violet-900/40 hover:border-violet-300 dark:hover:border-violet-700 transition-all z-10"
+          aria-label="Next"
+        >
+          <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ── Product card inside carousel ── */
 function MiniProductCard({
-  id,
-  image,
-  name,
-  price,
-  badge,
-  storeCount,
+  id, image, name, price, badge, storeCount,
 }: {
-  id: string | number;
-  image: string;
-  name: string;
-  price: number;
-  badge?: string;
-  storeCount?: number;
+  id: string | number; image: string; name: string;
+  price: number; badge?: string; storeCount?: number;
 }) {
   return (
     <Link
       to={`/product/${id}`}
-      className="group flex flex-col bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm hover:shadow-lg hover:shadow-violet-500/10 hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200"
+      className="shrink-0 w-[152px] md:w-[210px] group flex flex-col bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-violet-500/12 hover:-translate-y-1 hover:border-violet-200 dark:hover:border-violet-700/60 active:scale-[0.97] transition-all duration-200"
     >
-      {/* Image */}
-      <div className="relative aspect-square bg-gray-50 dark:bg-gray-800/50 overflow-hidden">
+      {/* Image — fixed height so text gets real estate */}
+      <div className="relative h-36 md:h-44 bg-gray-50 dark:bg-gray-800/50 overflow-hidden">
         <img
           src={image}
           alt={name}
           onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/320x320/f5f3ff/7c3aed?text=📱'; }}
-          className="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-400 mix-blend-multiply dark:mix-blend-normal"
+          className="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-500 mix-blend-multiply dark:mix-blend-normal"
         />
         {badge && (
           <span className="absolute top-2 left-2 bg-violet-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
@@ -126,16 +165,17 @@ function MiniProductCard({
           </span>
         )}
       </div>
+
       {/* Info */}
-      <div className="p-2.5 flex flex-col flex-1">
-        <p className="text-[12px] font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug mb-2 flex-1 min-h-[32px]">
+      <div className="p-2.5 md:p-3.5 flex flex-col flex-1 gap-2">
+        <p className="text-[12px] md:text-[14px] font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug flex-1 min-h-[34px] md:min-h-[40px]">
           {name}
         </p>
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-black text-violet-600 dark:text-violet-400 leading-none">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[14px] md:text-[16px] font-black text-violet-600 dark:text-violet-400 leading-none">
             {formatSum(price)}
           </p>
-          <div className="w-6 h-6 rounded-lg bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center group-hover:bg-violet-600 transition-colors">
+          <div className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center group-hover:bg-violet-600 transition-colors shrink-0">
             <ArrowRight className="w-3 h-3 text-violet-600 dark:text-violet-400 group-hover:text-white transition-colors" />
           </div>
         </div>
@@ -144,16 +184,30 @@ function MiniProductCard({
   );
 }
 
+/* ── Skeleton card for loading state ── */
+function SkeletonCard() {
+  return (
+    <div className="shrink-0 w-[152px] md:w-[210px] rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse overflow-hidden">
+      <div className="h-36 md:h-44 bg-gray-200 dark:bg-gray-700" />
+      <div className="p-3 space-y-2">
+        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full w-4/5" />
+        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full w-3/5" />
+        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-full w-2/5 mt-3" />
+      </div>
+    </div>
+  );
+}
+
 export function Landing() {
   const { total, products: allProducts } = useProducts(1, 20);
   const [recommendations, setRecommendations] = useState<any[]>([]);
-  const [loadingRecs, setLoadingRecs]         = useState(true);
-  const [personalizedRecs, setPersonalizedRecs]   = useState<any[]>([]);
-  const [personalizedType, setPersonalizedType]   = useState<string>('');
+  const [loadingRecs, setLoadingRecs]           = useState(true);
+  const [personalizedRecs, setPersonalizedRecs] = useState<any[]>([]);
+  const [personalizedType, setPersonalizedType] = useState<string>('');
   const { t } = useLanguage();
   const { favorites } = useFavorites();
   const { user } = useAuth();
-  const clientRecs = useRecommendations(allProducts, 6);
+  const clientRecs = useRecommendations(allProducts, 8);
   const showClientRecs = clientRecs.length > 0 && (favorites.length > 0 || !!user?.profile.preferredBrands.length);
 
   useEffect(() => {
@@ -164,7 +218,7 @@ export function Landing() {
   }, []);
 
   useEffect(() => {
-    fetchPersonalizedRecommendations(6)
+    fetchPersonalizedRecommendations(8)
       .then(data => {
         setPersonalizedRecs((data.products ?? []).map(mapProduct));
         setPersonalizedType(data.type ?? '');
@@ -175,60 +229,83 @@ export function Landing() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 pb-24 md:pb-0 transition-colors">
 
-      {/* ══════════════════════════════════════
-          HERO
-      ══════════════════════════════════════ */}
+      {/* ══ HERO ══ */}
       <section className="md:px-4 md:pt-8 md:max-w-7xl md:mx-auto">
-        <div className="relative md:rounded-3xl overflow-hidden bg-linear-to-br from-violet-600 via-violet-700 to-violet-900 shadow-2xl shadow-violet-500/30 flex flex-col"
-          style={{ minHeight: 'clamp(340px, 62vh, 520px)' }}>
-
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="relative md:rounded-3xl overflow-hidden bg-linear-to-br from-violet-600 via-violet-700 to-violet-900 shadow-2xl shadow-violet-500/30 flex flex-col"
+          style={{ minHeight: 'clamp(340px, 62vh, 520px)' }}
+        >
           {/* Decorative blobs */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/5" />
+            <motion.div
+              animate={{ scale: [1, 1.08, 1], opacity: [0.05, 0.08, 0.05] }}
+              transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white"
+            />
             <div className="absolute top-10 right-1/3 w-36 h-36 rounded-full bg-white/5" />
             <div className="absolute -bottom-16 -left-10 w-60 h-60 rounded-full bg-purple-400/10" />
             <div className="absolute bottom-0 right-0 w-40 h-40 rounded-full bg-white/5" />
           </div>
 
-          {/* Hero content */}
+          {/* Content */}
           <div className="flex-1 flex flex-col justify-center relative z-10 px-5 pt-6 pb-4 md:px-14 md:py-14">
             <div className="w-full flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
 
-              {/* Left / main */}
+              {/* Left */}
               <div className="flex-1">
-                {/* Badge */}
-                <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1 mb-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15, duration: 0.5 }}
+                  className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1 mb-4"
+                >
                   <Zap className="w-3 h-3 text-yellow-300 shrink-0" />
                   <span className="text-white/90 text-[11px] font-bold uppercase tracking-widest">
                     {total > 0
                       ? t.landing.hero.productCount.replace('{{count}}', total.toLocaleString())
                       : t.landing.hero.livePrices}
                   </span>
-                </div>
+                </motion.div>
 
-                {/* Title */}
-                <h1 className="text-white font-black leading-[1.12] tracking-tight mb-2.5"
-                  style={{ fontSize: 'clamp(1.75rem, 7vw, 3.25rem)' }}>
+                <motion.h1
+                  initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25, duration: 0.55 }}
+                  className="text-white font-black leading-[1.12] tracking-tight mb-2.5"
+                  style={{ fontSize: 'clamp(1.75rem, 7vw, 3.25rem)' }}
+                >
                   {t.landing.hero.title}
-                </h1>
+                </motion.h1>
 
-                {/* Subtitle */}
-                <p className="text-white/70 text-sm md:text-lg leading-relaxed mb-5 max-w-xs md:max-w-sm">
+                <motion.p
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  transition={{ delay: 0.38, duration: 0.5 }}
+                  className="text-white/70 text-sm md:text-lg leading-relaxed mb-5 max-w-xs md:max-w-sm"
+                >
                   {t.landing.hero.subtitle}
-                </p>
+                </motion.p>
 
-                {/* CTAs */}
-                <div className="flex items-center gap-3 flex-wrap">
-                  <Link to="/products"
-                    className="inline-flex items-center gap-2 bg-white text-violet-700 font-black rounded-2xl px-6 py-3 text-sm shadow-xl shadow-black/20 hover:scale-105 active:scale-95 transition-all">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.48, duration: 0.45 }}
+                >
+                  <Link
+                    to="/products"
+                    className="inline-flex items-center gap-2 bg-white text-violet-700 font-black rounded-2xl px-6 py-3 text-sm shadow-xl shadow-black/20 hover:scale-105 hover:shadow-2xl active:scale-95 transition-all"
+                  >
                     {t.landing.hero.cta}
                     <ArrowRight className="w-4 h-4" />
                   </Link>
-                </div>
+                </motion.div>
               </div>
 
               {/* Desktop right card */}
-              <div className="hidden md:flex flex-col gap-3 shrink-0">
+              <motion.div
+                initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3, duration: 0.6, ease: 'easeOut' }}
+                className="hidden md:flex flex-col gap-3 shrink-0"
+              >
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-6 min-w-[260px]">
                   <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-4">
                     {t.landing.hero.liveLabel}
@@ -256,11 +333,11 @@ export function Landing() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
 
-          {/* Mobile stats strip */}
+          {/* Mobile stats */}
           <div className="md:hidden relative z-10 px-4 pb-5">
             <div className="grid grid-cols-3 gap-2">
               {[
@@ -275,22 +352,19 @@ export function Landing() {
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
-      {/* ══════════════════════════════════════
-          CATEGORY CHIPS — mobile only
-      ══════════════════════════════════════ */}
+      {/* ══ CATEGORY CHIPS — mobile ══ */}
       <section className="md:hidden px-4 mt-4">
         <div className="flex flex-wrap gap-2">
-          {/* All products */}
           <Link to="/products"
             className="flex items-center gap-2 px-4 h-10 rounded-2xl bg-violet-600 text-white text-xs font-black shadow-sm shadow-violet-500/25 active:scale-95 transition-all">
             🔥 Barchasi
           </Link>
           {QUICK_CATEGORIES.map(({ emoji, label, value }) => (
             <Link
-              key={value + label}
+              key={value}
               to={value ? `/products?category=${value}` : '/products'}
               className="flex items-center gap-1.5 px-4 h-10 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-bold text-gray-700 dark:text-gray-200 active:scale-95 transition-all"
             >
@@ -301,9 +375,7 @@ export function Landing() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-          TRUST PILLS — mobile only
-      ══════════════════════════════════════ */}
+      {/* ══ TRUST PILLS — mobile ══ */}
       <section className="md:hidden px-4 mt-3">
         <div className="flex flex-wrap gap-2">
           {t.landing.trustBar.map(({ title }, idx) => {
@@ -319,55 +391,68 @@ export function Landing() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-          TRUST BAR — desktop only
-      ══════════════════════════════════════ */}
-      <section className="hidden md:block mt-6 px-4 max-w-7xl mx-auto">
+      {/* ══ TRUST BAR — desktop ══ */}
+      <motion.section
+        variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
+        className="hidden md:block mt-6 px-4 max-w-7xl mx-auto"
+      >
         <div className="grid grid-cols-3 gap-4">
           {t.landing.trustBar.map(({ title, desc }, idx) => {
             const Icon = TRUST_ICONS[idx];
             return (
-              <div key={idx} className="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl px-4 py-4 shadow-sm border border-violet-100/60 dark:border-violet-900/30">
-                <div className="w-9 h-9 rounded-xl bg-violet-50 dark:bg-violet-950/60 flex items-center justify-center shrink-0">
-                  <Icon className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+              <motion.div
+                key={idx}
+                whileHover={{ y: -2, boxShadow: '0 8px 24px -4px rgba(139,92,246,0.15)' }}
+                className="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl px-4 py-4 shadow-sm border border-violet-100/60 dark:border-violet-900/30 cursor-default transition-shadow"
+              >
+                <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-950/60 flex items-center justify-center shrink-0">
+                  <Icon className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-black text-gray-900 dark:text-white">{title}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{desc}</p>
+                  <p className="text-[14px] font-black text-gray-900 dark:text-white">{title}</p>
+                  <p className="text-[12px] text-gray-500 dark:text-gray-400 font-medium">{desc}</p>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>
-      </section>
+      </motion.section>
 
-      {/* ══════════════════════════════════════
-          PARTNER MARKETS
-      ══════════════════════════════════════ */}
-      <section className="mt-5 md:mt-8 bg-gray-50 dark:bg-gray-900/60 border-y border-gray-100 dark:border-gray-800/60 py-4 md:py-8">
-        <div className="px-4 max-w-7xl mx-auto">
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 text-center mb-3">
-            {t.landing.markets.label}
-          </p>
-          <div className="flex flex-wrap gap-1.5 justify-center">
-            {MARKET_LOGOS.map(({ name, color }) => (
+      {/* ══ PARTNER MARKETS — infinite marquee ══ */}
+      <section className="mt-5 md:mt-8 bg-gray-50 dark:bg-gray-900/60 border-y border-gray-100 dark:border-gray-800/60 py-4 md:py-6 overflow-hidden">
+        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 text-center mb-3 px-4">
+          {t.landing.markets.label}
+        </p>
+        <div className="relative overflow-hidden">
+          {/* Fade edges */}
+          <div className="absolute left-0 top-0 bottom-0 w-12 bg-linear-to-r from-gray-50 dark:from-gray-900/60 to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-12 bg-linear-to-l from-gray-50 dark:from-gray-900/60 to-transparent z-10 pointer-events-none" />
+
+          <motion.div
+            animate={{ x: ['0%', '-50%'] }}
+            transition={{ duration: 35, repeat: Infinity, ease: 'linear' }}
+            className="flex gap-2 w-max"
+            style={{ willChange: 'transform' }}
+          >
+            {[...MARKET_LOGOS, ...MARKET_LOGOS].map(({ name, color }, i) => (
               <Link
-                key={name}
+                key={`${name}-${i}`}
                 to={`/products?source=${encodeURIComponent(name.toLowerCase())}`}
-                className="flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-violet-200 dark:hover:border-violet-700 rounded-xl px-3 h-9 shadow-sm hover:shadow-md active:scale-95 transition-all duration-200"
+                className="flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-violet-300 dark:hover:border-violet-600 rounded-xl px-3 h-9 shadow-sm hover:shadow-md active:scale-95 transition-all duration-150 shrink-0"
               >
                 <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                <span className="text-[13px] font-bold text-gray-800 dark:text-gray-100">{name}</span>
+                <span className="text-[13px] font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">{name}</span>
               </Link>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-          AI BEST DEALS
-      ══════════════════════════════════════ */}
-      <section className="mt-6 md:mt-10 px-4 max-w-7xl mx-auto">
+      {/* ══ AI BEST DEALS — carousel ══ */}
+      <motion.section
+        variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }}
+        className="mt-6 md:mt-10 px-4 max-w-7xl mx-auto"
+      >
         <SectionHeader
           title={t.landing.aiRecs.title}
           subtitle={t.landing.aiRecs.subtitle}
@@ -376,60 +461,57 @@ export function Landing() {
           linkLabel={t.landing.trending.viewAll}
         />
 
-        {/* Cards */}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
+        <Carousel>
           {loadingRecs
-            ? Array(4).fill(0).map((_, i) => (
-                <div key={i} className="shrink-0 w-[160px] md:w-auto aspect-3/4 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl" />
-              ))
-            : recommendations.map(p => (
-                <MiniProductCard
-                  key={p.id}
-                  id={p.id}
-                  image={p.image}
-                  name={p.name}
-                  price={p.price}
-                  badge={t.landing.aiRecs.badge}
-                />
-              ))}
-          {!loadingRecs && recommendations.length === 0 && (
-            <p className="col-span-full py-10 text-center text-sm text-gray-400 dark:text-gray-500">
-              {t.landing.aiRecs.empty}
-            </p>
-          )}
-        </div>
-      </section>
+            ? Array(6).fill(0).map((_, i) => <SkeletonCard key={i} />)
+            : recommendations.length > 0
+              ? recommendations.map(p => (
+                  <MiniProductCard
+                    key={p.id} id={p.id} image={p.image}
+                    name={p.name} price={p.price}
+                    badge={t.landing.aiRecs.badge}
+                  />
+                ))
+              : [
+                  <p key="empty" className="py-10 text-center text-sm text-gray-400 dark:text-gray-500 w-full">
+                    {t.landing.aiRecs.empty}
+                  </p>,
+                ]
+          }
+        </Carousel>
+      </motion.section>
 
-      {/* ══════════════════════════════════════
-          PERSONALIZED — client-side AI recs
-      ══════════════════════════════════════ */}
+      {/* ══ CLIENT RECS — carousel ══ */}
       {showClientRecs && (
-        <section className="mt-6 md:mt-12 px-4 max-w-7xl mx-auto">
+        <motion.section
+          variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }}
+          className="mt-6 md:mt-12 px-4 max-w-7xl mx-auto"
+        >
           <SectionHeader
             title="Siz uchun tavsiyalar"
-            subtitle={favorites.length > 0 ? "Sevimlilaringizga asoslanib tanlandi" : "Profilingizga mos mahsulotlar"}
+            subtitle={favorites.length > 0 ? 'Sevimlilaringizga asoslanib tanlandi' : 'Profilingizga mos mahsulotlar'}
             icon={Sparkles}
             linkTo="/products"
             linkLabel={t.landing.trending.viewAll}
           />
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
+          <Carousel>
             {clientRecs.map(p => (
               <MiniProductCard
-                key={p.id}
-                id={p.id}
-                image={p.image}
-                name={p.name}
-                price={p.price}
+                key={p.id} id={p.id} image={p.image}
+                name={p.name} price={p.price}
                 storeCount={p.markets?.length}
               />
             ))}
-          </div>
-        </section>
+          </Carousel>
+        </motion.section>
       )}
 
-      {/* server personalized — shown only when client recs absent */}
+      {/* ══ SERVER PERSONALIZED — carousel ══ */}
       {!showClientRecs && personalizedRecs.length > 0 && personalizedType === 'personalized' && (
-        <section className="mt-6 md:mt-12 px-4 max-w-7xl mx-auto">
+        <motion.section
+          variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }}
+          className="mt-6 md:mt-12 px-4 max-w-7xl mx-auto"
+        >
           <SectionHeader
             title="Sizga maxsus"
             subtitle="Ko'rgan mahsulotlaringizga asoslanib"
@@ -437,24 +519,25 @@ export function Landing() {
             linkTo="/products"
             linkLabel={t.landing.trending.viewAll}
           />
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
+          <Carousel>
             {personalizedRecs.map(p => (
               <MiniProductCard key={p.id} id={p.id} image={p.image} name={p.name} price={p.price} />
             ))}
-          </div>
-        </section>
+          </Carousel>
+        </motion.section>
       )}
 
-      {/* ══════════════════════════════════════
-          HOW IT WORKS
-      ══════════════════════════════════════ */}
-      <section className="mt-8 md:mt-20 bg-gray-50 dark:bg-gray-900/60 border-y border-gray-100 dark:border-gray-800/60 py-7 md:py-16">
+      {/* ══ HOW IT WORKS ══ */}
+      <motion.section
+        variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }}
+        className="mt-8 md:mt-20 bg-gray-50 dark:bg-gray-900/60 border-y border-gray-100 dark:border-gray-800/60 py-7 md:py-16"
+      >
         <div className="px-4 max-w-7xl mx-auto">
-          <h2 className="font-black text-gray-900 dark:text-white text-[17px] md:text-2xl mb-5 md:mb-8 text-center tracking-tight">
+          <h2 className="font-black text-gray-900 dark:text-white text-[17px] md:text-[26px] mb-5 md:mb-10 text-center tracking-tight">
             {t.landing.howItWorks.title}
           </h2>
 
-          {/* Mobile: vertical list */}
+          {/* Mobile */}
           <div className="flex flex-col gap-3 md:hidden">
             {t.landing.howItWorks.steps.map((item, idx) => (
               <div key={idx} className="flex items-start gap-3 bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
@@ -469,43 +552,54 @@ export function Landing() {
             ))}
           </div>
 
-          {/* Desktop: grid */}
+          {/* Desktop */}
           <div className="hidden md:grid grid-cols-3 gap-6">
             {t.landing.howItWorks.steps.map((item, idx) => (
-              <div key={idx} className="relative bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
-                <div className="w-10 h-10 rounded-2xl bg-violet-600 text-white flex items-center justify-center font-black text-lg mb-4 shadow-lg shadow-violet-500/30">
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.12, duration: 0.5 }}
+                whileHover={{ y: -4, boxShadow: '0 16px 32px -8px rgba(139,92,246,0.18)' }}
+                className="relative bg-white dark:bg-gray-800 rounded-3xl p-7 border border-gray-100 dark:border-gray-700 shadow-sm transition-shadow cursor-default"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-violet-600 text-white flex items-center justify-center font-black text-xl mb-5 shadow-lg shadow-violet-500/30">
                   {idx + 1}
                 </div>
-                <h3 className="font-black text-gray-900 dark:text-white text-base mb-2">{item.title}</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+                <h3 className="font-black text-gray-900 dark:text-white text-[16px] mb-2">{item.title}</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-[13px] leading-relaxed">{item.desc}</p>
                 {idx < 2 && (
                   <div className="absolute top-10 -right-4 z-10 text-violet-300 dark:text-violet-700">
                     <ArrowRight className="w-5 h-5" />
                   </div>
                 )}
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* ══════════════════════════════════════
-          BOTTOM CTA
-      ══════════════════════════════════════ */}
-      <section className="px-4 py-7 md:py-10 max-w-7xl mx-auto">
-        <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-linear-to-br from-violet-600 via-violet-700 to-violet-900 p-6 md:p-12 shadow-xl shadow-violet-500/20">
-          {/* Blobs */}
+      {/* ══ BOTTOM CTA ══ */}
+      <motion.section
+        variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }}
+        className="px-4 py-7 md:py-12 max-w-7xl mx-auto"
+      >
+        <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-linear-to-br from-violet-600 via-violet-700 to-violet-900 p-6 md:p-14 shadow-xl shadow-violet-500/20">
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-white/5" />
+            <motion.div
+              animate={{ scale: [1, 1.1, 1], opacity: [0.06, 0.1, 0.06] }}
+              transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute -top-10 -left-10 w-56 h-56 rounded-full bg-white"
+            />
             <div className="absolute -bottom-10 -right-10 w-60 h-60 rounded-full bg-white/5" />
           </div>
-
           <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-5">
             <div>
-              <h2 className="text-white font-black text-xl md:text-3xl tracking-tight mb-1.5 md:mb-2">
+              <h2 className="text-white font-black text-xl md:text-[32px] tracking-tight mb-1.5 md:mb-2">
                 {t.landing.cta.title}
               </h2>
-              <p className="text-white/70 text-sm md:text-base max-w-md">
+              <p className="text-white/70 text-sm md:text-[15px] max-w-md">
                 {t.landing.cta.subtitle
                   .replace('{{count}}', total > 0 ? total.toLocaleString() : '500+')
                   .replace('{{stores}}', '21')}
@@ -513,14 +607,14 @@ export function Landing() {
             </div>
             <Link
               to="/products"
-              className="flex items-center justify-center gap-2 bg-white text-violet-700 font-black rounded-2xl px-8 py-3.5 text-sm md:text-base shadow-lg hover:scale-105 active:scale-95 transition-all shrink-0 w-full md:w-auto"
+              className="flex items-center justify-center gap-2 bg-white text-violet-700 font-black rounded-2xl px-8 py-3.5 text-sm md:text-base shadow-lg hover:scale-105 hover:shadow-2xl active:scale-95 transition-all shrink-0 w-full md:w-auto"
             >
               {t.landing.cta.button}
               <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
             </Link>
           </div>
         </div>
-      </section>
+      </motion.section>
     </div>
   );
 }
