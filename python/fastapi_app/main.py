@@ -4,24 +4,120 @@ FastAPI service — serves product data from PostgreSQL.
 
 from __future__ import annotations
 
+import asyncio
 import math
 import os
 import pickle
 import re
+import uuid
 from collections import Counter
 from contextlib import asynccontextmanager
-from typing import Any, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, Literal, Optional
 
 import asyncpg
-from fastapi import FastAPI, HTTPException, Query
+import bcrypt
+import jwt as pyjwt
+from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt.exceptions import InvalidTokenError
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://postgres:postgres@postgres:5432/fullbazar",
 )
 MODEL_PATH = os.getenv("MODEL_PATH", "/app/data/models/best_matcher.pkl")
+
+# ── Auth config ───────────────────────────────────────────────────────────────
+_JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-in-production")
+_JWT_ALGO = "HS256"
+_JWT_EXPIRE_DAYS = 7
+_bearer = HTTPBearer(auto_error=False)
+
+
+def _hash_pw(plain: str) -> str:
+    return bcrypt.hashpw(plain.encode(), bcrypt.gensalt(rounds=12)).decode()
+
+
+def _verify_pw(plain: str, hashed: str) -> bool:
+    try:
+        return bcrypt.checkpw(plain.encode(), hashed.encode())
+    except Exception:
+        return False
+
+
+def _make_token(user_id: str) -> str:
+    exp = datetime.now(tz=timezone.utc) + timedelta(days=_JWT_EXPIRE_DAYS)
+    return pyjwt.encode({"sub": user_id, "exp": exp}, _JWT_SECRET, algorithm=_JWT_ALGO)
+
+
+async def _require_user(
+    creds: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
+) -> asyncpg.Record:
+    """FastAPI dependency — decodes JWT and fetches the user row."""
+    if creds is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    try:
+        payload = pyjwt.decode(creds.credentials, _JWT_SECRET, algorithms=[_JWT_ALGO])
+        user_id: str | None = payload.get("sub")
+        if not user_id:
+            raise InvalidTokenError()
+    except InvalidTokenError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+    pool: asyncpg.Pool = app.state.pool
+    row = await pool.fetchrow(
+        """
+        SELECT u.id, u.name, u.email,
+               COALESCE(p.age_group,            '25-34') AS age_group,
+               COALESCE(p.budget_level,          'mid')   AS budget_level,
+               COALESCE(p.preferred_brands,      '{}')    AS preferred_brands,
+               COALESCE(p.preferred_categories,  '{}')    AS preferred_categories
+        FROM users u
+        LEFT JOIN user_profiles p ON p.user_id = u.id
+        WHERE u.id = $1
+        """,
+        uuid.UUID(user_id),
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return row
+
+
+# ── Auth Pydantic models ──────────────────────────────────────────────────────
+
+class RegisterRequest(BaseModel):
+    name:                 str                                       = Field(..., min_length=2, max_length=100)
+    email:                EmailStr
+    password:             str                                       = Field(..., min_length=8, max_length=128)
+    age_group:            Literal["18-24", "25-34", "35-44", "45+"] = "25-34"
+    budget_level:         Literal["budget", "mid", "premium"]       = "mid"
+    preferred_brands:     list[str]                                 = []
+    preferred_categories: list[str]                                 = []
+
+    @field_validator("name")
+    @classmethod
+    def strip_name(cls, v: str) -> str:
+        return v.strip()
+
+    @field_validator("preferred_brands", "preferred_categories")
+    @classmethod
+    def cap_list(cls, v: list[str]) -> list[str]:
+        return [s.strip() for s in v[:20] if s.strip()]
+
+
+class LoginRequest(BaseModel):
+    email:    EmailStr
+    password: str = Field(..., min_length=1)
+
+
+class UpdateProfileRequest(BaseModel):
+    age_group:            Literal["18-24", "25-34", "35-44", "45+"]
+    budget_level:         Literal["budget", "mid", "premium"]
+    preferred_brands:     list[str] = []
+    preferred_categories: list[str] = []
 
 
 # ── ML matcher (loaded once at startup) ──────────────────────────────────────
@@ -152,7 +248,7 @@ app = FastAPI(title="Full-Bazar API", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -454,6 +550,132 @@ async def track_event(event: TrackEvent):
 async def health() -> dict:
     matcher = _load_matcher()
     return {"status": "ok", "matcher_model": "loaded" if matcher else "not_trained_yet"}
+
+
+# ── Auth endpoints ────────────────────────────────────────────────────────────
+
+def _user_payload(row: asyncpg.Record, extra: dict | None = None) -> dict:
+    """Shape the user object the frontend expects."""
+    profile_src = extra or row
+    return {
+        "id":    str(row["id"]),
+        "name":  row["name"],
+        "email": row["email"],
+        "profile": {
+            "name":                 row["name"],
+            "email":                row["email"],
+            "ageGroup":             profile_src.get("age_group",            "25-34"),
+            "budgetLevel":          profile_src.get("budget_level",          "mid"),
+            "preferredBrands":      list(profile_src.get("preferred_brands",      [])),
+            "preferredCategories":  list(profile_src.get("preferred_categories",  [])),
+        },
+    }
+
+
+@app.post("/api/auth/register", status_code=201)
+async def auth_register(body: RegisterRequest) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+
+    existing = await pool.fetchval(
+        "SELECT id FROM users WHERE lower(email) = $1", body.email.lower()
+    )
+    if existing:
+        raise HTTPException(status_code=409, detail="Bu email allaqachon ro'yxatdan o'tgan")
+
+    loop = asyncio.get_running_loop()
+    pw_hash = await loop.run_in_executor(None, _hash_pw, body.password)
+
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            user_row = await conn.fetchrow(
+                "INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email",
+                body.name, body.email.lower(), pw_hash,
+            )
+            await conn.execute(
+                """
+                INSERT INTO user_profiles
+                    (user_id, age_group, budget_level, preferred_brands, preferred_categories)
+                VALUES ($1, $2, $3, $4, $5)
+                """,
+                user_row["id"],
+                body.age_group,
+                body.budget_level,
+                body.preferred_brands,
+                body.preferred_categories,
+            )
+
+    token = _make_token(str(user_row["id"]))
+    return {
+        "token": token,
+        "user": _user_payload(user_row, {
+            "age_group":            body.age_group,
+            "budget_level":         body.budget_level,
+            "preferred_brands":     body.preferred_brands,
+            "preferred_categories": body.preferred_categories,
+        }),
+    }
+
+
+@app.post("/api/auth/login")
+async def auth_login(body: LoginRequest) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+
+    row = await pool.fetchrow(
+        """
+        SELECT u.id, u.name, u.email, u.password_hash,
+               COALESCE(p.age_group,            '25-34') AS age_group,
+               COALESCE(p.budget_level,          'mid')   AS budget_level,
+               COALESCE(p.preferred_brands,      '{}')    AS preferred_brands,
+               COALESCE(p.preferred_categories,  '{}')    AS preferred_categories
+        FROM users u
+        LEFT JOIN user_profiles p ON p.user_id = u.id
+        WHERE lower(u.email) = $1
+        """,
+        body.email.lower(),
+    )
+
+    if row is None:
+        raise HTTPException(status_code=401, detail="Email yoki parol noto'g'ri")
+
+    loop = asyncio.get_running_loop()
+    ok = await loop.run_in_executor(None, _verify_pw, body.password, row["password_hash"])
+    if not ok:
+        raise HTTPException(status_code=401, detail="Email yoki parol noto'g'ri")
+
+    token = _make_token(str(row["id"]))
+    return {"token": token, "user": _user_payload(row)}
+
+
+@app.get("/api/users/me")
+async def get_me(row: asyncpg.Record = Depends(_require_user)) -> dict:
+    return _user_payload(row)
+
+
+@app.patch("/api/users/me/profile")
+async def update_profile(
+    body: UpdateProfileRequest,
+    row: asyncpg.Record = Depends(_require_user),
+) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    await pool.execute(
+        """
+        INSERT INTO user_profiles
+            (user_id, age_group, budget_level, preferred_brands, preferred_categories)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (user_id) DO UPDATE SET
+            age_group            = EXCLUDED.age_group,
+            budget_level         = EXCLUDED.budget_level,
+            preferred_brands     = EXCLUDED.preferred_brands,
+            preferred_categories = EXCLUDED.preferred_categories,
+            updated_at           = NOW()
+        """,
+        row["id"],
+        body.age_group,
+        body.budget_level,
+        body.preferred_brands,
+        body.preferred_categories,
+    )
+    return {"ok": True}
 
 
 @app.get("/api/stats")

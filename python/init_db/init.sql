@@ -45,3 +45,23 @@ CREATE TABLE IF NOT EXISTS user_events (
 );
 CREATE INDEX IF NOT EXISTS idx_user_events_session ON user_events(session_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_user_events_product ON user_events(product_id);
+
+-- ── Auth ──────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS users (
+    id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    name          VARCHAR(100) NOT NULL,
+    email         VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at    TIMESTAMPTZ  DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ  DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(lower(email));
+
+CREATE TABLE IF NOT EXISTS user_profiles (
+    user_id              UUID        PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    age_group            VARCHAR(10) NOT NULL DEFAULT '25-34',
+    budget_level         VARCHAR(10) NOT NULL DEFAULT 'mid',
+    preferred_brands     TEXT[]      NOT NULL DEFAULT '{}',
+    preferred_categories TEXT[]      NOT NULL DEFAULT '{}',
+    updated_at           TIMESTAMPTZ DEFAULT NOW()
+);

@@ -29,7 +29,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
-  updateProfile: (profile: Partial<UserProfile>) => void;
+  updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
 }
 
 export interface RegisterData {
@@ -42,11 +42,72 @@ export interface RegisterData {
   preferredCategories: string[];
 }
 
-const KEY = 'bazar_user';
+const STORAGE_KEY = 'bazar_user';
+const API = '/api';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function getTokenExpiry(token: string | undefined): number {
+  if (!token) return 0;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return (payload.exp ?? 0) * 1000;
+  } catch {
+    return 0;
+  }
+}
 
 function readUser(): AuthUser | null {
-  try { return JSON.parse(localStorage.getItem(KEY) ?? 'null'); } catch { return null; }
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const u = JSON.parse(raw) as AuthUser;
+    // Auto-clear expired token so user is shown as logged out on next visit
+    if (getTokenExpiry(u.token) < Date.now()) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return u;
+  } catch {
+    return null;
+  }
 }
+
+function shapeUser(apiUser: {
+  id: string; name: string; email: string;
+  profile: {
+    ageGroup: string; budgetLevel: string;
+    preferredBrands: string[]; preferredCategories: string[];
+  };
+}, token: string): AuthUser {
+  return {
+    id: apiUser.id,
+    name: apiUser.name,
+    email: apiUser.email,
+    token,
+    profile: {
+      name: apiUser.name,
+      email: apiUser.email,
+      ageGroup: apiUser.profile.ageGroup as UserProfile['ageGroup'],
+      budgetLevel: apiUser.profile.budgetLevel as UserProfile['budgetLevel'],
+      preferredBrands: apiUser.profile.preferredBrands,
+      preferredCategories: apiUser.profile.preferredCategories,
+    },
+  };
+}
+
+async function apiPost(path: string, body: unknown): Promise<{ token: string; user: any }> {
+  const res = await fetch(`${API}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail ?? 'Xatolik yuz berdi');
+  return data;
+}
+
+// ── Context ───────────────────────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -59,69 +120,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const openRegister = useCallback(() => { setAuthMode('register'); setIsAuthOpen(true);  }, []);
   const closeAuth    = useCallback(() => setIsAuthOpen(false), []);
 
-  const save = (u: AuthUser) => {
-    localStorage.setItem(KEY, JSON.stringify(u));
+  const save = useCallback((u: AuthUser) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
     setUser(u);
-  };
-
-  // In a real app these would hit /api/auth/login and /api/auth/register.
-  // For now they simulate a successful response so the UI is fully functional.
-  const login = useCallback(async (email: string, _password: string) => {
-    const existing = readUser();
-    if (existing && existing.email === email) {
-      save(existing);
-      setIsAuthOpen(false);
-      return;
-    }
-    const u: AuthUser = {
-      id: crypto.randomUUID(),
-      name: email.split('@')[0],
-      email,
-      token: crypto.randomUUID(),
-      profile: {
-        name: email.split('@')[0],
-        email,
-        ageGroup: '25-34',
-        budgetLevel: 'mid',
-        preferredBrands: [],
-        preferredCategories: [],
-      },
-    };
-    save(u);
-    setIsAuthOpen(false);
   }, []);
 
-  const register = useCallback(async (data: RegisterData) => {
-    const u: AuthUser = {
-      id: crypto.randomUUID(),
-      name: data.name,
-      email: data.email,
-      token: crypto.randomUUID(),
-      profile: {
-        name: data.name,
-        email: data.email,
-        ageGroup: data.ageGroup,
-        budgetLevel: data.budgetLevel,
-        preferredBrands: data.preferredBrands,
-        preferredCategories: data.preferredCategories,
-      },
-    };
-    save(u);
+  const login = useCallback(async (email: string, password: string) => {
+    const data = await apiPost('/auth/login', {
+      email: email.trim().toLowerCase(),
+      password,
+    });
+    save(shapeUser(data.user, data.token));
     setIsAuthOpen(false);
-  }, []);
+  }, [save]);
+
+  const register = useCallback(async (form: RegisterData) => {
+    const data = await apiPost('/auth/register', {
+      name:                 form.name.trim(),
+      email:                form.email.trim().toLowerCase(),
+      password:             form.password,
+      age_group:            form.ageGroup,
+      budget_level:         form.budgetLevel,
+      preferred_brands:     form.preferredBrands,
+      preferred_categories: form.preferredCategories,
+    });
+    save(shapeUser(data.user, data.token));
+    setIsAuthOpen(false);
+  }, [save]);
 
   const logout = useCallback(() => {
-    localStorage.removeItem(KEY);
+    localStorage.removeItem(STORAGE_KEY);
     setUser(null);
   }, []);
 
-  const updateProfile = useCallback((partial: Partial<UserProfile>) => {
+  const updateProfile = useCallback(async (partial: Partial<UserProfile>) => {
     setUser(prev => {
       if (!prev) return prev;
-      const updated = { ...prev, profile: { ...prev.profile, ...partial } };
-      localStorage.setItem(KEY, JSON.stringify(updated));
+      const updated: AuthUser = {
+        ...prev,
+        profile: { ...prev.profile, ...partial },
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       return updated;
     });
+
+    // Sync to backend (best-effort — don't block the UI on failure)
+    const current = readUser();
+    if (!current?.token) return;
+    const profile = { ...current.profile, ...partial };
+    fetch(`${API}/users/me/profile`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${current.token}`,
+      },
+      body: JSON.stringify({
+        age_group:            profile.ageGroup,
+        budget_level:         profile.budgetLevel,
+        preferred_brands:     profile.preferredBrands,
+        preferred_categories: profile.preferredCategories,
+      }),
+    }).catch(() => undefined);
   }, []);
 
   return (
