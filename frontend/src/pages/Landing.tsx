@@ -463,9 +463,9 @@ export function Landing() {
 
         <Carousel>
           {loadingRecs
-            ? Array(6).fill(0).map((_, i) => <SkeletonCard key={i} />)
+            ? Array(10).fill(0).map((_, i) => <SkeletonCard key={i} />)
             : recommendations.length > 0
-              ? recommendations.map(p => (
+              ? recommendations.slice(0, 6).map(p => (
                   <MiniProductCard
                     key={p.id} id={p.id} image={p.image}
                     name={p.name} price={p.price}

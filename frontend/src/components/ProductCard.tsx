@@ -135,7 +135,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
       className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col hover:shadow-xl hover:shadow-violet-500/10 dark:hover:shadow-violet-900/20 hover:-translate-y-0.5 hover:border-violet-200/70 dark:hover:border-violet-800/50 transition-all duration-200 cursor-pointer active:scale-[0.98]"
     >
       {/* Image */}
-      <div className="relative aspect-square overflow-hidden bg-gray-50 dark:bg-gray-800/50">
+      <div className="relative h-36 md:h-40 overflow-hidden bg-gray-50 dark:bg-gray-800/50">
         <img
           src={product.image}
           alt={product.name}
@@ -145,16 +145,16 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
 
         {/* Store count — top left */}
         {sortedMarkets.length > 1 && (
-          <div className="absolute top-2 left-2 flex items-center gap-1 bg-violet-600 text-white text-[9px] font-black px-2 py-1 rounded-full shadow-sm shadow-violet-500/30">
-            <Store className="w-2.5 h-2.5" />
+          <div className="absolute top-2 left-2 flex items-center gap-1 bg-violet-600 text-white text-[11px] font-black px-2.5 py-1 rounded-full shadow-sm shadow-violet-500/30">
+            <Store className="w-3 h-3" />
             {sortedMarkets.length}
           </div>
         )}
 
         {/* Savings badge — top right (hidden when liked button occupies spot) */}
         {savings > 0 && (
-          <div className="absolute top-2 right-2 flex items-center gap-0.5 bg-emerald-500 text-white text-[9px] font-black px-2 py-1 rounded-full shadow-sm shadow-emerald-500/30">
-            <TrendingDown className="w-2.5 h-2.5" />
+          <div className="absolute top-2 right-2 flex items-center gap-0.5 bg-emerald-500 text-white text-[11px] font-black px-2.5 py-1 rounded-full shadow-sm shadow-emerald-500/30">
+            <TrendingDown className="w-3 h-3" />
             -{formatSum(savings)}
           </div>
         )}
@@ -173,13 +173,14 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
         {user && (
           <button
             onClick={(e) => { e.stopPropagation(); toggleWatch(product); }}
-            className={`absolute bottom-2 left-2 w-7 h-7 flex items-center justify-center rounded-xl shadow-sm transition-all active:scale-90 ${
+            title={watching ? "Narx kuzatuvdan olib tashlash" : "Narxni kuzatish"}
+            className={`absolute bottom-2 left-2 w-8 h-8 flex items-center justify-center rounded-xl shadow-md transition-all active:scale-90 ${
               watching
-                ? 'bg-violet-600 text-white shadow-violet-500/30'
-                : 'bg-white/90 dark:bg-gray-900/90 text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/30'
+                ? 'bg-violet-600 text-white shadow-violet-500/40 scale-105'
+                : 'bg-white/95 dark:bg-gray-900/95 text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:shadow-violet-500/20'
             }`}
           >
-            <Bell className="w-3.5 h-3.5" />
+            <Bell className={`w-4 h-4 transition-transform ${watching ? 'fill-white' : ''}`} />
           </button>
         )}
       </div>
@@ -216,9 +217,9 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="ml-auto text-gray-300 dark:text-gray-600 hover:text-violet-500 transition-colors"
+                  className="ml-auto flex items-center gap-1 text-[11px] font-semibold text-violet-500 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 transition-colors shrink-0"
                 >
-                  <ExternalLink className="w-3 h-3" />
+                  <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               )}
             </div>
