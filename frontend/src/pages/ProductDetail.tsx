@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { motion } from "framer-motion";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   Star,
@@ -171,7 +172,12 @@ export function ProductDetail() {
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
 
           {/* ── Left: Image ── */}
-          <div className="lg:w-1/2 space-y-4">
+          <motion.div
+            className="lg:w-1/2 space-y-4"
+            initial={{ opacity: 0, x: -28 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          >
             <div className="relative bg-white dark:bg-gray-900 rounded-2xl md:rounded-[2.5rem] border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
               {/* Best seller badge */}
               <div className="absolute top-4 left-4 z-10">
@@ -277,10 +283,15 @@ export function ProductDetail() {
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* ── Right: Info ── */}
-          <div className="lg:w-1/2 space-y-5">
+          <motion.div
+            className="lg:w-1/2 space-y-5"
+            initial={{ opacity: 0, x: 28 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut', delay: 0.08 }}
+          >
             {/* Title & meta */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 flex-wrap">
@@ -354,8 +365,11 @@ export function ProductDetail() {
                   </thead>
                   <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
                     {sortedMarkets.map((market, idx) => (
-                      <tr
+                      <motion.tr
                         key={idx}
+                        initial={{ opacity: 0, x: 12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.28, delay: idx * 0.06 }}
                         onClick={() => setSelectedMarketIndex(product.markets?.indexOf(market) ?? idx)}
                         className={`cursor-pointer transition-colors ${
                           selectedMarketIndex === product.markets?.indexOf(market)
@@ -381,7 +395,7 @@ export function ProductDetail() {
                             {t.detail.goToShop} <ExternalLink className="w-3 h-3" />
                           </a>
                         </td>
-                      </tr>
+                      </motion.tr>
                     ))}
                   </tbody>
                 </table>
@@ -465,7 +479,13 @@ export function ProductDetail() {
                       <span className="text-gray-900 dark:text-white">{item.value}</span>
                     </div>
                     <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div className={`h-full ${item.color} rounded-full`} style={{ width: `${parseFloat(item.value) * 20}%` }} />
+                      <motion.div
+                        className={`h-full ${item.color} rounded-full`}
+                        initial={{ width: 0 }}
+                        whileInView={{ width: `${parseFloat(item.value) * 20}%` }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.9, delay: i * 0.1, ease: 'easeOut' }}
+                      />
                     </div>
                   </div>
                 ))}
@@ -480,7 +500,7 @@ export function ProductDetail() {
                 </p>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* ── Tabs / Bottom Section ── */}

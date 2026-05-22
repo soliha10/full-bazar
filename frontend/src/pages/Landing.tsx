@@ -48,7 +48,7 @@ const QUICK_CATEGORIES = [
 
 const fadeUp = {
   hidden:  { opacity: 0, y: 28 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: 'easeOut' } },
+  visible: { opacity: 1, y: 0 },
 };
 
 /* ── Section header ── */
@@ -393,7 +393,7 @@ export function Landing() {
 
       {/* ══ TRUST BAR — desktop ══ */}
       <motion.section
-        variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
+        variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true }}
         className="hidden md:block mt-6 px-4 max-w-7xl mx-auto"
       >
         <div className="grid grid-cols-3 gap-4">
@@ -450,7 +450,7 @@ export function Landing() {
 
       {/* ══ AI BEST DEALS — carousel ══ */}
       <motion.section
-        variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }}
+        variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true, margin: '-60px' }}
         className="mt-6 md:mt-10 px-4 max-w-7xl mx-auto"
       >
         <SectionHeader
@@ -484,7 +484,7 @@ export function Landing() {
       {/* ══ CLIENT RECS — carousel ══ */}
       {showClientRecs && (
         <motion.section
-          variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }}
+          variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true, margin: '-60px' }}
           className="mt-6 md:mt-12 px-4 max-w-7xl mx-auto"
         >
           <SectionHeader
@@ -509,7 +509,7 @@ export function Landing() {
       {/* ══ SERVER PERSONALIZED — carousel ══ */}
       {!showClientRecs && personalizedRecs.length > 0 && personalizedType === 'personalized' && (
         <motion.section
-          variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }}
+          variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true, margin: '-60px' }}
           className="mt-6 md:mt-12 px-4 max-w-7xl mx-auto"
         >
           <SectionHeader
@@ -529,7 +529,7 @@ export function Landing() {
 
       {/* ══ HOW IT WORKS ══ */}
       <motion.section
-        variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }}
+        variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true, margin: '-60px' }}
         className="mt-8 md:mt-20 bg-gray-50 dark:bg-gray-900/60 border-y border-gray-100 dark:border-gray-800/60 py-7 md:py-16"
       >
         <div className="px-4 max-w-7xl mx-auto">
@@ -582,7 +582,7 @@ export function Landing() {
 
       {/* ══ BOTTOM CTA ══ */}
       <motion.section
-        variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }}
+        variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true, margin: '-40px' }}
         className="px-4 py-7 md:py-12 max-w-7xl mx-auto"
       >
         <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-linear-to-br from-violet-600 via-violet-700 to-violet-900 p-6 md:p-14 shadow-xl shadow-violet-500/20">

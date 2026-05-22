@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutGrid, List, X, ChevronRight,
   Search, Loader2, SlidersHorizontal, RotateCcw, ArrowLeft,
@@ -595,11 +596,29 @@ export function ProductListing() {
               <>
                 {viewMode === 'grid' ? (
                   <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 md:gap-4">
-                    {filteredProducts.map(p => <ProductCard key={p.id} product={p} activeMarkets={selectedMarketplaces} />)}
+                    {filteredProducts.map((p, i) => (
+                      <motion.div
+                        key={p.id}
+                        initial={{ opacity: 0, y: 18 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.32, delay: Math.min(i, 15) * 0.045 }}
+                      >
+                        <ProductCard product={p} activeMarkets={selectedMarketplaces} />
+                      </motion.div>
+                    ))}
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
-                    {filteredProducts.map(p => <ProductCard key={p.id} product={p} viewMode="list" activeMarkets={selectedMarketplaces} />)}
+                    {filteredProducts.map((p, i) => (
+                      <motion.div
+                        key={p.id}
+                        initial={{ opacity: 0, x: -16 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.28, delay: Math.min(i, 15) * 0.04 }}
+                      >
+                        <ProductCard product={p} viewMode="list" activeMarkets={selectedMarketplaces} />
+                      </motion.div>
+                    ))}
                   </div>
                 )}
               </>
@@ -624,8 +643,15 @@ export function ProductListing() {
       </div>
 
       {/* ── Mobile filter bottom sheet ── */}
+      <AnimatePresence>
       {isMobileFilterOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <motion.div
+          className="fixed inset-0 z-50 md:hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
           {/* Backdrop */}
           <button
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -633,8 +659,13 @@ export function ProductListing() {
           />
 
           {/* Sheet */}
-          <div className="absolute bottom-0 left-0 right-0 max-h-[92vh] bg-white dark:bg-gray-950 flex flex-col"
+          <motion.div
+            className="absolute bottom-0 left-0 right-0 max-h-[92vh] bg-white dark:bg-gray-950 flex flex-col"
             style={{ borderRadius: '24px 24px 0 0', boxShadow: '0 -8px 40px rgba(0,0,0,0.15)' }}
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 320 }}
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-1">
@@ -683,9 +714,10 @@ export function ProductListing() {
                 {t.listing.viewResults}
               </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }
