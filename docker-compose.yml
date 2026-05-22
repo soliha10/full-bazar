@@ -101,25 +101,20 @@ services:
     mem_limit: 1200m
 
   # ── MLflow (Tracking Server) ────────────────────────────────────────────────
+  # File-based backend: reads ./mlruns directly — all previous local runs are
+  # immediately visible and new dagster runs are written there too.
   mlflow:
     build:
       context: ./python/mlflow_app
       dockerfile: Dockerfile
     restart: unless-stopped
-    environment:
-      MLFLOW_PG_HOST: postgres
-      MLFLOW_PG_USER: postgres
-      MLFLOW_PG_PASSWORD: postgres
-      MLFLOW_PG_DB: mlflow
-    # Dedicated `mlflow` database prevents Alembic schema conflicts with app tables.
-    # --allowed-hosts "*" lets dagster/fastapi reach mlflow across Docker network.
     command:
       - mlflow
       - server
       - --backend-store-uri
-      - postgresql://postgres:postgres@postgres:5432/mlflow
+      - /mlruns
       - --default-artifact-root
-      - /mlflow/artifacts
+      - /mlruns
       - --host
       - "0.0.0.0"
       - --port
@@ -129,17 +124,14 @@ services:
     ports:
       - "5050:5000"
     volumes:
-      - mlflow_data:/mlflow/artifacts
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - ./mlruns:/mlruns
     mem_limit: 400m
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 30s
 
 volumes:
   postgres_data:
