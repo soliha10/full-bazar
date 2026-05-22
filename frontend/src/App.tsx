@@ -18,6 +18,7 @@ import { Landing } from "./pages/Landing";
 import { ProductListing } from "./pages/ProductListing";
 import { ProductDetail } from "./pages/ProductDetail";
 import { Wishlist } from "./pages/Wishlist";
+import { Profile } from "./pages/Profile";
 
 export default function App() {
   return (
@@ -41,11 +42,12 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isSearchPage = location.pathname === '/products';
-  const isDetailPage = location.pathname.startsWith('/product/');
+  const isSearchPage  = location.pathname === '/products';
+  const isDetailPage  = location.pathname.startsWith('/product/');
+  const isProfilePage = location.pathname === '/profile';
 
-  const hideNavbarOnMobile = isSearchPage || isDetailPage;
-  const hideFooter = isSearchPage || isDetailPage || location.pathname === '/wishlist';
+  const hideNavbarOnMobile = isSearchPage || isDetailPage || isProfilePage;
+  const hideFooter = isSearchPage || isDetailPage || location.pathname === '/wishlist' || isProfilePage;
 
   const handleSearch = (value: string) => {
     if (value.trim()) {
@@ -67,6 +69,7 @@ function AppContent() {
           <Route path="/products"    element={<ProductListing />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/wishlist"    element={<Wishlist />} />
+          <Route path="/profile"    element={<Profile />} />
         </Routes>
       </main>
 

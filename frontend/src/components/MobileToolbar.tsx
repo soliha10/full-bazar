@@ -2,11 +2,15 @@ import { Home, Search, Heart, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useFavorites } from '../hooks/useFavorites';
+import { usePriceWatch } from '../hooks/usePriceWatch';
+import { useAuth } from '../contexts/AuthContext';
 
 export function MobileToolbar() {
   const location = useLocation();
   const { t } = useLanguage();
   const { favorites } = useFavorites();
+  const { watched } = usePriceWatch();
+  const { user } = useAuth();
   const currentPath = location.pathname;
 
   const items = [
@@ -30,6 +34,9 @@ export function MobileToolbar() {
             ? currentPath === '/'
             : currentPath === item.path || currentPath.startsWith(item.path + '/');
 
+          const isWishlist = item.path === '/wishlist';
+          const isProfile  = item.path === '/profile';
+
           return (
             <Link
               key={item.path}
@@ -39,23 +46,47 @@ export function MobileToolbar() {
               {isActive && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-violet-600" />
               )}
+
               <div className={`relative flex items-center justify-center w-11 h-8 rounded-2xl transition-all duration-200 ${
                 isActive ? 'bg-violet-100 dark:bg-violet-900/50 scale-110' : ''
               }`}>
-                <item.icon
-                  className={`w-5 h-5 transition-all duration-200 ${
-                    isActive
-                      ? 'text-violet-600 dark:text-violet-400'
-                      : 'text-gray-400 dark:text-gray-500'
-                  }`}
-                  strokeWidth={isActive ? 2.5 : 1.8}
-                />
-                {item.count > 0 && (
+
+                {/* Profile tab: show user initial when logged in */}
+                {isProfile && user ? (
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black bg-linear-to-br from-violet-500 to-violet-700 text-white shadow-sm transition-all duration-200 ${isActive ? 'scale-110' : ''}`}>
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                ) : (
+                  <item.icon
+                    className={`w-5 h-5 transition-all duration-200 ${
+                      isActive
+                        ? 'text-violet-600 dark:text-violet-400'
+                        : 'text-gray-400 dark:text-gray-500'
+                    }`}
+                    strokeWidth={isActive ? 2.5 : 1.8}
+                  />
+                )}
+
+                {/* Favorites count (red) */}
+                {isWishlist && item.count > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center leading-none">
                     {item.count > 9 ? '9+' : item.count}
                   </span>
                 )}
+
+                {/* Watched count badge (violet) — only when no favorites badge overlapping */}
+                {isWishlist && user && watched.length > 0 && item.count === 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-violet-600 text-white text-[9px] font-black flex items-center justify-center leading-none">
+                    {watched.length > 9 ? '9+' : watched.length}
+                  </span>
+                )}
+
+                {/* Violet dot indicator when both favorites and watched exist */}
+                {isWishlist && user && watched.length > 0 && item.count > 0 && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-violet-600 border-2 border-white dark:border-gray-950" />
+                )}
               </div>
+
               <span className={`text-[10px] font-bold leading-none transition-all duration-200 ${
                 isActive
                   ? 'text-violet-600 dark:text-violet-400'

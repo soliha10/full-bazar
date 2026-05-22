@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Search, User, Moon, Sun, Globe, ShoppingBag, Menu, Mic, X,
   LogIn, HelpCircle, Info, Sparkles, Heart, ChevronRight,
-  Home, Package, LogOut, ChevronDown,
+  Home, Package, LogOut, ChevronDown, Bell,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
@@ -10,6 +10,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../locales/translations';
 import { useFavorites } from '../hooks/useFavorites';
 import { useAuth } from '../contexts/AuthContext';
+import { usePriceWatch } from '../hooks/usePriceWatch';
 
 interface NavbarProps {
   onSearchChange?: (value: string) => void;
@@ -21,6 +22,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
   const location = useLocation();
   const { favorites } = useFavorites();
   const { user, openLogin, openRegister, logout } = useAuth();
+  const { watched } = usePriceWatch();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
@@ -242,6 +244,26 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                   </span>
                 )}
               </Link>
+
+              {/* Bell (price watch) — desktop, auth-gated */}
+              {user && (
+                <Link
+                  to="/wishlist?tab=watch"
+                  className="hidden md:flex relative w-9 h-9 items-center justify-center rounded-xl
+                    bg-gray-50 dark:bg-gray-800
+                    hover:bg-violet-50 dark:hover:bg-violet-900/30
+                    text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400
+                    transition-all active:scale-90"
+                  title="Narx kuzatuv"
+                >
+                  <Bell className={`w-4 h-4 transition-colors ${watched.length > 0 ? 'text-violet-600 dark:text-violet-400' : ''}`} />
+                  {watched.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-600 text-white text-[9px] font-black flex items-center justify-center">
+                      {watched.length > 9 ? '9+' : watched.length}
+                    </span>
+                  )}
+                </Link>
+              )}
 
               {/* Theme toggle — desktop */}
               <button onClick={toggleTheme} aria-label="Mavzuni o'zgartirish"

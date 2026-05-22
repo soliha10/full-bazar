@@ -5,6 +5,7 @@ FastAPI service — serves product data from PostgreSQL.
 from __future__ import annotations
 
 import asyncio
+import json
 import math
 import os
 import pickle
@@ -234,12 +235,69 @@ def _ml_match(name_a: str, name_b: str) -> tuple[float, bool, str]:
     return score, is_match, "trained_classifier"
 
 
+# ── JSONB codec ───────────────────────────────────────────────────────────────
+
+async def _setup_jsonb_codec(conn: asyncpg.Connection) -> None:
+    await conn.set_type_codec(
+        "jsonb",
+        encoder=json.dumps,
+        decoder=json.loads,
+        schema="pg_catalog",
+    )
+
+
 # ── Lifespan ──────────────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+    app.state.pool = await asyncpg.create_pool(
+        DATABASE_URL, min_size=2, max_size=10, init=_setup_jsonb_codec,
+    )
     _load_matcher()  # warm up model at startup
+    async with app.state.pool.acquire() as conn:
+        # Auth tables (may not exist on volumes created before auth was added)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+                name          VARCHAR(100) NOT NULL,
+                email         VARCHAR(255) NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                created_at    TIMESTAMPTZ  DEFAULT NOW(),
+                updated_at    TIMESTAMPTZ  DEFAULT NOW()
+            )
+        """)
+        await conn.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(lower(email))
+        """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_profiles (
+                user_id              UUID        PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                age_group            VARCHAR(10) NOT NULL DEFAULT '25-34',
+                budget_level         VARCHAR(10) NOT NULL DEFAULT 'mid',
+                preferred_brands     TEXT[]      NOT NULL DEFAULT '{}',
+                preferred_categories TEXT[]      NOT NULL DEFAULT '{}',
+                updated_at           TIMESTAMPTZ DEFAULT NOW()
+            )
+        """)
+        # Favorites & watchlist tables
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_favorites (
+                user_id      UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                product_id   VARCHAR(60) NOT NULL,
+                product_data JSONB       NOT NULL DEFAULT '{}',
+                created_at   TIMESTAMPTZ DEFAULT NOW(),
+                PRIMARY KEY (user_id, product_id)
+            )
+        """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_watchlist (
+                user_id      UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                product_id   VARCHAR(60) NOT NULL,
+                product_data JSONB       NOT NULL DEFAULT '{}',
+                created_at   TIMESTAMPTZ DEFAULT NOW(),
+                PRIMARY KEY (user_id, product_id)
+            )
+        """)
     yield
     await app.state.pool.close()
 
@@ -677,6 +735,98 @@ async def update_profile(
     )
     return {"ok": True}
 
+
+# ── User Favorites ────────────────────────────────────────────────────────────
+
+class UserListItemRequest(BaseModel):
+    product: dict
+
+
+@app.get("/api/users/me/favorites")
+async def get_favorites(row: asyncpg.Record = Depends(_require_user)) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    rows = await pool.fetch(
+        "SELECT product_data FROM user_favorites WHERE user_id = $1 ORDER BY created_at DESC",
+        row["id"],
+    )
+    return {"items": [r["product_data"] for r in rows]}
+
+
+@app.post("/api/users/me/favorites/{product_id}", status_code=201)
+async def add_favorite(
+    product_id: str,
+    body: UserListItemRequest,
+    row: asyncpg.Record = Depends(_require_user),
+) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    await pool.execute(
+        """
+        INSERT INTO user_favorites (user_id, product_id, product_data)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (user_id, product_id) DO UPDATE SET product_data = EXCLUDED.product_data
+        """,
+        row["id"], product_id, body.product,
+    )
+    return {"ok": True}
+
+
+@app.delete("/api/users/me/favorites/{product_id}")
+async def remove_favorite(
+    product_id: str,
+    row: asyncpg.Record = Depends(_require_user),
+) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    await pool.execute(
+        "DELETE FROM user_favorites WHERE user_id = $1 AND product_id = $2",
+        row["id"], product_id,
+    )
+    return {"ok": True}
+
+
+# ── User Watchlist ─────────────────────────────────────────────────────────────
+
+@app.get("/api/users/me/watchlist")
+async def get_watchlist(row: asyncpg.Record = Depends(_require_user)) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    rows = await pool.fetch(
+        "SELECT product_data FROM user_watchlist WHERE user_id = $1 ORDER BY created_at DESC",
+        row["id"],
+    )
+    return {"items": [r["product_data"] for r in rows]}
+
+
+@app.post("/api/users/me/watchlist/{product_id}", status_code=201)
+async def add_watchlist(
+    product_id: str,
+    body: UserListItemRequest,
+    row: asyncpg.Record = Depends(_require_user),
+) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    await pool.execute(
+        """
+        INSERT INTO user_watchlist (user_id, product_id, product_data)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (user_id, product_id) DO UPDATE SET product_data = EXCLUDED.product_data
+        """,
+        row["id"], product_id, body.product,
+    )
+    return {"ok": True}
+
+
+@app.delete("/api/users/me/watchlist/{product_id}")
+async def remove_watchlist(
+    product_id: str,
+    row: asyncpg.Record = Depends(_require_user),
+) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    await pool.execute(
+        "DELETE FROM user_watchlist WHERE user_id = $1 AND product_id = $2",
+        row["id"], product_id,
+    )
+    return {"ok": True}
+
+
+# ── Stats ─────────────────────────────────────────────────────────────────────
 
 @app.get("/api/stats")
 async def stats() -> dict:

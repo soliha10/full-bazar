@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { motion } from 'framer-motion';
 import {
@@ -91,6 +91,7 @@ function Carousel({ children }: { children: React.ReactNode[] }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'start', dragFree: true });
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(true);
+  const lastWheel = useRef(0);
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
@@ -104,8 +105,19 @@ function Carousel({ children }: { children: React.ReactNode[] }) {
     onSelect();
   }, [emblaApi, onSelect]);
 
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (!emblaApi) return;
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    const now = Date.now();
+    if (now - lastWheel.current < 250) return;
+    lastWheel.current = now;
+    if (e.deltaY > 0) emblaApi.scrollNext();
+    else emblaApi.scrollPrev();
+  }, [emblaApi]);
+
   return (
-    <div className="relative">
+    <div className="relative" onWheel={handleWheel}>
       <div className="overflow-hidden -mx-4 px-4 md:mx-0 md:px-0" ref={emblaRef}>
         <div className="flex gap-3 md:gap-4">
           {children}
