@@ -248,7 +248,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
               {/* Bell (price watch) — desktop, auth-gated */}
               {user && (
                 <Link
-                  to="/wishlist?tab=watch"
+                  to="/watchlist"
                   className="hidden md:flex relative w-9 h-9 items-center justify-center rounded-xl
                     bg-gray-50 dark:bg-gray-800
                     hover:bg-violet-50 dark:hover:bg-violet-900/30
