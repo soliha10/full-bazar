@@ -788,11 +788,50 @@ async def remove_favorite(
 @app.get("/api/users/me/watchlist")
 async def get_watchlist(row: asyncpg.Record = Depends(_require_user)) -> dict:
     pool: asyncpg.Pool = app.state.pool
-    rows = await pool.fetch(
-        "SELECT product_data FROM user_watchlist WHERE user_id = $1 ORDER BY created_at DESC",
-        row["id"],
-    )
-    return {"items": [r["product_data"] for r in rows]}
+    async with pool.acquire() as conn:
+        watch_rows = await conn.fetch(
+            """
+            SELECT w.product_id, w.product_data, p.price AS current_price
+            FROM user_watchlist w
+            LEFT JOIN products p ON p.id = w.product_id
+            WHERE w.user_id = $1
+            ORDER BY w.created_at DESC
+            """,
+            row["id"],
+        )
+        if not watch_rows:
+            return {"items": []}
+        product_ids = [r["product_id"] for r in watch_rows]
+        market_rows = await conn.fetch(
+            """
+            SELECT product_id, source, price, url
+            FROM product_markets
+            WHERE product_id = ANY($1)
+            ORDER BY price
+            """,
+            product_ids,
+        )
+
+    markets_by_product: dict[str, list] = {}
+    for m in market_rows:
+        pid = m["product_id"]
+        markets_by_product.setdefault(pid, []).append({
+            "source": m["source"],
+            "price": float(m["price"]),
+            "url": m["url"] or "#",
+        })
+
+    items = []
+    for r in watch_rows:
+        item = dict(r["product_data"])
+        pid = r["product_id"]
+        if r["current_price"] is not None:
+            item["current_price"] = float(r["current_price"])
+        if pid in markets_by_product:
+            item["current_markets"] = markets_by_product[pid]
+        items.append(item)
+
+    return {"items": items}
 
 
 @app.post("/api/users/me/watchlist/{product_id}", status_code=201)

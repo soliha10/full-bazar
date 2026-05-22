@@ -26,6 +26,12 @@ export interface Product {
     price: number;
     url: string;
   }>;
+  current_price?: number;
+  current_markets?: Array<{
+    source: string;
+    price: number;
+    url?: string;
+  }>;
 }
 
 interface ProductCardProps {
