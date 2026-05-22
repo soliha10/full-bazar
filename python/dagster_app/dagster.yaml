@@ -14,12 +14,15 @@ storage:
 
 run_monitoring:
   enabled: true
-  # Auto-resume runs that were in STARTED state when the daemon was OOM-killed/restarted.
-  max_resume_run_attempts: 2
+  # 0 = immediately mark interrupted runs as FAILED on daemon restart (don't retry).
+  # Prevents stuck STARTED runs from blocking the QueuedRunCoordinator indefinitely.
+  max_resume_run_attempts: 0
   poll_interval_seconds: 30
-  start_timeout_seconds: 300
-  # Hard-kill any run that exceeds 90 min — prevents zombie runs from blocking the queue.
-  cancel_run_over_threshold_minutes: 90
+  start_timeout_seconds: 180
+  # Hard-cancel any run exceeding 30 min (1800s) — jobs complete in <15 min normally.
+  max_runtime_seconds: 1800
+  # Free the queue slot immediately when a run ends.
+  free_slots_after_run_end_seconds: 0
 
 run_coordinator:
   module: dagster.core.run_coordinator

@@ -126,8 +126,6 @@ services:
       - "5000"
       - --workers
       - "1"
-      - --allowed-hosts
-      - "*"
     ports:
       - "5050:5000"
     volumes:
@@ -135,7 +133,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    mem_limit: 300m
+    mem_limit: 400m
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
