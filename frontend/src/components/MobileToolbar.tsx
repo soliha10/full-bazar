@@ -1,4 +1,4 @@
-import { Home, Search, Heart, User } from 'lucide-react';
+import { Home, Search, Heart, User, Bell } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useFavorites } from '../hooks/useFavorites';
@@ -13,12 +13,22 @@ export function MobileToolbar() {
   const { user } = useAuth();
   const currentPath = location.pathname;
 
-  const items = [
-    { icon: Home,   label: t.nav.home,       path: '/',         count: 0               },
-    { icon: Search, label: t.nav.search,      path: '/products', count: 0               },
-    { icon: Heart,  label: t.footer.wishlist, path: '/wishlist', count: favorites.length },
-    { icon: User,   label: t.nav.account,     path: '/profile',  count: 0               },
+  const guestItems = [
+    { key: 'home',     icon: Heart,  label: t.nav.home,       path: '/',         count: 0               },
+    { key: 'search',   icon: Search, label: t.nav.search,     path: '/products', count: 0               },
+    { key: 'wishlist', icon: Heart,  label: t.footer.wishlist, path: '/wishlist', count: favorites.length },
+    { key: 'profile',  icon: User,   label: t.nav.account,    path: '/profile',  count: 0               },
   ];
+
+  const loggedInItems = [
+    { key: 'home',      icon: Home,   label: t.nav.home,       path: '/',          count: 0               },
+    { key: 'search',    icon: Search, label: t.nav.search,     path: '/products',  count: 0               },
+    { key: 'wishlist',  icon: Heart,  label: t.footer.wishlist, path: '/wishlist', count: favorites.length },
+    { key: 'watchlist', icon: Bell,   label: 'Kuzatuv',         path: '/watchlist', count: watched.length  },
+    { key: 'profile',   icon: User,   label: t.nav.account,    path: '/profile',   count: 0               },
+  ];
+
+  const items = user ? loggedInItems : guestItems;
 
   return (
     <div
@@ -26,7 +36,7 @@ export function MobileToolbar() {
       style={{ boxShadow: '0 -1px 0 rgba(0,0,0,0.04), 0 -8px 40px rgba(109,40,217,0.06)' }}
     >
       <div
-        className="flex items-center justify-around px-2 pt-2"
+        className="flex items-center justify-around px-1 pt-2"
         style={{ paddingBottom: 'max(0.875rem, env(safe-area-inset-bottom))' }}
       >
         {items.map((item) => {
@@ -34,8 +44,9 @@ export function MobileToolbar() {
             ? currentPath === '/'
             : currentPath === item.path || currentPath.startsWith(item.path + '/');
 
-          const isWishlist = item.path === '/wishlist';
-          const isProfile  = item.path === '/profile';
+          const isProfile   = item.key === 'profile';
+          const isWatchlist = item.key === 'watchlist';
+          const isWishlist  = item.key === 'wishlist';
 
           return (
             <Link
@@ -47,50 +58,37 @@ export function MobileToolbar() {
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-violet-600" />
               )}
 
-              <div className={`relative flex items-center justify-center w-11 h-8 rounded-2xl transition-all duration-200 ${
+              <div className={`relative flex items-center justify-center w-10 h-8 rounded-2xl transition-all duration-200 ${
                 isActive ? 'bg-violet-100 dark:bg-violet-900/50 scale-110' : ''
               }`}>
 
-                {/* Profile tab: show user initial when logged in */}
+                {/* Profile: show user initial when logged in */}
                 {isProfile && user ? (
-                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black bg-linear-to-br from-violet-500 to-violet-700 text-white shadow-sm transition-all duration-200 ${isActive ? 'scale-110' : ''}`}>
+                  <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black bg-linear-to-br from-violet-500 to-violet-700 text-white shadow-sm">
                     {user.name.charAt(0).toUpperCase()}
                   </div>
                 ) : (
                   <item.icon
                     className={`w-5 h-5 transition-all duration-200 ${
-                      isActive
-                        ? 'text-violet-600 dark:text-violet-400'
-                        : 'text-gray-400 dark:text-gray-500'
+                      isWatchlist && isActive ? 'fill-violet-200 dark:fill-violet-800 text-violet-600' :
+                      isActive ? 'text-violet-600 dark:text-violet-400' : 'text-gray-400 dark:text-gray-500'
                     }`}
                     strokeWidth={isActive ? 2.5 : 1.8}
                   />
                 )}
 
-                {/* Favorites count (red) */}
-                {isWishlist && item.count > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center leading-none">
+                {/* Count badge — red for favorites, violet for watchlist */}
+                {item.count > 0 && (
+                  <span className={`absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 rounded-full text-white text-[9px] font-black flex items-center justify-center leading-none ${
+                    isWishlist ? 'bg-red-500' : isWatchlist ? 'bg-violet-600' : 'bg-gray-500'
+                  }`}>
                     {item.count > 9 ? '9+' : item.count}
                   </span>
-                )}
-
-                {/* Watched count badge (violet) — only when no favorites badge overlapping */}
-                {isWishlist && user && watched.length > 0 && item.count === 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-violet-600 text-white text-[9px] font-black flex items-center justify-center leading-none">
-                    {watched.length > 9 ? '9+' : watched.length}
-                  </span>
-                )}
-
-                {/* Violet dot indicator when both favorites and watched exist */}
-                {isWishlist && user && watched.length > 0 && item.count > 0 && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-violet-600 border-2 border-white dark:border-gray-950" />
                 )}
               </div>
 
               <span className={`text-[10px] font-bold leading-none transition-all duration-200 ${
-                isActive
-                  ? 'text-violet-600 dark:text-violet-400'
-                  : 'text-gray-400 dark:text-gray-500'
+                isActive ? 'text-violet-600 dark:text-violet-400' : 'text-gray-400 dark:text-gray-500'
               }`}>
                 {item.label}
               </span>

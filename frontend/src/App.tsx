@@ -18,6 +18,7 @@ import { Landing } from "./pages/Landing";
 import { ProductListing } from "./pages/ProductListing";
 import { ProductDetail } from "./pages/ProductDetail";
 import { Wishlist } from "./pages/Wishlist";
+import { Watchlist } from "./pages/Watchlist";
 import { Profile } from "./pages/Profile";
 
 export default function App() {
@@ -42,12 +43,13 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isSearchPage  = location.pathname === '/products';
-  const isDetailPage  = location.pathname.startsWith('/product/');
-  const isProfilePage = location.pathname === '/profile';
+  const isSearchPage    = location.pathname === '/products';
+  const isDetailPage    = location.pathname.startsWith('/product/');
+  const isProfilePage   = location.pathname === '/profile';
+  const isWatchlistPage = location.pathname === '/watchlist';
 
-  const hideNavbarOnMobile = isSearchPage || isDetailPage || isProfilePage;
-  const hideFooter = isSearchPage || isDetailPage || location.pathname === '/wishlist' || isProfilePage;
+  const hideNavbarOnMobile = isSearchPage || isDetailPage || isProfilePage || isWatchlistPage;
+  const hideFooter = isSearchPage || isDetailPage || location.pathname === '/wishlist' || isProfilePage || isWatchlistPage;
 
   const handleSearch = (value: string) => {
     if (value.trim()) {
@@ -69,7 +71,8 @@ function AppContent() {
           <Route path="/products"    element={<ProductListing />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/wishlist"    element={<Wishlist />} />
-          <Route path="/profile"    element={<Profile />} />
+          <Route path="/watchlist"   element={<Watchlist />} />
+          <Route path="/profile"     element={<Profile />} />
         </Routes>
       </main>
 

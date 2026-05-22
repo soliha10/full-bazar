@@ -47,7 +47,7 @@ export function Profile() {
             initial={{ scale: 0.85, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-            className="w-24 h-24 rounded-3xl bg-gradient-to-br from-violet-500 to-violet-700 flex items-center justify-center shadow-xl shadow-violet-500/30"
+            className="w-24 h-24 rounded-3xl bg-linear-to-br from-violet-500 to-violet-700 flex items-center justify-center shadow-xl shadow-violet-500/30"
           >
             <User className="w-12 h-12 text-white" />
           </motion.div>
@@ -148,7 +148,7 @@ export function Profile() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-violet-700 to-violet-900 p-5 shadow-xl shadow-violet-500/25"
+          className="relative overflow-hidden rounded-3xl bg-linear-to-br from-violet-600 via-violet-700 to-violet-900 p-5 shadow-xl shadow-violet-500/25"
         >
           <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/5 pointer-events-none" />
           <div className="absolute -bottom-10 -left-4 w-36 h-36 rounded-full bg-white/5 pointer-events-none" />
@@ -196,7 +196,7 @@ export function Profile() {
           </Link>
 
           <Link
-            to="/wishlist?tab=watch"
+            to="/watchlist"
             className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 py-5 active:scale-95 transition-all hover:border-violet-200 dark:hover:border-violet-800 group"
           >
             <div className="relative">
