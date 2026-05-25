@@ -52,3 +52,25 @@ export const fetchPersonalizedRecommendations = async (limit = 8) => {
     throw error;
   }
 };
+
+export const fetchPriceHistory = async (productId: string, days = 30) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/products/${productId}/price-history?days=${days}`);
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching price history for ${productId}:`, error);
+    return { history: [] };
+  }
+};
+
+export const fetchTrends = async (limit = 8) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/trends?limit=${limit}`);
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching trends:', error);
+    return { dropping: [], rising: [] };
+  }
+};

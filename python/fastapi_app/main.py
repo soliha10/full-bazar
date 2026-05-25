@@ -298,6 +298,21 @@ async def lifespan(app: FastAPI):
                 PRIMARY KEY (user_id, product_id)
             )
         """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS price_history (
+                id          BIGSERIAL      PRIMARY KEY,
+                product_id  VARCHAR(60)    NOT NULL,
+                source      VARCHAR(100)   NOT NULL,
+                price       DECIMAL(15, 2) NOT NULL,
+                recorded_at TIMESTAMPTZ    DEFAULT NOW()
+            )
+        """)
+        await conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_price_history_product ON price_history(product_id, recorded_at DESC)"
+        )
+        await conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_price_history_recorded ON price_history(recorded_at DESC)"
+        )
     yield
     await app.state.pool.close()
 
@@ -573,6 +588,116 @@ async def get_personalized_recommendations(
     return {
         "products": [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows],
         "type": "personalized",
+    }
+
+
+# ── Trend Analysis endpoints ──────────────────────────────────────────────────
+
+@app.get("/api/products/{product_id}/price-history")
+async def get_price_history(
+    product_id: str,
+    days: int = Query(30, ge=1, le=365),
+) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    rows = await pool.fetch(
+        """
+        SELECT source, price, recorded_at
+        FROM price_history
+        WHERE product_id = $1
+          AND recorded_at > NOW() - ($2 || ' days')::INTERVAL
+        ORDER BY recorded_at ASC
+        """,
+        product_id, str(days),
+    )
+    history = [
+        {
+            "source": r["source"],
+            "price": float(r["price"]),
+            "date": r["recorded_at"].isoformat(),
+        }
+        for r in rows
+    ]
+    return {"product_id": product_id, "days": days, "history": history}
+
+
+@app.get("/api/trends")
+async def get_trends(limit: int = Query(8, ge=1, le=20)) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+
+    rows = await pool.fetch(
+        """
+        WITH latest AS (
+            SELECT DISTINCT ON (product_id, source)
+                product_id, source, price, recorded_at
+            FROM price_history
+            ORDER BY product_id, source, recorded_at DESC
+        ),
+        oldest AS (
+            SELECT DISTINCT ON (product_id, source)
+                product_id, source, price, recorded_at
+            FROM price_history
+            WHERE recorded_at < NOW() - INTERVAL '3 days'
+            ORDER BY product_id, source, recorded_at ASC
+        ),
+        changes AS (
+            SELECT
+                l.product_id,
+                l.price        AS current_price,
+                o.price        AS old_price,
+                l.price - o.price AS price_change,
+                CASE WHEN o.price > 0
+                     THEN ROUND((l.price - o.price) / o.price * 100, 1)
+                     ELSE 0 END AS pct_change
+            FROM latest l
+            JOIN oldest o ON o.product_id = l.product_id AND o.source = l.source
+        ),
+        aggregated AS (
+            SELECT product_id,
+                   MIN(current_price) AS current_price,
+                   SUM(price_change)  AS total_change,
+                   AVG(pct_change)    AS avg_pct
+            FROM changes
+            GROUP BY product_id
+        )
+        SELECT p.*, a.current_price, a.total_change, a.avg_pct
+        FROM aggregated a
+        JOIN products p ON p.id = a.product_id
+        ORDER BY ABS(a.total_change) DESC
+        LIMIT $1
+        """,
+        limit,
+    )
+
+    product_ids = [r["id"] for r in rows]
+    markets_map = await _fetch_markets(pool, product_ids)
+
+    dropping, rising = [], []
+    for r in rows:
+        change = float(r["total_change"] or 0)
+        pct = float(r["avg_pct"] or 0)
+        item = {
+            **_row_to_product(r, markets_map.get(r["id"], [])),
+            "priceChange": round(change, 2),
+            "pctChange": round(pct, 1),
+        }
+        if change < 0:
+            dropping.append(item)
+        else:
+            rising.append(item)
+
+    return {"dropping": dropping, "rising": rising}
+
+
+@app.get("/api/stats")
+async def get_stats() -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    products_count = await pool.fetchval("SELECT COUNT(*) FROM products")
+    markets_count = await pool.fetchval("SELECT COUNT(DISTINCT source) FROM product_markets")
+    history_count = await pool.fetchval("SELECT COUNT(*) FROM price_history")
+    return {
+        "products": products_count,
+        "markets": markets_count,
+        "priceSnapshots": history_count,
     }
 
 

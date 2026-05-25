@@ -68,3 +68,14 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     preferred_categories TEXT[]      NOT NULL DEFAULT '{}',
     updated_at           TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Price history: snapshot of each product's per-market price after every sync run
+CREATE TABLE IF NOT EXISTS price_history (
+    id          BIGSERIAL    PRIMARY KEY,
+    product_id  VARCHAR(60)  NOT NULL,
+    source      VARCHAR(100) NOT NULL,
+    price       DECIMAL(15, 2) NOT NULL,
+    recorded_at TIMESTAMPTZ  DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_price_history_product ON price_history(product_id, recorded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_price_history_recorded ON price_history(recorded_at DESC);

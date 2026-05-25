@@ -316,6 +316,27 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
     try:
         with conn:
             with conn.cursor() as cur:
+                # Snapshot current market prices into price_history before truncating
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS price_history (
+                        id          BIGSERIAL      PRIMARY KEY,
+                        product_id  VARCHAR(60)    NOT NULL,
+                        source      VARCHAR(100)   NOT NULL,
+                        price       DECIMAL(15, 2) NOT NULL,
+                        recorded_at TIMESTAMPTZ    DEFAULT NOW()
+                    )
+                """)
+                cur.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_price_history_product "
+                    "ON price_history(product_id, recorded_at DESC)"
+                )
+                cur.execute("""
+                    INSERT INTO price_history (product_id, source, price, recorded_at)
+                    SELECT product_id, source, price, NOW()
+                    FROM product_markets
+                    ON CONFLICT DO NOTHING
+                """)
+
                 # Drop the FK only if it actually exists — prevents lock on non-existent constraint
                 cur.execute("""
                     DO $$

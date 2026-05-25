@@ -18,6 +18,7 @@ from .alif import AlifScraper
 from .ucell import UcellScraper
 from .brandstore import BrandstoreScraper
 from .olx import OlxScraper
+from .wildberries import WildberriesScraper
 
 ALL_SCRAPERS = [
     AsaxiyScraper,
@@ -40,4 +41,5 @@ ALL_SCRAPERS = [
     UcellScraper,
     BrandstoreScraper,
     OlxScraper,
+    WildberriesScraper,
 ]
