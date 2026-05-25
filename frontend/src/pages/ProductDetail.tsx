@@ -78,10 +78,10 @@ export function ProductDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (activeTab === 'priceHistory' && id) {
+    if (id) {
       fetchPriceHistory(id, 30).then((data) => setPriceHistory(data.history ?? []));
     }
-  }, [activeTab, id]);
+  }, [id]);
 
   const images = useMemo(() => {
     if (!product) return [];
