@@ -589,11 +589,14 @@ defs = Definitions(
             name="csv_sync_hourly",
             job=csv_sync_job,
             cron_schedule="0 * * * *",
+            execution_timezone="Asia/Tashkent",
         ),
         ScheduleDefinition(
-            name="product_sync_daily",
+            name="product_sync_4x_daily",
             job=product_sync_job,
-            cron_schedule="0 3 * * *",
+            # 08:00, 14:00, 20:00, 02:00 Toshkent vaqti (UTC+5)
+            cron_schedule="0 2,8,14,20 * * *",
+            execution_timezone="Asia/Tashkent",
         ),
     ],
 )
