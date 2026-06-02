@@ -322,7 +322,7 @@ export function Landing() {
                   <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-4">
                     {t.landing.hero.liveLabel}
                   </p>
-                  {['Texnomart', 'Uzum', 'Olcha'].map((store, i) => (
+                  {['Texnomart', 'Glotr', 'Olcha'].map((store, i) => (
                     <div key={store} className="flex items-center justify-between mb-3 last:mb-0">
                       <div className="flex items-center gap-2">
                         <div className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-green-400' : 'bg-white/30'}`} />
