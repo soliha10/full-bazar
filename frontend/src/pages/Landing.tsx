@@ -86,7 +86,6 @@ function SectionHeader({
   );
 }
 
-/* ── Embla carousel wrapper with desktop prev/next arrows ── */
 function Carousel({ children }: { children: React.ReactNode[] }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'start', dragFree: true });
   const [canPrev, setCanPrev] = useState(false);
