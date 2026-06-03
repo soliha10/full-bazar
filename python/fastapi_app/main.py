@@ -10,8 +10,9 @@ import math
 import os
 import pickle
 import re
+import time
 import uuid
-from collections import Counter
+from collections import Counter, defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal, Optional
@@ -19,11 +20,13 @@ from typing import Any, Literal, Optional
 import asyncpg
 import bcrypt
 import jwt as pyjwt
-from fastapi import Depends, FastAPI, HTTPException, Query, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import BaseModel, EmailStr, Field, field_validator
+from starlette.middleware.base import BaseHTTPMiddleware
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
@@ -317,10 +320,47 @@ async def lifespan(app: FastAPI):
     await app.state.pool.close()
 
 
-app = FastAPI(title="Full-Bazar API", lifespan=lifespan)
+_ALLOWED_ORIGINS = [
+    "https://bazarcom.online",
+    "https://www.bazarcom.online",
+    "http://localhost",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1",
+]
+
+_rate_store: dict[str, list[float]] = defaultdict(list)
+_RATE_LIMIT = 60   # requests
+_RATE_WINDOW = 60  # seconds
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        ip = request.client.host if request.client else "unknown"
+        now = time.time()
+        window_start = now - _RATE_WINDOW
+        _rate_store[ip] = [t for t in _rate_store[ip] if t > window_start]
+        if len(_rate_store[ip]) >= _RATE_LIMIT:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too many requests"},
+                headers={"Retry-After": str(_RATE_WINDOW)},
+            )
+        _rate_store[ip].append(now)
+        return await call_next(request)
+
+
+app = FastAPI(
+    title="Full-Bazar API",
+    lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
