@@ -752,6 +752,97 @@ async def get_markets() -> dict:
     return {"markets": [{"key": r["key"], "name": r["name"], "count": r["count"]} for r in rows]}
 
 
+@app.get("/api/search-trends")
+async def search_trends(days: int = Query(7, ge=1, le=30), limit: int = Query(15, ge=1, le=50)) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    rows = await pool.fetch(
+        """
+        SELECT
+            search_query,
+            COUNT(*)                   AS total,
+            COUNT(DISTINCT session_id) AS unique_sessions
+        FROM user_events
+        WHERE event_type = 'search'
+          AND search_query IS NOT NULL
+          AND search_query <> ''
+          AND created_at > NOW() - ($2 || ' days')::INTERVAL
+        GROUP BY search_query
+        ORDER BY total DESC
+        LIMIT $1
+        """,
+        limit, days,
+    )
+    return {
+        "days": days,
+        "trends": [
+            {"query": r["search_query"], "count": int(r["total"]), "uniqueSessions": int(r["unique_sessions"])}
+            for r in rows
+        ],
+    }
+
+
+@app.get("/api/market-analytics")
+async def market_analytics() -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    market_rows = await pool.fetch(
+        """
+        SELECT
+            pm.source,
+            COUNT(DISTINCT pm.product_id)          AS product_count,
+            ROUND(AVG(pm.price)::numeric, 0)        AS avg_price,
+            ROUND(MIN(pm.price)::numeric, 0)        AS min_price,
+            ROUND(MAX(pm.price)::numeric, 0)        AS max_price
+        FROM product_markets pm
+        GROUP BY pm.source
+        ORDER BY product_count DESC
+        """
+    )
+    popular_rows = await pool.fetch(
+        """
+        SELECT
+            ue.product_id,
+            p.name,
+            p.price,
+            p.image,
+            COUNT(*) AS view_count
+        FROM user_events ue
+        JOIN products p ON p.id = ue.product_id
+        WHERE ue.event_type = 'view'
+          AND ue.product_id IS NOT NULL
+          AND ue.created_at > NOW() - INTERVAL '7 days'
+        GROUP BY ue.product_id, p.name, p.price, p.image
+        ORDER BY view_count DESC
+        LIMIT 8
+        """
+    )
+    total_events = await pool.fetchval(
+        "SELECT COUNT(*) FROM user_events WHERE created_at > NOW() - INTERVAL '7 days'"
+    )
+    return {
+        "markets": [
+            {
+                "source": r["source"],
+                "productCount": int(r["product_count"]),
+                "avgPrice": float(r["avg_price"] or 0),
+                "minPrice": float(r["min_price"] or 0),
+                "maxPrice": float(r["max_price"] or 0),
+            }
+            for r in market_rows
+        ],
+        "popularProducts": [
+            {
+                "id": r["product_id"],
+                "name": r["name"],
+                "price": float(r["price"] or 0),
+                "image": r["image"],
+                "viewCount": int(r["view_count"]),
+            }
+            for r in popular_rows
+        ],
+        "weeklyEvents": int(total_events or 0),
+    }
+
+
 class TrackEvent(BaseModel):
     session_id: str
     event_type: str  # 'view' | 'search' | 'cart_add'

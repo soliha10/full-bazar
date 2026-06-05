@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Search, User, Moon, Sun, Globe, ShoppingBag, Menu, Mic, X,
   LogIn, HelpCircle, Info, Sparkles, Heart, ChevronRight,
-  Home, Package, LogOut, ChevronDown, Bell,
+  Home, Package, LogOut, ChevronDown, Bell, TrendingUp,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
@@ -66,7 +66,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
   useEffect(() => {
     const p = new URLSearchParams(location.search);
     if (searchValue.trim() === (p.get('search') || '')) return;
-    const id = setTimeout(() => onSearchChange?.(searchValue.trim()), 400);
+    const id = setTimeout(() => onSearchChange?.(searchValue.trim()), 500);
     return () => clearTimeout(id);
   }, [searchValue, location.search, onSearchChange]);
 
@@ -98,9 +98,10 @@ export function Navbar({ onSearchChange }: NavbarProps) {
   ];
 
   const navLinks = [
-    { icon: Home,    label: t.nav.home,       path: '/',         count: 0               },
-    { icon: Package, label: 'Katalog',         path: '/products', count: 0               },
-    { icon: Heart,   label: t.footer.wishlist, path: '/wishlist', count: favorites.length },
+    { icon: Home,       label: t.nav.home,       path: '/',         count: 0               },
+    { icon: Package,    label: 'Katalog',         path: '/products', count: 0               },
+    { icon: TrendingUp, label: 'Tahlil',          path: '/trends',   count: 0               },
+    { icon: Heart,      label: t.footer.wishlist, path: '/wishlist', count: favorites.length },
   ];
 
   return (

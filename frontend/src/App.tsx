@@ -20,6 +20,7 @@ import { ProductDetail } from "./pages/ProductDetail";
 import { Wishlist } from "./pages/Wishlist";
 import { Watchlist } from "./pages/Watchlist";
 import { Profile } from "./pages/Profile";
+import { Trends } from "./pages/Trends";
 
 export default function App() {
   return (
@@ -73,6 +74,7 @@ function AppContent() {
           <Route path="/wishlist"    element={<Wishlist />} />
           <Route path="/watchlist"   element={<Watchlist />} />
           <Route path="/profile"     element={<Profile />} />
+          <Route path="/trends"      element={<Trends />} />
         </Routes>
       </main>
 
