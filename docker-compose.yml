@@ -108,11 +108,13 @@ services:
       context: ./python/mlflow_app
       dockerfile: Dockerfile
     restart: unless-stopped
+    environment:
+      MLFLOW_TRACKING_URI: postgresql://postgres:postgres@postgres:5432/mlflow
     command:
       - mlflow
       - server
       - --backend-store-uri
-      - /mlruns
+      - postgresql://postgres:postgres@postgres:5432/mlflow
       - --default-artifact-root
       - /mlruns
       - --host
@@ -121,11 +123,15 @@ services:
       - "5000"
       - --workers
       - "1"
+      - --allowed-hosts
+      - "*"
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "5050:5000"
     volumes:
       - ./mlruns:/mlruns
-    mem_limit: 400m
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
