@@ -144,6 +144,26 @@ export function Navbar({ onSearchChange }: NavbarProps) {
               <span className="sm:hidden text-[15px] font-black text-gray-900 dark:text-white tracking-tight">BAZARCOM</span>
             </Link>
 
+            {/* Desktop nav links */}
+            <nav className="hidden md:flex items-center gap-0.5 mr-2 shrink-0">
+              {[
+                { path: '/products', label: 'Katalog' },
+                { path: '/trends',   label: 'Tahlil'  },
+              ].map(({ path, label }) => {
+                const active = location.pathname === path || location.pathname.startsWith(path + '/');
+                return (
+                  <Link key={path} to={path}
+                    className={`px-3 py-1.5 rounded-xl text-sm font-black transition-all ${
+                      active
+                        ? 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                    }`}>
+                    {label}
+                  </Link>
+                );
+              })}
+            </nav>
+
             {/* Desktop search */}
             <div className="hidden md:flex flex-1 max-w-2xl">
               <form onSubmit={handleSubmit} className="relative w-full group">
