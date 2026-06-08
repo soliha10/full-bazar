@@ -450,15 +450,21 @@ async def get_products(
     search: str = Query(""),
     market: str = Query(""),
     brand: str = Query(""),
+    category: str = Query(""),
 ) -> dict:
     pool: asyncpg.Pool = app.state.pool
     offset = (page - 1) * limit
     search = search.strip()
     market = market.strip().lower()
     brand = brand.strip()
+    category = category.strip()
 
     where_parts: list[str] = []
     params: list = []
+
+    if category and category.lower() != "all":
+        params.append(category)
+        where_parts.append(f"p.category = ${len(params)}")
 
     if search:
         for token in search.lower().split():

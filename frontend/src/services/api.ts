@@ -9,6 +9,7 @@ export const fetchProducts = async (
   signal?: AbortSignal,
   markets: string[] = [],
   brand = '',
+  category = '',
 ) => {
   try {
     const params = new URLSearchParams({
@@ -18,6 +19,7 @@ export const fetchProducts = async (
     if (search) params.set('search', search);
     if (markets.length > 0) params.set('market', markets.join(','));
     if (brand) params.set('brand', brand);
+    if (category && category !== 'All') params.set('category', category);
 
     const response = await fetch(`${API_BASE_URL}/products?${params}`, { signal });
     if (!response.ok) throw new Error('Network response was not ok');

@@ -151,8 +151,12 @@ export function ProductListing() {
       }).catch(() => {});
   }, []);
 
-  const categories = ['All', 'Phones'];
-  const categoryLabel: Record<string, string> = { All: t.listing.all, Phones: t.detail.categories.phones };
+  const categories = ['All', 'Phones', 'Furniture'];
+  const categoryLabel: Record<string, string> = {
+    All: t.listing.all,
+    Phones: t.detail.categories.phones,
+    Furniture: 'Mebel',
+  };
 
   useEffect(() => { setSelectedCategory(categoryParam); }, [categoryParam]);
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [searchQuery, selectedCategory]);
@@ -172,7 +176,7 @@ export function ProductListing() {
   }, [setSearchParams]);
 
   const { products: rawProducts, isLoading, isFetchingNextPage, hasMore, loadMore, total } =
-    useProducts(1, 20, searchQuery, selectedMarketplaces, selectedBrand ?? '');
+    useProducts(1, 20, searchQuery, selectedMarketplaces, selectedBrand ?? '', selectedCategory === 'All' ? '' : selectedCategory);
 
   hasMoreRef.current  = hasMore;
   fetchingRef.current = isFetchingNextPage;
@@ -180,13 +184,6 @@ export function ProductListing() {
 
   const filteredProducts = useMemo(() => {
     let r = [...rawProducts];
-    if (selectedCategory !== 'All') {
-      r = r.filter(p => {
-        const c = (p.category ?? '').toLowerCase();
-        const s = selectedCategory.toLowerCase();
-        return c === s || (s === 'phones' && c === 'smartphones');
-      });
-    }
     if (selectedMarketplaces.length > 0) {
       const set = new Set(selectedMarketplaces.map(m => m.toLowerCase()));
       r = r.filter(p => p.markets?.some(m => set.has(m.source.toLowerCase())));
@@ -232,15 +229,14 @@ export function ProductListing() {
         <SLabel>{t.listing.categories}</SLabel>
         <div className="space-y-0.5">
           {categories.map(cat => {
-            const disabled = cat !== 'All' && cat !== 'Phones';
-            const active   = selectedCategory === cat;
+            const active = selectedCategory === cat;
             return (
               <button
-                key={cat} type="button" disabled={disabled}
-                onClick={() => !disabled && (setSelectedCategory(cat), updateUrlCategory(cat))}
+                key={cat} type="button"
+                onClick={() => { setSelectedCategory(cat); updateUrlCategory(cat); }}
                 className={`flex w-full items-center gap-2.5 rounded px-1.5 py-[7px] text-left text-[13px] transition-colors ${
-                  active    ? 'text-violet-600 dark:text-violet-400 font-semibold'
-                  : disabled ? 'cursor-not-allowed text-gray-300 dark:text-gray-600'
+                  active
+                  ? 'text-violet-600 dark:text-violet-400 font-semibold'
                   : 'text-gray-700 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400'
                 }`}
               >
@@ -309,7 +305,8 @@ export function ProductListing() {
         </div>
       </div>
 
-      {/* Brendlar */}
+      {/* Brendlar — only for Phones */}
+      {selectedCategory !== 'Furniture' && (
       <div className="py-3">
         <div className="flex items-center justify-between mb-2">
           <SLabel>{t.listing.brands}</SLabel>
@@ -337,6 +334,7 @@ export function ProductListing() {
           })}
         </div>
       </div>
+      )}
 
       {/* Do'konlar */}
       <div className="py-3">

@@ -119,16 +119,21 @@ def product_row_generator(data_dir: str) -> Generator[dict, None, None]:
                     (h.lower().replace('"', "").replace("'", "").strip() if h else "")
                     for h in reader.fieldnames
                 ]
+                is_furniture = "furniture" in filename.lower() or "mebel" in filename.lower()
                 for row in reader:
                     title = (
                         row.get("title") or row.get("product_name") or row.get("name") or ""
                     ).strip()
                     if not title:
                         continue
-                    if not _SMARTPHONE_RE.search(title):
-                        continue
-                    if _NOT_SMARTPHONE_RE.search(title):
-                        continue
+                    if is_furniture:
+                        row_category = "Furniture"
+                    else:
+                        row_category = "Phones"
+                        if not _SMARTPHONE_RE.search(title):
+                            continue
+                        if _NOT_SMARTPHONE_RE.search(title):
+                            continue
 
                     raw_price = row.get("actual_price") or row.get("price") or "0"
                     price_str = str(raw_price).lower()
@@ -144,6 +149,7 @@ def product_row_generator(data_dir: str) -> Generator[dict, None, None]:
 
                     yield {
                         "title": title,
+                        "category": row_category,
                         "image": _trunc(image, _MAX_URL) or "",
                         "raw_rating": row.get("rating"),
                         "raw_reviews": row.get("review_count") or row.get("reviews"),
@@ -238,7 +244,7 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
                 "id": target_pid,
                 "name": _trunc(_make_display_name(title), _MAX_NAME) or title[:_MAX_NAME],
                 "title": title,
-                "category": "Phones",
+                "category": row.get("category", "Phones"),
                 "rating": rating,
                 "reviews": reviews,
                 "image": row["image"],
