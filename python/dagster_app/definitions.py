@@ -20,6 +20,7 @@ from typing import Generator
 
 import psycopg2
 import psycopg2.extras
+import requests
 from dagster import Definitions, ScheduleDefinition, job, op, in_process_executor
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -566,6 +567,92 @@ def data_dir_op(context) -> str:
     return data_dir
 
 
+# ── Price alert op ────────────────────────────────────────────────────────────
+
+@op
+def price_alert_op(context):
+    """Check watched products for price drops and notify via Telegram."""
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    if not bot_token:
+        context.log.warning("TELEGRAM_BOT_TOKEN not set — skipping price alerts")
+        return
+
+    db_url = os.getenv("PRODUCTS_DB_URL", "postgresql://postgres:postgres@postgres:5432/fullbazar")
+    conn = psycopg2.connect(db_url)
+    try:
+        with conn.cursor() as cur:
+            # Users with telegram linked + their watchlist
+            cur.execute("""
+                SELECT
+                    up.telegram_chat_id,
+                    w.product_id,
+                    w.product_data,
+                    p.name       AS current_name,
+                    p.price      AS current_price,
+                    p.image      AS image
+                FROM user_profiles up
+                JOIN user_watchlist w ON w.user_id = up.user_id
+                JOIN products p       ON p.id = w.product_id
+                WHERE up.telegram_chat_id IS NOT NULL
+            """)
+            rows = cur.fetchall()
+
+        if not rows:
+            context.log.info("No telegram-linked watchlist entries found")
+            return
+
+        sent = 0
+        for chat_id, product_id, product_data, current_name, current_price, image in rows:
+            saved_price = None
+            if product_data:
+                saved_price = product_data.get("price") or product_data.get("minPrice")
+
+            if saved_price is None or current_price is None:
+                continue
+
+            saved_price = float(saved_price)
+            current_price = float(current_price)
+
+            # Only alert if price dropped by at least 1%
+            if current_price >= saved_price * 0.99:
+                continue
+
+            drop_amount = saved_price - current_price
+            drop_pct = (drop_amount / saved_price) * 100
+
+            msg = (
+                f"📉 *Narx tushdi!*\n\n"
+                f"*{current_name}*\n\n"
+                f"💰 Eski narx: `{saved_price:,.0f}` so'm\n"
+                f"✅ Yangi narx: `{current_price:,.0f}` so'm\n"
+                f"📊 Tushish: `-{drop_amount:,.0f}` so'm (*-{drop_pct:.1f}%*)\n\n"
+                f"👉 [Mahsulotni ko'rish](https://bazarcom.online/product/{product_id})"
+            )
+
+            try:
+                resp = requests.post(
+                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                    json={
+                        "chat_id": chat_id,
+                        "text": msg,
+                        "parse_mode": "Markdown",
+                        "disable_web_page_preview": False,
+                    },
+                    timeout=10,
+                )
+                if resp.ok:
+                    sent += 1
+                else:
+                    context.log.warning(f"Telegram send failed for chat {chat_id}: {resp.text}")
+            except Exception as exc:
+                context.log.warning(f"Telegram request error: {exc}")
+
+        context.log.info(f"Price alert op done — sent {sent} notifications")
+
+    finally:
+        conn.close()
+
+
 # ── Jobs ──────────────────────────────────────────────────────────────────────
 
 @job(executor_def=in_process_executor)
@@ -580,10 +667,16 @@ def csv_sync_job():
     sync_products_op(data_dir_op())
 
 
+@job(executor_def=in_process_executor)
+def price_alert_job():
+    """Check price drops for telegram-linked watchlist users and send alerts."""
+    price_alert_op()
+
+
 # ── Definitions ───────────────────────────────────────────────────────────────
 
 defs = Definitions(
-    jobs=[product_sync_job, csv_sync_job],
+    jobs=[product_sync_job, csv_sync_job, price_alert_job],
     schedules=[
         ScheduleDefinition(
             name="csv_sync_hourly",
@@ -596,6 +689,12 @@ defs = Definitions(
             job=product_sync_job,
             # 08:00, 14:00, 20:00, 02:00 Toshkent vaqti (UTC+5)
             cron_schedule="0 2,8,14,20 * * *",
+            execution_timezone="Asia/Tashkent",
+        ),
+        ScheduleDefinition(
+            name="price_alert_hourly",
+            job=price_alert_job,
+            cron_schedule="30 * * * *",  # har soat 30-daqiqasida (sync dan keyin)
             execution_timezone="Asia/Tashkent",
         ),
     ],

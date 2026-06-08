@@ -316,6 +316,11 @@ async def lifespan(app: FastAPI):
         await conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_price_history_recorded ON price_history(recorded_at DESC)"
         )
+        # Telegram chat_id column (added later — safe to run on existing installs)
+        await conn.execute("""
+            ALTER TABLE user_profiles
+            ADD COLUMN IF NOT EXISTS telegram_chat_id BIGINT DEFAULT NULL
+        """)
     yield
     await app.state.pool.close()
 
@@ -1143,3 +1148,44 @@ async def stats() -> dict:
         "total_markets": row["total_markets"],
         "markets": [{"source": r["source"], "count": r["count"]} for r in markets_rows],
     }
+
+
+# ── Telegram integration ───────────────────────────────────────────────────────
+
+class TelegramLinkRequest(BaseModel):
+    chat_id: int
+
+
+@app.get("/api/users/me/telegram")
+async def get_telegram_status(row: asyncpg.Record = Depends(_require_user)) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    chat_id = await pool.fetchval(
+        "SELECT telegram_chat_id FROM user_profiles WHERE user_id = $1", row["id"]
+    )
+    return {"linked": chat_id is not None, "chat_id": chat_id}
+
+
+@app.post("/api/users/me/telegram")
+async def link_telegram(
+    body: TelegramLinkRequest,
+    row: asyncpg.Record = Depends(_require_user),
+) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    await pool.execute(
+        """
+        INSERT INTO user_profiles (user_id, telegram_chat_id)
+        VALUES ($1, $2)
+        ON CONFLICT (user_id) DO UPDATE SET telegram_chat_id = EXCLUDED.telegram_chat_id
+        """,
+        row["id"], body.chat_id,
+    )
+    return {"ok": True}
+
+
+@app.delete("/api/users/me/telegram")
+async def unlink_telegram(row: asyncpg.Record = Depends(_require_user)) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    await pool.execute(
+        "UPDATE user_profiles SET telegram_chat_id = NULL WHERE user_id = $1", row["id"]
+    )
+    return {"ok": True}

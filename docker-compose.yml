@@ -21,6 +21,7 @@ x-dagster-common: &dagster-common
     DATA_DIR: /opt/dagster/data
     MLFLOW_TRACKING_URI: http://mlflow:5000
     ML_TASKS_DIR: /opt/dagster/ml_tasks
+    TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
   volumes:
     - dagster_home:/opt/dagster/home
     - ./data:/opt/dagster/data
