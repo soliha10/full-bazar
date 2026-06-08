@@ -12,11 +12,16 @@ logger = logging.getLogger(__name__)
 BASE = "https://glotr.uz"
 
 FURNITURE_CATEGORIES = [
-    "mebel",
-    "divanlar",
-    "krovat",
-    "shkaflar",
-    "stol-stullar",
+    "divanlar",                    # divans / sofas
+    "kreslolar",                   # armchairs
+    "yumshoq-mebellar-toplamlari", # soft furniture sets
+    "kushetkalar",                 # chaise lounges
+    "oshxona-mebeli",              # kitchen furniture
+    "yotoqxona-uchun-mebel",       # bedroom furniture
+    "shkaflar",                    # wardrobes
+    "stol-stullar",                # tables & chairs
+    "mexmonhona-uchun-mebellar",   # living room furniture
+    "bolalar-mebeli",              # children's furniture
 ]
 
 

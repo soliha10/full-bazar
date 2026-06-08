@@ -1195,3 +1195,32 @@ async def unlink_telegram(row: asyncpg.Record = Depends(_require_user)) -> dict:
         "UPDATE user_profiles SET telegram_chat_id = NULL WHERE user_id = $1", row["id"]
     )
     return {"ok": True}
+
+
+# ── Image proxy (for hotlink-protected CDN images e.g. OLX) ──────────────────
+_ALLOWED_IMAGE_HOSTS = {"frankfurt.apollo.olxcdn.com", "img.olxcdn.com"}
+
+@app.get("/api/proxy-image")
+async def proxy_image(url: str = Query(...)) -> Response:
+    import httpx
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    if parsed.hostname not in _ALLOWED_IMAGE_HOSTS:
+        raise HTTPException(status_code=403, detail="Host not allowed")
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=10) as client:
+            resp = await client.get(
+                url,
+                headers={
+                    "Referer": "https://www.olx.uz/",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                },
+            )
+            content_type = resp.headers.get("content-type", "image/jpeg")
+            return Response(
+                content=resp.content,
+                media_type=content_type,
+                headers={"Cache-Control": "public, max-age=86400"},
+            )
+    except Exception:
+        raise HTTPException(status_code=502, detail="Image fetch failed")

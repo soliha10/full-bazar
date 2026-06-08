@@ -3,6 +3,16 @@ export function formatSum(amount: number): string {
   return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " so'm";
 }
 
+export function resolveImageUrl(url: string | undefined | null): string {
+  if (!url) return '';
+  if (url.includes('olxcdn.com')) {
+    // Upgrade to higher quality and proxy to bypass hotlink protection
+    const upgraded = url.replace(/;s=\d+x\d+;q=\d+/, ';s=644x461;q=80');
+    return `/api/proxy-image?url=${encodeURIComponent(upgraded)}`;
+  }
+  return url;
+}
+
 function generateRating(productId: string | number, actualRating?: string): number {
   if (actualRating) {
     const parsed = parseFloat(actualRating);
@@ -34,8 +44,8 @@ export function mapProduct(item: any): Product {
     price: price,
     originalPrice: item.old_price ? parseFloat(String(item.old_price).replace(/\s/g, '').replace(/[^\d.]/g, '')) : undefined,
     category: normalizedCategory,
-    image: item.image,
-    images: item.images && item.images.length > 0 ? item.images : [item.image],
+    image: resolveImageUrl(item.image),
+    images: item.images && item.images.length > 0 ? item.images.map(resolveImageUrl) : [resolveImageUrl(item.image)],
     rating: rating,
     reviews: reviews,
     description: item.title || item.product_name,
