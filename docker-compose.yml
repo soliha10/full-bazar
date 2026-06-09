@@ -19,7 +19,7 @@ x-dagster-common: &dagster-common
     PRODUCTS_DB_URL: postgresql://postgres:postgres@postgres:5432/fullbazar
     DAGSTER_DB_URL: postgresql://postgres:postgres@postgres:5432/dagster_db
     DATA_DIR: /opt/dagster/data
-    MLFLOW_TRACKING_URI: http://mlflow:5000
+    MLFLOW_TRACKING_URI: http://mlflow:5050
     ML_TASKS_DIR: /opt/dagster/ml_tasks
     TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
   volumes:
@@ -49,7 +49,23 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    mem_limit: 256m
+    mem_limit: 1g
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - effective_cache_size=768MB
+      - -c
+      - work_mem=8MB
+      - -c
+      - maintenance_work_mem=64MB
+      - -c
+      - checkpoint_completion_target=0.9
+      - -c
+      - wal_buffers=16MB
+      - -c
+      - max_connections=50
 
   # ── FastAPI ─────────────────────────────────────────────────────────────────
   fastapi:
