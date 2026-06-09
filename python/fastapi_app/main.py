@@ -358,9 +358,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 app = FastAPI(
     title="Full-Bazar API",
     lifespan=lifespan,
-    docs_url=None,
-    redoc_url=None,
-    openapi_url=None,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
 )
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(

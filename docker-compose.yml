@@ -111,6 +111,7 @@ services:
     restart: unless-stopped
     environment:
       MLFLOW_TRACKING_URI: postgresql://postgres:postgres@postgres:5432/mlflow
+      MLFLOW_SERVER_CORS_ALLOWED_ORIGINS: "*"
     command:
       - mlflow
       - server
@@ -121,7 +122,7 @@ services:
       - --host
       - "0.0.0.0"
       - --port
-      - "5000"
+      - "5050"
       - --workers
       - "1"
       - --allowed-hosts
@@ -130,11 +131,11 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "5050:5000"
+      - "5050:5050"
     volumes:
       - ./mlruns:/mlruns
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5050/health"]
       interval: 30s
       timeout: 10s
       retries: 3
