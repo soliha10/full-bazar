@@ -359,9 +359,15 @@ export function ProductDetail() {
               {/* Best price display */}
               <div className="flex items-end justify-between gap-3">
                 <div>
+                  <div>
                   <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
                     {t.detail.bestPriceMarket}: <span className="text-violet-600 dark:text-violet-400">{selectedMarket?.source}</span>
                   </p>
+                  <span className="text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30 shrink-0 text-center">
+                    {t.detail.lowestPrice30Days}
+                  </span>
+
+                  </div>
                   <div className="flex items-baseline gap-3">
                     <span className="text-3xl md:text-4xl font-black text-violet-600 dark:text-violet-400 tracking-tighter">
                       {formatSum(selectedMarket?.price || product.price)}
@@ -373,9 +379,7 @@ export function ProductDetail() {
                     )}
                   </div>
                 </div>
-                <span className="text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30 shrink-0 text-center">
-                  {t.detail.lowestPrice30Days}
-                </span>
+               
               </div>
 
               {/* Desktop price table */}
