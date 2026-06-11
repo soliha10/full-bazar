@@ -106,6 +106,14 @@ export function ProductDetail() {
     return () => observer.disconnect();
   }, [images]);
 
+  const goToImage = (idx: number) => {
+    const total = images.length;
+    const next = ((idx % total) + total) % total;
+    setSelectedImage(next);
+    const el = imageRefs.current[next];
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  };
+
   const selectedMarket = product?.markets?.[selectedMarketIndex];
   const sortedMarkets = product?.markets ? [...product.markets].sort((a, b) => a.price - b.price) : [];
   const bestPrice = sortedMarkets[0]?.price ?? product?.price ?? 0;
@@ -254,6 +262,24 @@ export function ProductDetail() {
                 ))}
               </div>
 
+              {/* Carousel arrows (shown when more than 3 images) */}
+              {images.length > 3 && (
+                <>
+                  <button
+                    onClick={() => goToImage(selectedImage - 1)}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-md hover:bg-white dark:hover:bg-gray-800 active:scale-90 transition-all"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                  </button>
+                  <button
+                    onClick={() => goToImage(selectedImage + 1)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-md hover:bg-white dark:hover:bg-gray-800 active:scale-90 transition-all"
+                  >
+                    <ChevronRight className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                  </button>
+                </>
+              )}
+
               {/* Dot indicators (mobile) */}
               {images.length > 1 && (
                 <div className="md:hidden flex justify-center gap-1.5 pb-5">
@@ -363,9 +389,9 @@ export function ProductDetail() {
                   <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
                     {t.detail.bestPriceMarket}: <span className="text-violet-600 dark:text-violet-400">{selectedMarket?.source}</span>
                   </p>
-                  <span className="text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30 shrink-0 text-center">
+                  {/* <span className="text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30 shrink-0 text-center">
                     {t.detail.lowestPrice30Days}
-                  </span>
+                  </span> */}
 
                   </div>
                   <div className="flex items-baseline gap-3">
