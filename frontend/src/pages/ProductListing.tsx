@@ -82,6 +82,12 @@ function Cb({ on }: { on: boolean }) {
   );
 }
 
+function formatPriceInput(raw: string): string {
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
 function SLabel({ children }: { children: React.ReactNode }) {
   return (
     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
@@ -151,11 +157,10 @@ export function ProductListing() {
       }).catch(() => {});
   }, []);
 
-  const categories = ['All', 'Phones', 'Furniture'];
+  const categories = ['All', 'Phones'];
   const categoryLabel: Record<string, string> = {
     All: t.listing.all,
     Phones: t.detail.categories.phones,
-    Furniture: 'Mebel',
   };
 
   useEffect(() => { setSelectedCategory(categoryParam); }, [categoryParam]);
@@ -262,11 +267,11 @@ export function ProductListing() {
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          <input type="number" placeholder="dan" value={minPrice} onChange={e => setMinPrice(e.target.value)}
+          <input type="text" inputMode="numeric" placeholder="dan" value={minPrice} onChange={e => setMinPrice(formatPriceInput(e.target.value))}
             className="w-full min-w-0 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-800 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-300/40 transition"
           />
           <span className="text-gray-400 text-sm shrink-0">—</span>
-          <input type="number" placeholder="gacha" value={maxPrice} onChange={e => setMaxPrice(e.target.value)}
+          <input type="text" inputMode="numeric" placeholder="gacha" value={maxPrice} onChange={e => setMaxPrice(formatPriceInput(e.target.value))}
             className="w-full min-w-0 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-800 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-300/40 transition"
           />
         </div>
@@ -305,8 +310,7 @@ export function ProductListing() {
         </div>
       </div>
 
-      {/* Brendlar — only for Phones */}
-      {selectedCategory !== 'Furniture' && (
+      {/* Brendlar */}
       <div className="py-3">
         <div className="flex items-center justify-between mb-2">
           <SLabel>{t.listing.brands}</SLabel>
@@ -334,7 +338,6 @@ export function ProductListing() {
           })}
         </div>
       </div>
-      )}
 
       {/* Do'konlar */}
       <div className="py-3">
@@ -485,7 +488,7 @@ export function ProductListing() {
                 )}
               </div>
               <div className="px-3 pb-4">
-                <FilterPanel />
+                {FilterPanel()}
               </div>
             </div>
           </aside>
@@ -543,7 +546,7 @@ export function ProductListing() {
                 )}
                 {(minPrice || maxPrice) && (
                   <span className="flex items-center gap-1 rounded-full border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 px-2.5 py-1 text-[11px] font-semibold text-green-700 dark:text-green-400">
-                    {minPrice ? formatSum(Number(minPrice)) : '0'} — {maxPrice ? formatSum(Number(maxPrice)) : '∞'}
+                    {minPrice ? formatSum(Number(minPrice.replace(/\s/g, ''))) : '0'} — {maxPrice ? formatSum(Number(maxPrice.replace(/\s/g, ''))) : '∞'}
                     <button onClick={() => { setMinPrice(''); setMaxPrice(''); }} className="ml-0.5 opacity-60 hover:opacity-100"><X className="w-3 h-3" /></button>
                   </span>
                 )}
@@ -692,7 +695,7 @@ export function ProductListing() {
 
             {/* Content */}
             <div className="overflow-y-auto flex-1 px-5 py-2 pb-32">
-              <FilterPanel />
+              {FilterPanel()}
             </div>
 
             {/* Footer actions */}
