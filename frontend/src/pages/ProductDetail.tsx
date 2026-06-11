@@ -83,11 +83,14 @@ export function ProductDetail() {
     }
   }, [id]);
 
+  const FALLBACK_IMAGE = 'https://placehold.co/600x600/f5f3ff/7c3aed?text=📱';
+
   const images = useMemo(() => {
-    if (!product) return [];
-    return product.images && product.images.length > 0
+    if (!product) return [FALLBACK_IMAGE];
+    const list = product.images && product.images.length > 0
       ? product.images.filter((img) => img && img !== "")
-      : [product.image];
+      : [product.image].filter((img) => img && img !== "");
+    return list.length > 0 ? list : [FALLBACK_IMAGE];
   }, [product]);
 
   useEffect(() => {
@@ -257,6 +260,7 @@ export function ProductDetail() {
                       className={`w-full aspect-square object-contain p-8 md:p-12 transition-opacity duration-500 ${
                         selectedImage === idx ? 'opacity-100' : 'md:hidden'
                       }`}
+                      onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
                     />
                   </div>
                 ))}
@@ -299,18 +303,31 @@ export function ProductDetail() {
             </div>
 
             {/* Thumbnails — desktop */}
-            <div className="hidden md:grid grid-cols-4 gap-3">
+            <div
+              className={`hidden md:flex gap-3 ${
+                images.length > 3
+                  ? "overflow-x-auto snap-x snap-mandatory pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  : ""
+              }`}
+            >
               {images.map((img, idx) => (
                 <button
                   key={idx}
-                  onClick={() => setSelectedImage(idx)}
-                  className={`bg-white dark:bg-gray-900 rounded-2xl p-2 border-2 transition-all aspect-square ${
+                  onClick={() => goToImage(idx)}
+                  className={`bg-white dark:bg-gray-900 rounded-2xl p-2 border-2 transition-all aspect-square shrink-0 snap-start ${
+                    images.length > 3 ? "w-[calc(25%-9px)]" : "flex-1"
+                  } ${
                     selectedImage === idx
                       ? "border-violet-600 shadow-md shadow-violet-500/10"
                       : "border-gray-100 dark:border-gray-800 hover:border-violet-200 dark:hover:border-violet-700"
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-contain" />
+                  <img
+                    src={img}
+                    alt=""
+                    className="w-full h-full object-contain"
+                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                  />
                 </button>
               ))}
             </div>

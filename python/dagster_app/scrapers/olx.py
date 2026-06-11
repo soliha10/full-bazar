@@ -62,7 +62,15 @@ class OlxScraper(BaseScraper):
                         continue
 
                     img = card.find("img")
-                    src = (img.get("src") or img.get("data-src") or "") if img else ""
+                    src = (img.get("data-src") or img.get("src") or "") if img else ""
+                    # OLX serves a placeholder asset path (e.g. /app/static/media/no_thumbnail*.svg)
+                    # in `src` while the real photo lives in `data-src`/srcset before hydration.
+                    if not src.startswith("http"):
+                        srcset = (img.get("data-srcset") or img.get("srcset") or "") if img else ""
+                        if srcset:
+                            src = srcset.split(",")[0].strip().split(" ")[0]
+                    if not src.startswith("http"):
+                        src = ""
 
                     a_el = card.find("a", href=True)
                     href = a_el["href"] if a_el else ""

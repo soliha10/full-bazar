@@ -5,6 +5,9 @@ export function formatSum(amount: number): string {
 
 export function resolveImageUrl(url: string | undefined | null): string {
   if (!url) return '';
+  // Some OLX listings only exposed a placeholder asset path from the scraper
+  // (a local filesystem path, not a real image URL) — treat it as missing.
+  if (!url.startsWith('http') && !url.startsWith('/api/')) return '';
   if (url.includes('olxcdn.com')) {
     // Upgrade to higher quality and proxy to bypass hotlink protection
     const upgraded = url.replace(/;s=\d+x\d+;q=\d+/, ';s=644x461;q=80');
