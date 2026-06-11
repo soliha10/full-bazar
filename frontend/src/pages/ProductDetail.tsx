@@ -215,7 +215,8 @@ export function ProductDetail() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
           >
-            <div className="relative bg-white dark:bg-gray-900 rounded-2xl md:rounded-[2.5rem] border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+            <div className="md:flex md:flex-row-reverse md:items-start gap-3">
+            <div className="relative flex-1 bg-white dark:bg-gray-900 rounded-2xl md:rounded-[2.5rem] border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
               {/* Best seller badge */}
               <div className="absolute top-4 left-4 z-10">
                 <span className="bg-amber-400 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
@@ -266,18 +267,18 @@ export function ProductDetail() {
                 ))}
               </div>
 
-              {/* Carousel arrows (shown when more than 3 images) */}
+              {/* Carousel arrows (mobile only — desktop uses the side thumbnail rail) */}
               {images.length > 3 && (
                 <>
                   <button
                     onClick={() => goToImage(selectedImage - 1)}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-md hover:bg-white dark:hover:bg-gray-800 active:scale-90 transition-all"
+                    className="md:hidden absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-md hover:bg-white dark:hover:bg-gray-800 active:scale-90 transition-all"
                   >
                     <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                   </button>
                   <button
                     onClick={() => goToImage(selectedImage + 1)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-md hover:bg-white dark:hover:bg-gray-800 active:scale-90 transition-all"
+                    className="md:hidden absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-md hover:bg-white dark:hover:bg-gray-800 active:scale-90 transition-all"
                   >
                     <ChevronRight className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                   </button>
@@ -302,11 +303,11 @@ export function ProductDetail() {
               )}
             </div>
 
-            {/* Thumbnails — desktop */}
+            {/* Thumbnails — desktop, vertical rail */}
             <div
-              className={`hidden md:flex gap-3 ${
-                images.length > 3
-                  ? "overflow-x-auto snap-x snap-mandatory pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className={`hidden md:flex md:flex-col gap-3 w-20 lg:w-24 shrink-0 ${
+                images.length > 4
+                  ? "max-h-[480px] lg:max-h-[560px] overflow-y-auto pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                   : ""
               }`}
             >
@@ -314,9 +315,7 @@ export function ProductDetail() {
                 <button
                   key={idx}
                   onClick={() => goToImage(idx)}
-                  className={`bg-white dark:bg-gray-900 rounded-2xl p-2 border-2 transition-all aspect-square shrink-0 snap-start ${
-                    images.length > 3 ? "w-[calc(25%-9px)]" : "flex-1"
-                  } ${
+                  className={`w-full aspect-square shrink-0 bg-white dark:bg-gray-900 rounded-2xl p-2 border-2 transition-all ${
                     selectedImage === idx
                       ? "border-violet-600 shadow-md shadow-violet-500/10"
                       : "border-gray-100 dark:border-gray-800 hover:border-violet-200 dark:hover:border-violet-700"
@@ -330,6 +329,7 @@ export function ProductDetail() {
                   />
                 </button>
               ))}
+            </div>
             </div>
 
             {/* Market overview — desktop */}
