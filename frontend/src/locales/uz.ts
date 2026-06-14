@@ -383,6 +383,8 @@ export const uz = {
     subtitle: "Saytni yaxshilashga yordam bering",
     emptyMessageError: "Iltimos, fikr-mulohazangizni yozing",
     submitError: "Yuborishda xatolik yuz berdi. Qaytadan urinib ko'ring",
+    ratingRequiredError: "Iltimos, baho tanlang",
+    invalidEmailError: "Iltimos, to'g'ri elektron pochta manzilini kiriting",
     thankYou: "Rahmat!",
     successMessage: "Fikr-mulohazangiz qabul qilindi. Sizning fikringiz biz uchun muhim.",
     backToHome: "Bosh sahifaga qaytish",

@@ -383,6 +383,8 @@ export const en = {
     subtitle: "Help us improve our website",
     emptyMessageError: "Please write your feedback",
     submitError: "An error occurred while sending. Please try again",
+    ratingRequiredError: "Please select a rating",
+    invalidEmailError: "Please enter a valid email address",
     thankYou: "Thank you!",
     successMessage: "Your feedback has been received. Your opinion is important to us.",
     backToHome: "Back to Home",

@@ -21,8 +21,16 @@ export function Feedback() {
   const [sent, setSent]       = useState(false);
 
   const handleSubmit = async () => {
+    if (rating === 0) {
+      setError(t.feedback.ratingRequiredError);
+      return;
+    }
     if (!message.trim()) {
       setError(t.feedback.emptyMessageError);
+      return;
+    }
+    if (!user && email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError(t.feedback.invalidEmailError);
       return;
     }
     setSending(true);
@@ -31,7 +39,7 @@ export function Feedback() {
       await submitFeedback(
         {
           message: message.trim(),
-          rating: rating || undefined,
+          rating: rating,
           name: user ? undefined : (name.trim() || undefined),
           email: user ? undefined : (email.trim() || undefined),
         },
@@ -103,7 +111,7 @@ export function Feedback() {
               {[1, 2, 3, 4, 5].map((i) => (
                 <button
                   key={i}
-                  onClick={() => setRating(i)}
+                  onClick={() => { setRating(i); setError(''); }}
                   onMouseEnter={() => setHover(i)}
                   onMouseLeave={() => setHover(0)}
                   className="active:scale-90 transition-transform"
@@ -128,7 +136,7 @@ export function Feedback() {
                 <input
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => { setName(e.target.value); setError(''); }}
                   placeholder={t.feedback.namePlaceholder}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-sm font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
                 />
@@ -138,7 +146,7 @@ export function Feedback() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setError(''); }}
                   placeholder="email@example.com"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-sm font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
                 />
@@ -151,7 +159,7 @@ export function Feedback() {
             <label className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1.5 block">{t.feedback.yourFeedback}</label>
             <textarea
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => { setMessage(e.target.value); setError(''); }}
               rows={5}
               maxLength={2000}
               placeholder={t.feedback.textareaPlaceholder}
