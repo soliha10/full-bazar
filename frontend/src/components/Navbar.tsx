@@ -99,10 +99,10 @@ export function Navbar({ onSearchChange }: NavbarProps) {
 
   const navLinks = [
     { icon: Home,             label: t.nav.home,       path: '/',         count: 0               },
-    { icon: Package,          label: 'Katalog',         path: '/products', count: 0               },
-    { icon: TrendingUp,       label: 'Tahlil',          path: '/trends',   count: 0               },
+    { icon: Package,          label: t.nav.catalog,     path: '/products', count: 0               },
+    { icon: TrendingUp,       label: t.nav.analysis,    path: '/trends',   count: 0               },
     { icon: Heart,            label: t.footer.wishlist, path: '/wishlist', count: favorites.length },
-    { icon: MessageSquareHeart, label: 'Fikr-mulohaza',  path: '/feedback', count: 0               },
+    { icon: MessageSquareHeart, label: t.nav.feedback,    path: '/feedback', count: 0               },
   ];
 
   return (
@@ -148,9 +148,9 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             {/* Desktop nav links */}
             <nav className="hidden md:flex items-center gap-0.5 mr-2 shrink-0">
               {[
-                { path: '/products', label: 'Katalog' },
-                { path: '/trends',   label: 'Tahlil'  },
-                { path: '/feedback', label: 'Fikr-mulohaza' },
+                { path: '/products', label: t.nav.catalog },
+                { path: '/trends',   label: t.nav.analysis },
+                { path: '/feedback', label: t.nav.feedback },
               ].map(({ path, label }) => {
                 const active = location.pathname === path || location.pathname.startsWith(path + '/');
                 return (

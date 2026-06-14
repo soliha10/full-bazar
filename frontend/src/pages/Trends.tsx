@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import axios from 'axios';
 import { formatSum } from '../utils/productMapper';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
@@ -43,6 +44,7 @@ const MARKET_COLORS = [
 ];
 
 export function Trends() {
+  const { t } = useLanguage();
   const [searchTrends, setSearchTrends] = useState<SearchTrend[]>([]);
   const [markets, setMarkets] = useState<MarketStat[]>([]);
   const [popular, setPopular] = useState<PopularProduct[]>([]);
@@ -86,34 +88,34 @@ export function Trends() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Bozor Tahlili</h1>
+        <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{t.trends.title}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          So'nggi 7 kun ichidagi qidiruvlar, trendlar va marketplace statistikasi
+          {t.trends.subtitle}
         </p>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Jami mahsulot"   value={totalProducts.toLocaleString()}  icon={ShoppingBag} color="bg-violet-600" />
-        <StatCard label="Marketplace"     value={totalMarkets}                     icon={BarChart2}   color="bg-blue-500"   />
-        <StatCard label="Haftalik faollik" value={weeklyEvents.toLocaleString()}   icon={Eye}         color="bg-emerald-500"/>
-        <StatCard label="Narx tushishi"   value={dropping.length}                  icon={TrendingDown} color="bg-rose-500"  />
+        <StatCard label={t.trends.totalProducts}   value={totalProducts.toLocaleString()}  icon={ShoppingBag} color="bg-violet-600" />
+        <StatCard label={t.trends.marketplaces}     value={totalMarkets}                     icon={BarChart2}   color="bg-blue-500"   />
+        <StatCard label={t.trends.weeklyActivity} value={weeklyEvents.toLocaleString()}   icon={Eye}         color="bg-emerald-500"/>
+        <StatCard label={t.trends.priceDrops}   value={dropping.length}                  icon={TrendingDown} color="bg-rose-500"  />
       </div>
 
       {/* Search trends */}
       <section>
         <div className="flex items-center gap-2 mb-4">
           <Search className="w-4 h-4 text-violet-500" />
-          <h2 className="text-base font-black text-gray-900 dark:text-white">Top qidiruvlar (7 kun)</h2>
+          <h2 className="text-base font-black text-gray-900 dark:text-white">{t.trends.topSearches}</h2>
         </div>
         {searchTrends.length === 0 ? (
-          <p className="text-sm text-gray-400 italic">Hozircha qidiruv ma'lumoti yo'q</p>
+          <p className="text-sm text-gray-400 italic">{t.trends.noSearchData}</p>
         ) : (
           <div className="flex flex-wrap gap-2">
-            {searchTrends.map((t, i) => (
+            {searchTrends.map((tItem, i) => (
               <Link
-                key={t.query}
-                to={`/products?search=${encodeURIComponent(t.query)}`}
+                key={tItem.query}
+                to={`/products?search=${encodeURIComponent(tItem.query)}`}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all
                   bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700
                   hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20
@@ -121,10 +123,10 @@ export function Trends() {
               >
                 {i < 3 && <Flame className="w-3 h-3 text-orange-500 shrink-0" />}
                 <span className="text-sm font-bold text-gray-700 dark:text-gray-200 group-hover:text-violet-700 dark:group-hover:text-violet-300">
-                  {t.query}
+                  {tItem.query}
                 </span>
                 <span className="text-[10px] font-black bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-full">
-                  {t.count}
+                  {tItem.count}
                 </span>
               </Link>
             ))}
@@ -136,7 +138,7 @@ export function Trends() {
       <section>
         <div className="flex items-center gap-2 mb-4">
           <BarChart2 className="w-4 h-4 text-violet-500" />
-          <h2 className="text-base font-black text-gray-900 dark:text-white">Marketplace reytingi</h2>
+          <h2 className="text-base font-black text-gray-900 dark:text-white">{t.trends.marketRanking}</h2>
         </div>
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5">
           <ResponsiveContainer width="100%" height={Math.min(markets.length * 36, 400)}>
@@ -148,7 +150,7 @@ export function Trends() {
                 tickLine={false} axisLine={false}
               />
               <Tooltip
-                formatter={(v: number) => [`${v} ta mahsulot`, 'Mahsulot']}
+                formatter={(v: number) => [t.trends.productsCount.replace('{{count}}', v.toString()), t.trends.product]}
                 contentStyle={{
                   borderRadius: 12, border: '1px solid #e5e7eb',
                   fontSize: 12, fontWeight: 700,
@@ -164,7 +166,7 @@ export function Trends() {
 
           {/* Avg price table */}
           <div className="mt-5 border-t border-gray-100 dark:border-gray-800 pt-4">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">O'rtacha narq (so'm)</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">{t.trends.avgPriceUzs}</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
               {markets.slice(0, 8).map((m, i) => (
                 <div key={m.source} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
@@ -184,7 +186,7 @@ export function Trends() {
       <section>
         <div className="flex items-center gap-2 mb-4">
           <TrendingDown className="w-4 h-4 text-violet-500" />
-          <h2 className="text-base font-black text-gray-900 dark:text-white">Narx o'zgarishlari (3 kun)</h2>
+          <h2 className="text-base font-black text-gray-900 dark:text-white">{t.trends.priceChanges}</h2>
         </div>
         <div className="grid md:grid-cols-2 gap-4">
 
@@ -192,11 +194,11 @@ export function Trends() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-emerald-50 dark:bg-emerald-950/30">
               <TrendingDown className="w-4 h-4 text-emerald-600" />
-              <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">Narx tushdi</span>
+              <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">{t.trends.priceDropped}</span>
             </div>
             <div className="divide-y divide-gray-50 dark:divide-gray-800">
               {dropping.length === 0 ? (
-                <p className="px-4 py-6 text-sm text-gray-400 text-center">Ma'lumot yo'q</p>
+                <p className="px-4 py-6 text-sm text-gray-400 text-center">{t.trends.noData}</p>
               ) : dropping.map(item => (
                 <Link
                   key={item.id}
@@ -222,11 +224,11 @@ export function Trends() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-rose-50 dark:bg-rose-950/30">
               <TrendingUp className="w-4 h-4 text-rose-600" />
-              <span className="text-sm font-black text-rose-700 dark:text-rose-400">Narx ko'tarildi</span>
+              <span className="text-sm font-black text-rose-700 dark:text-rose-400">{t.trends.priceIncreased}</span>
             </div>
             <div className="divide-y divide-gray-50 dark:divide-gray-800">
               {rising.length === 0 ? (
-                <p className="px-4 py-6 text-sm text-gray-400 text-center">Ma'lumot yo'q</p>
+                <p className="px-4 py-6 text-sm text-gray-400 text-center">{t.trends.noData}</p>
               ) : rising.map(item => (
                 <Link
                   key={item.id}
@@ -255,7 +257,7 @@ export function Trends() {
         <section>
           <div className="flex items-center gap-2 mb-4">
             <Eye className="w-4 h-4 text-violet-500" />
-            <h2 className="text-base font-black text-gray-900 dark:text-white">Ko'p ko'rilgan (7 kun)</h2>
+            <h2 className="text-base font-black text-gray-900 dark:text-white">{t.trends.mostViewed}</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {popular.map((p, rank) => (
@@ -301,7 +303,7 @@ export function Trends() {
       <section>
         <div className="flex items-center gap-2 mb-4">
           <BarChart2 className="w-4 h-4 text-violet-500" />
-          <h2 className="text-base font-black text-gray-900 dark:text-white">Marketplace ulushi</h2>
+          <h2 className="text-base font-black text-gray-900 dark:text-white">{t.trends.marketShare}</h2>
         </div>
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 space-y-3">
           {markets.slice(0, 10).map((m, i) => (

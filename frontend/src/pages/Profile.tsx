@@ -287,7 +287,7 @@ export function Profile() {
             to="/products"
             className="flex items-center justify-between px-4 py-3.5 active:bg-gray-50 dark:active:bg-gray-800 transition-colors"
           >
-            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">Barcha mahsulotlar</span>
+            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{t.footer.allProducts}</span>
             <ChevronRight className="w-4 h-4 text-gray-400" />
           </Link>
 
@@ -296,7 +296,7 @@ export function Profile() {
             to="/feedback"
             className="flex items-center justify-between px-4 py-3.5 active:bg-gray-50 dark:active:bg-gray-800 rounded-b-2xl transition-colors"
           >
-            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">Fikr-mulohaza qoldirish</span>
+            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{t.feedback.leaveFeedback}</span>
             <ChevronRight className="w-4 h-4 text-gray-400" />
           </Link>
         </motion.div>
