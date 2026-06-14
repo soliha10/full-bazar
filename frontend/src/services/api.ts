@@ -76,3 +76,19 @@ export const fetchTrends = async (limit = 8) => {
     return { dropping: [], rising: [] };
   }
 };
+
+export const submitFeedback = async (
+  data: { message: string; rating?: number; name?: string; email?: string },
+  token?: string,
+) => {
+  const response = await fetch(`${API_BASE_URL}/feedback`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error('Network response was not ok');
+  return await response.json();
+};

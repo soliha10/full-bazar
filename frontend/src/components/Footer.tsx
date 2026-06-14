@@ -64,7 +64,7 @@ export function Footer() {
               <li><a href="#" className="hover:text-violet-400 transition-colors">{t.footer.account}</a></li>
               <li><a href="#" className="hover:text-violet-400 transition-colors">{t.footer.orders}</a></li>
               <li><a href="#" className="hover:text-violet-400 transition-colors">{t.footer.wishlist}</a></li>
-              <li><a href="#" className="hover:text-violet-400 transition-colors">{t.footer.help}</a></li>
+              <li><Link to="/feedback" className="hover:text-violet-400 transition-colors">{t.footer.help}</Link></li>
             </ul>
           </div>
 

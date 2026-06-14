@@ -77,6 +77,8 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/fullbazar
       MODEL_PATH: /app/data/models/best_matcher.pkl
       JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      FEEDBACK_CHAT_ID: ${FEEDBACK_CHAT_ID:-}
     volumes:
       - ./data:/app/data:ro
     ports:

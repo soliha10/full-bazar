@@ -21,6 +21,7 @@ import { Wishlist } from "./pages/Wishlist";
 import { Watchlist } from "./pages/Watchlist";
 import { Profile } from "./pages/Profile";
 import { Trends } from "./pages/Trends";
+import { Feedback } from "./pages/Feedback";
 
 export default function App() {
   return (
@@ -48,9 +49,10 @@ function AppContent() {
   const isDetailPage    = location.pathname.startsWith('/product/');
   const isProfilePage   = location.pathname === '/profile';
   const isWatchlistPage = location.pathname === '/watchlist';
+  const isFeedbackPage  = location.pathname === '/feedback';
 
-  const hideNavbarOnMobile = isSearchPage || isDetailPage || isProfilePage || isWatchlistPage;
-  const hideFooter = isSearchPage || isDetailPage || location.pathname === '/wishlist' || isProfilePage || isWatchlistPage;
+  const hideNavbarOnMobile = isSearchPage || isDetailPage || isProfilePage || isWatchlistPage || isFeedbackPage;
+  const hideFooter = isSearchPage || isDetailPage || location.pathname === '/wishlist' || isProfilePage || isWatchlistPage || isFeedbackPage;
 
   const handleSearch = (value: string) => {
     if (value.trim()) {
@@ -75,6 +77,7 @@ function AppContent() {
           <Route path="/watchlist"   element={<Watchlist />} />
           <Route path="/profile"     element={<Profile />} />
           <Route path="/trends"      element={<Trends />} />
+          <Route path="/feedback"    element={<Feedback />} />
         </Routes>
       </main>
 
