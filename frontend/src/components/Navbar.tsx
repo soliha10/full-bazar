@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Search, User, Moon, Sun, Globe, ShoppingBag, Menu, Mic, X,
   LogIn, HelpCircle, Info, Sparkles, Heart, ChevronRight,
-  Home, Package, LogOut, ChevronDown, Bell, TrendingUp,
+  Home, Package, LogOut, ChevronDown, Bell, TrendingUp, MessageSquareHeart,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
@@ -98,10 +98,11 @@ export function Navbar({ onSearchChange }: NavbarProps) {
   ];
 
   const navLinks = [
-    { icon: Home,       label: t.nav.home,       path: '/',         count: 0               },
-    { icon: Package,    label: 'Katalog',         path: '/products', count: 0               },
-    { icon: TrendingUp, label: 'Tahlil',          path: '/trends',   count: 0               },
-    { icon: Heart,      label: t.footer.wishlist, path: '/wishlist', count: favorites.length },
+    { icon: Home,             label: t.nav.home,       path: '/',         count: 0               },
+    { icon: Package,          label: 'Katalog',         path: '/products', count: 0               },
+    { icon: TrendingUp,       label: 'Tahlil',          path: '/trends',   count: 0               },
+    { icon: Heart,            label: t.footer.wishlist, path: '/wishlist', count: favorites.length },
+    { icon: MessageSquareHeart, label: 'Fikr-mulohaza',  path: '/feedback', count: 0               },
   ];
 
   return (
@@ -149,6 +150,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
               {[
                 { path: '/products', label: 'Katalog' },
                 { path: '/trends',   label: 'Tahlil'  },
+                { path: '/feedback', label: 'Fikr-mulohaza' },
               ].map(({ path, label }) => {
                 const active = location.pathname === path || location.pathname.startsWith(path + '/');
                 return (
@@ -211,19 +213,19 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             <div className="flex-1 md:hidden" />
 
             {/* Right actions */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
 
               {/* Language dropdown — desktop */}
-              <div className="relative hidden md:block">
+              <div className="relative hidden lg:block">
                 <button
                   onClick={() => setIsLangOpen(v => !v)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl
+                  className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl
                     hover:bg-violet-50 dark:hover:bg-violet-900/30
                     text-gray-600 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400
                     font-semibold text-sm transition-all"
                 >
                   <Globe className="w-4 h-4" />
-                  <span className="font-black text-xs uppercase tracking-wider">{language}</span>
+                  <span className="font-black text-xs uppercase tracking-wider hidden xl:block">{language}</span>
                 </button>
                 {isLangOpen && (
                   <>
@@ -253,7 +255,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
 
               {/* Favorites — desktop */}
               <Link to="/wishlist"
-                className="hidden md:flex relative w-9 h-9 items-center justify-center rounded-xl
+                className="hidden md:flex relative w-8 h-8 items-center justify-center rounded-xl
                   bg-gray-50 dark:bg-gray-800
                   hover:bg-red-50 dark:hover:bg-red-900/20
                   text-gray-500 dark:text-gray-400 hover:text-red-500
@@ -270,7 +272,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
               {user && (
                 <Link
                   to="/watchlist"
-                  className="hidden md:flex relative w-9 h-9 items-center justify-center rounded-xl
+                  className="hidden md:flex relative w-8 h-8 items-center justify-center rounded-xl
                     bg-gray-50 dark:bg-gray-800
                     hover:bg-violet-50 dark:hover:bg-violet-900/30
                     text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400
@@ -288,7 +290,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
 
               {/* Theme toggle — desktop */}
               <button onClick={toggleTheme} aria-label="Mavzuni o'zgartirish"
-                className="hidden md:flex w-9 h-9 items-center justify-center rounded-xl
+                className="hidden md:flex w-8 h-8 items-center justify-center rounded-xl
                   bg-gray-50 dark:bg-gray-800
                   hover:bg-violet-50 dark:hover:bg-violet-900/30
                   text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400
