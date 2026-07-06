@@ -384,17 +384,19 @@ export function ProductDetail() {
                 </button>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 px-3 py-1.5 rounded-xl shadow-sm">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`w-3.5 h-3.5 ${i < Math.floor(product.rating) ? "fill-amber-400 text-amber-400" : "text-gray-200 dark:text-gray-600"}`} />
-                  ))}
-                  <span className="ml-1.5 font-black text-gray-900 dark:text-white text-sm">{product.rating}</span>
+              {product.rating > 0 && (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 px-3 py-1.5 rounded-xl shadow-sm">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className={`w-3.5 h-3.5 ${i < Math.floor(product.rating) ? "fill-amber-400 text-amber-400" : "text-gray-200 dark:text-gray-600"}`} />
+                    ))}
+                    <span className="ml-1.5 font-black text-gray-900 dark:text-white text-sm">{product.rating}</span>
+                  </div>
+                  <span className="text-xs font-bold text-gray-400 dark:text-gray-500">
+                    {product.reviews} {t.detail.customerReviewsLabel}
+                  </span>
                 </div>
-                <span className="text-xs font-bold text-gray-400 dark:text-gray-500">
-                  {product.reviews} {t.detail.customerReviewsLabel}
-                </span>
-              </div>
+              )}
             </div>
 
             {/* Price section */}

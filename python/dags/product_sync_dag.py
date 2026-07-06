@@ -172,7 +172,7 @@ def sync_products_to_db(**_kwargs) -> None:
 
         if product_id not in product_groups:
             raw_rating = row["raw_rating"]
-            rating = 4.5
+            rating = None
             if raw_rating:
                 try:
                     r = float(raw_rating)
@@ -180,22 +180,14 @@ def sync_products_to_db(**_kwargs) -> None:
                         rating = round(r, 2)
                 except ValueError:
                     pass
-            else:
-                # deterministic pseudo-random based on id
-                id_hash = sum(ord(c) for c in product_id)
-                rating = round(3.5 + (id_hash % 16) / 10, 1)
 
             raw_reviews = row["raw_reviews"]
-            reviews = 10
+            reviews = None
             if raw_reviews:
                 try:
                     reviews = int(raw_reviews)
                 except ValueError:
                     pass
-            else:
-                id_hash = sum(ord(c) for c in product_id)
-                base = 50 if rating >= 4.5 else (30 if rating >= 4.0 else 15)
-                reviews = base + (id_hash % 100)
 
             product_groups[product_id] = {
                 "id": product_id,

@@ -99,8 +99,7 @@ def build_groups(rows):
             pid = "prod-" + hashlib.md5(n.encode()).hexdigest()[:20]
             norm_pid[n] = pid
             brand_g.setdefault(brand, []).append(pid)
-            ih = sum(ord(c) for c in pid)
-            rating = 4.5
+            rating = None
             if row["rating"]:
                 try:
                     r = float(row["rating"])
@@ -108,16 +107,12 @@ def build_groups(rows):
                         rating = round(r, 2)
                 except (ValueError, TypeError):
                     pass
-            else:
-                rating = round(3.5 + (ih % 16) / 10, 1)
-            reviews = 10
+            reviews = None
             if row["reviews"]:
                 try:
                     reviews = int(row["reviews"])
                 except (ValueError, TypeError):
                     pass
-            else:
-                reviews = (50 if rating >= 4.5 else 30 if rating >= 4.0 else 15) + (ih % 100)
             groups[pid] = {
                 "id": pid, "name": _display(row["title"]), "title": row["title"],
                 "rating": rating, "reviews": reviews,

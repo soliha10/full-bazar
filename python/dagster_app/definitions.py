@@ -211,7 +211,7 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
             brand_groups.setdefault(brand, []).append(target_pid)
 
             raw_rating = row["raw_rating"]
-            rating = 4.5
+            rating = None
             if raw_rating:
                 try:
                     r = float(raw_rating)
@@ -219,20 +219,14 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
                         rating = round(r, 2)
                 except (ValueError, TypeError):
                     pass
-            else:
-                id_hash = sum(ord(c) for c in target_pid)
-                rating = round(3.5 + (id_hash % 16) / 10, 1)
 
             raw_reviews = row["raw_reviews"]
-            reviews = 10
+            reviews = None
             if raw_reviews:
                 try:
                     reviews = max(1, int(raw_reviews))
                 except (ValueError, TypeError):
                     pass
-            else:
-                id_hash = sum(ord(c) for c in target_pid)
-                reviews = (50 if rating >= 4.5 else 30 if rating >= 4.0 else 15) + (id_hash % 100)
 
             product_groups[target_pid] = {
                 "id": target_pid,

@@ -16,21 +16,16 @@ export function resolveImageUrl(url: string | undefined | null): string {
   return url;
 }
 
-function generateRating(productId: string | number, actualRating?: string): number {
-  if (actualRating) {
-    const parsed = parseFloat(actualRating);
-    if (!isNaN(parsed) && parsed > 0) return Math.min(5, Math.max(1, parsed));
-  } 
-  const idHash = String(productId).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const rating = 3.5 + (idHash % 16) / 10; 
-  return Math.round(rating * 10) / 10;
+function parseRating(actualRating?: any): number {
+  if (actualRating === undefined || actualRating === null) return 0;
+  const parsed = parseFloat(String(actualRating));
+  return !isNaN(parsed) && parsed > 0 ? Math.min(5, Math.max(1, parsed)) : 0;
 }
 
-function generateReviewCount(rating: number, productId: string | number): number {
-  const idHash = String(productId).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const baseReviews = rating >= 4.5 ? 50 : rating >= 4.0 ? 30 : 15;
-  const variance = idHash % 100;
-  return baseReviews + variance;
+function parseReviewCount(actualReviews?: any): number {
+  if (actualReviews === undefined || actualReviews === null) return 0;
+  const parsed = parseInt(String(actualReviews), 10);
+  return !isNaN(parsed) && parsed > 0 ? parsed : 0;
 }
 
 export function mapProduct(item: any): Product {
@@ -38,8 +33,8 @@ export function mapProduct(item: any): Product {
   const price = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice).replace(/\s/g, '').replace(/[^\d.]/g, '')) || 0;
   const category = item.category || 'General';
   const normalizedCategory = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
-  const rating = generateRating(item.id, item.rating);
-  const reviews = generateReviewCount(rating, item.id);
+  const rating = parseRating(item.rating);
+  const reviews = parseReviewCount(item.reviews || item.review_count);
 
   return {
     id: item.id,

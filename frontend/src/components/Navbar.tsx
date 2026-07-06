@@ -64,6 +64,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
 
   /* debounced search */
   useEffect(() => {
+    if (window.innerWidth < 768) return;
     const p = new URLSearchParams(location.search);
     if (searchValue.trim() === (p.get('search') || '')) return;
     const id = setTimeout(() => onSearchChange?.(searchValue.trim()), 500);

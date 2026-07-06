@@ -99,11 +99,15 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
         <div className="flex-1 flex flex-col justify-between py-0.5 min-w-0">
           <div>
             <div className="flex items-center gap-1.5 mb-1">
-              <div className="flex items-center gap-0.5 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-lg">
-                <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
-                <span className="text-xs font-black text-gray-800 dark:text-gray-200">{product.rating}</span>
-              </div>
-              <span className="text-[10px] text-gray-400 dark:text-gray-500">({product.reviews})</span>
+              {product.rating > 0 && (
+                <>
+                  <div className="flex items-center gap-0.5 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-lg">
+                    <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
+                    <span className="text-xs font-black text-gray-800 dark:text-gray-200">{product.rating}</span>
+                  </div>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500">({product.reviews})</span>
+                </>
+              )}
               {savings > 0 && (
                 <span className="ml-auto flex items-center gap-0.5 text-[9px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded-lg">
                   <TrendingDown className="w-2.5 h-2.5" />
@@ -194,15 +198,17 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
       {/* Body */}
       <div className="p-3 md:p-4 flex flex-col flex-1 gap-2">
         {/* Rating */}
-        <div className="flex items-center gap-1.5">
-          <div className="flex items-center gap-0.5">
-            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-            <span className="text-xs font-black text-gray-800 dark:text-gray-200">{product.rating}</span>
+        {product.rating > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-0.5">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              <span className="text-xs font-black text-gray-800 dark:text-gray-200">{product.rating}</span>
+            </div>
+            <span className="text-[10px] text-gray-400 dark:text-gray-500">
+              ({product.reviews})
+            </span>
           </div>
-          <span className="text-[10px] text-gray-400 dark:text-gray-500">
-            ({product.reviews})
-          </span>
-        </div>
+        )}
 
         {/* Name */}
         <h3 className="font-bold text-gray-900 dark:text-white text-[13px] md:text-[15px] leading-snug line-clamp-2 flex-1 min-h-[36px] md:min-h-[42px]">
