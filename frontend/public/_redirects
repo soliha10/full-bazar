@@ -1,0 +1,3 @@
+# Redirect /api/* to Render.com backend
+# Bu yerga keyinroq Render URL qo'shiladi
+/api/* https://full-bazar-api.onrender.com/api/:splat 200
