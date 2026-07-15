@@ -18,7 +18,7 @@ from .alif import AlifScraper
 from .ucell import UcellScraper
 from .brandstore import BrandstoreScraper
 from .olx import OlxScraper
-from .wildberries import WildberriesScraper
+# WildberriesScraper o'chirildi — sayt faoliyati to'xtagan
 
 ALL_SCRAPERS = [
     AsaxiyScraper,
@@ -41,5 +41,5 @@ ALL_SCRAPERS = [
     UcellScraper,
     BrandstoreScraper,
     OlxScraper,
-    WildberriesScraper,
 ]
+

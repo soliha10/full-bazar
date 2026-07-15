@@ -353,7 +353,6 @@ export function ProductListing() {
       setMaxPrice(draftMaxPrice);
     };
 
-    const hasPendingPriceChanges = !isMobile && (draftMinPrice !== minPrice || draftMaxPrice !== maxPrice);
 
     return (
       <div className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -416,7 +415,7 @@ export function ProductListing() {
           </div>
           <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-1">{t.listing.currency}</p>
           
-          {hasPendingPriceChanges && (
+          {!isMobile && (
             <button
               type="button"
               onClick={handleApplyPriceDesktop}
@@ -844,13 +843,13 @@ export function ProductListing() {
             </div>
 
              {/* Content */}
-            <div className="overflow-y-auto flex-1 px-5 py-2 pb-32">
+            <div className="overflow-y-auto flex-1 px-5 py-2 pb-6">
               {FilterPanel(true)}
             </div>
 
             {/* Footer actions */}
             <div
-              className="absolute bottom-0 left-0 right-0 grid grid-cols-2 gap-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-5 py-4"
+              className="relative z-20 mt-auto grid grid-cols-2 gap-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-5 py-4"
               style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
             >
               <button

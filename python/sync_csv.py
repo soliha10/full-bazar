@@ -11,15 +11,23 @@ DB_URL = os.getenv("PRODUCTS_DB_URL", "postgresql://postgres:postgres@postgres:5
 
 _SMARTPHONE_RE = re.compile(
     r"(iphone|samsung|redmi|xiaomi|oppo|vivo|realme|honor|smartfon|pixel|"
-    r"huawei|смартфон|телефон|telefon|spark|tecno|camon|poco|itel|infinix)",
+    r"huawei|смартфон|телефон|telefon|spark|tecno|camon|poco|itel|infinix|"
+    r"oneplus|motorola|nokia|meizu|blackview|ulefone|umidigi|doogee|cubot|oukitel)",
     re.IGNORECASE,
 )
 _NOT_SMARTPHONE_RE = re.compile(
     r"(televizor|noutbuk|laptop|planshet|tablet|konditsioner|pylesos|"
     r"changyutgich|holodilnik|sovutgich|kir yuvish|gaz plita|kabel|chehol|"
-    r"case|zaryad|charger|adapter|планшет|чехол|кабель|заряд|наушник|quloqchin)",
+    r"case|zaryad|charger|adapter|планшет|чехол|кабель|заряд|наушник|quloqchin|"
+    r"derzhatel|держатель|holder|shtativ|штатив|power.?bank|аккумулятор внешний|"
+    r"powerbank|видеоусилитель|video amplif|earphone|headphone|bluetooth.*speaker|"
+    r"kolonka|колонка|garshet|plyonka|screen.*protect|защитное стекло|защитная плёнка|"
+    r"cover|\bcase\b|наушники|аудио|aksesuar|aksessuar|аксессуар|наушник)",
     re.IGNORECASE,
 )
+
+# Faoliyati to'xtagan saytlar — bu CSV fayllarini o'tkazib yuboramiz
+_INACTIVE_SITES = {"ozon", "premier", "wildberries"}
 _DIFF_WORDS = re.compile(r"\b(max|plus|ultra|pro|lite|mini|fe|note|edge|fold|\d+gb|\d+tb|\d+\/\d+)\b")
 BRANDS = ["apple","samsung","redmi","xiaomi","oppo","vivo","realme","honor","huawei","tecno","infinix","itel","poco"]
 
@@ -50,6 +58,10 @@ def load_rows():
         if not fn.endswith(".csv"):
             continue
         src_fallback = fn.replace("_products.csv", "").replace("-", "_").split("_")[0]
+        # Faoliyati to'xtagan saytlarni o'tkazib yuboramiz
+        if src_fallback.lower() in _INACTIVE_SITES:
+            print(f"[sync] Skipping inactive site: {fn}", flush=True)
+            continue
         fpath = os.path.join(DATA_DIR, fn)
         try:
             with open(fpath, encoding="utf-8-sig", errors="ignore") as f:
