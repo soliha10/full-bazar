@@ -49,8 +49,6 @@ const MARKETPLACES = [
   { name: 'Radius',       key: 'radius',       color: '#84CC16' },
   { name: 'Mi',           key: 'mi',           color: '#FF6900' },
   { name: 'Ucell',        key: 'ucell',        color: '#65A30D' },
-  { name: 'Prom',         key: 'prom',         color: '#B45309' },
-  { name: 'Wildberries',  key: 'wildberries',  color: '#CB11AB' },
 ];
 
 const MARKETS_VISIBLE = 8;
