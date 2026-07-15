@@ -336,7 +336,7 @@ export function Landing() {
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     { value: total > 0 ? total : '500+', label: t.landing.hero.statsProducts },
-                    { value: '21',                       label: t.landing.hero.statsStores },
+                    { value: '19',                       label: t.landing.hero.statsStores },
                   ].map((stat, i) => (
                     <div key={i} className="bg-white/10 border border-white/15 rounded-2xl p-4 text-center">
                       <p className="text-2xl font-black text-white">{stat.value}</p>
@@ -353,7 +353,7 @@ export function Landing() {
             <div className="grid grid-cols-3 gap-2">
               {[
                 { value: total > 0 ? total : '500+', label: t.landing.hero.statsProducts },
-                { value: '21',                       label: t.landing.hero.statsStores },
+                { value: '19',                       label: t.landing.hero.statsStores },
                 { value: '24/7',                     label: t.landing.hero.livePrices },
               ].map((stat, i) => (
                 <div key={i} className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl p-3 text-center">
