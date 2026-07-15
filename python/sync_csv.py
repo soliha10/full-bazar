@@ -26,8 +26,8 @@ _NOT_SMARTPHONE_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Faoliyati to'xtagan saytlar — bu CSV fayllarini o'tkazib yuboramiz
-_INACTIVE_SITES = {"ozon", "premier", "wildberries"}
+# Faoliyati to'xtagan yoki eskirgan saytlar — bu CSV fayllarini o'tkazib yuboramiz
+_INACTIVE_SITES = {"ozon", "premier", "wildberries", "prom"}
 _DIFF_WORDS = re.compile(r"\b(max|plus|ultra|pro|lite|mini|fe|note|edge|fold|\d+gb|\d+tb|\d+\/\d+)\b")
 BRANDS = ["apple","samsung","redmi","xiaomi","oppo","vivo","realme","honor","huawei","tecno","infinix","itel","poco"]
 
