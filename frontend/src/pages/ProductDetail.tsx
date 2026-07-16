@@ -25,11 +25,13 @@ import { Product } from "../components/ProductCard";
 import { useLanguage } from "../contexts/LanguageContext";
 import { trackEvent } from "../services/tracking";
 import { useFavorites } from "../hooks/useFavorites";
+import { SEO } from "../components/SEO";
+
 
 export function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -163,9 +165,37 @@ export function ProductDetail() {
       </div>
     );
   }
+  const seoTitle = product 
+    ? `${product.name} narxlari va solishtiruvi`
+    : (language === 'uz' ? 'Mahsulot tafsilotlari' : 'Детали продукта');
+
+  const seoDesc = product 
+    ? (language === 'uz' 
+        ? `${product.name} telefonining eng arzon narxi, xususiyatlari, do'konlardagi narxlari solishtiruvi va sotib olish bo'yicha Bazarcom tahlili.`
+        : `Характеристики, цены и сравнение для смартфона ${product.name} во всех интернет-магазинах Узбекистана на Bazarcom.`)
+    : '';
+
+  const schema = product ? {
+    name: product.name,
+    image: product.image,
+    description: product.description || product.name,
+    price: product.price,
+    currency: 'UZS',
+    availability: product.inStock ? 'InStock' : 'OutOfStock',
+    url: window.location.href,
+    ratingValue: product.rating > 0 ? product.rating : undefined,
+    reviewCount: product.reviews > 0 ? product.reviews : undefined,
+    brand: product.category || 'Bazarcom'
+  } : undefined;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-32 md:pb-12 transition-colors">
+      <SEO 
+        title={seoTitle} 
+        description={seoDesc} 
+        keywords={`smartfonlar, ${product?.name || ''}, telefon narxlari, bazarcom, uzbekistan`}
+        productSchema={schema}
+      />
 
       {/* ── Mobile top bar ── */}
       <div className="md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800 px-4 py-3 sticky top-0 z-50 flex items-center justify-between">

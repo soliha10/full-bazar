@@ -9,6 +9,8 @@ import { useProducts } from '../hooks/useProducts';
 import { useSearchParams, useNavigate, Link, useLocation, useNavigationType } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatSum } from '../utils/productMapper';
+import { SEO } from '../components/SEO';
+
 
 const BRANDS = [
   'Apple', 'Samsung', 'Redmi', 'Xiaomi', 'Poco',
@@ -95,7 +97,7 @@ function SLabel({ children }: { children: React.ReactNode }) {
 }
 
 export function ProductListing() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [, setSearchParams] = useSearchParams();
@@ -528,8 +530,34 @@ export function ProductListing() {
     );
   };
 
+  const seoTitle = useMemo(() => {
+    let part = language === 'uz' ? 'Katalog' : 'Каталог';
+    if (selectedBrand) {
+      part = selectedBrand;
+    } else if (selectedCategory && selectedCategory !== 'All') {
+      part = selectedCategory === 'smartphones' 
+        ? (language === 'uz' ? 'Smartfonlar' : 'Смартфоны')
+        : selectedCategory;
+    }
+    if (searchQuery) {
+      part = `${searchQuery} ${language === 'uz' ? 'qidiruv natijalari' : 'результаты поиска'}`;
+    }
+    return `${part} - Smartfonlar narxlari solishtiruvi`;
+  }, [selectedBrand, selectedCategory, searchQuery, language]);
+
+  const seoDesc = useMemo(() => {
+    return language === 'uz'
+      ? `Bazarcom - O'zbekistondagi barcha do'konlardagi ${selectedBrand || 'smartfonlar'} narxlarini solishtirish, tahlil qilish va eng yaxshisini tanlash.`
+      : `Bazarcom - Сравнение цен на ${selectedBrand || 'смартфоны'} во всех магазинах Узбекистана.`;
+  }, [selectedBrand, language]);
+
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950">
+      <SEO 
+        title={seoTitle} 
+        description={seoDesc} 
+        keywords={`smartfonlar, ${selectedBrand || ''}, telefonlar, telefon narxi, bazarcom, asaxiy, texnomart, olcha`} 
+      />
 
       {/* ── Mobile sticky header ── */}
       <div className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-200/70 dark:border-gray-800/70 md:hidden">

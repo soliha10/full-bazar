@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /products
+Allow: /product/
+Allow: /trends
+Allow: /feedback
+Disallow: /cart
+Disallow: /checkout
+Disallow: /profile
+Disallow: /watchlist
+Disallow: /wishlist
+
+Sitemap: https://bazarcom.online/sitemap.xml

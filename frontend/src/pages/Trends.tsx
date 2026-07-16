@@ -10,6 +10,7 @@ import {
 import axios from 'axios';
 import { formatSum } from '../utils/productMapper';
 import { useLanguage } from '../contexts/LanguageContext';
+import { SEO } from '../components/SEO';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
@@ -44,7 +45,7 @@ const MARKET_COLORS = [
 ];
 
 export function Trends() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [searchTrends, setSearchTrends] = useState<SearchTrend[]>([]);
   const [markets, setMarkets] = useState<MarketStat[]>([]);
   const [popular, setPopular] = useState<PopularProduct[]>([]);
@@ -83,8 +84,18 @@ export function Trends() {
 
   const maxMarketCount = Math.max(...markets.map(m => m.productCount), 1);
 
+  const seoTitle = language === 'uz' ? 'Trendlar va tahlil' : 'Тренды и аналитика';
+  const seoDesc = language === 'uz'
+    ? "O'zbekiston smartfon bozoridagi trendlar, eng ko'p qidirilgan telefonlar, narxi tushgan mahsulotlar va do'konlar tahlili."
+    : "Тренды и аналитика рынка смартфонов в Узбекистане, популярные запросы и динамика цен.";
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+      <SEO 
+        title={seoTitle} 
+        description={seoDesc} 
+        keywords="smartfon trendlari, telefon narxlari tushishi, bazarcom tahlil, o'zbekiston telefon bozori"
+      />
 
       {/* Header */}
       <div>

@@ -15,6 +15,7 @@ import { mapProduct } from '../utils/productMapper';
 import { useRecommendations } from '../hooks/useRecommendations';
 import { useFavorites } from '../hooks/useFavorites';
 import { useAuth } from '../contexts/AuthContext';
+import { SEO } from '../components/SEO';
 
 const MARKET_LOGOS: { name: string; color: string }[] = [
   { name: 'Asaxiy',     color: '#7C3AED' },
@@ -215,7 +216,7 @@ export function Landing() {
   const [loadingRecs, setLoadingRecs]           = useState(true);
   const [personalizedRecs, setPersonalizedRecs] = useState<any[]>([]);
   const [personalizedType, setPersonalizedType] = useState<string>('');
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { favorites } = useFavorites();
   const { user } = useAuth();
   const clientRecs = useRecommendations(allProducts, 8);
@@ -237,8 +238,20 @@ export function Landing() {
       .catch(() => {});
   }, []);
 
+  const seoTitle = language === 'uz' 
+    ? "Bosh sahifa - Smartfonlar narxlarini solishtirish" 
+    : "Главная - Сравнение цен на смартфоны";
+  const seoDesc = language === 'uz'
+    ? "Bazarcom - O'zbekistondagi barcha internet do'konlardagi smartfonlar narxlarini tahlil qilish va solishtirish platformasi."
+    : "Bazarcom - Платформа для анализа и сравнения цен на смартфоны во всех интернет-магазинах Узбекистана.";
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 pb-24 md:pb-0 transition-colors">
+      <SEO 
+        title={seoTitle} 
+        description={seoDesc} 
+        keywords="smartfonlar, telefonlar, telefon narxi, asaxiy, texnomart, olcha, mediapark, olx, compare phones, uzbekistan" 
+      />
 
       {/* ══ HERO ══ */}
       <section className="md:px-4 md:pt-8 md:max-w-7xl md:mx-auto">
