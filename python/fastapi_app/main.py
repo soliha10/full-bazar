@@ -1287,22 +1287,31 @@ async def submit_feedback(
 
 
 # ── Image proxy (for hotlink-protected CDN images e.g. OLX) ──────────────────
-_ALLOWED_IMAGE_HOSTS = {"frankfurt.apollo.olxcdn.com", "img.olxcdn.com"}
 
 @app.get("/api/proxy-image")
 async def proxy_image(url: str = Query(...)) -> Response:
     import httpx
     from urllib.parse import urlparse
     parsed = urlparse(url)
-    if parsed.hostname not in _ALLOWED_IMAGE_HOSTS:
+    hostname = parsed.hostname
+    if not hostname:
         raise HTTPException(status_code=403, detail="Host not allowed")
+    
+    # Check if host is olxcdn.com, img.olxcdn.com or their subdomains
+    is_allowed = (
+        hostname == "olxcdn.com" or hostname.endswith(".olxcdn.com") or
+        hostname == "img.olxcdn.com" or hostname.endswith(".img.olxcdn.com")
+    )
+    if not is_allowed:
+        raise HTTPException(status_code=403, detail="Host not allowed")
+        
     try:
-        async with httpx.AsyncClient(follow_redirects=True, timeout=10) as client:
+        async with httpx.AsyncClient(verify=False, follow_redirects=True, timeout=10) as client:
             resp = await client.get(
                 url,
                 headers={
                     "Referer": "https://www.olx.uz/",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 },
             )
             content_type = resp.headers.get("content-type", "image/jpeg")

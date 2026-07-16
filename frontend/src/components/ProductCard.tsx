@@ -77,7 +77,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
         {/* Image */}
         <div className="relative w-24 h-24 shrink-0 bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden">
           <img
-            src={product.image}
+            src={product.image || 'https://placehold.co/200x200/f5f3ff/7c3aed?text=📱'}
             alt={product.name}
             onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/200x200/f5f3ff/7c3aed?text=📱'; }}
             className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-500"
@@ -147,7 +147,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
       {/* Image */}
       <div className="relative h-36 md:h-40 overflow-hidden bg-gray-50 dark:bg-gray-800/50">
         <img
-          src={product.image}
+          src={product.image || 'https://placehold.co/400x400/f5f3ff/7c3aed?text=📱'}
           alt={product.name}
           onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/400x400/f5f3ff/7c3aed?text=📱'; }}
           className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500 mix-blend-multiply dark:mix-blend-normal"

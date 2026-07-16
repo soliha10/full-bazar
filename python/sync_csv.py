@@ -22,7 +22,8 @@ _NOT_SMARTPHONE_RE = re.compile(
     r"derzhatel|держатель|holder|shtativ|штатив|power.?bank|аккумулятор внешний|"
     r"powerbank|видеоусилитель|video amplif|earphone|headphone|bluetooth.*speaker|"
     r"kolonka|колонка|garshet|plyonka|screen.*protect|защитное стекло|защитная плёнка|"
-    r"cover|\bcase\b|наушники|аудио|aksesuar|aksessuar|аксессуар|наушник)",
+    r"cover|\bcase\b|наушники|аудио|aksesuar|aksessuar|аксессуар|наушник|"
+    r"soat\b|watch\b|часы\b|часов\b|chasy\b|smartwatch|smart\s*watch)",
     re.IGNORECASE,
 )
 

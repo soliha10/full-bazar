@@ -49,7 +49,7 @@ _SMARTPHONE_RE = re.compile(
 _NOT_SMARTPHONE_RE = re.compile(
     r"(televizor|noutbuk|laptop|planshet|plansheti|tablet|ipad|"
     r"galaxy\s*tab|galaxy\s*book|galaxy\s*watch|galaxy\s*buds|"
-    r"smart\s*watch|smartwatch|soat\b|watch\b|"
+    r"smart\s*watch|smartwatch|soat\b|watch\b|часы\b|часов\b|chasy\b|"
     r"konditsioner|pylesos|changyutgich|holodilnik|sovutgich|"
     r"kir\s*yuvish|gaz\s*plita|"
     r"kabel|cable|провод|кабель|"
