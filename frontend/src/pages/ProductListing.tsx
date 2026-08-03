@@ -119,6 +119,34 @@ export function ProductListing() {
   const [activeFilterTab, setActiveFilterTab] = useState<'category' | 'price' | 'brand' | 'store' | 'rating'>('category');
   const [marketCounts,   setMarketCounts]   = useState<Record<string, number>>({});
   const [showAllMarkets, setShowAllMarkets] = useState(false);
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+
+  useEffect(() => {
+    setLocalSearch(searchQuery);
+  }, [searchQuery]);
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchParams(p => {
+      const n = new URLSearchParams(p);
+      if (query.trim()) {
+        n.set('search', query.trim());
+      } else {
+        n.delete('search');
+      }
+      return n;
+    });
+  }, [setSearchParams]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const currentSearch = new URLSearchParams(location.search).get('search') || '';
+      if (localSearch.trim() !== currentSearch.trim()) {
+        handleSearch(localSearch);
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [localSearch, location.search, handleSearch]);
 
   const navType = useNavigationType();
   const isFirstRender = useRef(true);
@@ -583,24 +611,44 @@ export function ProductListing() {
 
       {/* ── Mobile sticky header ── */}
       <div className="sticky top-0 z-40 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/60 md:hidden">
-        {/* Top row: Title + Back button + View mode */}
+        {/* Top row: Title/Search input + Back button + View mode */}
         <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <button
-              onClick={() => navigate(-1)}
-              className="w-8 h-8 shrink-0 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 active:scale-90 transition-all"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <div className="min-w-0">
-              <h1 className="text-sm font-black text-gray-900 dark:text-white truncate">
-                {searchQuery ? `"${searchQuery}"` : t.listing.title}
-              </h1>
-              <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold leading-none mt-0.5">
-                {isLoading ? '...' : t.listing.totalProductsCount.replace('{{count}}', total.toLocaleString())}
-              </p>
-            </div>
-          </div>
+          <button
+            onClick={() => navigate(-1)}
+            className="w-8 h-8 shrink-0 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 active:scale-90 transition-all"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          
+          {/* Search Input bar */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSearch(localSearch);
+            }}
+            className="flex-1 relative group min-w-0"
+          >
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-violet-500 transition-colors pointer-events-none" />
+            <input
+              type="text"
+              value={localSearch}
+              placeholder={t.nav.searchPlaceholder || "Qidirish..."}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200/60 dark:border-gray-800 rounded-xl text-xs font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400/20 focus:border-violet-400 focus:bg-white dark:focus:bg-gray-800 transition-all"
+            />
+            {localSearch && (
+              <button
+                type="button"
+                onClick={() => {
+                  setLocalSearch('');
+                  handleSearch('');
+                }}
+                className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </form>
           
           {/* View toggle */}
           <div className="flex items-center gap-0.5 rounded-xl border border-gray-200/60 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-0.5 shrink-0">
