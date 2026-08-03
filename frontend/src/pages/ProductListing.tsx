@@ -116,6 +116,7 @@ export function ProductListing() {
   const [sortBy,    setSortBy]    = useState<SortKey>(saved.current?.sortBy ?? 'relevance');
   const [viewMode,  setViewMode]  = useState<'grid' | 'list'>(saved.current?.viewMode ?? 'grid');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [activeFilterTab, setActiveFilterTab] = useState<'category' | 'price' | 'brand' | 'store' | 'rating'>('category');
   const [marketCounts,   setMarketCounts]   = useState<Record<string, number>>({});
   const [showAllMarkets, setShowAllMarkets] = useState(false);
 
@@ -146,6 +147,17 @@ export function ProductListing() {
       setDraftMaxPrice(maxPrice);
     }
   }, [isMobileFilterOpen, selectedCategory, selectedMarketplaces, minRating, selectedBrand, minPrice, maxPrice]);
+
+  useEffect(() => {
+    if (isMobileFilterOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileFilterOpen]);
 
   // ── infinite scroll ──
   const sentinelRef       = useRef<HTMLDivElement>(null);
@@ -304,10 +316,10 @@ export function ProductListing() {
     setSelectedMarketplaces(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   }, []);
 
-  const visibleMarkets = showAllMarkets ? MARKETPLACES : MARKETPLACES.slice(0, MARKETS_VISIBLE);
+  const visibleMarkets = (showAllMarkets || isMobileFilterOpen) ? MARKETPLACES : MARKETPLACES.slice(0, MARKETS_VISIBLE);
 
   // ── filter panel ──
-  const FilterPanel = (isMobile: boolean) => {
+  const FilterPanel = (isMobile: boolean, mobileTab?: 'category' | 'price' | 'brand' | 'store' | 'rating') => {
     // Category mapping
     const cat = isMobile ? draftCategory : selectedCategory;
     const setCat = (v: string) => {
@@ -355,177 +367,187 @@ export function ProductListing() {
 
 
     return (
-      <div className="divide-y divide-gray-100 dark:divide-gray-800">
+      <div className={isMobile ? "px-1" : "divide-y divide-gray-100 dark:divide-gray-800"}>
         {/* Kategoriya */}
-        <div className="py-3">
-          <SLabel>{t.listing.categories}</SLabel>
-          <div className="space-y-0.5">
-            {categories.map(c => {
-              const active = cat === c;
-              return (
-                <button
-                  key={c} type="button"
-                  onClick={() => setCat(c)}
-                  className={`flex w-full items-center gap-2.5 rounded px-1.5 py-[7px] text-left text-[13px] transition-colors ${
-                    active
-                    ? 'text-violet-600 dark:text-violet-400 font-semibold'
-                    : 'text-gray-700 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400'
-                  }`}
-                >
-                  <span className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                    active ? 'border-violet-600' : 'border-gray-300 dark:border-gray-600'
-                  }`}>
-                    {active && <span className="w-1.5 h-1.5 rounded-full bg-violet-600" />}
-                  </span>
-                  {categoryLabel[c] ?? c}
-                </button>
-              );
-            })}
+        {(!isMobile || mobileTab === 'category') && (
+          <div className={isMobile ? "py-1" : "py-3"}>
+            <SLabel>{t.listing.categories}</SLabel>
+            <div className="space-y-0.5">
+              {categories.map(c => {
+                const active = cat === c;
+                return (
+                  <button
+                    key={c} type="button"
+                    onClick={() => setCat(c)}
+                    className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-3 text-left text-[14px] transition-colors ${
+                      active
+                      ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 font-semibold'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-gray-100/55 dark:hover:bg-gray-900/40'
+                    }`}
+                  >
+                    <span className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                      active ? 'border-violet-600' : 'border-gray-300 dark:border-gray-600'
+                    }`}>
+                      {active && <span className="w-2 h-2 rounded-full bg-violet-600" />}
+                    </span>
+                    {categoryLabel[c] ?? c}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Narx */}
-        <div className="py-3">
-          <div className="flex items-center justify-between mb-2">
-            <SLabel>{t.listing.priceRange}</SLabel>
-            {(minPr || maxPr) && (
-              <button onClick={() => {
-                setDraftMinPrice('');
-                setDraftMaxPrice('');
-                if (!isMobile) {
-                  setMinPrice('');
-                  setMaxPrice('');
-                }
-              }}
-                className="text-[10px] text-violet-500 hover:underline leading-none">{t.listing.clear}</button>
+        {(!isMobile || mobileTab === 'price') && (
+          <div className={isMobile ? "py-1" : "py-3"}>
+            <div className="flex items-center justify-between mb-2.5">
+              <SLabel>{t.listing.priceRange}</SLabel>
+              {(minPr || maxPr) && (
+                <button onClick={() => {
+                  setDraftMinPrice('');
+                  setDraftMaxPrice('');
+                  if (!isMobile) {
+                    setMinPrice('');
+                    setMaxPrice('');
+                  }
+                }}
+                  className="text-[11px] text-violet-500 hover:underline leading-none">{t.listing.clear}</button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="text" inputMode="numeric" placeholder={t.listing.priceFrom} value={minPr}
+                onChange={e => setDraftMinPrice(formatPriceInput(e.target.value))}
+                onKeyDown={e => { if (e.key === 'Enter') handleApplyPriceDesktop(); }}
+                className="w-full min-w-0 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-800 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-300/40 transition"
+              />
+              <span className="text-gray-400 text-sm shrink-0">—</span>
+              <input type="text" inputMode="numeric" placeholder={t.listing.priceTo} value={maxPr}
+                onChange={e => setDraftMaxPrice(formatPriceInput(e.target.value))}
+                onKeyDown={e => { if (e.key === 'Enter') handleApplyPriceDesktop(); }}
+                className="w-full min-w-0 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-800 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-300/40 transition"
+              />
+            </div>
+            <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-2 font-semibold uppercase tracking-wider">{t.listing.currency}</p>
+            
+            {!isMobile && (
+              <button
+                type="button"
+                onClick={handleApplyPriceDesktop}
+                className="mt-2.5 w-full bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-[11px] font-black py-2 rounded-xl shadow-md shadow-violet-500/10 transition-all"
+              >
+                {t.listing.viewResults}
+              </button>
             )}
           </div>
-          <div className="flex items-center gap-1.5">
-            <input type="text" inputMode="numeric" placeholder={t.listing.priceFrom} value={minPr}
-              onChange={e => setDraftMinPrice(formatPriceInput(e.target.value))}
-              onKeyDown={e => { if (e.key === 'Enter') handleApplyPriceDesktop(); }}
-              className="w-full min-w-0 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-800 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-300/40 transition"
-            />
-            <span className="text-gray-400 text-sm shrink-0">—</span>
-            <input type="text" inputMode="numeric" placeholder={t.listing.priceTo} value={maxPr}
-              onChange={e => setDraftMaxPrice(formatPriceInput(e.target.value))}
-              onKeyDown={e => { if (e.key === 'Enter') handleApplyPriceDesktop(); }}
-              className="w-full min-w-0 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-800 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-300/40 transition"
-            />
-          </div>
-          <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-1">{t.listing.currency}</p>
-          
-          {!isMobile && (
-            <button
-              type="button"
-              onClick={handleApplyPriceDesktop}
-              className="mt-2.5 w-full bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-[11px] font-black py-2 rounded-xl shadow-md shadow-violet-500/10 transition-all"
-            >
-              {t.listing.viewResults}
-            </button>
-          )}
-        </div>
+        )}
 
         {/* Reyting */}
-        <div className="py-3">
-          <div className="flex items-center justify-between mb-2">
-            <SLabel>{t.listing.rating}</SLabel>
-            {rating > 0 && (
-              <button onClick={() => setRt(0)} className="text-[10px] text-violet-500 hover:underline leading-none">{t.listing.clear}</button>
-            )}
-          </div>
-          <div className="space-y-0.5">
-            {([0, 4.5, 4, 3] as const).map(r => (
-              <button key={r} type="button" onClick={() => setRt(r)}
-                className={`flex w-full items-center gap-2.5 rounded px-1.5 py-[7px] text-left text-[13px] transition-colors ${
-                  rating === r ? 'text-violet-600 dark:text-violet-400 font-semibold'
-                                  : 'text-gray-700 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400'
-                }`}
-              >
-                <span className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                  rating === r ? 'border-violet-600' : 'border-gray-300 dark:border-gray-600'
-                }`}>
-                  {rating === r && <span className="w-1.5 h-1.5 rounded-full bg-violet-600" />}
-                </span>
-                {r === 0 ? <span>{t.listing.allRating}</span> : (
-                  <span className="flex items-center gap-1">
-                    <span className="text-amber-400 text-xs">{'★'.repeat(Math.floor(r))}{r % 1 ? '½' : ''}</span>
-                    <span>{r}+</span>
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Brendlar */}
-        <div className="py-3">
-          <div className="flex items-center justify-between mb-2">
-            <SLabel>{t.listing.brands}</SLabel>
-            {brand && (
-              <button onClick={() => setBr(null)} className="text-[10px] text-violet-500 hover:underline leading-none">{t.listing.clear}</button>
-            )}
-          </div>
-          <div className="space-y-0.5">
-            {BRANDS.map(b => {
-              const on = brand === b;
-              return (
-                <button key={b} type="button" onClick={() => setBr(on ? null : b)}
-                  className="flex w-full items-center gap-2 rounded px-1.5 py-[7px] text-left hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors group"
+        {(!isMobile || mobileTab === 'rating') && (
+          <div className={isMobile ? "py-1" : "py-3"}>
+            <div className="flex items-center justify-between mb-2">
+              <SLabel>{t.listing.rating}</SLabel>
+              {rating > 0 && (
+                <button onClick={() => setRt(0)} className="text-[11px] text-violet-500 hover:underline leading-none">{t.listing.clear}</button>
+              )}
+            </div>
+            <div className="space-y-0.5">
+              {([0, 4.5, 4, 3] as const).map(r => (
+                <button key={r} type="button" onClick={() => setRt(r)}
+                  className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-3 text-left text-[14px] transition-colors ${
+                    rating === r ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 font-semibold'
+                                 : 'text-gray-700 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-gray-100/55 dark:hover:bg-gray-900/40'
+                  }`}
                 >
-                  <Cb on={on} />
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: BRAND_COLORS[b] ?? '#9ca3af' }} />
-                  <span className={`flex-1 text-[13px] transition-colors ${
-                    on ? 'text-violet-600 dark:text-violet-400 font-semibold'
-                       : 'text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100'
+                  <span className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                    rating === r ? 'border-violet-600' : 'border-gray-300 dark:border-gray-600'
                   }`}>
-                    {b}
+                    {rating === r && <span className="w-2 h-2 rounded-full bg-violet-600" />}
                   </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Do'konlar */}
-        <div className="py-3">
-          <div className="flex items-center justify-between mb-2">
-            <SLabel>{t.listing.stores}</SLabel>
-            {mps.length > 0 && (
-              <button onClick={resetMps} className="text-[10px] text-violet-500 hover:underline leading-none">{t.listing.clear}</button>
-            )}
-          </div>
-          <div className="space-y-0.5">
-            {visibleMarkets.map(({ name, key, color }) => {
-              const on  = mps.includes(key);
-              const cnt = marketCounts[key];
-              return (
-                <button key={key} type="button" onClick={() => toggleMp(key)}
-                  className="flex w-full items-center gap-2 rounded px-1.5 py-[7px] text-left hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors group"
-                >
-                  <Cb on={on} />
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                  <span className={`flex-1 text-[13px] transition-colors ${
-                    on ? 'text-violet-600 dark:text-violet-400 font-semibold'
-                       : 'text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100'
-                  }`}>
-                    {name}
-                  </span>
-                  {cnt !== undefined && (
-                    <span className="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums">({cnt})</span>
+                  {r === 0 ? <span>{t.listing.allRating}</span> : (
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-amber-400 text-xs">{'★'.repeat(Math.floor(r))}{r % 1 ? '½' : ''}</span>
+                      <span>{r}+</span>
+                    </span>
                   )}
                 </button>
-              );
-            })}
+              ))}
+            </div>
           </div>
-          {MARKETPLACES.length > MARKETS_VISIBLE && (
-            <button type="button" onClick={() => setShowAllMarkets(v => !v)}
-              className="mt-1.5 ml-1.5 text-[12px] font-semibold text-violet-600 dark:text-violet-400 hover:underline"
-            >
-              {showAllMarkets ? t.listing.showLess : t.listing.showAll.replace('{{count}}', MARKETPLACES.length.toString())}
-            </button>
-          )}
-        </div>
+        )}
+
+        {/* Brendlar */}
+        {(!isMobile || mobileTab === 'brand') && (
+          <div className={isMobile ? "py-1" : "py-3"}>
+            <div className="flex items-center justify-between mb-2">
+              <SLabel>{t.listing.brands}</SLabel>
+              {brand && (
+                <button onClick={() => setBr(null)} className="text-[11px] text-violet-500 hover:underline leading-none">{t.listing.clear}</button>
+              )}
+            </div>
+            <div className="space-y-0.5">
+              {BRANDS.map(b => {
+                const on = brand === b;
+                return (
+                  <button key={b} type="button" onClick={() => setBr(on ? null : b)}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2 py-2.5 text-left hover:bg-gray-100/60 dark:hover:bg-gray-900/60 transition-colors group"
+                  >
+                    <Cb on={on} />
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: BRAND_COLORS[b] ?? '#9ca3af' }} />
+                    <span className={`flex-1 text-[13px] transition-colors ${
+                      on ? 'text-violet-600 dark:text-violet-400 font-semibold'
+                         : 'text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100'
+                    }`}>
+                      {b}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Do'konlar */}
+        {(!isMobile || mobileTab === 'store') && (
+          <div className={isMobile ? "py-1" : "py-3"}>
+            <div className="flex items-center justify-between mb-2">
+              <SLabel>{t.listing.stores}</SLabel>
+              {mps.length > 0 && (
+                <button onClick={resetMps} className="text-[11px] text-violet-500 hover:underline leading-none">{t.listing.clear}</button>
+              )}
+            </div>
+            <div className="space-y-0.5">
+              {visibleMarkets.map(({ name, key, color }) => {
+                const on  = mps.includes(key);
+                const cnt = marketCounts[key];
+                return (
+                  <button key={key} type="button" onClick={() => toggleMp(key)}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2 py-2.5 text-left hover:bg-gray-100/60 dark:hover:bg-gray-900/60 transition-colors group"
+                  >
+                    <Cb on={on} />
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                    <span className={`flex-1 text-[13px] transition-colors ${
+                      on ? 'text-violet-600 dark:text-violet-400 font-semibold'
+                         : 'text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100'
+                    }`}>
+                      {name}
+                    </span>
+                    {cnt !== undefined && (
+                      <span className="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums">({cnt})</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {!isMobile && MARKETPLACES.length > MARKETS_VISIBLE && (
+              <button type="button" onClick={() => setShowAllMarkets(v => !v)}
+                className="mt-1.5 ml-1.5 text-[12px] font-semibold text-violet-600 dark:text-violet-400 hover:underline"
+              >
+                {showAllMarkets ? t.listing.showLess : t.listing.showAll.replace('{{count}}', MARKETPLACES.length.toString())}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -560,67 +582,117 @@ export function ProductListing() {
       />
 
       {/* ── Mobile sticky header ── */}
-      <div className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-200/70 dark:border-gray-800/70 md:hidden">
-        {/* Top row */}
-        <div className="flex items-center gap-2 px-4 py-2.5">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-9 h-9 shrink-0 flex items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 active:scale-90 transition-all"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-
-          <span className="flex-1 text-sm font-bold text-gray-900 dark:text-white truncate">
-            {searchQuery ? `"${searchQuery}"` : t.listing.title}
-          </span>
-
-          {/* Filter button */}
-          <button
-            onClick={() => setIsMobileFilterOpen(true)}
-            className="relative flex items-center gap-1.5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 shrink-0 active:scale-95 transition-all"
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            {t.listing.filters}
-            {activeFilterCount > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-violet-600 text-[9px] font-black text-white shadow-sm shadow-violet-500/30">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-
+      <div className="sticky top-0 z-40 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/60 md:hidden">
+        {/* Top row: Title + Back button + View mode */}
+        <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-8 h-8 shrink-0 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 active:scale-90 transition-all"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <div className="min-w-0">
+              <h1 className="text-sm font-black text-gray-900 dark:text-white truncate">
+                {searchQuery ? `"${searchQuery}"` : t.listing.title}
+              </h1>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold leading-none mt-0.5">
+                {isLoading ? '...' : t.listing.totalProductsCount.replace('{{count}}', total.toLocaleString())}
+              </p>
+            </div>
+          </div>
+          
           {/* View toggle */}
-          <div className="flex items-center gap-0.5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5 shrink-0">
+          <div className="flex items-center gap-0.5 rounded-xl border border-gray-200/60 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-0.5 shrink-0">
             <button
               onClick={() => setViewMode('grid')}
-              className={`rounded-xl px-2 py-1.5 transition-all ${viewMode === 'grid' ? 'bg-violet-600 text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
+              className={`rounded-lg px-2 py-1 transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-gray-800 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-gray-400 dark:text-gray-500'}`}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`rounded-xl px-2 py-1.5 transition-all ${viewMode === 'list' ? 'bg-violet-600 text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
+              className={`rounded-lg px-2 py-1 transition-all ${viewMode === 'list' ? 'bg-white dark:bg-gray-800 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-gray-400 dark:text-gray-500'}`}
             >
               <List className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
 
-        {/* Sort chips */}
-        <div className="flex gap-1.5 overflow-x-auto px-4 pb-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {SORT_OPTIONS.map(({ key, labelKey }) => (
-            <button
-              key={key}
-              onClick={() => setSortBy(key)}
-              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-[11px] font-bold transition-all active:scale-95 ${
-                sortBy === key
-                  ? 'border-violet-600 bg-violet-600 text-white shadow-sm shadow-violet-500/20'
-                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400'
-              }`}
-            >
-              {(t.listing as any)[labelKey] ?? labelKey}
-            </button>
-          ))}
+        {/* Second row: Filter trigger & Sort options */}
+        <div className="flex items-center gap-2 px-4 pb-2.5">
+          {/* Filter button */}
+          <button
+            onClick={() => setIsMobileFilterOpen(true)}
+            className="flex items-center gap-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white px-3 py-1.5 text-xs font-black shrink-0 active:scale-95 transition-all shadow-sm shadow-violet-500/10"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            {t.listing.filters}
+            {activeFilterCount > 0 && (
+              <span className="w-4 h-4 flex items-center justify-center rounded-full bg-white text-[9px] font-black text-violet-600">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+
+          {/* Sort scroll */}
+          <div className="flex-1 flex gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {SORT_OPTIONS.map(({ key, labelKey }) => (
+              <button
+                key={key}
+                onClick={() => setSortBy(key)}
+                className={`shrink-0 rounded-xl border px-3 py-1.5 text-[11px] font-bold transition-all active:scale-95 ${
+                  sortBy === key
+                    ? 'border-violet-100 dark:border-violet-900 bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400'
+                    : 'border-gray-200/60 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400'
+                }`}
+              >
+                {(t.listing as any)[labelKey] ?? labelKey}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Active Filters Horizontally Scrolling Bar (Mobile only) */}
+        {activeFilterCount > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto px-4 pb-2 bg-gray-50/50 dark:bg-gray-900/10 pt-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-t border-gray-100/50 dark:border-gray-900/50">
+            {selectedBrand && (
+              <span className="flex items-center gap-1 shrink-0 rounded-lg border border-violet-100 dark:border-violet-950 bg-violet-50/50 dark:bg-violet-950/20 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:text-violet-400">
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: BRAND_COLORS[selectedBrand] ?? '#555' }} />
+                {selectedBrand}
+                <button onClick={() => setSelectedBrand(null)} className="ml-1 opacity-60 hover:opacity-100"><X className="w-2.5 h-2.5" /></button>
+              </span>
+            )}
+            {minRating > 0 && (
+              <span className="flex items-center gap-1 shrink-0 rounded-lg border border-amber-100 dark:border-amber-950 bg-amber-50/50 dark:bg-amber-950/20 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                ★ {minRating}+
+                <button onClick={() => setMinRating(0)} className="ml-1 opacity-60 hover:opacity-100"><X className="w-2.5 h-2.5" /></button>
+              </span>
+            )}
+            {(minPrice || maxPrice) && (
+              <span className="flex items-center gap-1 shrink-0 rounded-lg border border-green-100 dark:border-green-950 bg-green-50/50 dark:bg-green-950/20 px-2 py-0.5 text-[10px] font-bold text-green-700 dark:text-green-400">
+                {minPrice ? formatSum(Number(minPrice.replace(/\s/g, ''))) : '0'} — {maxPrice ? formatSum(Number(maxPrice.replace(/\s/g, ''))) : '∞'}
+                <button onClick={() => { setMinPrice(''); setMaxPrice(''); }} className="ml-1 opacity-60 hover:opacity-100"><X className="w-2.5 h-2.5" /></button>
+              </span>
+            )}
+            {selectedMarketplaces.map(mk => {
+              const mp = MARKETPLACES.find(m => m.key === mk);
+              return (
+                <span key={mk} className="flex items-center gap-1 shrink-0 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-2 py-0.5 text-[10px] font-bold text-gray-700 dark:text-gray-300">
+                  {mp && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: mp.color }} />}
+                  {mp?.name ?? mk}
+                  <button onClick={() => toggleMarketplace(mk)} className="ml-1 opacity-60 hover:opacity-100"><X className="w-2.5 h-2.5" /></button>
+                </span>
+              );
+            })}
+            <button
+              onClick={handleResetFilters}
+              className="flex items-center gap-1 shrink-0 rounded-lg border border-red-100 dark:border-red-950 bg-red-50/40 dark:bg-red-950/20 px-2 py-0.5 text-[10px] font-bold text-red-600 dark:text-red-400 hover:text-red-500 transition-colors"
+            >
+              <RotateCcw className="w-2.5 h-2.5" /> {t.listing.reset}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Main content ── */}
@@ -705,7 +777,7 @@ export function ProductListing() {
 
             {/* Active filter chips */}
             {activeFilterCount > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-4">
+              <div className="hidden md:flex flex-wrap gap-1.5 mb-4">
                 {selectedBrand && (
                   <span className="flex items-center gap-1 rounded-full border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 px-2.5 py-1 text-[11px] font-semibold text-violet-700 dark:text-violet-400">
                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: BRAND_COLORS[selectedBrand] ?? '#555' }} />
@@ -823,7 +895,7 @@ export function ProductListing() {
       <AnimatePresence>
       {isMobileFilterOpen && (
         <motion.div
-          className="fixed inset-0 z-50 md:hidden"
+          className="fixed inset-0 z-[60] md:hidden"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -837,7 +909,7 @@ export function ProductListing() {
 
           {/* Sheet */}
           <motion.div
-            className="absolute bottom-0 left-0 right-0 max-h-[92vh] bg-white dark:bg-gray-950 flex flex-col"
+            className="absolute bottom-0 left-0 right-0 h-[80vh] max-h-[92vh] bg-white dark:bg-gray-950 flex flex-col overflow-hidden"
             style={{ borderRadius: '24px 24px 0 0', boxShadow: '0 -8px 40px rgba(0,0,0,0.15)' }}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
@@ -868,9 +940,54 @@ export function ProductListing() {
               </button>
             </div>
 
-             {/* Content */}
-            <div className="overflow-y-auto flex-1 px-5 py-2 pb-6">
-              {FilterPanel(true)}
+            {/* Content: Split tabbed layout */}
+            <div className="flex-1 flex overflow-hidden min-h-0 bg-gray-50 dark:bg-gray-900/50">
+              {/* Left Tabs Column */}
+              <div className="w-[38%] shrink-0 border-r border-gray-100/80 dark:border-gray-800/80 bg-white dark:bg-gray-950 overflow-y-auto flex flex-col divide-y divide-gray-100/50 dark:divide-gray-900/50">
+                {([
+                  { key: 'category' as const, label: t.listing.categories },
+                  { key: 'price'    as const, label: t.listing.priceRange },
+                  { key: 'brand'    as const, label: t.listing.brands },
+                  { key: 'store'    as const, label: t.listing.stores },
+                  { key: 'rating'   as const, label: t.listing.rating },
+                ] as const).map(tab => {
+                  const active = activeFilterTab === tab.key;
+                  // Compute subtitle
+                  const allLabel = language === 'uz' ? 'Barchasi' : 'Все';
+                  let sub = allLabel;
+                  if (tab.key === 'category') sub = categoryLabel[draftCategory] ?? draftCategory;
+                  else if (tab.key === 'price') {
+                    if (draftMinPrice || draftMaxPrice) sub = `${draftMinPrice || '0'}-${draftMaxPrice || '∞'}`;
+                  }
+                  else if (tab.key === 'brand') sub = draftBrand || allLabel;
+                  else if (tab.key === 'store') sub = draftMarketplaces.length > 0 ? `${draftMarketplaces.length} ta` : allLabel;
+                  else if (tab.key === 'rating') sub = draftRating > 0 ? `★ ${draftRating}+` : allLabel;
+
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveFilterTab(tab.key)}
+                      className={`flex flex-col items-start w-full px-4 py-3.5 text-left transition-all ${
+                        active
+                          ? 'border-l-4 border-violet-600 bg-violet-50/45 dark:bg-violet-950/20 text-violet-600 dark:text-violet-400 font-bold'
+                          : 'border-l-4 border-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-50/50 dark:hover:bg-gray-900/30'
+                      }`}
+                    >
+                      <span className="text-[12px] uppercase tracking-wider font-extrabold leading-none">{tab.label}</span>
+                      <span className={`text-[10px] truncate max-w-full mt-1.5 ${
+                        active ? 'text-violet-500 font-semibold' : 'text-gray-400 dark:text-gray-500'
+                      }`}>
+                        {sub}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Right Tab Content Column */}
+              <div className="flex-1 overflow-y-auto px-4 py-3 bg-gray-50 dark:bg-gray-900/20">
+                {FilterPanel(true, activeFilterTab)}
+              </div>
             </div>
 
             {/* Footer actions */}

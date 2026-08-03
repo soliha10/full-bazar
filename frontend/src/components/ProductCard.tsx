@@ -216,35 +216,42 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
         </h3>
 
         {/* Price + best store */}
-        <div>
-          {bestMarket && (
-            <div className="flex items-center gap-1 mb-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium truncate">
-                {bestMarket.source}
-              </span>
-              {bestMarket.url && bestMarket.url !== '#' && (
-                <a
-                  href={bestMarket.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="ml-auto flex items-center gap-1 text-[11px] font-semibold text-violet-500 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 transition-colors shrink-0"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              )}
-            </div>
-          )}
-          <p className="text-[18px] md:text-2xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
-            {formatSum(bestPrice)}
-          </p>
+        <div className="flex items-end justify-between mt-auto pt-1">
+          <div className="min-w-0 flex-1">
+            {bestMarket && (
+              <div className="flex items-center gap-1 mb-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium truncate max-w-[80px] md:max-w-none">
+                  {bestMarket.source}
+                </span>
+                {bestMarket.url && bestMarket.url !== '#' && (
+                  <a
+                    href={bestMarket.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-1 text-[11px] font-semibold text-violet-500 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 transition-colors shrink-0"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+            )}
+            <p className="text-[15px] md:text-2xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
+              {formatSum(bestPrice)}
+            </p>
+          </div>
+          
+          {/* Mobile indicator icon */}
+          <div className="md:hidden w-7 h-7 flex items-center justify-center bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded-lg shrink-0 active:scale-95 transition-all">
+            <ArrowRight className="w-3.5 h-3.5" />
+          </div>
         </div>
 
-        {/* CTA */}
+        {/* CTA (Desktop only) */}
         <button
           onClick={(e) => { e.stopPropagation(); navigate(`/product/${product.id}`); }}
-          className="w-full flex items-center justify-center gap-1.5 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-black text-xs md:text-[13px] py-3 md:py-3.5 rounded-xl shadow-sm shadow-violet-500/20 hover:shadow-violet-500/30 active:scale-[0.98] transition-all mt-auto"
+          className="hidden md:flex w-full items-center justify-center gap-1.5 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-black text-xs md:text-[13px] py-3 md:py-3.5 rounded-xl shadow-sm shadow-violet-500/20 hover:shadow-violet-500/30 active:scale-[0.98] transition-all mt-2"
         >
           {t.landing.trending.comparePrices}
           <ArrowRight className="w-3.5 h-3.5" />
