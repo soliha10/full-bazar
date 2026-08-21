@@ -16,16 +16,20 @@ from collections import Counter, defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal, Optional
+from urllib.parse import urlparse
 
 import asyncpg
 import bcrypt
+import httpx
 import jwt as pyjwt
+import numpy as np
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import BaseModel, EmailStr, Field, field_validator
+from sklearn.metrics.pairwise import paired_cosine_distances
 from starlette.middleware.base import BaseHTTPMiddleware
 
 DATABASE_URL = os.getenv(
@@ -222,9 +226,6 @@ def _ml_match(name_a: str, name_b: str) -> tuple[float, bool, str]:
     if matcher is None:
         score = _cosine_sim_words(name_a, name_b)
         return score, score > 0.65, "cosine_baseline"
-
-    import numpy as np
-    from sklearn.metrics.pairwise import paired_cosine_distances
 
     a, b = name_a.lower(), name_b.lower()
     vec = matcher["vectorizer"]
@@ -1242,7 +1243,6 @@ class FeedbackRequest(BaseModel):
 async def _send_feedback_to_telegram(text: str) -> None:
     if not _FEEDBACK_BOT_TOKEN or not _FEEDBACK_CHAT_ID:
         return
-    import httpx
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             await client.post(
@@ -1290,8 +1290,6 @@ async def submit_feedback(
 
 @app.get("/api/proxy-image")
 async def proxy_image(url: str = Query(...)) -> Response:
-    import httpx
-    from urllib.parse import urlparse
     parsed = urlparse(url)
     hostname = parsed.hostname
     if not hostname:

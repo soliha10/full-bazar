@@ -345,8 +345,15 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
                         END IF;
                     END $$;
                 """)
-                cur.execute("TRUNCATE product_markets, products CASCADE")
 
+                # NOTE: intentionally NOT using TRUNCATE here. TRUNCATE takes an
+                # ACCESS EXCLUSIVE lock that is held for the whole transaction —
+                # with a bulk insert of thousands of rows inside the same
+                # transaction, that blocked every SELECT from the FastAPI app
+                # (product listing, recommendations, etc.) for as long as the
+                # sync took, making the site appear frozen on every hourly run.
+                # Upsert + targeted DELETE below only takes row-level locks, so
+                # readers keep serving the previous snapshot until COMMIT.
                 if products_rows:
                     psycopg2.extras.execute_values(
                         cur,
@@ -384,6 +391,34 @@ def _run_sync(data_dir: str, db_url: str, log) -> tuple[int, int]:
                         """,
                         markets_rows,
                         page_size=1000,
+                    )
+
+                # Remove products no longer present in any scraped source —
+                # cascades to their product_markets rows via the FK.
+                current_product_ids = [r[0] for r in products_rows]
+                if current_product_ids:
+                    cur.execute(
+                        "DELETE FROM products WHERE NOT (id = ANY(%s))",
+                        (current_product_ids,),
+                    )
+
+                # Remove stale per-source listings for products that are still
+                # active but a given source no longer carries them.
+                if markets_rows:
+                    cur.execute(
+                        """
+                        DELETE FROM product_markets pm
+                        WHERE pm.product_id = ANY(%s)
+                          AND NOT EXISTS (
+                              SELECT 1 FROM unnest(%s::varchar[], %s::varchar[]) AS t(pid, src)
+                              WHERE t.pid = pm.product_id AND t.src = pm.source
+                          )
+                        """,
+                        (
+                            current_product_ids,
+                            [m[0] for m in markets_rows],
+                            [m[1] for m in markets_rows],
+                        ),
                     )
 
         return len(products_rows), len(markets_rows)
