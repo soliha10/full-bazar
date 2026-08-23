@@ -88,31 +88,39 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = useCallback((product: Product) => {
+    let prevSnapshot: Product[] = [];
+    let adding = false;
+
     setFavorites(prev => {
-      const adding = !prev.some(p => p.id === product.id);
+      prevSnapshot = prev;
+      adding = !prev.some(p => p.id === product.id);
       const next = adding
         ? [product, ...prev]
         : prev.filter(p => p.id !== product.id);
 
-      if (user) {
-        localStorage.setItem(userKey(user.id), JSON.stringify(next));
-        if (adding) {
-          fetch(`/api/users/me/favorites/${product.id}`, {
-            method: 'POST',
-            headers: authHeaders(user.token),
-            body: JSON.stringify({ product }),
-          }).catch(() => {});
-        } else {
-          fetch(`/api/users/me/favorites/${product.id}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${user.token}` },
-          }).catch(() => {});
-        }
-      } else {
-        localStorage.setItem(GUEST_KEY, JSON.stringify(next));
-      }
-
+      localStorage.setItem(user ? userKey(user.id) : GUEST_KEY, JSON.stringify(next));
       return next;
+    });
+
+    if (!user) return;
+
+    const request = adding
+      ? fetch(`/api/users/me/favorites/${product.id}`, {
+          method: 'POST',
+          headers: authHeaders(user.token),
+          body: JSON.stringify({ product }),
+        })
+      : fetch(`/api/users/me/favorites/${product.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+
+    request.then(res => {
+      if (!res.ok) throw new Error('favorites sync failed');
+    }).catch(() => {
+      // Server didn't persist the change — roll back so local state stays truthful
+      setFavorites(prevSnapshot);
+      localStorage.setItem(userKey(user.id), JSON.stringify(prevSnapshot));
     });
   }, [user]);
 

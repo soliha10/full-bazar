@@ -48,11 +48,13 @@ export function ProductDetail() {
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   useEffect(() => {
+    let cancelled = false;
     const getProduct = async () => {
       if (!id) return;
       try {
         setLoading(true);
         const data = await fetchProductById(id);
+        if (cancelled) return;
         const mapped = mapProduct(data);
         setProduct(mapped);
         trackEvent('view', id);
@@ -65,12 +67,13 @@ export function ProductDetail() {
           setSelectedMarketIndex(index !== -1 ? index : 0);
         }
       } catch {
-        setError(t.detail.productNotFound);
+        if (!cancelled) setError(t.detail.productNotFound);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     getProduct();
+    return () => { cancelled = true; };
   }, [id]);
 
   useEffect(() => {
@@ -80,9 +83,12 @@ export function ProductDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (id) {
-      fetchPriceHistory(id, 30).then((data) => setPriceHistory(data.history ?? []));
-    }
+    if (!id) return;
+    let cancelled = false;
+    fetchPriceHistory(id, 30).then((data) => {
+      if (!cancelled) setPriceHistory(data.history ?? []);
+    });
+    return () => { cancelled = true; };
   }, [id]);
 
   const FALLBACK_IMAGE = 'https://placehold.co/600x600/f5f3ff/7c3aed?text=📱';

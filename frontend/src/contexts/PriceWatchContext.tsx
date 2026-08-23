@@ -64,28 +64,37 @@ export function PriceWatchProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     const { token, id: uid } = user;
 
+    let prevSnapshot: Product[] = [];
+    let adding = false;
+
     setWatched(prev => {
-      const adding = !prev.some(p => p.id === product.id);
+      prevSnapshot = prev;
+      adding = !prev.some(p => p.id === product.id);
       const next = adding
         ? [product, ...prev]
         : prev.filter(p => p.id !== product.id);
 
       localStorage.setItem(localKey(uid), JSON.stringify(next));
+      return next;
+    });
 
-      if (adding) {
-        fetch(`/api/users/me/watchlist/${product.id}`, {
+    const request = adding
+      ? fetch(`/api/users/me/watchlist/${product.id}`, {
           method: 'POST',
           headers: authHeaders(token),
           body: JSON.stringify({ product }),
-        }).catch(() => {});
-      } else {
-        fetch(`/api/users/me/watchlist/${product.id}`, {
+        })
+      : fetch(`/api/users/me/watchlist/${product.id}`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },
-        }).catch(() => {});
-      }
+        });
 
-      return next;
+    request.then(res => {
+      if (!res.ok) throw new Error('watchlist sync failed');
+    }).catch(() => {
+      // Server didn't persist the change — roll back so local state stays truthful
+      setWatched(prevSnapshot);
+      localStorage.setItem(localKey(uid), JSON.stringify(prevSnapshot));
     });
   }, [user]);
 

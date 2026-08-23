@@ -76,9 +76,9 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/fullbazar
       MODEL_PATH: /app/data/models/best_matcher.pkl
-      JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production}
-      TELEGRAM_BOT_TOKEN: 8983735637:AAGrHFYfEQVMMJ3lNGQVKaHHqL9o4FAVurw
-      FEEDBACK_CHAT_ID: 5774227576
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env — do not deploy with a default secret}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?TELEGRAM_BOT_TOKEN must be set in .env}
+      FEEDBACK_CHAT_ID: ${FEEDBACK_CHAT_ID:?FEEDBACK_CHAT_ID must be set in .env}
     volumes:
       - ./data:/app/data:ro
     ports:

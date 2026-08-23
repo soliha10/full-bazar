@@ -39,7 +39,12 @@ DATABASE_URL = os.getenv(
 MODEL_PATH = os.getenv("MODEL_PATH", "/app/data/models/best_matcher.pkl")
 
 # ── Auth config ───────────────────────────────────────────────────────────────
-_JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-in-production")
+_JWT_SECRET = os.getenv("JWT_SECRET")
+if not _JWT_SECRET:
+    raise RuntimeError(
+        "JWT_SECRET environment variable must be set — refusing to start with no "
+        "secret configured, since that would let anyone forge auth tokens"
+    )
 _JWT_ALGO = "HS256"
 _JWT_EXPIRE_DAYS = 7
 _bearer = HTTPBearer(auto_error=False)
@@ -935,24 +940,27 @@ async def auth_register(body: RegisterRequest) -> dict:
     loop = asyncio.get_running_loop()
     pw_hash = await loop.run_in_executor(None, _hash_pw, body.password)
 
-    async with pool.acquire() as conn:
-        async with conn.transaction():
-            user_row = await conn.fetchrow(
-                "INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email",
-                body.name, body.email.lower(), pw_hash,
-            )
-            await conn.execute(
-                """
-                INSERT INTO user_profiles
-                    (user_id, age_group, budget_level, preferred_brands, preferred_categories)
-                VALUES ($1, $2, $3, $4, $5)
-                """,
-                user_row["id"],
-                body.age_group,
-                body.budget_level,
-                body.preferred_brands,
-                body.preferred_categories,
-            )
+    try:
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                user_row = await conn.fetchrow(
+                    "INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email",
+                    body.name, body.email.lower(), pw_hash,
+                )
+                await conn.execute(
+                    """
+                    INSERT INTO user_profiles
+                        (user_id, age_group, budget_level, preferred_brands, preferred_categories)
+                    VALUES ($1, $2, $3, $4, $5)
+                    """,
+                    user_row["id"],
+                    body.age_group,
+                    body.budget_level,
+                    body.preferred_brands,
+                    body.preferred_categories,
+                )
+    except asyncpg.UniqueViolationError:
+        raise HTTPException(status_code=409, detail="Bu email allaqachon ro'yxatdan o'tgan") from None
 
     token = _make_token(str(user_row["id"]))
     return {
@@ -1157,30 +1165,6 @@ async def remove_watchlist(
     return {"ok": True}
 
 
-# ── Stats ─────────────────────────────────────────────────────────────────────
-
-@app.get("/api/stats")
-async def stats() -> dict:
-    pool: asyncpg.Pool = app.state.pool
-    row = await pool.fetchrow(
-        """
-        SELECT
-            (SELECT COUNT(*) FROM products) AS total_products,
-            (SELECT MAX(updated_at) FROM products) AS last_sync,
-            (SELECT COUNT(DISTINCT source) FROM product_markets) AS total_markets
-        """
-    )
-    markets_rows = await pool.fetch(
-        "SELECT source, COUNT(*) AS count FROM product_markets GROUP BY source ORDER BY count DESC"
-    )
-    return {
-        "total_products": row["total_products"],
-        "last_sync": row["last_sync"].isoformat() if row["last_sync"] else None,
-        "total_markets": row["total_markets"],
-        "markets": [{"source": r["source"], "count": r["count"]} for r in markets_rows],
-    }
-
-
 # ── Telegram integration ───────────────────────────────────────────────────────
 
 class TelegramLinkRequest(BaseModel):
@@ -1304,7 +1288,7 @@ async def proxy_image(url: str = Query(...)) -> Response:
         raise HTTPException(status_code=403, detail="Host not allowed")
         
     try:
-        async with httpx.AsyncClient(verify=False, follow_redirects=True, timeout=10) as client:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=10) as client:
             resp = await client.get(
                 url,
                 headers={
@@ -1313,6 +1297,8 @@ async def proxy_image(url: str = Query(...)) -> Response:
                 },
             )
             content_type = resp.headers.get("content-type", "image/jpeg")
+            if not content_type.startswith("image/"):
+                content_type = "image/jpeg"
             return Response(
                 content=resp.content,
                 media_type=content_type,
