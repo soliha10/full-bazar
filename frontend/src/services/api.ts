@@ -77,6 +77,12 @@ export const fetchTrends = async (limit = 8) => {
   }
 };
 
+export const fetchCompare = async (ids: (string | number)[]) => {
+  const response = await fetch(`${API_BASE_URL}/compare?ids=${ids.map(String).join(',')}`);
+  if (!response.ok) throw new Error('Network response was not ok');
+  return await response.json();
+};
+
 export const submitFeedback = async (
   data: { message: string; rating?: number; name?: string; email?: string },
   token?: string,

@@ -1,10 +1,11 @@
-import { Star, ArrowRight, ExternalLink, Store, TrendingDown, Heart, Bell } from 'lucide-react';
+import { Star, ArrowRight, ExternalLink, Store, TrendingDown, Heart, Bell, Scale } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatSum } from '../utils/productMapper';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { useAuth } from '../contexts/AuthContext';
 import { usePriceWatch } from '../hooks/usePriceWatch';
+import { useCompare, MAX_COMPARE } from '../contexts/CompareContext';
 
 export interface Product {
   id: string | number;
@@ -52,8 +53,11 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
   const { toggle, isLiked } = useFavorites();
   const { user } = useAuth();
   const { toggle: toggleWatch, isWatched } = usePriceWatch();
+  const { toggleCompare, isComparing, compareIds } = useCompare();
   const liked = isLiked(product.id);
   const watching = isWatched(product.id);
+  const comparing = isComparing(product.id);
+  const compareDisabled = !comparing && compareIds.length >= MAX_COMPARE;
 
   const activeSet = new Set(activeMarkets.map(m => m.toLowerCase()));
   const sortedMarkets = [...(product.markets ?? [])].sort((a, b) => {
@@ -87,6 +91,15 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
               {sortedMarkets.length} ta
             </div>
           )}
+          <button
+            onClick={(e) => { e.stopPropagation(); if (!compareDisabled) toggleCompare(product.id); }}
+            title={compareDisabled ? `Ko'pi bilan ${MAX_COMPARE} tagacha solishtirish mumkin` : "Solishtirish"}
+            className={`absolute top-1 left-1 w-6 h-6 flex items-center justify-center rounded-lg shadow-sm transition-all active:scale-90 ${
+              comparing ? 'bg-violet-600 text-white' : 'bg-white/90 dark:bg-gray-900/90 text-gray-400'
+            } ${compareDisabled ? 'opacity-40' : ''}`}
+          >
+            <Scale className="w-3.5 h-3.5" />
+          </button>
           <button
             onClick={(e) => { e.stopPropagation(); toggle(product); }}
             className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-lg bg-white/90 dark:bg-gray-900/90 shadow-sm transition-all active:scale-90"
@@ -161,13 +174,24 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
           </div>
         )}
 
-        {/* Savings badge — top right (hidden when liked button occupies spot) */}
-        {savings > 0 && (
-          <div className="absolute top-2 right-2 flex items-center gap-0.5 bg-emerald-500 text-white text-[11px] font-black px-2.5 py-1 rounded-full shadow-sm shadow-emerald-500/30">
-            <TrendingDown className="w-3 h-3" />
-            -{formatSum(savings)}
-          </div>
-        )}
+        {/* Compare toggle + savings badge — top right */}
+        <div className="absolute top-2 right-2 flex flex-col items-end gap-1.5">
+          <button
+            onClick={(e) => { e.stopPropagation(); if (!compareDisabled) toggleCompare(product.id); }}
+            title={compareDisabled ? `Ko'pi bilan ${MAX_COMPARE} tagacha solishtirish mumkin` : "Solishtirish"}
+            className={`w-7 h-7 flex items-center justify-center rounded-xl shadow-sm transition-all active:scale-90 ${
+              comparing ? 'bg-violet-600 text-white' : 'bg-white/90 dark:bg-gray-900/90 text-gray-400'
+            } ${compareDisabled ? 'opacity-40' : ''}`}
+          >
+            <Scale className="w-4 h-4" />
+          </button>
+          {savings > 0 && (
+            <div className="flex items-center gap-0.5 bg-emerald-500 text-white text-[11px] font-black px-2.5 py-1 rounded-full shadow-sm shadow-emerald-500/30">
+              <TrendingDown className="w-3 h-3" />
+              -{formatSum(savings)}
+            </div>
+          )}
+        </div>
 
         {/* Heart button */}
         <button

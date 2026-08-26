@@ -32,6 +32,8 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 from sklearn.metrics.pairwise import paired_cosine_distances
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from specs_seed import SPEC_SEED
+
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://postgres:postgres@postgres:5432/fullbazar",
@@ -150,23 +152,22 @@ class UpdateProfileRequest(BaseModel):
 # If the model file doesn't exist yet (before first training run), all
 # /api/ml/match requests fall back to plain cosine similarity.
 
-_BRANDS = [
-    "apple", "samsung", "xiaomi", "redmi", "oppo", "vivo", "realme",
-    "honor", "huawei", "tecno", "infinix", "poco", "itel",
-]
-
 _BRAND_KWS: dict[str, list[str]] = {
+    # "Redmi"/"Poco" must come before "Xiaomi" — titles like "Xiaomi Redmi
+    # Note 15 Pro" contain both words, and the sub-brand is the more specific
+    # (and more consistently present) match across different stores' titles.
     "Apple":   ["apple", "iphone"],
     "Samsung": ["samsung", "galaxy"],
     "Redmi":   ["redmi"],
-    "Xiaomi":  ["xiaomi"],
     "Poco":    ["poco"],
+    "Xiaomi":  ["xiaomi"],
     "Honor":   ["honor"],
     "Vivo":    ["vivo"],
     "Oppo":    ["oppo"],
     "Realme":  ["realme"],
     "Tecno":   ["tecno", "camon", "spark"],
     "Infinix": ["infinix"],
+    "Zte":     ["zte", "nubia"],
 }
 _STORAGE_RE = re.compile(r"(\d+)\s*(?:gb|tb)", re.I)
 _DIFF_RE = re.compile(
@@ -197,10 +198,33 @@ def _extract_storage(text: str) -> str:
 
 def _extract_brand(text: str) -> str:
     text = text.lower()
-    for b in _BRANDS:
-        if b in text:
-            return b
+    for canonical, kws in _BRAND_KWS.items():
+        if any(kw in text for kw in kws):
+            return canonical.lower()
     return ""
+
+
+_SPEC_NORM_RE = re.compile(r"[^a-z0-9\s]")
+
+
+def _normalize_spec_text(text: str) -> str:
+    text = _SPEC_NORM_RE.sub(" ", text.lower())
+    return " ".join(text.split())
+
+
+def _match_spec_row(name: str, keywords: str, spec_rows: list[dict]) -> dict | None:
+    """Best-effort link from a scraped product's messy title to a seeded spec row."""
+    brand = _extract_brand(f"{name} {keywords}")
+    if not brand:
+        return None
+    candidates = [r for r in spec_rows if r["brand"] == brand]
+    if not candidates:
+        return None
+    norm_name = _normalize_spec_text(f"{name} {keywords}")
+    for row in sorted(candidates, key=lambda r: len(r["model_key"]), reverse=True):
+        if row["model_key"] in norm_name:
+            return row
+    return None
 
 
 def _jaccard(a: str, b: str) -> float:
@@ -291,6 +315,9 @@ async def lifespan(app: FastAPI):
             CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(lower(email))
         """)
         await conn.execute("""
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ
+        """)
+        await conn.execute("""
             CREATE TABLE IF NOT EXISTS user_profiles (
                 user_id              UUID        PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
                 age_group            VARCHAR(10) NOT NULL DEFAULT '25-34',
@@ -351,6 +378,56 @@ async def lifespan(app: FastAPI):
                 created_at TIMESTAMPTZ DEFAULT NOW()
             )
         """)
+        # Product spec sheet (for the compare feature) — seeded from specs_seed.py
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS product_specs (
+                id              SERIAL PRIMARY KEY,
+                brand           VARCHAR(50)  NOT NULL,
+                model_key       VARCHAR(100) NOT NULL,
+                display_name    VARCHAR(150) NOT NULL,
+                display         VARCHAR(200),
+                chipset         VARCHAR(150),
+                ram_options     TEXT[]       NOT NULL DEFAULT '{}',
+                storage_options TEXT[]       NOT NULL DEFAULT '{}',
+                main_camera     VARCHAR(200),
+                selfie_camera   VARCHAR(150),
+                battery_mah     INTEGER,
+                charging        VARCHAR(100),
+                os              VARCHAR(100),
+                body            VARCHAR(200),
+                release_year    SMALLINT
+            )
+        """)
+        await conn.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_product_specs_model
+            ON product_specs(brand, model_key)
+        """)
+        await conn.executemany(
+            """
+            INSERT INTO product_specs
+                (brand, model_key, display_name, display, chipset, ram_options,
+                 storage_options, main_camera, selfie_camera, battery_mah,
+                 charging, os, body, release_year)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            ON CONFLICT (brand, model_key) DO UPDATE SET
+                display_name = EXCLUDED.display_name, display = EXCLUDED.display,
+                chipset = EXCLUDED.chipset, ram_options = EXCLUDED.ram_options,
+                storage_options = EXCLUDED.storage_options, main_camera = EXCLUDED.main_camera,
+                selfie_camera = EXCLUDED.selfie_camera, battery_mah = EXCLUDED.battery_mah,
+                charging = EXCLUDED.charging, os = EXCLUDED.os, body = EXCLUDED.body,
+                release_year = EXCLUDED.release_year
+            """,
+            [
+                (
+                    s["brand"], s["model_key"], s["display_name"], s["display"], s["chipset"],
+                    s["ram_options"], s["storage_options"], s["main_camera"], s["selfie_camera"],
+                    s["battery_mah"], s["charging"], s["os"], s["body"], s["release_year"],
+                )
+                for s in SPEC_SEED
+            ],
+        )
+        spec_rows = await conn.fetch("SELECT * FROM product_specs")
+        app.state.spec_rows = [dict(r) for r in spec_rows]
     yield
     await app.state.pool.close()
 
@@ -545,6 +622,73 @@ async def get_product(product_id: str) -> dict:
         raise HTTPException(status_code=404, detail="Not Found")
     markets_map = await _fetch_markets(pool, [product_id])
     return _row_to_product(row, markets_map.get(product_id, []))
+
+
+# ── Specs & compare ────────────────────────────────────────────────────────────
+
+def _spec_payload(row: dict) -> dict:
+    return {
+        "displayName":    row["display_name"],
+        "display":        row["display"],
+        "chipset":        row["chipset"],
+        "ramOptions":     list(row["ram_options"] or []),
+        "storageOptions": list(row["storage_options"] or []),
+        "mainCamera":     row["main_camera"],
+        "selfieCamera":   row["selfie_camera"],
+        "batteryMah":     row["battery_mah"],
+        "charging":       row["charging"],
+        "os":             row["os"],
+        "body":           row["body"],
+        "releaseYear":    row["release_year"],
+    }
+
+
+_SPEC_DIFF_FIELDS = [
+    "display", "chipset", "ramOptions", "storageOptions", "mainCamera",
+    "selfieCamera", "batteryMah", "charging", "os", "body", "releaseYear",
+]
+
+
+@app.get("/api/products/{product_id}/specs")
+async def get_product_specs(product_id: str) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    row = await pool.fetchrow("SELECT name, keywords FROM products WHERE id = $1", product_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Not Found")
+    spec = _match_spec_row(row["name"] or "", row["keywords"] or "", app.state.spec_rows)
+    return {"matched": spec is not None, "specs": _spec_payload(spec) if spec else None}
+
+
+@app.get("/api/compare")
+async def compare_products(ids: str = Query(..., min_length=1)) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    id_list = [i.strip() for i in ids.split(",") if i.strip()][:4]
+    if not id_list:
+        raise HTTPException(status_code=400, detail="No product ids given")
+
+    rows = await pool.fetch("SELECT * FROM products WHERE id = ANY($1)", id_list)
+    if not rows:
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    by_id = {r["id"]: r for r in rows}
+    markets_map = await _fetch_markets(pool, list(by_id.keys()))
+
+    items = []
+    for pid in id_list:
+        row = by_id.get(pid)
+        if row is None:
+            continue
+        spec = _match_spec_row(row["name"] or "", row["keywords"] or "", app.state.spec_rows)
+        items.append({
+            "product": _row_to_product(row, markets_map.get(pid, [])),
+            "specs": _spec_payload(spec) if spec else None,
+        })
+
+    diff_fields = [
+        field for field in _SPEC_DIFF_FIELDS
+        if len({json.dumps((it["specs"] or {}).get(field)) for it in items}) > 1
+    ]
+    return {"items": items, "diffFields": diff_fields}
 
 
 # ── Recommendations ───────────────────────────────────────────────────────────
@@ -999,6 +1143,8 @@ async def auth_login(body: LoginRequest) -> dict:
     ok = await loop.run_in_executor(None, _verify_pw, body.password, row["password_hash"])
     if not ok:
         raise HTTPException(status_code=401, detail="Email yoki parol noto'g'ri")
+
+    await pool.execute("UPDATE users SET last_login_at = NOW() WHERE id = $1", row["id"])
 
     token = _make_token(str(row["id"]))
     return {"token": token, "user": _user_payload(row)}

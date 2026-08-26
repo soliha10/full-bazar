@@ -10,10 +10,12 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { FavoritesProvider } from "./contexts/FavoritesContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { PriceWatchProvider } from "./contexts/PriceWatchContext";
+import { CompareProvider } from "./contexts/CompareContext";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { MobileToolbar } from "./components/MobileToolbar";
 import { AuthModal } from "./components/AuthModal";
+import { CompareBar } from "./components/CompareBar";
 import { Landing } from "./pages/Landing";
 import { ProductListing } from "./pages/ProductListing";
 import { ProductDetail } from "./pages/ProductDetail";
@@ -22,6 +24,7 @@ import { Watchlist } from "./pages/Watchlist";
 import { Profile } from "./pages/Profile";
 import { Trends } from "./pages/Trends";
 import { Feedback } from "./pages/Feedback";
+import { Compare } from "./pages/Compare";
 
 export default function App() {
   return (
@@ -30,9 +33,11 @@ export default function App() {
         <AuthProvider>
           <FavoritesProvider>
             <PriceWatchProvider>
-              <Router>
-                <AppContent />
-              </Router>
+              <CompareProvider>
+                <Router>
+                  <AppContent />
+                </Router>
+              </CompareProvider>
             </PriceWatchProvider>
           </FavoritesProvider>
         </AuthProvider>
@@ -78,12 +83,14 @@ function AppContent() {
           <Route path="/profile"     element={<Profile />} />
           <Route path="/trends"      element={<Trends />} />
           <Route path="/feedback"    element={<Feedback />} />
+          <Route path="/compare"     element={<Compare />} />
         </Routes>
       </main>
 
       {!hideFooter && <Footer />}
       <MobileToolbar />
       <AuthModal />
+      <CompareBar />
     </div>
   );
 }
