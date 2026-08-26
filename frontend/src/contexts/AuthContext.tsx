@@ -1,6 +1,7 @@
 import {
   createContext, useContext, useState, useCallback, ReactNode,
 } from 'react';
+import { trackGaEvent } from '../services/tracking';
 
 export interface UserProfile {
   name: string;
@@ -132,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     save(shapeUser(data.user, data.token));
     setIsAuthOpen(false);
+    trackGaEvent('login', { method: 'email' });
   }, [save]);
 
   const register = useCallback(async (form: RegisterData) => {
@@ -146,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     save(shapeUser(data.user, data.token));
     setIsAuthOpen(false);
+    trackGaEvent('sign_up', { method: 'email' });
   }, [save]);
 
   const logout = useCallback(() => {

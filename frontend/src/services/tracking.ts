@@ -1,3 +1,17 @@
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+  }
+}
+
+export function trackGaEvent(name: string, params?: Record<string, unknown>): void {
+  try {
+    window.gtag?.('event', name, params);
+  } catch {
+    // GA should never break the UI
+  }
+}
+
 const SESSION_KEY = 'fb_session_id';
 
 function initSession(): string {
