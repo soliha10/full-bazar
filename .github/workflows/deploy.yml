@@ -119,8 +119,8 @@ jobs:
 
             echo "=== enabling hourly schedule ==="
             docker exec full-bazar-dagster-webserver-1 \
-              dagster schedule start -f /app/definitions.py csv_sync_hourly 2>/dev/null \
-              && echo "csv_sync_hourly ENABLED" || echo "csv_sync_hourly: already on or skipped"
+              dagster schedule start -f /app/definitions.py csv_sync_hourly 2>/dev/null && \
+              echo "csv_sync_hourly ENABLED" || echo "csv_sync_hourly: already on or skipped"
 
             echo "=== deploy status ==="
             docker ps --format 'table {{.Names}}\t{{.Status}}' | grep full-bazar
