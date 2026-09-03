@@ -40,3 +40,11 @@ export async function trackEvent(
     // tracking should never break the UI
   }
 }
+
+// Fired whenever a user clicks through to a store to (presumably) buy —
+// the closest purchase-intent signal we can capture, since the actual
+// checkout happens on the store's own site, outside our visibility.
+export function trackStoreClick(productId: string | number, source: string, price?: number): void {
+  trackEvent('cart_add', String(productId));
+  trackGaEvent('store_click', { store: source, product_id: String(productId), price });
+}

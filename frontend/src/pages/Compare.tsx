@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, X, ExternalLink, Store, Plus, Search, Trophy, BatteryCharging } from 'lucide-react';
 import { fetchCompare, fetchProducts } from '../services/api';
 import { formatSum } from '../utils/productMapper';
+import { trackStoreClick } from '../services/tracking';
 import { useCompare, MAX_COMPARE } from '../contexts/CompareContext';
 import { SEO } from '../components/SEO';
 
@@ -310,6 +311,7 @@ export function Compare() {
                           href={mkt.url}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={() => trackStoreClick(item.product.id, mkt.source, mkt.price)}
                           className={`flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                             i === 0
                               ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'

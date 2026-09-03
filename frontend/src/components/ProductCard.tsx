@@ -6,6 +6,7 @@ import { useFavorites } from '../hooks/useFavorites';
 import { useAuth } from '../contexts/AuthContext';
 import { usePriceWatch } from '../hooks/usePriceWatch';
 import { useCompare, MAX_COMPARE } from '../contexts/CompareContext';
+import { trackStoreClick } from '../services/tracking';
 
 export interface Product {
   id: string | number;
@@ -253,7 +254,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
                     href={bestMarket.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => { e.stopPropagation(); trackStoreClick(product.id, bestMarket.source, bestMarket.price); }}
                     className="flex items-center gap-1 text-[11px] font-semibold text-violet-500 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 transition-colors shrink-0"
                   >
                     <ExternalLink className="w-3 h-3" />

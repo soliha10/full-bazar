@@ -23,7 +23,7 @@ import { fetchProductById, fetchPersonalizedRecommendations, fetchPriceHistory }
 import { mapProduct, formatSum } from "../utils/productMapper";
 import { Product } from "../components/ProductCard";
 import { useLanguage } from "../contexts/LanguageContext";
-import { trackEvent } from "../services/tracking";
+import { trackEvent, trackStoreClick } from "../services/tracking";
 import { useFavorites } from "../hooks/useFavorites";
 import { SEO } from "../components/SEO";
 
@@ -500,7 +500,7 @@ export function ProductDetail() {
                           <a
                             href={market.url}
                             target="_blank"
-                            onClick={e => e.stopPropagation()}
+                            onClick={e => { e.stopPropagation(); if (product) trackStoreClick(product.id, market.source, market.price); }}
                             className="inline-flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-violet-600 hover:text-white hover:border-violet-600 transition-all"
                           >
                             {t.detail.goToShop} <ExternalLink className="w-3 h-3" />
@@ -555,6 +555,7 @@ export function ProductDetail() {
                       <a
                         href={market.url}
                         target="_blank"
+                        onClick={() => { if (product) trackStoreClick(product.id, market.source, market.price); }}
                         className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white px-3 py-1.5 rounded-xl text-[11px] font-bold min-h-[36px] active:bg-violet-600 active:text-white active:border-violet-600 transition-colors"
                       >
                         {t.detail.shop} <ExternalLink className="w-3 h-3" />
@@ -884,6 +885,7 @@ export function ProductDetail() {
         <a
           href={selectedMarket?.url}
           target="_blank"
+          onClick={() => { if (selectedMarket) trackStoreClick(product.id, selectedMarket.source, selectedMarket.price); }}
           className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-7 py-3.5 rounded-2xl font-black text-sm shadow-lg shadow-violet-500/25 active:scale-95 transition-all whitespace-nowrap"
         >
           {t.detail.goToShop}

@@ -6,6 +6,7 @@ import axios from 'axios';
 import { usePriceWatch } from '../hooks/usePriceWatch';
 import { useAuth } from '../contexts/AuthContext';
 import { formatSum } from '../utils/productMapper';
+import { trackStoreClick } from '../services/tracking';
 
 function TelegramPanel({ token }: { token: string }) {
   const [linked, setLinked]     = useState<boolean | null>(null);
@@ -379,7 +380,7 @@ export function Watchlist() {
                                     href={bestMarket.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    onClick={(e) => e.stopPropagation()}
+                                    onClick={(e) => { e.stopPropagation(); trackStoreClick(product.id, bestMarket.source, bestMarket.price); }}
                                     className="text-violet-500 hover:text-violet-700 transition-colors"
                                   >
                                     <ExternalLink className="w-3 h-3" />

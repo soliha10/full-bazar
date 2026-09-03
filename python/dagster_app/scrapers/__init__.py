@@ -17,6 +17,7 @@ from .alif import AlifScraper
 from .ucell import UcellScraper
 from .brandstore import BrandstoreScraper
 from .olx import OlxScraper
+from .gsmarena import GsmarenaScraper
 # Wildberries/Prom o'chirildi — saytlar faoliyati to'xtagan yoki eskirgan
 
 ALL_SCRAPERS = [
@@ -39,5 +40,6 @@ ALL_SCRAPERS = [
     UcellScraper,
     BrandstoreScraper,
     OlxScraper,
+    GsmarenaScraper,
 ]
 
