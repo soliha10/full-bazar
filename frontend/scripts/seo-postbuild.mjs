@@ -131,9 +131,10 @@ for (const route of ROUTES) {
   if (route.path === '/') {
     fs.writeFileSync(indexPath, html);
   } else {
-    const dir = path.join(DIST, route.path.replace(/^\//, ''));
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, 'index.html'), html);
+    // <route>/index.html emas, <route>.html — Netlify birinchisida /products ni
+    // /products/ ga 301 qiladi, bu esa canonical (/products) bilan ziddiyatga
+    // tushadi. .html fayl bilan /products to'g'ridan-to'g'ri 200 qaytaradi.
+    fs.writeFileSync(path.join(DIST, `${route.path.replace(/^\//, '')}.html`), html);
   }
 }
 // Netlify 404 javoblarida shu faylni ko'rsatadi (_redirects dagi 404 qoidalari
