@@ -80,14 +80,15 @@ jobs:
               "SELECT 1 FROM pg_database WHERE datname='mlflow'" | grep -q 1 || \
               docker exec full-bazar-postgres-1 psql -U postgres -c "CREATE DATABASE mlflow"
 
-            echo "=== building frontend (no cache) ==="
-            docker compose build --no-cache frontend
+            # frontend bu yerda build qilinmaydi — uni Netlify deploy qiladi
+            # (netlify.toml + frontend/public/_redirects). Server faqat
+            # postgres + fastapi + dagster + mlflow ni yuritadi.
 
             echo "=== building fastapi ==="
             docker compose build fastapi
 
-            echo "=== restarting frontend, fastapi ==="
-            docker compose up -d --force-recreate --no-deps frontend fastapi
+            echo "=== restarting fastapi ==="
+            docker compose up -d --force-recreate --no-deps fastapi
 
             echo "=== building and starting mlflow ==="
             docker compose build mlflow
@@ -124,5 +125,4 @@ jobs:
 
             echo "=== deploy status ==="
             docker ps --format 'table {{.Names}}\t{{.Status}}' | grep full-bazar
-            curl -s -o /dev/null -w "site: HTTP %{http_code}\n" http://localhost:80
             curl -s -o /dev/null -w "api:  HTTP %{http_code}\n" http://localhost:8000/health
