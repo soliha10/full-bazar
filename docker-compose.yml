@@ -43,7 +43,14 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./python/init_db/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "5432:5432"
+      # Faqat serverning o'ziga bog'langan — internetdan yetib bo'lmaydi.
+      # Ilgari "5432:5432" edi, ya'ni 0.0.0.0 ga ochiq va paroli default
+      # "postgres". Bu bazaga tashqaridan hech kim ulanmaydi: jonli sayt
+      # Supabase dan o'qiydi, konteynerlar esa docker tarmog'i orqali
+      # "postgres:5432" nomi bilan ulanadi — bu qoida ularga ta'sir qilmaydi.
+      # Kerak bo'lsa SSH tunnel bilan kiring:
+      #   ssh -L 5432:localhost:5432 <user>@<server>
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d fullbazar"]
       interval: 10s
@@ -82,7 +89,9 @@ services:
     volumes:
       - ./data:/app/data:ro
     ports:
-      - "8000:8000"
+      # nginx unga docker tarmog'i orqali (http://fastapi:8000) murojaat qiladi,
+      # shuning uchun portni internetga chiqarish shart emas.
+      - "127.0.0.1:8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -109,7 +118,11 @@ services:
     restart: unless-stopped
     command: dagster-webserver -h 0.0.0.0 -p 3000 -w /app/workspace.yaml
     ports:
-      - "3000:3000"
+      # Dagster UI da autentifikatsiya YO'Q va u ixtiyoriy job ishga tushira
+      # oladi — internetga ochiq qoldirilsa, uni topgan har kim serverda kod
+      # bajara oladi. Faqat localhost; kirish uchun SSH tunnel:
+      #   ssh -L 3000:localhost:3000 <user>@<server>
+      - "127.0.0.1:3000:3000"
     mem_limit: 384m
 
   # ── Dagster daemon (runs hourly schedule) ───────────────────────────────────
@@ -149,7 +162,9 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "5050:5050"
+      # MLflow da ham autentifikatsiya yo'q. nginx unga docker tarmog'i orqali
+      # (http://mlflow:5050) /mlflow/ yo'li bilan proxy qiladi.
+      - "127.0.0.1:5050:5050"
     volumes:
       - ./mlruns:/mlruns
     healthcheck:
