@@ -14,8 +14,28 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import esbuild from 'esbuild';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+/**
+ * slug.ts ni ilova bilan bir xil manbadan yuklaymiz — slug mantig'i ikki
+ * joyda takrorlanib, vaqt o'tishi bilan bir-biridan ajralib ketmasligi uchun.
+ * esbuild vite bilan birga keladi, qo'shimcha bog'liqlik kerak emas.
+ */
+async function loadTs(relPath) {
+  const result = await esbuild.build({
+    entryPoints: [path.join(ROOT, relPath)],
+    bundle: true,
+    format: 'esm',
+    platform: 'neutral',
+    write: false,
+  });
+  const code = result.outputFiles[0].text;
+  return import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+}
+
+const { productPath } = await loadTs('src/utils/slug.ts');
 const DIST = path.join(ROOT, 'build');
 const SITE = 'https://bazarcom.online';
 const API = process.env.SEO_API_URL || 'https://full-bazar-api.onrender.com';
@@ -116,25 +136,42 @@ for (const route of ROUTES) {
     fs.writeFileSync(path.join(dir, 'index.html'), html);
   }
 }
-console.log(`[seo] ${ROUTES.length} ta statik marshrut prerender qilindi`);
+// Netlify 404 javoblarida shu faylni ko'rsatadi (_redirects dagi 404 qoidalari
+// va mavjud bo'lmagan yo'llar uchun) — Netlify ning oddiy sahifasi o'rniga
+// brendlangan sahifa chiqadi.
+fs.writeFileSync(
+  path.join(DIST, '404.html'),
+  renderRoute(baseHtml, {
+    path: '/404',
+    title: `Sahifa topilmadi | ${BRAND}`,
+    description: "Siz qidirayotgan sahifa mavjud emas yoki ko'chirilgan.",
+    noindex: true,
+  }),
+);
+
+console.log(`[seo] ${ROUTES.length} ta statik marshrut + 404.html prerender qilindi`);
 
 // ── 2-bosqich: mahsulotlarni olib sitemap yaratish ─────────────────────────
-async function fetchAllProductIds() {
+async function fetchAllProducts() {
   const LIMIT = 200;
-  const ids = [];
+  const items = [];
+  const take = (data) => {
+    for (const p of data?.products || []) {
+      if (p?.id) items.push({ id: p.id, name: p.name, title: p.title });
+    }
+  };
+
   const first = await fetchJson(`${API}/api/products?page=1&limit=${LIMIT}`);
   if (!first) return null;
+  take(first);
 
-  const total = Number(first.total) || 0;
-  const pages = Math.ceil(total / LIMIT);
-  ids.push(...(first.products || []).map((p) => p.id).filter(Boolean));
-
+  const pages = Math.ceil((Number(first.total) || 0) / LIMIT);
   for (let page = 2; page <= pages; page++) {
     const data = await fetchJson(`${API}/api/products?page=${page}&limit=${LIMIT}`);
     if (!data) break;
-    ids.push(...(data.products || []).map((p) => p.id).filter(Boolean));
+    take(data);
   }
-  return ids;
+  return items;
 }
 
 async function fetchJson(url, attempt = 1) {
@@ -150,7 +187,7 @@ async function fetchJson(url, attempt = 1) {
   }
 }
 
-function buildSitemap(productIds) {
+function buildSitemap(products) {
   const today = new Date().toISOString().slice(0, 10);
   const urls = ROUTES.filter((r) => !r.noindex).map(
     (r) => `  <url>
@@ -161,9 +198,9 @@ function buildSitemap(productIds) {
   </url>`,
   );
 
-  for (const id of productIds) {
+  for (const product of products) {
     urls.push(`  <url>
-    <loc>${SITE}/product/${encodeURIComponent(id)}</loc>
+    <loc>${SITE}${productPath(product)}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -177,10 +214,10 @@ ${urls.join('\n')}
 `;
 }
 
-const ids = await fetchAllProductIds();
-if (ids && ids.length > 0) {
-  fs.writeFileSync(path.join(DIST, 'sitemap.xml'), buildSitemap(ids));
-  console.log(`[seo] sitemap.xml: ${ROUTES.filter((r) => !r.noindex).length} statik + ${ids.length} mahsulot URL`);
+const products = await fetchAllProducts();
+if (products && products.length > 0) {
+  fs.writeFileSync(path.join(DIST, 'sitemap.xml'), buildSitemap(products));
+  console.log(`[seo] sitemap.xml: ${ROUTES.filter((r) => !r.noindex).length} statik + ${products.length} mahsulot URL (slug bilan)`);
 } else {
   // API yetib bo'lmadi — sayt baribir deploy bo'lsin, faqat statik sitemap bilan
   fs.writeFileSync(path.join(DIST, 'sitemap.xml'), buildSitemap([]));

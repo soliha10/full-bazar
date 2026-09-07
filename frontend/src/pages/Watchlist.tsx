@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatSum } from '../utils/productMapper';
 import { trackStoreClick } from '../services/tracking';
 import { SEO, SITE_URL } from '../components/SEO';
+import { productPath } from '../utils/slug';
 
 function TelegramPanel({ token }: { token: string }) {
   const [linked, setLinked]     = useState<boolean | null>(null);
@@ -322,7 +323,7 @@ export function Watchlist() {
 
                     <div className="p-3.5 flex gap-3">
                       {/* Image */}
-                      <Link to={`/product/${product.id}`} className="shrink-0">
+                      <Link to={productPath(product)} className="shrink-0">
                         <div className="w-20 h-20 rounded-xl bg-gray-50 dark:bg-gray-800 overflow-hidden">
                           <img
                             src={product.image}
@@ -335,7 +336,7 @@ export function Watchlist() {
 
                       {/* Content */}
                       <div className="flex-1 min-w-0 flex flex-col justify-between gap-1">
-                        <Link to={`/product/${product.id}`}>
+                        <Link to={productPath(product)}>
                           <h3 className="text-[13px] font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug">
                             {product.name}
                           </h3>

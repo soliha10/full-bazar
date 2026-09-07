@@ -6,6 +6,7 @@ import { formatSum } from '../utils/productMapper';
 import { trackStoreClick } from '../services/tracking';
 import { useCompare, MAX_COMPARE } from '../contexts/CompareContext';
 import { SEO, SITE_URL } from '../components/SEO';
+import { productPath } from '../utils/slug';
 
 interface Specs {
   displayName: string;
@@ -224,10 +225,10 @@ export function Compare() {
                         alt={item.product.name}
                         onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/200x200/f5f3ff/7c3aed?text=📱'; }}
                         className="w-full h-28 object-contain mb-2 cursor-pointer"
-                        onClick={() => navigate(`/product/${item.product.id}`)}
+                        onClick={() => navigate(productPath(item.product))}
                       />
                       <p
-                        onClick={() => navigate(`/product/${item.product.id}`)}
+                        onClick={() => navigate(productPath(item.product))}
                         className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 mb-1 cursor-pointer hover:text-violet-600"
                       >
                         {item.product.name}

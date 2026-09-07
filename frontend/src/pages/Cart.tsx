@@ -4,6 +4,7 @@ import { Button } from '../components/Button';
 import { Product } from '../components/ProductCard';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatSum } from '../utils/productMapper';
+import { productPath } from '../utils/slug';
 
 interface CartItem extends Product {
   cartQuantity: number;
@@ -64,7 +65,7 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
                 <div key={item.id} className="group bg-card rounded-4xl p-4 sm:p-6 border border-border/50 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300">
                   <div className="flex flex-col sm:flex-row gap-8">
                     {/* Product Image */}
-                    <Link to={`/product/${item.id}`} className="shrink-0">
+                    <Link to={productPath(item)} className="shrink-0">
                       <div className="w-full sm:w-40 aspect-square overflow-hidden rounded-2xl border border-border/50 group-hover:border-primary/30 transition-colors">
                         <img
                           src={item.image}
@@ -78,7 +79,7 @@ export function Cart({ cartItems, onUpdateQuantity, onRemoveItem }: CartProps) {
                     <div className="flex-1 flex flex-col justify-between py-2">
                       <div className="flex justify-between items-start gap-4">
                         <div className="space-y-1">
-                          <Link to={`/product/${item.id}`}>
+                          <Link to={productPath(item)}>
                             <h3 className="font-black text-xl text-foreground hover:text-primary transition-colors">
                               {item.name}
                             </h3>

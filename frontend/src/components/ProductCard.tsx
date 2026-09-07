@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePriceWatch } from '../hooks/usePriceWatch';
 import { useCompare, MAX_COMPARE } from '../contexts/CompareContext';
 import { trackStoreClick } from '../services/tracking';
+import { productPath } from '../utils/slug';
 
 export interface Product {
   id: string | number;
@@ -76,7 +77,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
   if (viewMode === 'list') {
     return (
       <div
-        onClick={() => navigate(`/product/${product.id}`)}
+        onClick={() => navigate(productPath(product))}
         className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-3 flex gap-3 group hover:shadow-lg hover:shadow-violet-500/8 hover:border-violet-200 dark:hover:border-violet-800/50 transition-all duration-200 cursor-pointer active:scale-[0.99]"
       >
         {/* Image */}
@@ -155,7 +156,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
   // ── Grid view ──────────────────────────────────────────────────────────────
   return (
     <div
-      onClick={() => navigate(`/product/${product.id}`)}
+      onClick={() => navigate(productPath(product))}
       className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col hover:shadow-xl hover:shadow-violet-500/10 dark:hover:shadow-violet-900/20 hover:-translate-y-0.5 hover:border-violet-200/70 dark:hover:border-violet-800/50 transition-all duration-200 cursor-pointer active:scale-[0.98]"
     >
       {/* Image */}
@@ -275,7 +276,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
 
         {/* CTA (Desktop only) */}
         <button
-          onClick={(e) => { e.stopPropagation(); navigate(`/product/${product.id}`); }}
+          onClick={(e) => { e.stopPropagation(); navigate(productPath(product)); }}
           className="hidden md:flex w-full items-center justify-center gap-1.5 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-black text-xs md:text-[13px] py-3 md:py-3.5 rounded-xl shadow-sm shadow-violet-500/20 hover:shadow-violet-500/30 active:scale-[0.98] transition-all mt-2"
         >
           {t.landing.trending.comparePrices}

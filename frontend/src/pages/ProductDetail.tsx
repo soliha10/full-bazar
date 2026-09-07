@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Star,
   Heart,
@@ -26,11 +26,16 @@ import { useLanguage } from "../contexts/LanguageContext";
 import { trackEvent, trackStoreClick } from "../services/tracking";
 import { useFavorites } from "../hooks/useFavorites";
 import { SEO, SITE_URL, type ProductSchema } from "../components/SEO";
+import { productPath, extractProductId } from "../utils/slug";
 
 
 export function ProductDetail() {
-  const { id } = useParams();
+  // URL slug bilan keladi (/product/samsung-galaxy-s24-prod-abc...) — ID ni
+  // oxiridan ajratib olamiz. Eski toza-ID li havolalar ham ishlayveradi.
+  const { id: idParam } = useParams();
+  const id = useMemo(() => extractProductId(idParam), [idParam]);
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, language } = useLanguage();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,6 +80,16 @@ export function ProductDetail() {
     getProduct();
     return () => { cancelled = true; };
   }, [id]);
+
+  // Eski yoki noto'g'ri slug bilan kelingan bo'lsa, manzil satrini kanonik
+  // shaklga almashtiramiz (tarixga yangi yozuv qo'shmasdan).
+  useEffect(() => {
+    if (!product) return;
+    const canonical = productPath(product);
+    if (location.pathname !== canonical) {
+      navigate(canonical, { replace: true });
+    }
+  }, [product, location.pathname, navigate]);
 
   useEffect(() => {
     fetchPersonalizedRecommendations(6)
@@ -194,7 +209,7 @@ export function ProductDetail() {
     price: product.price,
     currency: 'UZS',
     availability: product.inStock ? 'InStock' : 'OutOfStock',
-    url: `${SITE_URL}/product/${encodeURIComponent(product.id)}`,
+    url: `${SITE_URL}${productPath(product)}`,
     ratingValue: product.rating > 0 ? product.rating : undefined,
     reviewCount: product.reviews > 0 ? product.reviews : undefined,
     brand: product.category || 'Bazarcom',
@@ -207,7 +222,7 @@ export function ProductDetail() {
   const breadcrumbs = product ? [
     { name: language === 'uz' ? 'Bosh sahifa' : 'Главная', url: '/' },
     { name: language === 'uz' ? 'Smartfonlar' : 'Смартфоны', url: '/products' },
-    { name: product.name, url: `/product/${encodeURIComponent(product.id)}` },
+    { name: product.name, url: productPath(product) },
   ] : undefined;
 
   return (
@@ -219,7 +234,7 @@ export function ProductDetail() {
         ogType="product"
         ogImage={product?.image}
         locale={language}
-        canonicalUrl={product ? `${SITE_URL}/product/${encodeURIComponent(product.id)}` : undefined}
+        canonicalUrl={product ? `${SITE_URL}${productPath(product)}` : undefined}
         breadcrumbs={breadcrumbs}
         productSchema={schema}
       />
@@ -837,7 +852,7 @@ export function ProductDetail() {
             {favorites.map((p) => (
               <Link
                 key={p.id}
-                to={`/product/${p.id}`}
+                to={productPath(p)}
                 className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-3 hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95"
               >
                 <div className="relative">
@@ -873,7 +888,7 @@ export function ProductDetail() {
             {similarProducts.slice(0, 10).map((p) => (
               <Link
                 key={p.id}
-                to={`/product/${p.id}`}
+                to={productPath(p)}
                 className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-3 hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95"
               >
                 <img

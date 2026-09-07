@@ -11,6 +11,8 @@
  * foydalanuvchi uchun hech narsa buzilmaydi.
  */
 import type { Config, Context } from '@netlify/edge-functions';
+// Ilova bilan bir xil slug mantig'i — Deno TS ni to'g'ridan-to'g'ri o'qiydi
+import { extractProductId, productPath } from '../../src/utils/slug.ts';
 
 const SITE = 'https://bazarcom.online';
 const API = Deno.env.get('SEO_API_URL') ?? 'https://full-bazar-api.onrender.com';
@@ -63,7 +65,9 @@ export default async (request: Request, context: Context) => {
   const contentType = response.headers.get('content-type') ?? '';
   if (!contentType.includes('text/html')) return response;
 
-  const id = new URL(request.url).pathname.split('/')[2];
+  const requestUrl = new URL(request.url);
+  const param = requestUrl.pathname.split('/')[2];
+  const id = extractProductId(param);
   if (!id) return response;
 
   let product: Product | null = null;
@@ -87,8 +91,16 @@ export default async (request: Request, context: Context) => {
   }
   if (!product?.name) return response;
 
+  // Kanonik yo'l — slug bilan. Eski (/product/prod-xxx) yoki eskirgan slugli
+  // manzil bilan kelingan bo'lsa, 301 qaytaramiz: shunda Google eski URL ga
+  // to'plangan vaznni yangisiga o'tkazadi.
+  const canonicalPath = productPath(product);
+  if (requestUrl.pathname !== canonicalPath) {
+    return Response.redirect(new URL(canonicalPath + requestUrl.search, requestUrl), 301);
+  }
+
   const name = product.title || product.name;
-  const url = `${SITE}/product/${encodeURIComponent(id)}`;
+  const url = SITE + canonicalPath;
   const markets = Array.isArray(product.markets) ? product.markets : [];
   const prices = markets.map((m) => Number(m.price)).filter((p) => Number.isFinite(p) && p > 0);
   const price = Number(product.price) || (prices.length ? Math.min(...prices) : 0);

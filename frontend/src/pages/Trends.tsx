@@ -11,6 +11,7 @@ import axios from 'axios';
 import { formatSum } from '../utils/productMapper';
 import { useLanguage } from '../contexts/LanguageContext';
 import { SEO, SITE_URL } from '../components/SEO';
+import { productPath } from '../utils/slug';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
@@ -219,7 +220,7 @@ export function Trends() {
               ) : dropping.map(item => (
                 <Link
                   key={item.id}
-                  to={`/product/${item.id}`}
+                  to={productPath(item)}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
                 >
                   <div className="flex-1 min-w-0">
@@ -249,7 +250,7 @@ export function Trends() {
               ) : rising.map(item => (
                 <Link
                   key={item.id}
-                  to={`/product/${item.id}`}
+                  to={productPath(item)}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
                 >
                   <div className="flex-1 min-w-0">
@@ -280,7 +281,7 @@ export function Trends() {
             {popular.map((p, rank) => (
               <Link
                 key={p.id}
-                to={`/product/${p.id}`}
+                to={productPath(p)}
                 className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800
                   hover:border-violet-300 dark:hover:border-violet-700
                   hover:shadow-md hover:shadow-violet-500/10

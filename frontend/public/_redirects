@@ -1,2 +1,33 @@
-/api/* https://full-bazar-api.onrender.com/api/:splat 200
-/* /index.html 200
+# ─────────────────────────────────────────────────────────────────────────────
+# Tartib muhim: birinchi mos kelgan qoida ishlaydi, SPA fallback eng oxirida.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# API proxy
+/api/*  https://full-bazar-api.onrender.com/api/:splat  200
+
+# ── Eski WordPress sayti ────────────────────────────────────────────────────
+# Bu domenda ilgari WordPress ishlagan va Google indeksida undan qolgan
+# sahifalar bor (masalan /sample-page-3/). Pastdagi SPA fallback tufayli ular
+# HTTP 200 qaytarib, indeksda "tirik" ko'rinardi. Endi 404 — Google ularni
+# indeksdan olib tashlaydi va brend so'roviga eski sarlavha chiqmaydi.
+/sample-page      /404.html  404
+/sample-page-2    /404.html  404
+/sample-page-3    /404.html  404
+/wp-admin/*       /404.html  404
+/wp-content/*     /404.html  404
+/wp-includes/*    /404.html  404
+/wp-json/*        /404.html  404
+/wp-login.php     /404.html  404
+/wp-cron.php      /404.html  404
+/xmlrpc.php       /404.html  404
+/feed             /404.html  404
+/feed/*           /404.html  404
+/comments/feed/*  /404.html  404
+/category/*       /404.html  404
+/tag/*            /404.html  404
+/author/*         /404.html  404
+/2025/*           /404.html  404
+/2026/*           /404.html  404
+
+# ── SPA fallback ────────────────────────────────────────────────────────────
+/*  /index.html  200

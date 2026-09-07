@@ -16,6 +16,7 @@ import { useRecommendations } from '../hooks/useRecommendations';
 import { useFavorites } from '../hooks/useFavorites';
 import { useAuth } from '../contexts/AuthContext';
 import { SEO, SITE_URL } from '../components/SEO';
+import { productPath } from '../utils/slug';
 
 const MARKET_LOGOS: { name: string; color: string }[] = [
   { name: 'Asaxiy',     color: '#7C3AED' },
@@ -155,7 +156,7 @@ function MiniProductCard({
 }) {
   return (
     <Link
-      to={`/product/${id}`}
+      to={productPath({ id, name })}
       className="shrink-0 w-[152px] md:w-[210px] group flex flex-col bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-violet-500/12 hover:-translate-y-1 hover:border-violet-200 dark:hover:border-violet-700/60 active:scale-[0.97] transition-all duration-200"
     >
       {/* Image — fixed height so text gets real estate */}
