@@ -1,0 +1,54 @@
+name: Keep API warm
+
+# Render bepul planida xizmat 15 daqiqa harakatsizlikdan keyin uxlaydi va
+# uyg'onishi 30-60 soniya oladi. Netlify proxy esa 26 soniyada uzadi — natijada
+# uzoq jimlikdan keyingi birinchi mehmon (yoki Googlebot) mahsulotlarsiz
+# sahifa ko'radi.
+#
+# Bu ish har 5 daqiqada API ni turtib, uni uyg'oq holatda ushlab turadi.
+# Repo public bo'lgani uchun Actions daqiqalari bepul.
+#
+# Diqqat: GitHub public repo dagi jadvalli ishlarni 60 kun davomida hech qanday
+# faollik bo'lmasa avtomatik o'chiradi. Repoga commit qilinib turilsa muammo yo'q.
+
+on:
+  schedule:
+    # Har 5 daqiqada. GitHub jadvali yuklama paytida kechikishi mumkin,
+    # shuning uchun 15 daqiqalik uyqu oynasiga nisbatan zaxira qoldirilgan.
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+# Bir vaqtda bitta ish yetarli — kechikkanlari navbatda turmasin
+concurrency:
+  group: keepalive
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping API
+        run: |
+          API="https://full-bazar-api.onrender.com"
+
+          # /health — jarayon uyg'oqmi
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 "$API/health" || echo 000)
+          echo "health: HTTP $code"
+
+          # /api/products — ma'lumotlar bazasi ulanish hovuzi ham issiq qolsin
+          t=$(curl -s -o /dev/null -w '%{time_total}' --max-time 90 \
+                "$API/api/products?page=1&limit=1" || echo 0)
+          echo "products: ${t}s"
+
+          # Uyg'otish urinishidan keyin ham javob bermasa — ish muvaffaqiyatsiz
+          if [ "$code" != "200" ]; then
+            echo "::warning::API /health javob bermadi (HTTP $code), qayta urinilmoqda"
+            sleep 15
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 "$API/health" || echo 000)
+            echo "health (2-urinish): HTTP $code"
+            [ "$code" = "200" ] || exit 1
+          fi

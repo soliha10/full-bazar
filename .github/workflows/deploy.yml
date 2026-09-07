@@ -25,6 +25,26 @@ jobs:
             sort -u ~/.ssh/authorized_keys -o ~/.ssh/authorized_keys
             chmod 600 ~/.ssh/authorized_keys
 
+            echo "════════ XAVFSIZLIK AUDITI (faqat o'qiydi, hech narsani o'zgartirmaydi) ════════"
+            # docker-compose.yml postgres ni 0.0.0.0:5432 ga chiqargan va parol
+            # default "postgres". Portni yopishdan oldin unga tashqaridan kim
+            # ulanayotganini bilish kerak — Render API shu bazadan o'qiyotgan
+            # bo'lishi mumkin, u holda portni yopish jonli saytni buzadi.
+
+            echo "--- ufw holati ---"
+            sudo ufw status verbose 2>/dev/null || echo "  ufw yo'q yoki sudo parol so'rayapti"
+
+            echo "--- 5432 ni kim tinglayapti ---"
+            (sudo ss -tlnp 2>/dev/null || ss -tln) | grep ':5432' || echo "  aniqlanmadi"
+
+            echo "--- 5432 ga TASHQI ulanishlar (docker 172.x va localhost hisobga olinmaydi) ---"
+            (sudo ss -tn state established '( sport = :5432 )' 2>/dev/null || true) \
+              | awk 'NR>1 {print "    ", $4, "<--", $5}' \
+              | grep -vE '(^|[^0-9])(172\.|127\.)' \
+              || echo "     tashqi ulanish topilmadi"
+
+            echo "════════════════════════════════════════════════════════════════════════"
+
             echo "=== stopping all dagster to free memory ==="
             docker stop full-bazar-dagster-daemon-1 full-bazar-dagster-webserver-1 2>/dev/null || true
 
