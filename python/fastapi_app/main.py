@@ -841,10 +841,10 @@ async def get_price_history(
         SELECT source, price, recorded_at
         FROM price_history
         WHERE product_id = $1
-          AND recorded_at > NOW() - ($2 || ' days')::INTERVAL
+          AND recorded_at > NOW() - make_interval(days => $2)
         ORDER BY recorded_at ASC
         """,
-        product_id, str(days),
+        product_id, days,
     )
     history = [
         {
@@ -899,6 +899,10 @@ async def get_trends(limit: int = Query(8, ge=1, le=20)) -> dict:
         SELECT p.*, a.current_price, a.total_change, a.avg_pct
         FROM aggregated a
         JOIN products p ON p.id = a.product_id
+        -- Narxi umuman o'zgarmaganlar "qimmatlashdi" ro'yxatiga tushmasligi
+        -- kerak: snapshot faqat narx o'zgarganda yoziladi, shuning uchun
+        -- o'zgarishsiz juftliklar 0 berib, ro'yxatni ifloslantirardi.
+        WHERE a.total_change <> 0
         ORDER BY ABS(a.total_change) DESC
         LIMIT $1
         """,
@@ -962,7 +966,10 @@ async def search_trends(days: int = Query(7, ge=1, le=30), limit: int = Query(15
         WHERE event_type = 'search'
           AND search_query IS NOT NULL
           AND search_query <> ''
-          AND created_at > NOW() - ($2 || ' days')::INTERVAL
+          -- ($2 || ' days')::INTERVAL emas: bunda Postgres $2 ni matn deb
+          -- hisoblaydi, endpoint esa butun son yuboradi va asyncpg xato beradi
+          -- ("invalid input for query argument $2: 7 (expected str, got int)").
+          AND created_at > NOW() - make_interval(days => $2)
         GROUP BY search_query
         ORDER BY total DESC
         LIMIT $1

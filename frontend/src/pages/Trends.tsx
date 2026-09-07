@@ -56,23 +56,52 @@ export function Trends() {
   const [totalProducts, setTotalProducts] = useState(0);
   const [totalMarkets, setTotalMarkets] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [failedSections, setFailedSections] = useState<string[]>([]);
 
   useEffect(() => {
-    Promise.all([
+    // allSettled, all emas: bitta endpoint yiqilsa Promise.all butun zanjirni
+    // rad etadi va sahifa to'liq bo'sh qolardi — aynan shu sodir bo'lgan edi,
+    // /api/search-trends 500 qaytarganda butun tahlil sahifasi bo'shab qolardi.
+    let cancelled = false;
+
+    Promise.allSettled([
       axios.get(`${API}/api/search-trends?days=7&limit=20`),
       axios.get(`${API}/api/market-analytics`),
       axios.get(`${API}/api/trends?limit=6`),
       axios.get(`${API}/api/stats`),
     ]).then(([trendsRes, analyticsRes, priceRes, statsRes]) => {
-      setSearchTrends(trendsRes.data.trends ?? []);
-      setMarkets(analyticsRes.data.markets ?? []);
-      setPopular(analyticsRes.data.popularProducts ?? []);
-      setWeeklyEvents(analyticsRes.data.weeklyEvents ?? 0);
-      setDropping(priceRes.data.dropping ?? []);
-      setRising(priceRes.data.rising ?? []);
-      setTotalProducts(statsRes.data.products ?? 0);
-      setTotalMarkets(statsRes.data.markets ?? 0);
-    }).finally(() => setLoading(false));
+      if (cancelled) return;
+
+      const failed: string[] = [];
+      const data = <T,>(
+        res: PromiseSettledResult<{ data: any }>,
+        label: string,
+        fallback: T,
+      ): T | any => {
+        if (res.status === 'fulfilled') return res.value.data;
+        console.error(`[trends] ${label} olinmadi:`, res.reason?.message ?? res.reason);
+        failed.push(label);
+        return fallback;
+      };
+
+      const trends    = data(trendsRes,    'search-trends',    {});
+      const analytics = data(analyticsRes, 'market-analytics', {});
+      const price     = data(priceRes,     'trends',           {});
+      const stats     = data(statsRes,     'stats',            {});
+
+      setSearchTrends(trends.trends ?? []);
+      setMarkets(analytics.markets ?? []);
+      setPopular(analytics.popularProducts ?? []);
+      setWeeklyEvents(analytics.weeklyEvents ?? 0);
+      setDropping(price.dropping ?? []);
+      setRising(price.rising ?? []);
+      setTotalProducts(stats.products ?? 0);
+      setTotalMarkets(stats.markets ?? 0);
+      setFailedSections(failed);
+      setLoading(false);
+    });
+
+    return () => { cancelled = true; };
   }, []);
 
   if (loading) {
@@ -111,6 +140,20 @@ export function Trends() {
           {t.trends.subtitle}
         </p>
       </div>
+
+      {/* Qism yuklanmasa — jimgina bo'sh qoldirmaymiz */}
+      {failedSections.length > 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-900/20">
+          <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+            {language === 'uz'
+              ? "Ba'zi ma'lumotlar yuklanmadi — sahifaning qolgan qismi ishlayapti."
+              : 'Часть данных не загрузилась — остальная страница работает.'}
+          </p>
+          <p className="mt-0.5 text-xs text-amber-700/80 dark:text-amber-400/80">
+            {failedSections.join(', ')}
+          </p>
+        </div>
+      )}
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

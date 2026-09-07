@@ -165,6 +165,53 @@ def write_db(groups):
     try:
         with conn:
             with conn.cursor() as cur:
+                # ── Narx tarixi ─────────────────────────────────────────────
+                # product_markets TRUNCATE qilinishidan OLDIN joriy narxlarni
+                # saqlab qolamiz. Ilgari buni faqat serverdagi dagster qilardi,
+                # ya'ni serverning o'z postgres'iga — jonli baza esa Supabase.
+                # Shu sababli production'da price_history bo'sh turgan va
+                # "narxi tushdi/oshdi" hamda narx grafigi hech qachon
+                # ishlamagan.
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS price_history (
+                        id          BIGSERIAL      PRIMARY KEY,
+                        product_id  VARCHAR(60)    NOT NULL,
+                        source      VARCHAR(100)   NOT NULL,
+                        price       DECIMAL(15, 2) NOT NULL,
+                        recorded_at TIMESTAMPTZ    DEFAULT NOW()
+                    )
+                """)
+                cur.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_price_history_product "
+                    "ON price_history(product_id, recorded_at DESC)"
+                )
+                # Faqat narxi O'ZGARGANLARINI yozamiz. Har safar hammasini
+                # yozsak, kuniga ~22 ming qator qo'shilib, Supabase'ning bepul
+                # 500 MB chegarasi bir necha oyda to'lib qolardi.
+                cur.execute("""
+                    WITH latest AS (
+                        SELECT DISTINCT ON (product_id, source)
+                               product_id, source, price
+                        FROM price_history
+                        ORDER BY product_id, source, recorded_at DESC
+                    )
+                    INSERT INTO price_history (product_id, source, price, recorded_at)
+                    SELECT pm.product_id, pm.source, pm.price, NOW()
+                    FROM product_markets pm
+                    LEFT JOIN latest l
+                           ON l.product_id = pm.product_id AND l.source = pm.source
+                    WHERE l.price IS NULL OR l.price <> pm.price
+                """)
+                snapshots = cur.rowcount
+
+                # Eskilarini tozalab turamiz — tahlil uchun 180 kun yetarli
+                cur.execute(
+                    "DELETE FROM price_history "
+                    "WHERE recorded_at < NOW() - INTERVAL '180 days'"
+                )
+                print(f"[history] {snapshots} ta narx o'zgarishi yozildi, "
+                      f"{cur.rowcount} ta eski yozuv o'chirildi", flush=True)
+
                 cur.execute("TRUNCATE product_markets, products")
                 if prod_rows:
                     psycopg2.extras.execute_values(

@@ -15,6 +15,7 @@ from __future__ import annotations
 import csv
 import json
 import os
+import re
 import sys
 
 import psycopg2
@@ -144,6 +145,74 @@ def write_db(rows: list[tuple]) -> int:
         conn.close()
 
 
+_NORM_RE = re.compile(r"[^a-z0-9\s]")
+
+# main.py dagi _BRAND_KWS bilan bir xil (tartib ham muhim)
+_BRAND_KWS = {
+    "apple": ["apple", "iphone"], "samsung": ["samsung", "galaxy"],
+    "redmi": ["redmi"], "poco": ["poco"], "xiaomi": ["xiaomi"],
+    "honor": ["honor"], "vivo": ["vivo"], "oppo": ["oppo"],
+    "realme": ["realme"], "tecno": ["tecno", "camon", "spark"],
+    "infinix": ["infinix"], "zte": ["zte", "nubia"],
+}
+
+
+def _normalize(text: str) -> str:
+    return " ".join(_NORM_RE.sub(" ", (text or "").lower()).split())
+
+
+def _brand_of(text: str) -> str:
+    text = (text or "").lower()
+    for canonical, kws in _BRAND_KWS.items():
+        if any(kw in text for kw in kws):
+            return canonical
+    return ""
+
+
+def coverage_report() -> None:
+    """
+    Nechta mahsulot xususiyatlarga ega bo'ldi — main.py dagi _match_spec_row
+    bilan bir xil mantiq. "Yana manba kerakmi?" degan savolni o'lchovli qiladi.
+    """
+    conn = psycopg2.connect(DB_URL)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT brand, model_key FROM product_specs")
+            specs: dict[str, list[str]] = {}
+            for brand, key in cur.fetchall():
+                specs.setdefault(brand, []).append(key)
+            for keys in specs.values():
+                keys.sort(key=len, reverse=True)
+
+            cur.execute("SELECT name, keywords FROM products")
+            products = cur.fetchall()
+    finally:
+        conn.close()
+
+    if not products:
+        return
+
+    matched = 0
+    unmatched_brands: dict[str, int] = {}
+    for name, keywords in products:
+        blob = f"{name or ''} {keywords or ''}"
+        brand = _brand_of(blob)
+        norm = _normalize(blob)
+        if brand and any(k in norm for k in specs.get(brand, [])):
+            matched += 1
+        else:
+            unmatched_brands[brand or "(brend aniqlanmadi)"] = \
+                unmatched_brands.get(brand or "(brend aniqlanmadi)", 0) + 1
+
+    pct = matched * 100 // len(products)
+    print(f"[qamrov] {matched}/{len(products)} mahsulot ({pct}%) xususiyatlarga ega",
+          flush=True)
+    if unmatched_brands:
+        top = sorted(unmatched_brands.items(), key=lambda kv: -kv[1])[:6]
+        print("[qamrov] eng ko'p yetishmayotgan brendlar: "
+              + ", ".join(f"{b}={n}" for b, n in top), flush=True)
+
+
 if __name__ == "__main__":
     specs = load_rows()
     print(f"[specs] CSV dan {len(specs)} ta yozuv o'qildi", flush=True)
@@ -152,3 +221,7 @@ if __name__ == "__main__":
         sys.exit(0)
     written = write_db(specs)
     print(f"[specs] DONE: {written} ta model product_specs ga yozildi", flush=True)
+    try:
+        coverage_report()
+    except Exception as exc:  # hisobot yiqilsa ham sync muvaffaqiyatli hisoblanadi
+        print(f"[qamrov] hisobot tuzilmadi: {exc}", flush=True)
