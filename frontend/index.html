@@ -1,26 +1,103 @@
+<!DOCTYPE html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-  <!DOCTYPE html>
-  <html lang="uz">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-      <title>Bazarcom</title>
-      <meta name="description" content="Bazarcom - O'zbekistondagi barcha do'konlardagi smartfonlar narxlarini solishtirish, tahlil qilish va eng arzon narxda sotib olish platformasi." />
-      <meta name="keywords" content="smartfonlar, telefonlar narxi, telefon solishtirish, asaxiy, texnomart, olcha, mediapark, eng arzon telefon, uzbekistan" />
-      <meta name="robots" content="index, follow" />
-      <!-- Google Analytics -->
-      <script async src="https://www.googletagmanager.com/gtag/js?id=G-PKHKCD5NXE"></script>
-      <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-PKHKCD5NXE');
-      </script>
-    </head>
+    <!-- ══ Asosiy ══ -->
+    <title>Bazarcom — O'zbekistondagi smartfon narxlarini solishtirish</title>
+    <meta name="description" content="Bazarcom — Asaxiy, Texnomart, Olcha, Mediapark va boshqa O'zbekiston do'konlaridagi smartfon narxlarini bir joyda solishtiring. Eng arzon narxni toping, narx tushishini kuzating." />
+    <link rel="canonical" href="https://bazarcom.online/" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="theme-color" content="#7c3aed" />
+    <meta name="author" content="Bazarcom" />
 
-    <body>
-      <div id="root"></div>
-      <script type="module" src="/src/main.tsx"></script>
-    </body>
-  </html>
-  
+    <!-- ══ Ikonkalar ══ -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- ══ OpenGraph — Telegram, Facebook, WhatsApp uchun ══ -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Bazarcom" />
+    <meta property="og:title" content="Bazarcom — O'zbekistondagi smartfon narxlarini solishtirish" />
+    <meta property="og:description" content="Asaxiy, Texnomart, Olcha, Mediapark va boshqa do'konlardagi smartfon narxlarini bir joyda solishtiring. Eng arzon narxni toping." />
+    <meta property="og:url" content="https://bazarcom.online/" />
+    <meta property="og:image" content="https://bazarcom.online/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Bazarcom — O'zbekistondagi smartfon narxlari" />
+    <meta property="og:locale" content="uz_UZ" />
+    <meta property="og:locale:alternate" content="ru_RU" />
+    <meta property="og:locale:alternate" content="en_US" />
+
+    <!-- ══ Twitter ══ -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Bazarcom — O'zbekistondagi smartfon narxlarini solishtirish" />
+    <meta name="twitter:description" content="Asaxiy, Texnomart, Olcha, Mediapark va boshqa do'konlardagi smartfon narxlarini bir joyda solishtiring." />
+    <meta name="twitter:image" content="https://bazarcom.online/og-image.jpg" />
+    <meta name="twitter:image:alt" content="Bazarcom — O'zbekistondagi smartfon narxlari" />
+
+    <!-- ══ Tashqi hostlarga oldindan ulanish (LCP tezligi) ══ -->
+    <link rel="preconnect" href="https://full-bazar-api.onrender.com" />
+    <link rel="dns-prefetch" href="https://full-bazar-api.onrender.com" />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+
+    <!-- ══ Structured data: sayt va tashkilot ══ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://bazarcom.online/#organization",
+          "name": "Bazarcom",
+          "url": "https://bazarcom.online/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://bazarcom.online/icon-512.png",
+            "width": 512,
+            "height": 512
+          },
+          "areaServed": {
+            "@type": "Country",
+            "name": "Uzbekistan"
+          },
+          "description": "O'zbekiston internet do'konlaridagi smartfon narxlarini solishtirish platformasi."
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://bazarcom.online/#website",
+          "url": "https://bazarcom.online/",
+          "name": "Bazarcom",
+          "inLanguage": ["uz", "ru", "en"],
+          "publisher": { "@id": "https://bazarcom.online/#organization" },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://bazarcom.online/products?search={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-PKHKCD5NXE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-PKHKCD5NXE');
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

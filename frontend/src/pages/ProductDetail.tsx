@@ -25,7 +25,7 @@ import { Product } from "../components/ProductCard";
 import { useLanguage } from "../contexts/LanguageContext";
 import { trackEvent, trackStoreClick } from "../services/tracking";
 import { useFavorites } from "../hooks/useFavorites";
-import { SEO } from "../components/SEO";
+import { SEO, SITE_URL, type ProductSchema } from "../components/SEO";
 
 
 export function ProductDetail() {
@@ -181,25 +181,46 @@ export function ProductDetail() {
         : `Характеристики, цены и сравнение для смартфона ${product.name} во всех интернет-магазинах Узбекистана на Bazarcom.`)
     : '';
 
-  const schema = product ? {
+  // Bir mahsulot bir necha do'konda sotiladi — Google'ga narx oralig'ini
+  // AggregateOffer sifatida beramiz, bu qidiruvda "X so'mdan" ko'rinishini beradi.
+  const marketPrices = (product?.markets ?? [])
+    .map((m) => Number(m.price))
+    .filter((p) => Number.isFinite(p) && p > 0);
+
+  const schema: ProductSchema | undefined = product ? {
     name: product.name,
     image: product.image,
     description: product.description || product.name,
     price: product.price,
     currency: 'UZS',
     availability: product.inStock ? 'InStock' : 'OutOfStock',
-    url: window.location.href,
+    url: `${SITE_URL}/product/${encodeURIComponent(product.id)}`,
     ratingValue: product.rating > 0 ? product.rating : undefined,
     reviewCount: product.reviews > 0 ? product.reviews : undefined,
-    brand: product.category || 'Bazarcom'
+    brand: product.category || 'Bazarcom',
+    sku: String(product.id),
+    offerCount: marketPrices.length,
+    lowPrice: marketPrices.length ? Math.min(...marketPrices) : undefined,
+    highPrice: marketPrices.length ? Math.max(...marketPrices) : undefined,
   } : undefined;
+
+  const breadcrumbs = product ? [
+    { name: language === 'uz' ? 'Bosh sahifa' : 'Главная', url: '/' },
+    { name: language === 'uz' ? 'Smartfonlar' : 'Смартфоны', url: '/products' },
+    { name: product.name, url: `/product/${encodeURIComponent(product.id)}` },
+  ] : undefined;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-32 md:pb-12 transition-colors">
-      <SEO 
-        title={seoTitle} 
-        description={seoDesc} 
+      <SEO
+        title={seoTitle}
+        description={seoDesc}
         keywords={`smartfonlar, ${product?.name || ''}, telefon narxlari, bazarcom, uzbekistan`}
+        ogType="product"
+        ogImage={product?.image}
+        locale={language}
+        canonicalUrl={product ? `${SITE_URL}/product/${encodeURIComponent(product.id)}` : undefined}
+        breadcrumbs={breadcrumbs}
         productSchema={schema}
       />
 

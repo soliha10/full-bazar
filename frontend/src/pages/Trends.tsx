@@ -10,7 +10,7 @@ import {
 import axios from 'axios';
 import { formatSum } from '../utils/productMapper';
 import { useLanguage } from '../contexts/LanguageContext';
-import { SEO } from '../components/SEO';
+import { SEO, SITE_URL } from '../components/SEO';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
@@ -91,10 +91,16 @@ export function Trends() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-10">
-      <SEO 
-        title={seoTitle} 
-        description={seoDesc} 
+      <SEO
+        title={seoTitle}
+        description={seoDesc}
         keywords="smartfon trendlari, telefon narxlari tushishi, bazarcom tahlil, o'zbekiston telefon bozori"
+        locale={language}
+        canonicalUrl={`${SITE_URL}/trends`}
+        breadcrumbs={[
+          { name: language === 'uz' ? 'Bosh sahifa' : 'Главная', url: '/' },
+          { name: language === 'uz' ? 'Trendlar' : 'Тренды', url: '/trends' },
+        ]}
       />
 
       {/* Header */}

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { submitFeedback } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
+import { SEO, SITE_URL } from '../components/SEO';
 
 export function Feedback() {
   const { t } = useLanguage();
@@ -80,6 +81,15 @@ export function Feedback() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-28">
+      <SEO
+        title="Fikr-mulohaza"
+        description="Bazarcom haqidagi fikringizni bildiring, xatolik haqida xabar bering yoki yangi imkoniyat taklif qiling."
+        canonicalUrl={`${SITE_URL}/feedback`}
+        breadcrumbs={[
+          { name: 'Bosh sahifa', url: '/' },
+          { name: 'Fikr-mulohaza', url: '/feedback' },
+        ]}
+      />
 
       {/* Mobile header */}
       <div className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 md:hidden">

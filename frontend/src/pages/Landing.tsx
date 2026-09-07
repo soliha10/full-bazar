@@ -15,7 +15,7 @@ import { mapProduct } from '../utils/productMapper';
 import { useRecommendations } from '../hooks/useRecommendations';
 import { useFavorites } from '../hooks/useFavorites';
 import { useAuth } from '../contexts/AuthContext';
-import { SEO } from '../components/SEO';
+import { SEO, SITE_URL } from '../components/SEO';
 
 const MARKET_LOGOS: { name: string; color: string }[] = [
   { name: 'Asaxiy',     color: '#7C3AED' },
@@ -247,10 +247,12 @@ export function Landing() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 pb-24 md:pb-0 transition-colors">
-      <SEO 
-        title={seoTitle} 
-        description={seoDesc} 
-        keywords="smartfonlar, telefonlar, telefon narxi, asaxiy, texnomart, olcha, mediapark, olx, compare phones, uzbekistan" 
+      <SEO
+        title={seoTitle}
+        description={seoDesc}
+        keywords="smartfonlar, telefonlar, telefon narxi, asaxiy, texnomart, olcha, mediapark, olx, compare phones, uzbekistan"
+        locale={language}
+        canonicalUrl={`${SITE_URL}/`}
       />
 
       {/* ══ HERO ══ */}

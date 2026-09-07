@@ -9,7 +9,7 @@ import { useProducts } from '../hooks/useProducts';
 import { useSearchParams, useNavigate, Link, useLocation, useNavigationType } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatSum } from '../utils/productMapper';
-import { SEO } from '../components/SEO';
+import { SEO, SITE_URL } from '../components/SEO';
 
 
 const BRANDS = [
@@ -601,12 +601,38 @@ export function ProductListing() {
       : `Bazarcom - Сравнение цен на ${selectedBrand || 'смартфоны'} во всех магазинах Узбекистана.`;
   }, [selectedBrand, language]);
 
+  // Sahifadagi ko'rinadigan h1 — SEO sarlavhasidan qisqaroq va tabiiyroq
+  const pageHeading = useMemo(() => {
+    if (searchQuery) {
+      return language === 'uz'
+        ? `"${searchQuery}" bo'yicha natijalar`
+        : `Результаты по запросу "${searchQuery}"`;
+    }
+    if (selectedBrand) {
+      return language === 'uz'
+        ? `${selectedBrand} smartfonlari narxlari`
+        : `Цены на смартфоны ${selectedBrand}`;
+    }
+    return language === 'uz'
+      ? "Smartfonlar narxlari — O'zbekiston do'konlari"
+      : 'Цены на смартфоны — магазины Узбекистана';
+  }, [searchQuery, selectedBrand, language]);
+
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950">
-      <SEO 
-        title={seoTitle} 
-        description={seoDesc} 
-        keywords={`smartfonlar, ${selectedBrand || ''}, telefonlar, telefon narxi, bazarcom, asaxiy, texnomart, olcha`} 
+      <SEO
+        title={seoTitle}
+        description={seoDesc}
+        keywords={`smartfonlar, ${selectedBrand || ''}, telefonlar, telefon narxi, bazarcom, asaxiy, texnomart, olcha`}
+        locale={language}
+        // Qidiruv va filtr kombinatsiyalari cheksiz URL hosil qiladi — ularni
+        // indeksdan chiqarib, kanonikni toza /products ga yo'naltiramiz.
+        noindex={Boolean(searchQuery) || activeFilterCount > 0}
+        canonicalUrl={`${SITE_URL}/products`}
+        breadcrumbs={[
+          { name: language === 'uz' ? 'Bosh sahifa' : 'Главная', url: '/' },
+          { name: language === 'uz' ? 'Smartfonlar' : 'Смартфоны', url: '/products' },
+        ]}
       />
 
       {/* ── Mobile sticky header ── */}
@@ -790,6 +816,13 @@ export function ProductListing() {
 
           {/* ── Products ── */}
           <div className="flex-1 min-w-0">
+
+            {/* Sahifaning yagona h1 i. Mobil ko'rinishda tepadagi qidiruv
+                paneli sarlavha vazifasini bajaradi, shuning uchun u yerda
+                faqat skrin-riderlar uchun qoladi. */}
+            <h1 className="sr-only md:not-sr-only md:mb-3 md:text-2xl md:font-black md:tracking-tight md:text-gray-900 md:dark:text-white">
+              {pageHeading}
+            </h1>
 
             {/* Desktop toolbar */}
             <div className="hidden md:flex items-center justify-between mb-4">

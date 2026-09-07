@@ -5,7 +5,7 @@ import { fetchCompare, fetchProducts } from '../services/api';
 import { formatSum } from '../utils/productMapper';
 import { trackStoreClick } from '../services/tracking';
 import { useCompare, MAX_COMPARE } from '../contexts/CompareContext';
-import { SEO } from '../components/SEO';
+import { SEO, SITE_URL } from '../components/SEO';
 
 interface Specs {
   displayName: string;
@@ -132,8 +132,10 @@ export function Compare() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
       <SEO
-        title="Mahsulotlarni solishtirish — Bazarcom"
-        description="Smartfonlarni texnik xususiyatlari va do'konlardagi narxlari bo'yicha solishtiring."
+        title="Smartfonlarni solishtirish"
+        description="Ikki yoki uchta smartfonni texnik xususiyatlari va do'konlardagi narxlari bo'yicha yonma-yon solishtiring."
+        noindex
+        canonicalUrl={`${SITE_URL}/compare`}
       />
 
       <button

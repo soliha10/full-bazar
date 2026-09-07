@@ -62,6 +62,8 @@
       },
       "scripts": {
             "dev": "vite",
-            "build": "vite build"
+            "build": "vite build && node scripts/seo-postbuild.mjs",
+            "build:fast": "vite build",
+            "brand-assets": "node scripts/generate-brand-assets.mjs"
       }
 }

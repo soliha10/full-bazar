@@ -7,6 +7,7 @@ import { usePriceWatch } from '../hooks/usePriceWatch';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../locales/translations';
+import { SEO, SITE_URL } from '../components/SEO';
 
 const BUDGET_LABELS: Record<string, string> = {
   budget: 'Tejamkor',
@@ -125,6 +126,12 @@ export function Profile() {
   // ── Logged in ──────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-28">
+      <SEO
+        title="Profil"
+        description="Bazarcom hisobingiz, sozlamalaringiz va shaxsiy tavsiyalar."
+        noindex
+        canonicalUrl={`${SITE_URL}/profile`}
+      />
 
       {/* Mobile header */}
       <div className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 md:hidden">

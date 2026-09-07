@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useFavorites } from '../hooks/useFavorites';
 import { ProductCard } from '../components/ProductCard';
 import { useLanguage } from '../contexts/LanguageContext';
+import { SEO, SITE_URL } from '../components/SEO';
 
 export function Wishlist() {
   const { favorites, toggle } = useFavorites();
@@ -11,6 +12,12 @@ export function Wishlist() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 pb-24 md:pb-10">
+      <SEO
+        title="Saqlangan smartfonlar"
+        description="Siz saqlagan smartfonlar ro'yxati va ularning joriy narxlari."
+        noindex
+        canonicalUrl={`${SITE_URL}/wishlist`}
+      />
       <div className="max-w-7xl mx-auto px-4 pt-6 md:pt-8">
 
         {/* Header */}

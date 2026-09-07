@@ -25,6 +25,7 @@ import { Profile } from "./pages/Profile";
 import { Trends } from "./pages/Trends";
 import { Feedback } from "./pages/Feedback";
 import { Compare } from "./pages/Compare";
+import { NotFound } from "./pages/NotFound";
 
 export default function App() {
   return (
@@ -84,6 +85,8 @@ function AppContent() {
           <Route path="/trends"      element={<Trends />} />
           <Route path="/feedback"    element={<Feedback />} />
           <Route path="/compare"     element={<Compare />} />
+          {/* Noma'lum URL — bo'sh sahifa o'rniga noindex 404 */}
+          <Route path="*"            element={<NotFound />} />
         </Routes>
       </main>
 

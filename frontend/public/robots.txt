@@ -1,13 +1,20 @@
 User-agent: *
 Allow: /
-Allow: /products
-Allow: /product/
-Allow: /trends
-Allow: /feedback
-Disallow: /cart
-Disallow: /checkout
+
+# Shaxsiy va indekslashga yaroqsiz sahifalar
 Disallow: /profile
-Disallow: /watchlist
 Disallow: /wishlist
+Disallow: /watchlist
+Disallow: /compare
+
+# Filtr/sahifalash kombinatsiyalari — cheksiz URL variantlarini oldini oladi
+Disallow: /products?*
+
+# AI/skreyper botlari
+User-agent: GPTBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
 
 Sitemap: https://bazarcom.online/sitemap.xml

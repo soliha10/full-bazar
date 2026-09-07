@@ -7,6 +7,7 @@ import { usePriceWatch } from '../hooks/usePriceWatch';
 import { useAuth } from '../contexts/AuthContext';
 import { formatSum } from '../utils/productMapper';
 import { trackStoreClick } from '../services/tracking';
+import { SEO, SITE_URL } from '../components/SEO';
 
 function TelegramPanel({ token }: { token: string }) {
   const [linked, setLinked]     = useState<boolean | null>(null);
@@ -180,6 +181,12 @@ export function Watchlist() {
   // ── Logged in ──────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-28">
+      <SEO
+        title="Narx kuzatuvi"
+        description="Narxi tushishini kuzatayotgan smartfonlaringiz va Telegram bildirishnomalari."
+        noindex
+        canonicalUrl={`${SITE_URL}/watchlist`}
+      />
 
       {/* Mobile header */}
       <div className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800 px-4 py-3 md:hidden">
