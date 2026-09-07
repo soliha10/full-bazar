@@ -402,13 +402,22 @@ async def lifespan(app: FastAPI):
             CREATE UNIQUE INDEX IF NOT EXISTS idx_product_specs_model
             ON product_specs(brand, model_key)
         """)
+        # 'seed'  — specs_seed.py dagi qo'lda yozilgan yozuvlar
+        # 'gsmarena' — python/sync_specs.py orqali yig'ilgan aniqroq ma'lumot
+        await conn.execute("""
+            ALTER TABLE product_specs
+                ADD COLUMN IF NOT EXISTS source VARCHAR(20) NOT NULL DEFAULT 'seed'
+        """)
+        await conn.execute("""
+            ALTER TABLE product_specs ADD COLUMN IF NOT EXISTS source_url TEXT
+        """)
         await conn.executemany(
             """
             INSERT INTO product_specs
                 (brand, model_key, display_name, display, chipset, ram_options,
                  storage_options, main_camera, selfie_camera, battery_mah,
-                 charging, os, body, release_year)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                 charging, os, body, release_year, source)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'seed')
             ON CONFLICT (brand, model_key) DO UPDATE SET
                 display_name = EXCLUDED.display_name, display = EXCLUDED.display,
                 chipset = EXCLUDED.chipset, ram_options = EXCLUDED.ram_options,
@@ -416,6 +425,9 @@ async def lifespan(app: FastAPI):
                 selfie_camera = EXCLUDED.selfie_camera, battery_mah = EXCLUDED.battery_mah,
                 charging = EXCLUDED.charging, os = EXCLUDED.os, body = EXCLUDED.body,
                 release_year = EXCLUDED.release_year
+            -- GSMArena dan yig'ilgan yozuvlarga tegmaymiz: ular aniqroq va
+            -- API har qayta ishga tushganda seed ularni bosib ketmasligi kerak.
+            WHERE product_specs.source = 'seed'
             """,
             [
                 (

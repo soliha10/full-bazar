@@ -1,0 +1,70 @@
+name: Scrape specs to Supabase
+
+# Texnik xususiyatlar (ekran, protsessor, batareya...) GSMArena dan yig'iladi va
+# product_specs jadvaliga yoziladi. Solishtirish sahifasi va mahsulot
+# sahifasidagi "Xususiyatlar" bo'limi shundan oziqlanadi.
+#
+# Narx yig'adigan scrape_and_sync.yml dan ALOHIDA turadi, chunki:
+#   · specs tez-tez o'zgarmaydi — haftada bir marta yetarli
+#   · GSMArena ga nisbatan odobli bo'lish kerak (so'rovlar orasida kutish)
+#   · uzoqroq davom etadi va narx yangilanishini kechiktirmasligi kerak
+
+on:
+  schedule:
+    # Har yakshanba 03:00 UTC = 08:00 Toshkent
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      max_models:
+        description: 'Har brenddan nechta eng yangi model'
+        required: false
+        default: '60'
+
+concurrency:
+  group: scrape-specs
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  specs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install requests==2.32.3 beautifulsoup4==4.12.3 lxml==5.2.2 psycopg2-binary==2.9.9
+
+      - name: Scrape specs from GSMArena
+        working-directory: python/dagster_app
+        env:
+          GSMARENA_MAX_MODELS: ${{ github.event.inputs.max_models || '60' }}
+        run: |
+          mkdir -p ../../data
+          python -c "
+          import sys, logging
+          sys.path.insert(0, '.')
+          logging.basicConfig(level=logging.INFO, format='%(message)s')
+          from scrapers import GsmarenaSpecsScraper
+          n = GsmarenaSpecsScraper(output_dir='../../data', delay=1.5).run()
+          print(f'=== {n} ta model yig\'ildi ===')
+          if n == 0:
+              sys.exit('specs yig\'ilmadi — sayt tuzilmasi o\'zgargan bo\'lishi mumkin')
+          "
+
+      - name: Sync specs to Supabase
+        env:
+          PRODUCTS_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          DATA_DIR: ./data
+        run: python python/sync_specs.py

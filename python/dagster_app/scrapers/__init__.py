@@ -17,7 +17,9 @@ from .alif import AlifScraper
 from .ucell import UcellScraper
 from .brandstore import BrandstoreScraper
 from .olx import OlxScraper
-from .gsmarena import GsmarenaScraper
+# GSMArena narx emas, xususiyat manbai — ALL_SCRAPERS ga kirmaydi,
+# alohida oqim bilan product_specs jadvalini to'ldiradi.
+from .gsmarena import GsmarenaSpecsScraper
 # Wildberries/Prom o'chirildi — saytlar faoliyati to'xtagan yoki eskirgan
 
 ALL_SCRAPERS = [
@@ -40,6 +42,5 @@ ALL_SCRAPERS = [
     UcellScraper,
     BrandstoreScraper,
     OlxScraper,
-    GsmarenaScraper,
 ]
 
