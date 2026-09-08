@@ -28,6 +28,9 @@ export interface Product {
     source: string;
     price: number;
     url: string;
+    /** Narx oxirgi marta tekshirilgan payt (ISO). Eski keshdan kelgan
+     *  javoblarda bo'lmasligi mumkin, shuning uchun ixtiyoriy. */
+    checkedAt?: string | null;
   }>;
   current_price?: number;
   current_markets?: Array<{

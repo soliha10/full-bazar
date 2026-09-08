@@ -14,6 +14,7 @@ export const ru = {
     helpCenter: "Центр помощи",
     about: "О Bazarcom",
     catalog: "Каталог",
+    compare: "Сравнение",
     analysis: "Анализ",
     feedback: "Обратная связь",
   },

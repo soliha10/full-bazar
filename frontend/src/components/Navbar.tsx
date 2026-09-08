@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Search, User, Moon, Sun, Globe, ShoppingBag, Menu, Mic, X,
   LogIn, HelpCircle, Info, Sparkles, Heart, ChevronRight,
-  Home, Package, LogOut, ChevronDown, Bell, TrendingUp, MessageSquareHeart,
+  Home, Package, LogOut, ChevronDown, Bell, TrendingUp, MessageSquareHeart, Scale,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
@@ -11,6 +11,7 @@ import { Language } from '../locales/translations';
 import { useFavorites } from '../hooks/useFavorites';
 import { useAuth } from '../contexts/AuthContext';
 import { usePriceWatch } from '../hooks/usePriceWatch';
+import { useCompare } from '../contexts/CompareContext';
 
 interface NavbarProps {
   onSearchChange?: (value: string) => void;
@@ -23,6 +24,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
   const { favorites } = useFavorites();
   const { user, openLogin, openRegister, logout } = useAuth();
   const { watched } = usePriceWatch();
+  const { compareIds } = useCompare();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
@@ -101,6 +103,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
   const navLinks = [
     { icon: Home,             label: t.nav.home,       path: '/',         count: 0               },
     { icon: Package,          label: t.nav.catalog,     path: '/products', count: 0               },
+    { icon: Scale,            label: t.nav.compare,     path: '/compare',  count: compareIds.length },
     { icon: TrendingUp,       label: t.nav.analysis,    path: '/trends',   count: 0               },
     { icon: Heart,            label: t.footer.wishlist, path: '/wishlist', count: favorites.length },
     { icon: MessageSquareHeart, label: t.nav.feedback,    path: '/feedback', count: 0               },
@@ -150,6 +153,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             <nav className="hidden md:flex items-center gap-0.5 mr-2 shrink-0">
               {[
                 { path: '/products', label: t.nav.catalog },
+                { path: '/compare',  label: t.nav.compare },
                 { path: '/trends',   label: t.nav.analysis },
                 { path: '/feedback', label: t.nav.feedback },
               ].map(({ path, label }) => {
@@ -253,6 +257,24 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                   </>
                 )}
               </div>
+
+              {/* Taqqoslash — desktop. Idealo, Ceneo va PriceSpy dagidek:
+                  tanlangan mahsulotlar soni doim ko'rinib turadi, shuning uchun
+                  foydalanuvchi nechta mahsulot tanlaganini eslab qolishi shart emas. */}
+              <Link to="/compare"
+                title={t.nav.compare}
+                className="hidden md:flex relative w-8 h-8 items-center justify-center rounded-xl
+                  bg-gray-50 dark:bg-gray-800
+                  hover:bg-violet-50 dark:hover:bg-violet-900/30
+                  text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400
+                  transition-all active:scale-90">
+                <Scale className={`w-4 h-4 transition-colors ${compareIds.length > 0 ? 'text-violet-600 dark:text-violet-400' : ''}`} />
+                {compareIds.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-600 text-white text-[9px] font-black flex items-center justify-center">
+                    {compareIds.length}
+                  </span>
+                )}
+              </Link>
 
               {/* Favorites — desktop */}
               <Link to="/wishlist"

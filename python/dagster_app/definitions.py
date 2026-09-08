@@ -172,10 +172,57 @@ def _get_cosine_sim(s1: str, s2: str) -> float:
     return float(numerator) / denominator if denominator else 0.0
 
 
+# ── Variantni ajratish ────────────────────────────────────────────────────────
+# _DIFF_WORDS_RE dagi xotira naqshlari amalda ishlamaydi: normalizatsiya "/" ni
+# bo'sh joyga aylantiradi ("8/256 GB" -> "8 256 gb"), do'konlar esa "256 GB" deb
+# bo'sh joy bilan yozadi. Natijada 128GB va 256GB bitta mahsulotga qo'shilib
+# ketardi. Mantiq python/sync_csv.py dagi bilan bir xil bo'lishi shart —
+# ikkala quvur ham bir xil guruhlarni hosil qilishi kerak.
+_PAIR_RE = re.compile(r"\b(\d{1,2})\s+(\d{2,4})\s*(gb|tb|гб|тб)?\b")
+_SOLO_RE = re.compile(r"\b(\d{2,4})\s*(gb|tb|гб|тб)\b")
+_KNOWN_STORAGE = {32, 64, 128, 256, 512, 1024, 2048}
+_PLAUSIBLE_RAM = {2, 3, 4, 6, 8, 12, 16, 18, 24}
+_MODEL_TOKEN_RE = re.compile(r"\b(?=\w*\d)(?=\w*[a-z])\w+\+?")
+
+
+def _variant_parts(n: str):
+    ram = storage = None
+    for m in _PAIR_RE.finditer(n):
+        unit = m.group(3)
+        cand = int(m.group(2)) * (1024 if unit in ("tb", "тб") else 1)
+        if unit is None and cand not in _KNOWN_STORAGE:
+            continue
+        storage = cand
+        first = int(m.group(1))
+        ram = first if first in _PLAUSIBLE_RAM else None
+        break
+    if storage is None:
+        for num, unit in _SOLO_RE.findall(n):
+            v = int(num) * (1024 if unit in ("tb", "тб") else 1)
+            if v in _KNOWN_STORAGE:
+                storage = v
+                break
+    marks = frozenset(_DIFF_WORDS_RE.findall(n)) | frozenset(_MODEL_TOKEN_RE.findall(n))
+    return storage, ram, marks
+
+
+def _same_variant(a: str, b: str) -> bool:
+    """Xotira/RAM faqat ikkalasida ham ko'rsatilgan va farq qilgandagina ajratamiz."""
+    sa, ra, ma = _variant_parts(a)
+    sb, rb, mb = _variant_parts(b)
+    if ma != mb:
+        return False
+    if sa is not None and sb is not None and sa != sb:
+        return False
+    if ra is not None and rb is not None and ra != rb:
+        return False
+    return True
+
+
 def _can_merge(norm1: str, norm2: str) -> bool:
     if _get_cosine_sim(norm1, norm2) < 0.85:
         return False
-    return set(_DIFF_WORDS_RE.findall(norm1)) == set(_DIFF_WORDS_RE.findall(norm2))
+    return _same_variant(norm1, norm2)
 
 
 # Minimum products required before we allow TRUNCATE+INSERT.

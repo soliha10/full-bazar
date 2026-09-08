@@ -10,6 +10,7 @@ export const fetchProducts = async (
   markets: string[] = [],
   brand = '',
   category = '',
+  specs: { ram?: string[]; storage?: string[]; batteryMin?: number } = {},
 ) => {
   try {
     const params = new URLSearchParams({
@@ -20,6 +21,12 @@ export const fetchProducts = async (
     if (markets.length > 0) params.set('market', markets.join(','));
     if (brand) params.set('brand', brand);
     if (category && category !== 'All') params.set('category', category);
+    // Xususiyat filtrlari serverda qo'llanadi — mijozda emas. Aks holda
+    // filtr faqat yuklangan sahifadagi mahsulotlarga ta'sir qilib, "total"
+    // va cheksiz aylantirish noto'g'ri bo'lib qolardi.
+    if (specs.ram?.length)     params.set('ram', specs.ram.join(','));
+    if (specs.storage?.length) params.set('storage', specs.storage.join(','));
+    if (specs.batteryMin)      params.set('battery_min', String(specs.batteryMin));
 
     const response = await fetch(`${API_BASE_URL}/products?${params}`, { signal });
     if (!response.ok) throw new Error('Network response was not ok');
@@ -28,6 +35,20 @@ export const fetchProducts = async (
     if (error instanceof Error && error.name === 'AbortError') throw error;
     console.error('Error fetching products:', error);
     throw error;
+  }
+};
+
+/** Xususiyat filtrlari uchun mavjud qiymatlar (RAM, xotira, batareya oralig'i). */
+export const fetchSpecFacets = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/spec-facets`);
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching spec facets:', error);
+    // Filtr ro'yxati kelmasa sahifa baribir ishlashi kerak — shunchaki
+    // xususiyat filtrlari ko'rinmaydi.
+    return { ram: [], storage: [], battery: null };
   }
 };
 

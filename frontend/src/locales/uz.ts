@@ -14,6 +14,7 @@ export const uz = {
     helpCenter: "Yordam markazi",
     about: "Bazarcom haqida",
     catalog: "Katalog",
+    compare: "Taqqoslash",
     analysis: "Tahlil",
     feedback: "Fikr-mulohaza",
   },

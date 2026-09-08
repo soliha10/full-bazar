@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, X, ExternalLink, Store, Plus, Search, Trophy, BatteryCharging } from 'lucide-react';
+import { ChevronLeft, X, ExternalLink, Store, Plus, Search, Trophy, BatteryCharging, Scale } from 'lucide-react';
 import { fetchCompare, fetchProducts } from '../services/api';
 import { formatSum } from '../utils/productMapper';
 import { trackStoreClick } from '../services/tracking';
@@ -148,7 +148,7 @@ export function Compare() {
 
       <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <h1 className="text-2xl font-black text-gray-900 dark:text-white">Mahsulotlarni solishtirish</h1>
-        {items.length > 0 && items.length < MAX_COMPARE && (
+        {items.length < MAX_COMPARE && (
           <button
             onClick={() => setShowPicker((v) => !v)}
             className="flex items-center gap-1.5 text-sm font-bold text-violet-600 bg-violet-50 dark:bg-violet-900/30 hover:bg-violet-100 dark:hover:bg-violet-900/50 px-3 py-2 rounded-xl transition-colors"
@@ -198,10 +198,35 @@ export function Compare() {
       {loading && <div className="text-center py-16 text-gray-400 font-bold">Yuklanmoqda...</div>}
       {error && <div className="text-center py-16 text-red-500 font-bold">{error}</div>}
 
+      {/* Bo'sh holat. Taqqoslash endi headerdan ochiladi, ya'ni bu yerga hech
+          narsa tanlamagan foydalanuvchi ham tushadi — shuning uchun bu ekran
+          boshi berk ko'cha bo'lmasligi va davom etish yo'lini ko'rsatishi kerak. */}
       {!loading && !error && items.length === 0 && (
-        <div className="text-center py-16 text-gray-400 font-bold">
-          Solishtirish uchun hech narsa tanlanmagan. Mahsulot ustidagi{' '}
-          <span className="inline-block align-middle px-1">⚖️</span> tugmasini bosing.
+        <div className="text-center py-16 px-4">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center">
+            <Scale className="w-6 h-6 text-violet-500" />
+          </div>
+          <p className="text-lg font-black text-gray-900 dark:text-white mb-1.5">
+            Hali hech narsa tanlanmagan
+          </p>
+          <p className="text-sm font-semibold text-gray-400 max-w-md mx-auto mb-6">
+            Bir vaqtda {MAX_COMPARE} tagacha mahsulotni yonma-yon qo'yib, narxi va
+            xususiyatlarini solishtirishingiz mumkin.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button
+              onClick={() => setShowPicker(true)}
+              className="flex items-center gap-1.5 text-sm font-black text-white bg-violet-600 hover:bg-violet-700 px-4 py-2.5 rounded-xl transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Mahsulot qo'shish
+            </button>
+            <button
+              onClick={() => navigate('/products')}
+              className="flex items-center gap-1.5 text-sm font-black text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-4 py-2.5 rounded-xl transition-colors"
+            >
+              <Store className="w-4 h-4" /> Katalogni ko'rish
+            </button>
+          </div>
         </div>
       )}
 

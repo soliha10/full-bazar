@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -17,15 +18,20 @@ import { MobileToolbar } from "./components/MobileToolbar";
 import { AuthModal } from "./components/AuthModal";
 import { CompareBar } from "./components/CompareBar";
 import { Landing } from "./pages/Landing";
-import { ProductListing } from "./pages/ProductListing";
-import { ProductDetail } from "./pages/ProductDetail";
-import { Wishlist } from "./pages/Wishlist";
-import { Watchlist } from "./pages/Watchlist";
-import { Profile } from "./pages/Profile";
-import { Trends } from "./pages/Trends";
-import { Feedback } from "./pages/Feedback";
-import { Compare } from "./pages/Compare";
-import { NotFound } from "./pages/NotFound";
+
+// Bosh sahifa darhol kerak, qolganlari esa faqat o'sha marshrutga o'tilganda.
+// Bu boshlang'ich yuklamadan recharts (~400 KB) kabi og'ir kutubxonalarni
+// butunlay chiqarib tashlaydi — ular faqat Tahlil va Mahsulot sahifalarida
+// ishlatiladi, lekin ilgari har bir mehmon ularni yuklab olardi.
+const ProductListing = lazy(() => import("./pages/ProductListing").then(m => ({ default: m.ProductListing })));
+const ProductDetail  = lazy(() => import("./pages/ProductDetail").then(m => ({ default: m.ProductDetail })));
+const Wishlist       = lazy(() => import("./pages/Wishlist").then(m => ({ default: m.Wishlist })));
+const Watchlist      = lazy(() => import("./pages/Watchlist").then(m => ({ default: m.Watchlist })));
+const Profile        = lazy(() => import("./pages/Profile").then(m => ({ default: m.Profile })));
+const Trends         = lazy(() => import("./pages/Trends").then(m => ({ default: m.Trends })));
+const Feedback       = lazy(() => import("./pages/Feedback").then(m => ({ default: m.Feedback })));
+const Compare        = lazy(() => import("./pages/Compare").then(m => ({ default: m.Compare })));
+const NotFound       = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
 
 export default function App() {
   return (
@@ -44,6 +50,17 @@ export default function App() {
         </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>
+  );
+}
+
+/** Marshrut bo'lagi yuklanayotgan paytdagi oraliq ekran. Balandligi ekranga
+ *  yaqin qilib olindi, shunda sahifa almashganda footer yuqoriga sakramaydi. */
+function RouteFallback() {
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center" role="status" aria-live="polite">
+      <div className="w-8 h-8 rounded-full border-2 border-violet-200 dark:border-violet-900 border-t-violet-600 animate-spin" />
+      <span className="sr-only">Yuklanmoqda</span>
+    </div>
   );
 }
 
@@ -75,19 +92,21 @@ function AppContent() {
       </div>
 
       <main className={`flex-1 md:mt-[70px] ${!hideNavbarOnMobile ? 'mt-[108px]' : ''}`}>
-        <Routes>
-          <Route path="/"            element={<Landing />} />
-          <Route path="/products"    element={<ProductListing />} />
-          <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/wishlist"    element={<Wishlist />} />
-          <Route path="/watchlist"   element={<Watchlist />} />
-          <Route path="/profile"     element={<Profile />} />
-          <Route path="/trends"      element={<Trends />} />
-          <Route path="/feedback"    element={<Feedback />} />
-          <Route path="/compare"     element={<Compare />} />
-          {/* Noma'lum URL — bo'sh sahifa o'rniga noindex 404 */}
-          <Route path="*"            element={<NotFound />} />
-        </Routes>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/"            element={<Landing />} />
+            <Route path="/products"    element={<ProductListing />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/wishlist"    element={<Wishlist />} />
+            <Route path="/watchlist"   element={<Watchlist />} />
+            <Route path="/profile"     element={<Profile />} />
+            <Route path="/trends"      element={<Trends />} />
+            <Route path="/feedback"    element={<Feedback />} />
+            <Route path="/compare"     element={<Compare />} />
+            {/* Noma'lum URL — bo'sh sahifa o'rniga noindex 404 */}
+            <Route path="*"            element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </main>
 
       {!hideFooter && <Footer />}

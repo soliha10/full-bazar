@@ -591,7 +591,8 @@ async def _fetch_markets(pool: asyncpg.Pool, product_ids: list[str]) -> dict[str
     if not product_ids:
         return {}
     rows = await pool.fetch(
-        "SELECT product_id, source, price, url FROM product_markets WHERE product_id = ANY($1) ORDER BY price",
+        "SELECT product_id, source, price, url, created_at FROM product_markets"
+        " WHERE product_id = ANY($1) ORDER BY price",
         product_ids,
     )
     result: dict[str, list[dict]] = {pid: [] for pid in product_ids}
@@ -600,8 +601,34 @@ async def _fetch_markets(pool: asyncpg.Pool, product_ids: list[str]) -> dict[str
             "source": r["source"],
             "price": float(r["price"]),
             "url": r["url"] or "#",
+            # Sinxronizatsiya product_markets ni har safar to'liq qayta yozadi,
+            # shuning uchun created_at = narx oxirgi marta tekshirilgan payt.
+            # Agregatorlarda bu ishonchning asosi: foydalanuvchi narx qanchalik
+            # yangi ekanini ko'rmasa, ro'yxatga ishonmaydi.
+            "checkedAt": r["created_at"].isoformat() if r["created_at"] else None,
         })
     return result
+
+
+async def _get_spec_index(pool: asyncpg.Pool) -> dict[str, dict]:
+    """{product_id: spec_row} — xususiyat bo'yicha filtrlash uchun.
+
+    Mahsulot bilan xususiyat ustun orqali bog'lanmagan: bog'lanish nomdan
+    _match_spec_row orqali hisoblanadi. Uni har so'rovda qayta hisoblamaslik
+    uchun natijani 5 daqiqa saqlaymiz — mahsulotlar kuniga 4 marta yangilanadi,
+    shuning uchun bu muddat xavfsiz.
+    """
+    cached = _cache_get("spec-index", 300)
+    if cached is not None:
+        return cached
+
+    rows = await pool.fetch("SELECT id, name, keywords FROM products")
+    index: dict[str, dict] = {}
+    for r in rows:
+        spec = _match_spec_row(r["name"] or "", r["keywords"] or "", app.state.spec_rows)
+        if spec is not None:
+            index[r["id"]] = spec
+    return _cache_put("spec-index", index)
 
 
 # ── Products ──────────────────────────────────────────────────────────────────
@@ -614,6 +641,9 @@ async def get_products(
     market: str = Query(""),
     brand: str = Query(""),
     category: str = Query(""),
+    ram: str = Query("", description="Vergul bilan: 8GB,12GB"),
+    storage: str = Query("", description="Vergul bilan: 128GB,256GB"),
+    battery_min: int = Query(0, ge=0, le=20000),
 ) -> dict:
     pool: asyncpg.Pool = app.state.pool
     offset = (page - 1) * limit
@@ -653,6 +683,37 @@ async def get_products(
                 f"EXISTS (SELECT 1 FROM product_markets pm WHERE pm.product_id = p.id AND lower(pm.source) = ANY(${i}::text[]))"
             )
 
+    # ── Xususiyat bo'yicha filtr (RAM / xotira / batareya) ────────────────────
+    # product_specs mahsulotga ustun orqali emas, nomi bo'yicha bog'lanadi
+    # (_match_spec_row). Shuning uchun filtrni avval xotiradagi spec ro'yxatiga
+    # qo'llaymiz, so'ng mos kelgan model kalitlarini SQL ga naqsh sifatida
+    # uzatamiz — bu sxemani o'zgartirishni ham, sinxronizatsiyaga bog'lanishni
+    # ham talab qilmaydi.
+    ram_wanted     = {v.strip().lower() for v in ram.split(",") if v.strip()}
+    storage_wanted = {v.strip().lower() for v in storage.split(",") if v.strip()}
+
+    if ram_wanted or storage_wanted or battery_min:
+        # Model kalitini SQL da naqsh sifatida qidirib bo'lmaydi: bir modelning
+        # kaliti boshqasining nomiga qism bo'lib tushadi ("iphone 15" ichida
+        # "15"), brend cheklovi ham yo'qoladi. Natijada iPhone 15 "12GB RAM"
+        # filtriga tushib qolardi. Shuning uchun mahsulotni xususiyatga
+        # bog'lashda aynan _match_spec_row ishlatiladi — sahifadagi xususiyatlar
+        # bilan bir xil natija beradigan yagona yo'l.
+        spec_index = await _get_spec_index(pool)
+        matched_ids = [
+            pid for pid, row in spec_index.items()
+            if not (ram_wanted and not ram_wanted & {o.lower() for o in (row["ram_options"] or [])})
+            and not (storage_wanted and not storage_wanted & {o.lower() for o in (row["storage_options"] or [])})
+            and not (battery_min and (row["battery_mah"] or 0) < battery_min)
+        ]
+
+        if not matched_ids:
+            # Hech bir mahsulot mos kelmadi — bazaga bormaymiz.
+            return {"products": [], "total": 0, "page": page, "limit": limit, "hasMore": False}
+
+        params.append(matched_ids)
+        where_parts.append(f"p.id = ANY(${len(params)}::text[])")
+
     where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
 
     # Bitta so'rov: sahifa, umumiy son va marketlar birga keladi.
@@ -676,9 +737,10 @@ async def get_products(
         LEFT JOIN LATERAL (
             SELECT jsonb_agg(
                        jsonb_build_object(
-                           'source', pm.source,
-                           'price',  pm.price,
-                           'url',    COALESCE(pm.url, '#')
+                           'source',    pm.source,
+                           'price',     pm.price,
+                           'url',       COALESCE(pm.url, '#'),
+                           'checkedAt', pm.created_at
                        ) ORDER BY pm.price
                    ) AS markets
             FROM product_markets pm
@@ -1061,6 +1123,42 @@ async def get_markets(response: Response) -> dict:
     return _cache_put("markets", {
         "markets": [{"key": r["key"], "name": r["name"], "count": r["count"]} for r in rows]
     })
+
+
+@app.get("/api/spec-facets")
+async def spec_facets(response: Response) -> dict:
+    """Xususiyat filtrlari uchun mavjud qiymatlar.
+
+    Bazaga umuman bormaydi — spec ro'yxati startupda xotiraga o'qiladi.
+    Har bir qiymat yonida nechta model borligi ko'rsatiladi, shunda UI hech
+    qanday natija bermaydigan filtrni taklif qilmaydi.
+    """
+    response.headers["Cache-Control"] = "public, max-age=3600"
+
+    ram_counts: Counter = Counter()
+    storage_counts: Counter = Counter()
+    batteries: list[int] = []
+
+    for row in app.state.spec_rows:
+        for o in (row["ram_options"] or []):
+            ram_counts[o] += 1
+        for o in (row["storage_options"] or []):
+            storage_counts[o] += 1
+        if row["battery_mah"]:
+            batteries.append(row["battery_mah"])
+
+    def _gb(label: str) -> int:
+        """'128GB' -> 128, '1TB' -> 1024 — tartiblash uchun."""
+        m = re.match(r"(\d+)\s*(gb|tb)", label.lower())
+        if not m:
+            return 0
+        return int(m.group(1)) * (1024 if m.group(2) == "tb" else 1)
+
+    return {
+        "ram":     [{"value": v, "count": c} for v, c in sorted(ram_counts.items(),     key=lambda x: _gb(x[0]))],
+        "storage": [{"value": v, "count": c} for v, c in sorted(storage_counts.items(), key=lambda x: _gb(x[0]))],
+        "battery": {"min": min(batteries), "max": max(batteries)} if batteries else None,
+    }
 
 
 @app.get("/api/search-trends")

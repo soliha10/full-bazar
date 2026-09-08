@@ -30,6 +30,65 @@ _NOT_SMARTPHONE_RE = re.compile(
 # Faoliyati to'xtagan yoki eskirgan saytlar — bu CSV fayllarini o'tkazib yuboramiz
 _INACTIVE_SITES = {"ozon", "premier", "wildberries", "prom"}
 _DIFF_WORDS = re.compile(r"\b(max|plus|ultra|pro|lite|mini|fe|note|edge|fold|\d+gb|\d+tb|\d+\/\d+)\b")
+
+# ── Variantni ajratish ────────────────────────────────────────────────────────
+# _DIFF_WORDS dagi xotira naqshlari amalda hech qachon ishlamaydi: _norm "/" ni
+# bo'sh joyga aylantiradi ("8/256 GB" -> "8 256 gb"), shuning uchun `\d+\/\d+`
+# mos kelmaydi, do'konlar esa "256 GB" deb bo'sh joy bilan yozadi, ya'ni `\d+gb`
+# ham mos kelmaydi. Natijada 128GB va 256GB variantlari bitta mahsulotga
+# qo'shilib ketardi va narx solishtirish noto'g'ri bo'lardi.
+# Birlik ixtiyoriy: ko'p do'kon "8/128 Midnight Black" deb GB siz yozadi.
+_PAIR_RE  = re.compile(r"\b(\d{1,2})\s+(\d{2,4})\s*(gb|tb|гб|тб)?\b")  # "8 256 gb" / "8 128"
+_SOLO_RE  = re.compile(r"\b(\d{2,4})\s*(gb|tb|гб|тб)\b")               # "256 gb"
+_KNOWN_STORAGE = {32, 64, 128, 256, 512, 1024, 2048}
+# "iphone 15 128 gb" da birinchi son model raqami, RAM emas. Shuning uchun
+# faqat haqiqatda uchraydigan RAM hajmlarini qabul qilamiz.
+_PLAUSIBLE_RAM = {2, 3, 4, 6, 8, 12, 16, 18, 24}
+# Ham harf, ham raqamdan iborat token — telefon modelining nomi:
+# "s25", "s25+", "x8c", "a36". Shu bilan S25 va S25+, X8c va X7c ajraladi.
+_MODEL_TOKEN_RE = re.compile(r"\b(?=\w*\d)(?=\w*[a-z])\w+\+?")
+
+
+def _variant_parts(n: str):
+    """Normallashtirilgan sarlavhadan (xotira_gb, ram_gb, belgilar) ni ajratadi."""
+    ram = storage = None
+    for m in _PAIR_RE.finditer(n):
+        unit = m.group(3)
+        cand = int(m.group(2)) * (1024 if unit in ("tb", "тб") else 1)
+        # Birlik yozilmagan bo'lsa, son haqiqiy xotira hajmi bo'lishi shart —
+        # aks holda "galaxy a17 6 128" dagi tasodifiy juftliklar ham tushardi.
+        if unit is None and cand not in _KNOWN_STORAGE:
+            continue
+        storage = cand
+        first = int(m.group(1))
+        ram = first if first in _PLAUSIBLE_RAM else None
+        break
+    if storage is None:
+        for num, unit in _SOLO_RE.findall(n):
+            v = int(num) * (1024 if unit in ("tb", "тб") else 1)
+            if v in _KNOWN_STORAGE:
+                storage = v
+                break
+    marks = frozenset(_DIFF_WORDS.findall(n)) | frozenset(_MODEL_TOKEN_RE.findall(n))
+    return storage, ram, marks
+
+
+def _same_variant(a: str, b: str) -> bool:
+    """Ikki sarlavha bitta variantni bildiradimi?
+
+    Ataylab ehtiyotkor: xotira yoki RAM faqat IKKALASIDA ham ko'rsatilgan va
+    farq qilgandagina ajratamiz. Bir do'kon hajmni umuman yozmagan bo'lsa,
+    uni alohida mahsulotga ajratib yuborish takliflarni yo'qotardi.
+    """
+    sa, ra, ma = _variant_parts(a)
+    sb, rb, mb = _variant_parts(b)
+    if ma != mb:
+        return False
+    if sa is not None and sb is not None and sa != sb:
+        return False
+    if ra is not None and rb is not None and ra != rb:
+        return False
+    return True
 BRANDS = ["apple","samsung","redmi","xiaomi","oppo","vivo","realme","honor","huawei","tecno","infinix","itel","poco"]
 
 
@@ -104,7 +163,7 @@ def build_groups(rows):
         if not pid:
             for p in brand_g.get(brand, []):
                 if (_cosim(n, _norm(groups[p]["title"])) >= 0.85 and
-                        set(_DIFF_WORDS.findall(n)) == set(_DIFF_WORDS.findall(_norm(groups[p]["title"])))):
+                        _same_variant(n, _norm(groups[p]["title"]))):
                     pid = p
                     norm_pid[n] = p
                     break

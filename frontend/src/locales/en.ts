@@ -14,6 +14,7 @@ export const en = {
     helpCenter: "Help Center",
     about: "About Bazarcom",
     catalog: "Catalog",
+    compare: "Compare",
     analysis: "Analysis",
     feedback: "Feedback",
   },

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { useProducts } from '../hooks/useProducts';
+import { fetchSpecFacets } from '../services/api';
 import { useSearchParams, useNavigate, Link, useLocation, useNavigationType } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatSum } from '../utils/productMapper';
@@ -116,7 +117,16 @@ export function ProductListing() {
   const [sortBy,    setSortBy]    = useState<SortKey>(saved.current?.sortBy ?? 'relevance');
   const [viewMode,  setViewMode]  = useState<'grid' | 'list'>(saved.current?.viewMode ?? 'grid');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-  const [activeFilterTab, setActiveFilterTab] = useState<'category' | 'price' | 'brand' | 'store' | 'rating'>('category');
+  const [activeFilterTab, setActiveFilterTab] = useState<'category' | 'price' | 'brand' | 'store' | 'rating' | 'specs'>('category');
+  // ── Xususiyat filtrlari (RAM / xotira / batareya) ──
+  const [selectedRam,     setSelectedRam]     = useState<string[]>(saved.current?.selectedRam ?? []);
+  const [selectedStorage, setSelectedStorage] = useState<string[]>(saved.current?.selectedStorage ?? []);
+  const [minBattery,      setMinBattery]      = useState<number>(saved.current?.minBattery ?? 0);
+  const [specFacets, setSpecFacets] = useState<{
+    ram: { value: string; count: number }[];
+    storage: { value: string; count: number }[];
+    battery: { min: number; max: number } | null;
+  }>({ ram: [], storage: [], battery: null });
   const [marketCounts,   setMarketCounts]   = useState<Record<string, number>>({});
   const [showAllMarkets, setShowAllMarkets] = useState(false);
   const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -159,6 +169,9 @@ export function ProductListing() {
   const [draftBrand,        setDraftBrand]        = useState<string | null>(selectedBrand);
   const [draftMinPrice,     setDraftMinPrice]     = useState<string>(minPrice);
   const [draftMaxPrice,     setDraftMaxPrice]     = useState<string>(maxPrice);
+  const [draftRam,          setDraftRam]          = useState<string[]>(selectedRam);
+  const [draftStorage,      setDraftStorage]      = useState<string[]>(selectedStorage);
+  const [draftBattery,      setDraftBattery]      = useState<number>(minBattery);
 
   useEffect(() => {
     setDraftMinPrice(minPrice);
@@ -173,8 +186,17 @@ export function ProductListing() {
       setDraftBrand(selectedBrand);
       setDraftMinPrice(minPrice);
       setDraftMaxPrice(maxPrice);
+      setDraftRam(selectedRam);
+      setDraftStorage(selectedStorage);
+      setDraftBattery(minBattery);
     }
-  }, [isMobileFilterOpen, selectedCategory, selectedMarketplaces, minRating, selectedBrand, minPrice, maxPrice]);
+  }, [isMobileFilterOpen, selectedCategory, selectedMarketplaces, minRating, selectedBrand, minPrice, maxPrice,
+      selectedRam, selectedStorage, minBattery]);
+
+  // Filtr qiymatlari sinxronizatsiya orasida o'zgarmaydi — bir marta olinadi.
+  useEffect(() => {
+    fetchSpecFacets().then(setSpecFacets).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (isMobileFilterOpen) {
@@ -195,7 +217,8 @@ export function ProductListing() {
   const isIntersectingRef = useRef(false);
 
   const { products: rawProducts, isLoading, isFetchingNextPage, hasMore, loadMore, total } =
-    useProducts(1, 20, searchQuery, selectedMarketplaces, selectedBrand ?? '', selectedCategory === 'All' ? '' : selectedCategory);
+    useProducts(1, 20, searchQuery, selectedMarketplaces, selectedBrand ?? '', selectedCategory === 'All' ? '' : selectedCategory,
+      { ram: selectedRam, storage: selectedStorage, batteryMin: minBattery });
 
   hasMoreRef.current  = hasMore;
   fetchingRef.current = isFetchingNextPage;
@@ -225,8 +248,11 @@ export function ProductListing() {
     if (selectedBrand) n++;
     n += selectedMarketplaces.length;
     if (minPrice || maxPrice) n++;
+    n += selectedRam.length + selectedStorage.length;
+    if (minBattery > 0) n++;
     return n;
-  }, [selectedCategory, minRating, selectedBrand, selectedMarketplaces, minPrice, maxPrice]);
+  }, [selectedCategory, minRating, selectedBrand, selectedMarketplaces, minPrice, maxPrice,
+      selectedRam, selectedStorage, minBattery]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -307,8 +333,10 @@ export function ProductListing() {
   useEffect(() => {
     sessionStorage.setItem(FILTER_KEY, JSON.stringify({
       selectedMarketplaces, minRating, selectedBrand, minPrice, maxPrice, sortBy, viewMode,
+      selectedRam, selectedStorage, minBattery,
     }));
-  }, [selectedMarketplaces, minRating, selectedBrand, minPrice, maxPrice, sortBy, viewMode]);
+  }, [selectedMarketplaces, minRating, selectedBrand, minPrice, maxPrice, sortBy, viewMode,
+      selectedRam, selectedStorage, minBattery]);
 
   const updateUrlCategory = useCallback((v: string) => {
     setSearchParams(p => {
@@ -323,6 +351,8 @@ export function ProductListing() {
   const handleResetFilters = () => {
     setSelectedCategory('All'); setSelectedMarketplaces([]); setMinRating(0);
     setSelectedBrand(null); setMinPrice(''); setMaxPrice(''); setSortBy('relevance');
+    setSelectedRam([]); setSelectedStorage([]); setMinBattery(0);
+    setDraftRam([]); setDraftStorage([]); setDraftBattery(0);
     updateUrlCategory('All');
     // Reset drafts too
     setDraftCategory('All'); setDraftMarketplaces([]); setDraftRating(0);
@@ -337,6 +367,9 @@ export function ProductListing() {
     setSelectedBrand(draftBrand);
     setMinPrice(draftMinPrice);
     setMaxPrice(draftMaxPrice);
+    setSelectedRam(draftRam);
+    setSelectedStorage(draftStorage);
+    setMinBattery(draftBattery);
     setIsMobileFilterOpen(false);
   };
 
@@ -347,7 +380,7 @@ export function ProductListing() {
   const visibleMarkets = (showAllMarkets || isMobileFilterOpen) ? MARKETPLACES : MARKETPLACES.slice(0, MARKETS_VISIBLE);
 
   // ── filter panel ──
-  const FilterPanel = (isMobile: boolean, mobileTab?: 'category' | 'price' | 'brand' | 'store' | 'rating') => {
+  const FilterPanel = (isMobile: boolean, mobileTab?: 'category' | 'price' | 'brand' | 'store' | 'rating' | 'specs') => {
     // Category mapping
     const cat = isMobile ? draftCategory : selectedCategory;
     const setCat = (v: string) => {
@@ -383,6 +416,16 @@ export function ProductListing() {
       const setter = isMobile ? setDraftBrand : setSelectedBrand;
       setter(v);
     };
+
+    // Xususiyat filtrlari — mobil rejimda draft, desktopda darhol qo'llanadi
+    const ramSel     = isMobile ? draftRam : selectedRam;
+    const storageSel = isMobile ? draftStorage : selectedStorage;
+    const batterySel = isMobile ? draftBattery : minBattery;
+    const toggleSpec = (list: string[], value: string, set: (v: string[]) => void) =>
+      set(list.includes(value) ? list.filter(v => v !== value) : [...list, value]);
+    const setRam     = (v: string[]) => (isMobile ? setDraftRam : setSelectedRam)(v);
+    const setStorage = (v: string[]) => (isMobile ? setDraftStorage : setSelectedStorage)(v);
+    const setBattery = (v: number)   => (isMobile ? setDraftBattery : setMinBattery)(v);
 
     // Price mapping (both use draft states so typing doesn't refresh layout)
     const minPr = draftMinPrice;
@@ -466,6 +509,90 @@ export function ProductListing() {
               >
                 {t.listing.viewResults}
               </button>
+            )}
+          </div>
+        )}
+
+        {/* Xususiyatlar — RAM, xotira, batareya.
+            Xalqaro agregatorlarda bu asosiy filtrlardan biri: foydalanuvchi
+            "8GB RAM va 256GB xotirali telefon" deb qidiradi, brend bo'yicha
+            emas. Qiymatlar /api/spec-facets dan keladi, shuning uchun ro'yxatda
+            faqat haqiqatan mavjud variantlar chiqadi. */}
+        {(!isMobile || mobileTab === 'specs') && (specFacets.ram.length > 0 || specFacets.storage.length > 0) && (
+          <div className={isMobile ? "py-1" : "py-3"}>
+            <div className="flex items-center justify-between mb-2">
+              <SLabel>Xususiyatlar</SLabel>
+              {(ramSel.length > 0 || storageSel.length > 0 || batterySel > 0) && (
+                <button
+                  onClick={() => { setRam([]); setStorage([]); setBattery(0); }}
+                  className="text-[11px] text-violet-500 hover:underline leading-none"
+                >
+                  {t.listing.clear}
+                </button>
+              )}
+            </div>
+
+            {specFacets.ram.length > 0 && (
+              <>
+                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-1.5">RAM</p>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {specFacets.ram.map(({ value }) => {
+                    const on = ramSel.includes(value);
+                    return (
+                      <button key={value} type="button"
+                        onClick={() => toggleSpec(ramSel, value, setRam)}
+                        aria-pressed={on}
+                        className={`px-2.5 py-1.5 rounded-lg text-[12px] font-bold border transition-colors ${
+                          on ? 'bg-violet-600 border-violet-600 text-white'
+                             : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-violet-400'
+                        }`}>
+                        {value}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {specFacets.storage.length > 0 && (
+              <>
+                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-1.5">Xotira</p>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {specFacets.storage.map(({ value }) => {
+                    const on = storageSel.includes(value);
+                    return (
+                      <button key={value} type="button"
+                        onClick={() => toggleSpec(storageSel, value, setStorage)}
+                        aria-pressed={on}
+                        className={`px-2.5 py-1.5 rounded-lg text-[12px] font-bold border transition-colors ${
+                          on ? 'bg-violet-600 border-violet-600 text-white'
+                             : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-violet-400'
+                        }`}>
+                        {value}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {specFacets.battery && (
+              <>
+                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-1.5">Batareya</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {[0, 4000, 5000, 6000].map(v => (
+                    <button key={v} type="button"
+                      onClick={() => setBattery(v)}
+                      aria-pressed={batterySel === v}
+                      className={`px-2.5 py-1.5 rounded-lg text-[12px] font-bold border transition-colors ${
+                        batterySel === v ? 'bg-violet-600 border-violet-600 text-white'
+                                         : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-violet-400'
+                      }`}>
+                      {v === 0 ? 'Barchasi' : `${v}+ mAh`}
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
@@ -1030,6 +1157,7 @@ export function ProductListing() {
                   { key: 'price'    as const, label: t.listing.priceRange },
                   { key: 'brand'    as const, label: t.listing.brands },
                   { key: 'store'    as const, label: t.listing.stores },
+                  { key: 'specs'    as const, label: 'Xususiyatlar' },
                   { key: 'rating'   as const, label: t.listing.rating },
                 ] as const).map(tab => {
                   const active = activeFilterTab === tab.key;
@@ -1043,6 +1171,10 @@ export function ProductListing() {
                   else if (tab.key === 'brand') sub = draftBrand || allLabel;
                   else if (tab.key === 'store') sub = draftMarketplaces.length > 0 ? `${draftMarketplaces.length} ta` : allLabel;
                   else if (tab.key === 'rating') sub = draftRating > 0 ? `★ ${draftRating}+` : allLabel;
+                  else if (tab.key === 'specs') {
+                    const n = draftRam.length + draftStorage.length + (draftBattery > 0 ? 1 : 0);
+                    sub = n > 0 ? `${n} ta` : allLabel;
+                  }
 
                   return (
                     <button
