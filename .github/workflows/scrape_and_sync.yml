@@ -29,9 +29,9 @@ jobs:
           pip install requests==2.32.3 beautifulsoup4==4.12.3 lxml==5.2.2 psycopg2-binary==2.9.9
 
       - name: Run all scrapers
-        working-directory: python/dagster_app
+        working-directory: python
         run: |
-          mkdir -p ../../data
+          mkdir -p ../data
           python -c "
           import sys, os
           sys.path.insert(0, '.')
@@ -42,7 +42,7 @@ jobs:
           for cls in ALL_SCRAPERS:
               try:
                   print(f'[{cls.store_name}] Starting...', flush=True)
-                  s = cls(output_dir='../../data', delay=0.5)
+                  s = cls(output_dir='../data', delay=0.5)
                   count = s.run()
                   results.append((cls.store_name, count, 'OK'))
                   print(f'[{cls.store_name}] Done: {count} products', flush=True)

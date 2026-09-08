@@ -11,7 +11,7 @@ import logging
 import sys
 import tempfile
 
-sys.path.insert(0, "python/dagster_app")
+sys.path.insert(0, "python")
 
 from scrapers import gsmarena  # noqa: E402
 from scrapers.gsmarena import GsmarenaSpecsScraper  # noqa: E402

@@ -1,4 +1,4 @@
-"""Standalone CSV → PostgreSQL sync. No dagster dependency."""
+"""CSV → PostgreSQL sinxronizatsiyasi. GitHub Actions ishga tushiradi."""
 from __future__ import annotations
 import csv, hashlib, math, os, re, sys
 from collections import Counter
@@ -6,7 +6,7 @@ from datetime import datetime
 
 import psycopg2, psycopg2.extras
 
-DATA_DIR = os.getenv("DATA_DIR", "/opt/dagster/data")
+DATA_DIR = os.getenv("DATA_DIR", "./data")
 DB_URL = os.getenv("PRODUCTS_DB_URL", "postgresql://postgres:postgres@postgres:5432/fullbazar")
 
 _SMARTPHONE_RE = re.compile(
@@ -89,6 +89,8 @@ def _same_variant(a: str, b: str) -> bool:
     if ra is not None and rb is not None and ra != rb:
         return False
     return True
+
+
 BRANDS = ["apple","samsung","redmi","xiaomi","oppo","vivo","realme","honor","huawei","tecno","infinix","itel","poco"]
 
 
@@ -226,11 +228,10 @@ def write_db(groups):
             with conn.cursor() as cur:
                 # ── Narx tarixi ─────────────────────────────────────────────
                 # product_markets TRUNCATE qilinishidan OLDIN joriy narxlarni
-                # saqlab qolamiz. Ilgari buni faqat serverdagi dagster qilardi,
-                # ya'ni serverning o'z postgres'iga — jonli baza esa Supabase.
-                # Shu sababli production'da price_history bo'sh turgan va
-                # "narxi tushdi/oshdi" hamda narx grafigi hech qachon
-                # ishlamagan.
+                # saqlab qolamiz. Buni shu yerda qilish shart: sinxronizatsiya
+                # jadvalni har safar to'liq qayta yozadi, ya'ni snapshot
+                # olinmasa eski narxlar butunlay yo'qoladi va Tahlil sahifasi
+                # ham, narx grafigi ham bo'sh qoladi.
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS price_history (
                         id          BIGSERIAL      PRIMARY KEY,

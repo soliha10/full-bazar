@@ -16,3 +16,8 @@ __pycache__/
 *.pyo
 python/ml_tasks/data/
 data/models/
+# Chala yozilgan skreyper fayllari
+*.csv.tmp
+# Vosita keshlari
+.ruff_cache/
+.venv/

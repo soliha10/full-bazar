@@ -1,10 +1,12 @@
--- Create Dagster metadata database
-CREATE DATABASE dagster_db;
+-- Full-Bazar bazasining sxemasi.
+--
+-- products, product_markets va user_events AYNAN shu yerda ta'riflangan —
+-- boshqa hech qayerda yo'q. FastAPI startupda faqat qolgan jadvallarni
+-- (users, user_profiles, favorites, watchlist, price_history, feedback,
+-- product_specs) yaratadi. Ya'ni bazani noldan tiklash kerak bo'lsa,
+-- avval shu fayl ishga tushirilishi shart:
+--     psql "$DATABASE_URL" -f python/init_db/init.sql
 
--- Create MLflow tracking database (isolated from app schema to prevent Alembic conflicts)
-CREATE DATABASE mlflow;
-
--- Create tables in the default (fullbazar) database
 CREATE TABLE IF NOT EXISTS products (
     id VARCHAR(60) PRIMARY KEY,
     name VARCHAR(1000) NOT NULL,

@@ -21,7 +21,7 @@ import sys
 import psycopg2
 import psycopg2.extras
 
-DATA_DIR = os.getenv("DATA_DIR", "/opt/dagster/data")
+DATA_DIR = os.getenv("DATA_DIR", "./data")
 DB_URL = os.getenv("PRODUCTS_DB_URL", "postgresql://postgres:postgres@postgres:5432/fullbazar")
 CSV_PATH = os.path.join(DATA_DIR, "gsmarena_specs.csv")
 

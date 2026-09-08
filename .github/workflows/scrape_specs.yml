@@ -47,17 +47,17 @@ jobs:
           pip install requests==2.32.3 beautifulsoup4==4.12.3 lxml==5.2.2 psycopg2-binary==2.9.9
 
       - name: Scrape specs from GSMArena
-        working-directory: python/dagster_app
+        working-directory: python
         env:
           GSMARENA_MAX_MODELS: ${{ github.event.inputs.max_models || '60' }}
         run: |
-          mkdir -p ../../data
+          mkdir -p ../data
           python -c "
           import sys, logging
           sys.path.insert(0, '.')
           logging.basicConfig(level=logging.INFO, format='%(message)s')
           from scrapers import GsmarenaSpecsScraper
-          n = GsmarenaSpecsScraper(output_dir='../../data', delay=1.5).run()
+          n = GsmarenaSpecsScraper(output_dir='../data', delay=1.5).run()
           print(f'=== {n} ta model yig\'ildi ===')
           if n == 0:
               sys.exit('specs yig\'ilmadi — sayt tuzilmasi o\'zgargan bo\'lishi mumkin')
