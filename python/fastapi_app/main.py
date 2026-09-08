@@ -361,6 +361,29 @@ async def lifespan(app: FastAPI):
         await conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_price_history_recorded ON price_history(recorded_at DESC)"
         )
+        # ── Products qidiruv/tartib indekslari ────────────────────────────────
+        # /api/products har doim `ORDER BY p.price` bilan tartiblaydi va
+        # `lower(name) LIKE '%...%'` bo'yicha qidiradi. init.sql dagi
+        # to_tsvector GIN indeksi LIKE uchun umuman ishlamaydi — Postgres uni
+        # e'tiborsiz qoldirib, butun jadvalni skanerlaydi. pg_trgm esa aynan
+        # ikki tomoni ochiq LIKE naqshlari uchun mo'ljallangan.
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_products_price ON products(price)")
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_products_category ON products(category)")
+        try:
+            await conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_products_name_trgm
+                ON products USING GIN (lower(name) gin_trgm_ops)
+            """)
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_products_keywords_trgm
+                ON products USING GIN (lower(COALESCE(keywords, '')) gin_trgm_ops)
+            """)
+        except asyncpg.PostgresError as exc:
+            # pg_trgm ni yoqish uchun huquq bo'lmasligi mumkin (boshqariladigan
+            # hosting). Qidiruv baribir ishlaydi, faqat sekinroq — startupni
+            # buning uchun to'xtatmaymiz.
+            print(f"[startup] pg_trgm indekslari o'rnatilmadi: {exc}")
         # Telegram chat_id column (added later — safe to run on existing installs)
         await conn.execute("""
             ALTER TABLE user_profiles
@@ -490,6 +513,27 @@ app.add_middleware(
 )
 
 
+# ── Javob keshi ───────────────────────────────────────────────────────────────
+# Bazaga har bir borish ~300 ms turadi (baza API bilan bir regionda emas), shuning
+# uchun sinxronizatsiya orasida umuman o'zgarmaydigan agregat javoblarni jarayon
+# ichida saqlaymiz. Kesh faqat o'qish endpointlari uchun — foydalanuvchiga xos
+# ma'lumot (favorites, watchlist, personalized) hech qachon keshlanmaydi.
+
+_cache_store: dict[str, tuple[float, Any]] = {}
+
+
+def _cache_get(key: str, ttl: float) -> Any | None:
+    hit = _cache_store.get(key)
+    if hit is None or time.time() - hit[0] > ttl:
+        return None
+    return hit[1]
+
+
+def _cache_put(key: str, value: Any) -> Any:
+    _cache_store[key] = (time.time(), value)
+    return value
+
+
 # ── ML endpoints ──────────────────────────────────────────────────────────────
 
 @app.get("/api/ml/match")
@@ -611,17 +655,50 @@ async def get_products(
 
     where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
 
-    count_row = await pool.fetchrow(f"SELECT COUNT(*) FROM products p {where_sql}", *params)
-    total: int = count_row[0]
-
+    # Bitta so'rov: sahifa, umumiy son va marketlar birga keladi.
+    # Ilgari uchta alohida so'rov ketardi (COUNT, sahifa, marketlar) — bazaga
+    # har borish ~300 ms bo'lgani uchun bu javobni uch barobar sekinlashtirardi.
+    #   • COUNT(*) OVER()  — WHERE dan keyin, LIMIT dan oldin hisoblanadi,
+    #                        ya'ni alohida COUNT so'roviga ehtiyoj qolmaydi.
+    #   • LATERAL          — CTE dan keyin turgani uchun faqat qaytadigan
+    #                        satrlar (≤200) uchun ishlaydi, butun jadval uchun emas.
     rows = await pool.fetch(
-        f"SELECT p.* FROM products p {where_sql} ORDER BY p.price ASC LIMIT ${len(params)+1} OFFSET ${len(params)+2}",
+        f"""
+        WITH filtered AS (
+            SELECT p.*, COUNT(*) OVER() AS total_count
+            FROM products p
+            {where_sql}
+            ORDER BY p.price ASC
+            LIMIT ${len(params)+1} OFFSET ${len(params)+2}
+        )
+        SELECT f.*, COALESCE(m.markets, '[]'::jsonb) AS markets_json
+        FROM filtered f
+        LEFT JOIN LATERAL (
+            SELECT jsonb_agg(
+                       jsonb_build_object(
+                           'source', pm.source,
+                           'price',  pm.price,
+                           'url',    COALESCE(pm.url, '#')
+                       ) ORDER BY pm.price
+                   ) AS markets
+            FROM product_markets pm
+            WHERE pm.product_id = f.id
+        ) m ON TRUE
+        ORDER BY f.price ASC
+        """,
         *params, limit, offset,
     )
 
-    product_ids = [r["id"] for r in rows]
-    markets_map = await _fetch_markets(pool, product_ids)
-    products = [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows]
+    if rows:
+        total: int = rows[0]["total_count"]
+    elif page == 1:
+        total = 0
+    else:
+        # Oxiridan nariroqdagi sahifa: satr yo'q, demak COUNT(*) OVER() ham yo'q.
+        # Kamdan-kam holat, shuning uchun bu yerda qo'shimcha so'rov qilsa bo'ladi.
+        total = await pool.fetchval(f"SELECT COUNT(*) FROM products p {where_sql}", *params)
+
+    products = [_row_to_product(r, list(r["markets_json"] or [])) for r in rows]
 
     return {"products": products, "total": total, "page": page, "limit": limit, "hasMore": offset + limit < total}
 
@@ -706,7 +783,12 @@ async def compare_products(ids: str = Query(..., min_length=1)) -> dict:
 # ── Recommendations ───────────────────────────────────────────────────────────
 
 @app.get("/api/recommendations")
-async def get_recommendations(limit: int = Query(4, ge=1, le=10)) -> dict:
+async def get_recommendations(response: Response, limit: int = Query(4, ge=1, le=10)) -> dict:
+    response.headers["Cache-Control"] = "public, max-age=300"
+    cached = _cache_get(f"recs:{limit}", 300)
+    if cached is not None:
+        return cached
+
     pool: asyncpg.Pool = app.state.pool
     rows = await pool.fetch(
         """
@@ -729,7 +811,9 @@ async def get_recommendations(limit: int = Query(4, ge=1, le=10)) -> dict:
     )
     product_ids = [r["id"] for r in rows]
     markets_map = await _fetch_markets(pool, product_ids)
-    return {"products": [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows]}
+    return _cache_put(f"recs:{limit}", {
+        "products": [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows]
+    })
 
 
 @app.get("/api/recommendations/personalized")
@@ -791,17 +875,21 @@ async def get_personalized_recommendations(
     # Top-scored products define the user profile
     top_viewed = sorted(viewed_ids, key=product_scores.get, reverse=True)[:10]
 
-    profile_rows = await pool.fetch(
-        "SELECT category, AVG(price) AS avg_price FROM products WHERE id = ANY($1) GROUP BY category",
-        top_viewed,
+    # Ikkalasi ham bir xil top_viewed ro'yxatiga tayanadi va bir-biriga bog'liq
+    # emas — ketma-ket kutib o'tirmasdan barobar yuboriladi.
+    profile_rows, brand_rows = await asyncio.gather(
+        pool.fetch(
+            "SELECT category, AVG(price) AS avg_price FROM products WHERE id = ANY($1) GROUP BY category",
+            top_viewed,
+        ),
+        pool.fetch(
+            "SELECT lower(split_part(name, ' ', 1)) AS brand FROM products WHERE id = ANY($1)",
+            top_viewed,
+        ),
     )
     if not profile_rows:
         return {"products": [], "type": "empty"}
 
-    brand_rows = await pool.fetch(
-        "SELECT lower(split_part(name, ' ', 1)) AS brand FROM products WHERE id = ANY($1)",
-        top_viewed,
-    )
     brands = list({r["brand"] for r in brand_rows if r["brand"]})
     categories = [r["category"] for r in profile_rows]
     avg_price = float(sum(r["avg_price"] for r in profile_rows) / len(profile_rows))
@@ -858,7 +946,12 @@ async def get_price_history(
 
 
 @app.get("/api/trends")
-async def get_trends(limit: int = Query(8, ge=1, le=20)) -> dict:
+async def get_trends(response: Response, limit: int = Query(8, ge=1, le=20)) -> dict:
+    response.headers["Cache-Control"] = "public, max-age=300"
+    cached = _cache_get(f"trends:{limit}", 300)
+    if cached is not None:
+        return cached
+
     pool: asyncpg.Pool = app.state.pool
 
     rows = await pool.fetch(
@@ -926,31 +1019,48 @@ async def get_trends(limit: int = Query(8, ge=1, le=20)) -> dict:
         else:
             rising.append(item)
 
-    return {"dropping": dropping, "rising": rising}
+    return _cache_put(f"trends:{limit}", {"dropping": dropping, "rising": rising})
 
 
 @app.get("/api/stats")
-async def get_stats() -> dict:
+async def get_stats(response: Response) -> dict:
+    response.headers["Cache-Control"] = "public, max-age=300"
+    cached = _cache_get("stats", 300)
+    if cached is not None:
+        return cached
+
     pool: asyncpg.Pool = app.state.pool
-    products_count = await pool.fetchval("SELECT COUNT(*) FROM products")
-    markets_count = await pool.fetchval("SELECT COUNT(DISTINCT source) FROM product_markets")
-    history_count = await pool.fetchval("SELECT COUNT(*) FROM price_history")
-    return {
-        "products": products_count,
-        "markets": markets_count,
-        "priceSnapshots": history_count,
-    }
+    # Uchta COUNT bitta so'rovda — uchta alohida borish o'rniga bitta.
+    row = await pool.fetchrow(
+        """
+        SELECT (SELECT COUNT(*) FROM products)                        AS products,
+               (SELECT COUNT(DISTINCT source) FROM product_markets)   AS markets,
+               (SELECT COUNT(*) FROM price_history)                   AS snapshots
+        """
+    )
+    return _cache_put("stats", {
+        "products": row["products"],
+        "markets": row["markets"],
+        "priceSnapshots": row["snapshots"],
+    })
 
 
 # ── Other endpoints ───────────────────────────────────────────────────────────
 
 @app.get("/api/markets")
-async def get_markets() -> dict:
+async def get_markets(response: Response) -> dict:
+    response.headers["Cache-Control"] = "public, max-age=300"
+    cached = _cache_get("markets", 300)
+    if cached is not None:
+        return cached
+
     pool: asyncpg.Pool = app.state.pool
     rows = await pool.fetch(
         "SELECT lower(source) AS key, source AS name, COUNT(*) AS count FROM product_markets GROUP BY source ORDER BY count DESC"
     )
-    return {"markets": [{"key": r["key"], "name": r["name"], "count": r["count"]} for r in rows]}
+    return _cache_put("markets", {
+        "markets": [{"key": r["key"], "name": r["name"], "count": r["count"]} for r in rows]
+    })
 
 
 @app.get("/api/search-trends")
@@ -986,10 +1096,17 @@ async def search_trends(days: int = Query(7, ge=1, le=30), limit: int = Query(15
 
 
 @app.get("/api/market-analytics")
-async def market_analytics() -> dict:
+async def market_analytics(response: Response) -> dict:
+    response.headers["Cache-Control"] = "public, max-age=300"
+    cached = _cache_get("market-analytics", 300)
+    if cached is not None:
+        return cached
+
     pool: asyncpg.Pool = app.state.pool
-    market_rows = await pool.fetch(
-        """
+    # Uchala so'rov bir-biriga bog'liq emas — ketma-ket emas, barobar yuboriladi.
+    market_rows, popular_rows, total_events = await asyncio.gather(
+        pool.fetch(
+            """
         SELECT
             pm.source,
             COUNT(DISTINCT pm.product_id)          AS product_count,
@@ -1000,9 +1117,9 @@ async def market_analytics() -> dict:
         GROUP BY pm.source
         ORDER BY product_count DESC
         """
-    )
-    popular_rows = await pool.fetch(
-        """
+        ),
+        pool.fetch(
+            """
         SELECT
             ue.product_id,
             p.name,
@@ -1018,11 +1135,12 @@ async def market_analytics() -> dict:
         ORDER BY view_count DESC
         LIMIT 8
         """
+        ),
+        pool.fetchval(
+            "SELECT COUNT(*) FROM user_events WHERE created_at > NOW() - INTERVAL '7 days'"
+        ),
     )
-    total_events = await pool.fetchval(
-        "SELECT COUNT(*) FROM user_events WHERE created_at > NOW() - INTERVAL '7 days'"
-    )
-    return {
+    return _cache_put("market-analytics", {
         "markets": [
             {
                 "source": r["source"],
@@ -1044,7 +1162,7 @@ async def market_analytics() -> dict:
             for r in popular_rows
         ],
         "weeklyEvents": int(total_events or 0),
-    }
+    })
 
 
 class TrackEvent(BaseModel):

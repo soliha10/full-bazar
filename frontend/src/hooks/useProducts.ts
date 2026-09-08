@@ -44,8 +44,12 @@ export function useProducts(
     getNextPageParam: (lastPage) => {
       return lastPage?.hasMore ? lastPage.page + 1 : undefined;
     },
-    staleTime: 0,
-    gcTime: 1000 * 60 * 5,
+    // staleTime: 0 da har bir qayta ochish yangi so'rov yuborardi — orqaga
+    // qaytish ham, filtrni eski holatiga qaytarish ham. Narxlar sinxronizatsiya
+    // paytida o'zgaradi, sekundiga emas, shuning uchun 60 s butunlay xavfsiz va
+    // takroriy ko'rishlarni darhol (keshdan) chiqaradi.
+    staleTime: 1000 * 60,
+    gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
