@@ -45,8 +45,41 @@ const SORT_OPTIONS = [
 type SortKey = 'relevance' | 'priceLow' | 'priceHigh' | 'rating';
 
 const FILTER_KEY = 'productListingFilters';
-function getSavedFilters() {
-  try { return JSON.parse(sessionStorage.getItem(FILTER_KEY) || 'null'); } catch { return null; }
+
+/**
+ * Saqlangan filtrlarni tiklaydi va ENDI MAVJUD BO'LMAGAN qiymatlarni tashlaydi.
+ *
+ * Bu shunchaki ehtiyotkorlik emas. Brandstore va OLX do'konlari ro'yxatdan
+ * olib tashlandi (biri yopilgan, ikkinchisi 403 beradi). Ularni ilgari tanlab
+ * qo'ygan foydalanuvchining sessiyasida kalit qolib ketadi va so'rovga
+ * `market=olx` bo'lib ketaveradi — natijada QAYSI brend tanlansa ham katalog
+ * bo'sh chiqadi. Eng yomoni, o'sha do'kon endi ro'yxatda ko'rinmaydi, ya'ni
+ * foydalanuvchi filtrni ko'rmaydi ham, bekor qila ham olmaydi.
+ */
+interface SavedFilters {
+  selectedMarketplaces: string[];
+  minRating?: number;
+  selectedBrand?: string | null;
+  minPrice?: string;
+  maxPrice?: string;
+  sortBy?: SortKey;
+  viewMode?: 'grid' | 'list';
+  selectedRam?: string[];
+  selectedStorage?: string[];
+  minBattery?: number;
+}
+
+function getSavedFilters(): SavedFilters | null {
+  let saved: SavedFilters | null = null;
+  try { saved = JSON.parse(sessionStorage.getItem(FILTER_KEY) || 'null'); } catch { return null; }
+  if (!saved) return null;
+
+  const known = new Set(MARKETPLACES.map(m => m.key));
+  const markets = Array.isArray(saved.selectedMarketplaces)
+    ? saved.selectedMarketplaces.filter(k => known.has(k))
+    : [];
+
+  return { ...saved, selectedMarketplaces: markets };
 }
 
 function Cb({ on }: { on: boolean }) {
@@ -223,6 +256,38 @@ export function ProductListing() {
     if (sortBy === 'rating')    r.sort((a, b) => b.rating - a.rating);
     return r;
   }, [rawProducts, selectedCategory, selectedMarketplaces, minRating, minPrice, maxPrice, sortBy]);
+
+  /**
+   * Faol xususiyat filtrlari (RAM / xotira / batareya).
+   *
+   * Bularning chipi yo'q edi: filtr so'rovga qo'shilardi va activeFilterCount
+   * ga sanalardi, lekin ekranda hech qanday izi ko'rinmasdi. Sessiyada
+   * saqlanib qolgan "8GB" kabi qiymat shu sababli KO'RINMAS filtrga
+   * aylanardi — foydalanuvchi brend tanlaganda katalog bo'sh chiqar, sababi
+   * esa hech qayerda ko'rinmasdi. Endi har biri o'chirsa bo'ladigan chip.
+   */
+  const specChips = useMemo(() => {
+    const chips: { key: string; label: string; clear: () => void }[] = [];
+    for (const v of selectedRam) {
+      chips.push({
+        key: `ram-${v}`, label: `${v} RAM`,
+        clear: () => setSelectedRam(prev => prev.filter(x => x !== v)),
+      });
+    }
+    for (const v of selectedStorage) {
+      chips.push({
+        key: `st-${v}`, label: v,
+        clear: () => setSelectedStorage(prev => prev.filter(x => x !== v)),
+      });
+    }
+    if (minBattery > 0) {
+      chips.push({
+        key: 'battery', label: `${minBattery}+ mAh`,
+        clear: () => setMinBattery(0),
+      });
+    }
+    return chips;
+  }, [selectedRam, selectedStorage, minBattery]);
 
   const activeFilterCount = useMemo(() => {
     let n = 0;
@@ -868,6 +933,12 @@ export function ProductListing() {
                 <button onClick={() => { setMinPrice(''); setMaxPrice(''); }} className="ml-1 opacity-60 hover:opacity-100"><X className="w-2.5 h-2.5" /></button>
               </span>
             )}
+            {specChips.map(chip => (
+              <span key={chip.key} className="flex items-center gap-1 shrink-0 rounded-lg border border-sky-100 dark:border-sky-950 bg-sky-50/50 dark:bg-sky-950/20 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:text-sky-400">
+                {chip.label}
+                <button onClick={chip.clear} className="ml-1 opacity-60 hover:opacity-100"><X className="w-2.5 h-2.5" /></button>
+              </span>
+            ))}
             {selectedMarketplaces.map(mk => {
               const mp = MARKETPLACES.find(m => m.key === mk);
               return (
@@ -997,6 +1068,12 @@ export function ProductListing() {
                     <button onClick={() => { setMinPrice(''); setMaxPrice(''); }} className="ml-0.5 opacity-60 hover:opacity-100"><X className="w-3 h-3" /></button>
                   </span>
                 )}
+                {specChips.map(chip => (
+                  <span key={chip.key} className="flex items-center gap-1 rounded-full border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/20 px-2.5 py-1 text-[11px] font-semibold text-sky-700 dark:text-sky-400">
+                    {chip.label}
+                    <button onClick={chip.clear} className="ml-0.5 opacity-60 hover:opacity-100"><X className="w-3 h-3" /></button>
+                  </span>
+                ))}
                 {selectedMarketplaces.map(mk => {
                   const mp = MARKETPLACES.find(m => m.key === mk);
                   return (

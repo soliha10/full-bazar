@@ -150,13 +150,17 @@ export function Navbar({ onSearchChange }: NavbarProps) {
               <span className="sm:hidden text-[15px] font-black text-gray-900 dark:text-white tracking-tight">BAZARCOM</span>
             </Link>
 
-            {/* Desktop nav links */}
+            {/* Desktop nav links.
+                "Taqqoslash" ataylab yo'q: u o'ng tarafda belgi sifatida turadi
+                va tanlangan mahsulotlar sonini ko'rsatadi — matnli havola
+                o'sha joyning takrori edi.
+                "Fikr" ham olib tashlandi: u kunda bir bosiladigan havola emas,
+                lekin qidiruv maydonidan joy yeb turardi. Endi profil menyusida
+                va footerda. */}
             <nav className="hidden md:flex items-center gap-0.5 mr-2 shrink-0">
               {[
                 { path: '/products', label: t.nav.catalog },
-                { path: '/compare',  label: t.nav.compare },
                 { path: '/trends',   label: t.nav.analysis },
-                { path: '/feedback', label: t.nav.feedback },
               ].map(({ path, label }) => {
                 const active = location.pathname === path || location.pathname.startsWith(path + '/');
                 return (
@@ -181,7 +185,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                   value={searchValue}
                   placeholder={t.nav.searchPlaceholder}
                   onChange={(e) => setSearchValue(e.target.value)}
-                  className="w-full pl-11 pr-32 py-2.5
+                  className="w-full pl-11 pr-[104px] py-2.5
                     bg-gray-50 dark:bg-gray-900
                     border border-gray-200 dark:border-gray-700
                     rounded-2xl text-sm font-medium
@@ -207,9 +211,11 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                     }`}>
                     <Mic className="w-4 h-4" />
                   </button>
-                  <button type="submit"
-                    className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-1.5 rounded-xl text-xs font-black tracking-wide transition-all">
-                    {t.nav.search}
+                  {/* Belgi ko'rinishidagi tugma — matnli variant maydonning
+                      128px ini egallab, qidiruv satrini siqib turardi. */}
+                  <button type="submit" title={t.nav.search} aria-label={t.nav.search}
+                    className="w-8 h-8 flex items-center justify-center bg-violet-600 hover:bg-violet-700 text-white rounded-xl transition-all active:scale-90">
+                    <Search className="w-4 h-4" />
                   </button>
                 </div>
               </form>
@@ -397,6 +403,22 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                               </div>
                             </div>
                           )}
+                        </div>
+
+                        {/* Yuqoridagi navigatsiyadan olib tashlangan havolalar
+                            shu yerda: kam ishlatiladi, lekin yo'qolib qolmasligi kerak. */}
+                        <div className="p-1.5 border-b border-gray-100 dark:border-gray-800">
+                          <Link
+                            to="/feedback"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl
+                              text-sm font-bold text-gray-700 dark:text-gray-300
+                              hover:bg-gray-50 dark:hover:bg-gray-800
+                              transition-colors active:scale-[0.98]"
+                          >
+                            <MessageSquareHeart className="w-4 h-4 shrink-0" />
+                            {t.nav.feedback}
+                          </Link>
                         </div>
 
                         {/* Logout */}
