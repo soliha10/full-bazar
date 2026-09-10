@@ -65,6 +65,7 @@ export function mapProduct(item: any): Product {
 
   return {
     id: item.id,
+    slug: item.slug ?? null,
     name: item.name || item.title || item.product_name || 'Product',
     price: price,
     originalPrice: item.old_price ? parseFloat(String(item.old_price).replace(/\s/g, '').replace(/[^\d.]/g, '')) : undefined,

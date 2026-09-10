@@ -15,12 +15,14 @@ from .openshop import OpenshopScraper
 from .mi import MiScraper
 from .alif import AlifScraper
 from .ucell import UcellScraper
-from .brandstore import BrandstoreScraper
-from .olx import OlxScraper
 # GSMArena narx emas, xususiyat manbai — ALL_SCRAPERS ga kirmaydi,
 # alohida oqim bilan product_specs jadvalini to'ldiradi.
 from .gsmarena import GsmarenaSpecsScraper
-# Wildberries/Prom o'chirildi — saytlar faoliyati to'xtagan yoki eskirgan
+# Wildberries/Prom o'chirildi — saytlar faoliyati to'xtagan yoki eskirgan.
+# Brandstore ham o'chirildi: brandstore.uz ham, api.brandstore.uz ham 443
+# portga ulanmaydi (sayt yopilgan). OLX esa barcha so'rovlarga 403 beradi
+# va e'lonlar sayti sifatida ishlatilgan telefonlarni ko'rsatib, marketlar
+# narxini solishtirishni buzardi.
 
 ALL_SCRAPERS = [
     AsaxiyScraper,
@@ -40,7 +42,5 @@ ALL_SCRAPERS = [
     MiScraper,
     AlifScraper,
     UcellScraper,
-    BrandstoreScraper,
-    OlxScraper,
 ]
 

@@ -149,14 +149,14 @@ function Carousel({ children }: { children: React.ReactNode[] }) {
 
 /* ── Product card inside carousel ── */
 function MiniProductCard({
-  id, image, name, price, badge, storeCount,
+  id, slug, image, name, price, badge, storeCount,
 }: {
-  id: string | number; image: string; name: string;
+  id: string | number; slug?: string | null; image: string; name: string;
   price: number; badge?: string; storeCount?: number;
 }) {
   return (
     <Link
-      to={productPath({ id, name })}
+      to={productPath({ id, slug, name })}
       className="shrink-0 w-[152px] md:w-[210px] group flex flex-col bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-violet-500/12 hover:-translate-y-1 hover:border-violet-200 dark:hover:border-violet-700/60 active:scale-[0.97] transition-all duration-200"
     >
       {/* Image — fixed height so text gets real estate */}
@@ -251,7 +251,7 @@ export function Landing() {
       <SEO
         title={seoTitle}
         description={seoDesc}
-        keywords="smartfonlar, telefonlar, telefon narxi, asaxiy, texnomart, olcha, mediapark, olx, compare phones, uzbekistan"
+        keywords="smartfonlar, telefonlar, telefon narxi, asaxiy, texnomart, olcha, mediapark, chakana, compare phones, uzbekistan"
         locale={language}
         canonicalUrl={`${SITE_URL}/`}
       />
@@ -494,7 +494,7 @@ export function Landing() {
             : recommendations.length > 0
               ? recommendations.slice(0, 6).map(p => (
                   <MiniProductCard
-                    key={p.id} id={p.id} image={p.image}
+                    key={p.id} id={p.id} slug={p.slug} image={p.image}
                     name={p.name} price={p.price}
                     badge={t.landing.aiRecs.badge}
                   />
@@ -524,7 +524,7 @@ export function Landing() {
           <Carousel>
             {clientRecs.map(p => (
               <MiniProductCard
-                key={p.id} id={p.id} image={p.image}
+                key={p.id} id={p.id} slug={p.slug} image={p.image}
                 name={p.name} price={p.price}
                 storeCount={p.markets?.length}
               />
@@ -548,7 +548,7 @@ export function Landing() {
           />
           <Carousel>
             {personalizedRecs.map(p => (
-              <MiniProductCard key={p.id} id={p.id} image={p.image} name={p.name} price={p.price} />
+              <MiniProductCard key={p.id} id={p.id} slug={p.slug} image={p.image} name={p.name} price={p.price} />
             ))}
           </Carousel>
         </motion.section>

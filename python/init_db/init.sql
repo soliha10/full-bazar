@@ -9,6 +9,9 @@
 
 CREATE TABLE IF NOT EXISTS products (
     id VARCHAR(60) PRIMARY KEY,
+    -- Mahsulot manzili faqat nomdan iborat: /product/iphone-15-pro-max-256gb.
+    -- sync_csv.py to'ldiradi, API esa ID bilan barobar qabul qiladi.
+    slug VARCHAR(200),
     name VARCHAR(1000) NOT NULL,
     title VARCHAR(1000),
     category VARCHAR(100) DEFAULT 'Phones',
@@ -35,6 +38,7 @@ CREATE TABLE IF NOT EXISTS product_markets (
     UNIQUE (product_id, source)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
 CREATE INDEX IF NOT EXISTS idx_products_name ON products USING GIN (to_tsvector('simple', name));
 CREATE INDEX IF NOT EXISTS idx_products_keywords ON products USING GIN (to_tsvector('simple', COALESCE(keywords, '')));
 CREATE INDEX IF NOT EXISTS idx_product_markets_product_id ON product_markets(product_id);

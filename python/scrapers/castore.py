@@ -5,99 +5,126 @@ import logging
 import re
 from typing import Iterator
 
-from bs4 import BeautifulSoup
-
 from .base import BaseScraper, ProductRow
 
 logger = logging.getLogger(__name__)
 BASE = "https://castore.uz"
+
+# Bitrix katalogi sahifani `PAGEN_2` bilan almashtiradi. Ilgari `PAGEN_1`
+# ishlatilardi — u e'tiborga olinmay, 20 sahifa davomida bir xil birinchi
+# sahifa qayta-qayta yozilardi (300 qator, atigi 2 ta unikal havola).
+CATEGORY = f"{BASE}/vse-smartfony/"
+PAGE_PARAM = "PAGEN_2"
+MAX_PAGES = 40
+
+# ── Nega BeautifulSoup emas ──────────────────────────────────────────────────
+# Sahifaning HTML i noto'g'ri yopilgan teglarga to'la: lxml ham, html.parser
+# ham barcha mahsulot kartalarini BITTA `<div>` ichiga yig'ib qo'yadi. Shu
+# sababli "kartani top, ichidan nom va havolani ol" usuli ishlamaydi — har
+# 20 ta mahsulotga bir xil havola tegib qolardi (eski koddagi xato).
+#
+# Sahifada esa ikkita ishonchli, TARTIBLI ro'yxat bor:
+#   · GTM skriptlaridagi `position` bilan raqamlangan mahsulotlar (nom, narx)
+#   · `/product/...` havolalari — xuddi shu tartibda
+# Ularni tartib bo'yicha juftlaymiz va sonlari mos kelmasa sahifani tashlaymiz.
+_GTM_RE  = re.compile(r'<script[^>]*js_gtm_data[^>]*>(.*?)</script>', re.S)
+_HREF_RE = re.compile(r'href="(/product/[^"]+)"')
+_IMG_RE  = re.compile(r'(/upload/[^"\']+?\.(?:jpg|jpeg|png|webp))', re.I)
+
+# Karta rasmi havoladan keyingi shuncha belgida turadi
+_IMG_LOOKAHEAD = 6000
+
+
+def _gtm_products(html: str) -> list[dict]:
+    products: list[dict] = []
+    for match in _GTM_RE.finditer(html):
+        try:
+            data = json.loads(match.group(1))
+        except (json.JSONDecodeError, TypeError):
+            continue
+        products.extend(
+            data.get("ecommerce", {}).get("click", {}).get("products", [])
+        )
+    products.sort(key=lambda p: p.get("position") or 0)
+    return products
+
+
+def _product_links(html: str) -> list[tuple[str, int]]:
+    """[(href, havoladan keyingi o'rin)] — sahifadagi tartibda, takrorsiz."""
+    links: list[tuple[str, int]] = []
+    seen: set[str] = set()
+    for match in _HREF_RE.finditer(html):
+        href = match.group(1)
+        if href in seen:
+            continue
+        seen.add(href)
+        links.append((href, match.end()))
+    return links
 
 
 class CastoreScraper(BaseScraper):
     store_name = "castore"
 
     def scrape(self) -> Iterator[ProductRow]:
-        page = 1
-        while page <= 20:
-            url = f"{BASE}/vse-smartfony/?PAGEN_1={page}"
+        seen: set[str] = set()
+
+        for page in range(1, MAX_PAGES + 1):
+            url = f"{CATEGORY}?{PAGE_PARAM}={page}"
             try:
                 resp = self.get(url)
                 if not resp.ok:
-                    logger.warning(f"[castore] page {page} HTTP {resp.status_code}, stopping")
-                    break
-                soup = BeautifulSoup(resp.text, "lxml")
-
-                # Extract structured product data from GTM script tags
-                gtm_products: list[dict] = []
-                for script in soup.find_all("script", {"type": "text/gtm"}):
-                    try:
-                        data = json.loads(script.string or "")
-                        items = (
-                            data.get("ecommerce", {})
-                                .get("click", {})
-                                .get("products", [])
-                        )
-                        gtm_products.extend(items)
-                    except (json.JSONDecodeError, AttributeError):
-                        continue
-
-                if not gtm_products:
-                    logger.info(f"[castore] page {page}: 0 GTM products found, stopping")
+                    logger.info("[castore] page %d HTTP %d, stopping", page, resp.status_code)
                     break
 
-                # Collect HTML cards to match images and URLs by position
-                html_cards = soup.select(".catalog-section-cont-product")
+                html = resp.text
+                products = _gtm_products(html)
+                links = _product_links(html)
 
-                for idx, product in enumerate(gtm_products):
+                if not products or not links:
+                    logger.info("[castore] page %d: mahsulot yo'q, to'xtatildi", page)
+                    break
+
+                if len(products) != len(links):
+                    # Juftlash faqat sonlar teng bo'lgandagina ishonchli.
+                    # Aks holda nom boshqa mahsulotning havolasiga tegib ketadi —
+                    # narx solishtiruvchi sayt uchun bu jimgina yolg'on.
+                    logger.warning(
+                        "[castore] page %d: %d ta nom, %d ta havola — sahifa tashlab yuborildi",
+                        page, len(products), len(links),
+                    )
+                    continue
+
+                new_on_page = 0
+                for product, (href, after) in zip(products, links):
                     title = (product.get("name") or "").strip()
-                    if not title:
+                    if not title or href in seen:
                         continue
 
-                    price_raw = product.get("price", 0)
                     try:
-                        price = float(str(price_raw).replace(" ", "").replace(",", ""))
+                        price = float(str(product.get("price", 0)).replace(" ", "").replace(",", ""))
                     except (ValueError, TypeError):
                         price = 0.0
+                    if not price:
+                        continue
 
-                    # Match corresponding HTML card by position for image and URL
-                    image = ""
-                    product_url = ""
-                    if idx < len(html_cards):
-                        card = html_cards[idx]
+                    seen.add(href)
+                    new_on_page += 1
 
-                        # Image: prefer any /upload/ path; skip resize_cache thumbnails if possible
-                        for img in card.find_all("img", src=True):
-                            src = img["src"]
-                            if src and "/upload/" in src:
-                                # Prefer full image over resize_cache thumbnail, but accept either
-                                if not src.startswith("/upload/resize_cache"):
-                                    image = BASE + src if src.startswith("/") else src
-                                    break
-                        if not image:
-                            # Fallback: accept resize_cache too
-                            for img in card.find_all("img", src=True):
-                                src = img["src"]
-                                if src and "/upload/" in src:
-                                    image = BASE + src if src.startswith("/") else src
-                                    break
-
-                        a_el = card.find("a", href=True)
-                        if a_el:
-                            href = a_el["href"]
-                            product_url = href if href.startswith("http") else BASE + href
+                    img = _IMG_RE.search(html[after:after + _IMG_LOOKAHEAD])
+                    image = BASE + img.group(1) if img else ""
 
                     yield ProductRow(
                         title=title,
                         price=price,
                         store=self.store_name,
                         image_url=image,
-                        product_url=product_url,
-                        rating="",
-                        review_count="",
+                        product_url=BASE + href,
                     )
 
-            except Exception as exc:
-                logger.warning(f"[castore] page {page} error: {exc}")
-                break
+                if new_on_page == 0:
+                    logger.info("[castore] page %d: yangi mahsulot yo'q, to'xtatildi", page)
+                    break
 
-            page += 1
+            except Exception as exc:
+                logger.warning("[castore] page %d error: %s", page, exc)
+                break

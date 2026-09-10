@@ -13,27 +13,77 @@ import {
   ExternalLink,
   Store,
   TrendingDown,
+  Scale,
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from "recharts";
 import { Button } from "../components/Button";
-import { fetchProductById, fetchPersonalizedRecommendations, fetchPriceHistory } from "../services/api";
+import { fetchProductById, fetchPersonalizedRecommendations, fetchPriceHistory, fetchProductSpecs } from "../services/api";
 import { mapProduct, formatSum, formatCheckedAt } from "../utils/productMapper";
 import { Product } from "../components/ProductCard";
 import { useLanguage } from "../contexts/LanguageContext";
+import { useCompare } from "../contexts/CompareContext";
 import { trackEvent, trackStoreClick } from "../services/tracking";
 import { useFavorites } from "../hooks/useFavorites";
 import { SEO, SITE_URL, type ProductSchema } from "../components/SEO";
-import { productPath, extractProductId } from "../utils/slug";
+import { productPath, productRef } from "../utils/slug";
 
+
+/** /api/products/{ref}/specs javobi */
+interface Specs {
+  displayName: string;
+  display: string | null;
+  chipset: string | null;
+  ramOptions: string[];
+  storageOptions: string[];
+  mainCamera: string | null;
+  selfieCamera: string | null;
+  batteryMah: number | null;
+  charging: string | null;
+  os: string | null;
+  body: string | null;
+  releaseYear: number | null;
+}
+
+const SPEC_GROUPS: { label: string; rows: { key: keyof Specs; label: string }[] }[] = [
+  { label: 'Ekran',    rows: [{ key: 'display', label: 'Ekran' }] },
+  { label: 'Ishlash',  rows: [
+    { key: 'chipset', label: 'Protsessor' },
+    { key: 'ramOptions', label: 'RAM' },
+    { key: 'storageOptions', label: 'Xotira' },
+  ]},
+  { label: 'Kamera',   rows: [
+    { key: 'mainCamera', label: 'Asosiy' },
+    { key: 'selfieCamera', label: 'Old kamera' },
+  ]},
+  { label: 'Batareya', rows: [
+    { key: 'batteryMah', label: "Sig'im" },
+    { key: 'charging', label: 'Zaryadlash' },
+  ]},
+  { label: 'Boshqa',   rows: [
+    { key: 'body', label: 'Korpus' },
+    { key: 'os', label: 'OS' },
+    { key: 'releaseYear', label: 'Chiqarilgan yili' },
+  ]},
+];
+
+/** Qiymat yo'q bo'lsa null — chaqiruvchi bunday qatorni ko'rsatmaydi. */
+function specValue(specs: Specs, key: keyof Specs): string | null {
+  const value = specs[key];
+  if (value == null || value === '') return null;
+  if (Array.isArray(value)) return value.length ? value.join(' / ') : null;
+  if (key === 'batteryMah') return `${value} mAh`;
+  return String(value);
+}
 
 export function ProductDetail() {
-  // URL slug bilan keladi (/product/samsung-galaxy-s24-prod-abc...) — ID ni
-  // oxiridan ajratib olamiz. Eski toza-ID li havolalar ham ishlayveradi.
+  // URL da endi faqat nom turadi (/product/samsung-galaxy-s24-ultra-256gb).
+  // API bu murojaatni slug sifatida qabul qiladi; eski, oxirida ID li
+  // havolalar ham ishlayveradi — productRef ulardan ID ni ajratib beradi.
   const { id: idParam } = useParams();
-  const id = useMemo(() => extractProductId(idParam), [idParam]);
+  const ref = useMemo(() => productRef(idParam), [idParam]);
   const navigate = useNavigate();
   const location = useLocation();
   const { t, language } = useLanguage();
@@ -46,7 +96,9 @@ export function ProductDetail() {
   const [showAllMarkets, setShowAllMarkets] = useState(false);
   const [priceHistory, setPriceHistory] = useState<{ date: string; source: string; price: number }[]>([]);
   const { favorites, toggle, isLiked } = useFavorites();
+  const { compareIds, toggleCompare } = useCompare();
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
+  const [specs, setSpecs] = useState<Specs | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -56,14 +108,16 @@ export function ProductDetail() {
   useEffect(() => {
     let cancelled = false;
     const getProduct = async () => {
-      if (!id) return;
+      if (!ref) return;
       try {
         setLoading(true);
-        const data = await fetchProductById(id);
+        const data = await fetchProductById(ref);
         if (cancelled) return;
         const mapped = mapProduct(data);
         setProduct(mapped);
-        trackEvent('view', id);
+        // Hodisalar va narx tarixi ID bo'yicha yoziladi — manzildagi slug emas,
+        // aynan mahsulotning o'zgarmas identifikatori kerak.
+        trackEvent('view', String(mapped.id));
         if (mapped.markets && mapped.markets.length > 0) {
           const sorted = [...mapped.markets].sort((a, b) => a.price - b.price);
           const cheapest = sorted[0];
@@ -80,7 +134,7 @@ export function ProductDetail() {
     };
     getProduct();
     return () => { cancelled = true; };
-  }, [id]);
+  }, [ref]);
 
   // Eski yoki noto'g'ri slug bilan kelingan bo'lsa, manzil satrini kanonik
   // shaklga almashtiramiz (tarixga yangi yozuv qo'shmasdan).
@@ -93,19 +147,29 @@ export function ProductDetail() {
   }, [product, location.pathname, navigate]);
 
   useEffect(() => {
+    if (!ref) return;
+    let cancelled = false;
+    fetchProductSpecs(ref)
+      .then((data) => { if (!cancelled) setSpecs(data.matched ? data.specs : null); })
+      .catch(() => { if (!cancelled) setSpecs(null); });
+    return () => { cancelled = true; };
+  }, [ref]);
+
+  useEffect(() => {
     fetchPersonalizedRecommendations(6)
       .then((data) => setSimilarProducts((data.products ?? []).map(mapProduct)))
       .catch(() => {});
-  }, [id]);
+  }, [ref]);
 
   useEffect(() => {
-    if (!id) return;
+    const productId = product?.id;
+    if (!productId) return;
     let cancelled = false;
-    fetchPriceHistory(id, 30).then((data) => {
+    fetchPriceHistory(String(productId), 30).then((data) => {
       if (!cancelled) setPriceHistory(data.history ?? []);
     });
     return () => { cancelled = true; };
-  }, [id]);
+  }, [product?.id]);
 
   const FALLBACK_IMAGE = 'https://placehold.co/600x600/f5f3ff/7c3aed?text=📱';
 
@@ -147,6 +211,7 @@ export function ProductDetail() {
   const worstPrice = sortedMarkets[sortedMarkets.length - 1]?.price;
   const savings = worstPrice && worstPrice > bestPrice ? worstPrice - bestPrice : 0;
   const liked = product ? isLiked(product.id) : false;
+  const inCompare = product ? compareIds.includes(String(product.id)) : false;
 
   const historyChartData = (() => {
     const sources = [...new Set(priceHistory.map(h => h.source))];
@@ -449,6 +514,21 @@ export function ProductDetail() {
                 <h1 className="flex-1 text-2xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tight leading-tight">
                   {product.name}
                 </h1>
+                {/* Solishtirishga qo'shish — sayt oqimining markazi: avval
+                    xususiyatlarni yonma-yon ko'rib, keyin eng arzon do'konni
+                    tanlash. Ilgari bu tugma faqat katalogdagi kartada bor edi,
+                    ya'ni mahsulot sahifasiga kirgan odam oqimdan chiqib qolardi. */}
+                <button
+                  onClick={() => product && toggleCompare(String(product.id))}
+                  title={inCompare ? "Solishtirishdan olib tashlash" : "Solishtirishga qo'shish"}
+                  className={`mt-1 w-11 h-11 shrink-0 flex items-center justify-center rounded-2xl border active:scale-90 transition-all shadow-sm ${
+                    inCompare
+                      ? 'border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-900/30'
+                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-violet-300 dark:hover:border-violet-800'
+                  }`}
+                >
+                  <Scale className={`w-5 h-5 ${inCompare ? 'text-violet-600 dark:text-violet-400' : 'text-gray-400 dark:text-gray-500'}`} />
+                </button>
                 <button
                   onClick={() => product && toggle(product)}
                   className="hidden md:flex mt-1 w-11 h-11 shrink-0 items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-red-300 dark:hover:border-red-800 active:scale-90 transition-all shadow-sm"
@@ -734,38 +814,60 @@ export function ProductDetail() {
                 className={`${activeTab !== 'specs' && 'hidden md:block'} space-y-6 bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl p-6 md:p-10 border border-gray-100 dark:border-gray-800 shadow-sm`}
               >
                 <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{t.detail.mainSpecifications}</h2>
-                <div className="grid sm:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest border-b border-violet-100 dark:border-violet-900/30 pb-2">
-                      {t.detail.compareStores}
-                    </h3>
-                    <div className="space-y-3">
-                      {sortedMarkets.slice(0, 4).map((market, i) => (
-                        <div key={i} className="flex justify-between items-center text-sm">
-                          <span className="font-bold text-gray-400 dark:text-gray-500">{market.source}</span>
-                          <span className="font-black text-gray-900 dark:text-white">{formatSum(market.price)}</span>
+
+                {/* Texnik xususiyatlar — GSMArena dan. Mos model topilmasa
+                    bo'limni umuman ko'rsatmaymiz: bo'sh jadval "ma'lumot yo'q"
+                    degan taassurotdan ham yomonroq. */}
+                {specs ? (
+                  <div className="grid sm:grid-cols-2 gap-x-10 gap-y-6">
+                    {SPEC_GROUPS.map(group => {
+                      const rows = group.rows
+                        .map(row => ({ label: row.label, value: specValue(specs, row.key) }))
+                        .filter(row => row.value !== null);
+                      if (rows.length === 0) return null;
+                      return (
+                        <div key={group.label} className="space-y-3">
+                          <h3 className="text-xs font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest border-b border-violet-100 dark:border-violet-900/30 pb-2">
+                            {group.label}
+                          </h3>
+                          <dl className="space-y-2.5">
+                            {rows.map(row => (
+                              <div key={row.label} className="flex justify-between gap-4 text-sm">
+                                <dt className="font-bold text-gray-400 dark:text-gray-500 shrink-0">{row.label}</dt>
+                                <dd className="font-bold text-gray-900 dark:text-white text-right">{row.value}</dd>
+                              </div>
+                            ))}
+                          </dl>
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest border-b border-violet-100 dark:border-violet-900/30 pb-2">
-                      {t.detail.insideBox}
-                    </h3>
-                    <ul className="space-y-2.5">
-                      {[
-                        t.detail.boxItems.primaryProduct,
-                        t.detail.boxItems.quickStartGuide,
-                        t.detail.boxItems.usbCable,
-                        t.detail.boxItems.travelCase,
-                        t.detail.boxItems.warrantyCard,
-                      ].map((item, i) => (
-                        <li key={i} className="flex items-center gap-3 text-sm font-bold text-gray-700 dark:text-gray-300">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
+                ) : (
+                  <p className="text-sm font-bold text-gray-400 dark:text-gray-500">
+                    Bu model uchun texnik xususiyatlar hali yig'ilmagan.
+                  </p>
+                )}
+
+                {/* Do'kon narxlari — xususiyatlarni ko'rgandan keyingi keyingi
+                    qadam: "qaysi do'kondan olsam arzon bo'ladi?" */}
+                <div className="space-y-3 pt-2">
+                  <h3 className="text-xs font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest border-b border-violet-100 dark:border-violet-900/30 pb-2">
+                    {t.detail.compareStores}
+                  </h3>
+                  <div className="grid sm:grid-cols-2 gap-x-10 gap-y-2.5">
+                    {sortedMarkets.map((market, i) => (
+                      <div key={`${market.source}-${i}`} className="flex justify-between items-center text-sm">
+                        <span className="font-bold text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
+                          {market.source}
+                          {i === 0 && sortedMarkets.length > 1 && (
+                            <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded-full">
+                              ENG ARZON
+                            </span>
+                          )}
+                        </span>
+                        <span className="font-black text-gray-900 dark:text-white">{formatSum(market.price)}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </section>

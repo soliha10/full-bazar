@@ -8,6 +8,14 @@ name: Scrape specs to Supabase
 #   · specs tez-tez o'zgarmaydi — haftada bir marta yetarli
 #   · GSMArena ga nisbatan odobli bo'lish kerak (so'rovlar orasida kutish)
 #   · uzoqroq davom etadi va narx yangilanishini kechiktirmasligi kerak
+#
+# Uch qadam: EKSPORT -> SCRAPE -> SYNC.
+#   · eksport: bazadagi mavjud yozuvlar CSV ga qaytariladi
+#   · scrape:  barcha brendlarning barcha ro'yxat sahifalari o'qiladi (to'liq
+#              qamrov), so'ng vaqt byudjeti doirasida model sahifalari
+#   · sync:    CSV bazaga yoziladi + qamrov hisoboti
+# Eksport tufayli o'tgan haftalarda olingan model sahifalari qayta
+# yuklanmaydi — tafsilot qamrovi har ish bilan o'sib boradi.
 
 on:
   schedule:
@@ -15,10 +23,10 @@ on:
     - cron: '0 3 * * 0'
   workflow_dispatch:
     inputs:
-      max_models:
-        description: 'Har brenddan nechta eng yangi model'
+      detail_budget:
+        description: 'Model sahifalariga sarflanadigan vaqt (sekund)'
         required: false
-        default: '60'
+        default: '2400'
 
 concurrency:
   group: scrape-specs
@@ -46,10 +54,19 @@ jobs:
         run: |
           pip install requests==2.32.3 beautifulsoup4==4.12.3 lxml==5.2.2 psycopg2-binary==2.9.9
 
+      # Bazadagi yozuvlarni CSV ga qaytaramiz — scraper ularni qayta yuklamaydi
+      - name: Export existing specs from Supabase
+        env:
+          PRODUCTS_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          DATA_DIR: ./data
+        run: |
+          mkdir -p ./data
+          python python/sync_specs.py --export
+
       - name: Scrape specs from GSMArena
         working-directory: python
         env:
-          GSMARENA_MAX_MODELS: ${{ github.event.inputs.max_models || '60' }}
+          GSMARENA_DETAIL_BUDGET: ${{ github.event.inputs.detail_budget || '2400' }}
         run: |
           mkdir -p ../data
           python -c "
@@ -57,7 +74,7 @@ jobs:
           sys.path.insert(0, '.')
           logging.basicConfig(level=logging.INFO, format='%(message)s')
           from scrapers import GsmarenaSpecsScraper
-          n = GsmarenaSpecsScraper(output_dir='../data', delay=1.5).run()
+          n = GsmarenaSpecsScraper(output_dir='../data', delay=1.2).run()
           print(f'=== {n} ta model yig\'ildi ===')
           if n == 0:
               sys.exit('specs yig\'ilmadi — sayt tuzilmasi o\'zgargan bo\'lishi mumkin')

@@ -1,6 +1,6 @@
 """CSV → PostgreSQL sinxronizatsiyasi. GitHub Actions ishga tushiradi."""
 from __future__ import annotations
-import csv, hashlib, math, os, re, sys
+import csv, hashlib, math, os, re, sys, unicodedata
 from collections import Counter
 from datetime import datetime
 
@@ -28,7 +28,9 @@ _NOT_SMARTPHONE_RE = re.compile(
 )
 
 # Faoliyati to'xtagan yoki eskirgan saytlar — bu CSV fayllarini o'tkazib yuboramiz
-_INACTIVE_SITES = {"ozon", "premier", "wildberries", "prom"}
+# brandstore: domen umuman ulanmaydi. olx: barcha so'rovlarga 403 va
+# e'lonlardagi ishlatilgan telefonlar narx solishtirishni buzadi.
+_INACTIVE_SITES = {"ozon", "premier", "wildberries", "prom", "brandstore", "olx"}
 _DIFF_WORDS = re.compile(r"\b(max|plus|ultra|pro|lite|mini|fe|note|edge|fold|\d+gb|\d+tb|\d+\/\d+)\b")
 
 # ── Variantni ajratish ────────────────────────────────────────────────────────
@@ -106,6 +108,83 @@ def _display(title):
     return re.sub(r"\s+", " ", n).strip()
 
 
+# ── URL slug ─────────────────────────────────────────────────────────────────
+# Mahsulot manzili faqat nomdan iborat bo'lishi kerak: /product/iphone-15-128gb
+# emas, /product/iphone-15-128gb-prod-8fc7e81f5ca9. Shuning uchun slug bazada
+# ustun sifatida saqlanadi va API uni ID bilan barobar qabul qiladi.
+#
+# frontend/src/utils/slug.ts dagi slugify BILAN BIR XIL natija berishi kerak —
+# ikkalasi ham kirillchani lotinga o'giradi va 70 belgida kesadi.
+_CYRILLIC = {
+    "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ё": "e",
+    "ж": "zh", "з": "z", "и": "i", "й": "y", "к": "k", "л": "l", "м": "m",
+    "н": "n", "о": "o", "п": "p", "р": "r", "с": "s", "т": "t", "у": "u",
+    "ф": "f", "х": "h", "ц": "ts", "ч": "ch", "ш": "sh", "щ": "sch",
+    "ъ": "", "ы": "y", "ь": "", "э": "e", "ю": "yu", "я": "ya",
+    # o'zbek kirillchasiga xos harflar
+    "ў": "o", "қ": "q", "ғ": "g", "ҳ": "h",
+}
+
+
+def _slugify(text: str) -> str:
+    out = []
+    for ch in (text or "").lower():
+        out.append(_CYRILLIC.get(ch, ch))
+    value = unicodedata.normalize("NFD", "".join(out))
+    value = "".join(c for c in value if unicodedata.category(c) != "Mn")
+    value = re.sub(r"['\u2019`]", "", value)
+    value = re.sub(r"[^a-z0-9]+", "-", value).strip("-")
+    return value[:70].rstrip("-")
+
+
+def assign_slugs(groups, existing: dict | None = None):
+    """
+    Har bir guruhga takrorlanmaydigan slug beradi.
+
+    Slug — mahsulotning ommaviy manzili, shuning uchun u BIR MARTA berilib,
+    keyin o'zgarmasligi kerak. Ikkita xavf bor:
+
+      1. Nomlar takrorlanadi (turli do'kon bir xil sarlavha yozadi, yoki rang
+         nomda ko'rsatilmagan), URL esa yagona bo'lishi shart. To'qnashuvda
+         ID ning qisqa bo'lagi qo'shiladi — tasodifiy tartibga bog'liq
+         "-2"/"-3" qo'shimchalaridan farqli o'laroq, bu keyingi
+         sinxronizatsiyada ham AYNAN o'sha slugni beradi.
+      2. `title` — guruhdagi ENG UZUN do'kon sarlavhasi. Yangi do'kon undan
+         ham uzun sarlavha bilan qo'shilsa, nom o'zgarib slug ham o'zgarardi
+         va tarqalgan havolalar 404 bo'lardi. Shuning uchun bazada allaqachon
+         slugi bor mahsulot O'SHA slugini saqlab qoladi.
+    """
+    existing = existing or {}
+    used: set[str] = set()
+
+    # 1) Oldin berilgan sluglar — ular hech qachon o'zgarmaydi
+    for pid in sorted(groups):
+        old_slug = existing.get(pid)
+        if old_slug and old_slug not in used:
+            groups[pid]["slug"] = old_slug
+            used.add(old_slug)
+
+    # 2) Yangi mahsulotlarga slug beramiz. ID bo'yicha tartib — natija
+    #    sinxronizatsiyadan sinxronizatsiyaga barqaror.
+    for pid in sorted(groups):
+        g = groups[pid]
+        if g.get("slug"):
+            continue
+        base = _slugify(g["title"]) or _slugify(g["name"]) or pid
+        slug = base
+        if slug in used:
+            suffix = pid.replace("prod-", "")[:6]
+            slug = f"{base[:70 - len(suffix) - 1]}-{suffix}"
+            # Nihoyatda kam uchraydi: bir xil nom + bir xil ID prefiksi
+            n = 2
+            while slug in used:
+                slug = f"{base[:66]}-{suffix}-{n}"
+                n += 1
+        used.add(slug)
+        g["slug"] = slug
+    return groups
+
+
 def _cosim(a, b):
     v1, v2 = Counter(re.findall(r"\w+", a)), Counter(re.findall(r"\w+", b))
     inter = set(v1) & set(v2)
@@ -116,8 +195,15 @@ def _cosim(a, b):
 
 def load_rows():
     rows = []
+    # FAQAT scraper chiqarigan "<do'kon>_products.csv" fayllari.
+    # Ilgari papkadagi HAR QANDAY .csv o'qilardi va bu ikki xatoga olib kelardi:
+    #   · data/olcha_phones.csv — bir yil oldingi eskirgan narxlar. Manba nomi
+    #     baribir "olcha" bo'lgani uchun ular yangi narxlar bilan bitta guruhga
+    #     tushib, eng arzoni sifatida ko'rsatilardi.
+    #   · ML uchun yig'ilgan synthetic/processed_matching_data.csv — ular faqat
+    #     tasodifan o'tib ketmasdi (ustun nomlari boshqacha).
     for fn in sorted(os.listdir(DATA_DIR)):
-        if not fn.endswith(".csv"):
+        if not fn.endswith("_products.csv"):
             continue
         src_fallback = fn.replace("_products.csv", "").replace("-", "_").split("_")[0]
         # Faoliyati to'xtagan saytlarni o'tkazib yuboramiz
@@ -207,13 +293,40 @@ def build_groups(rows):
     return groups
 
 
+SLUG_DDL = (
+    "ALTER TABLE products ADD COLUMN IF NOT EXISTS slug VARCHAR(200)",
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_products_slug ON products(slug)",
+)
+
+
+def load_existing_slugs(conn) -> dict:
+    """{product_id: slug} — oldingi sinxronizatsiyada berilgan manzillar."""
+    with conn.cursor() as cur:
+        for stmt in SLUG_DDL:
+            cur.execute(stmt)
+        cur.execute("SELECT id, slug FROM products WHERE slug IS NOT NULL")
+        return dict(cur.fetchall())
+
+
 def write_db(groups):
+    conn = psycopg2.connect(DB_URL)
+    try:
+        # Sluglarni TRUNCATE dan oldin o'qiymiz: mahsulotning manzili bir marta
+        # berilib, keyin o'zgarmasligi kerak.
+        with conn:
+            assign_slugs(groups, load_existing_slugs(conn))
+        return _write_rows(conn, groups)
+    finally:
+        conn.close()
+
+
+def _write_rows(conn, groups):
     prod_rows, mkt_rows = [], []
     for pid, g in groups.items():
         sm = sorted(g["markets"].values(), key=lambda m: m["price"])
         best = sm[0] if sm else {}
         prod_rows.append((
-            pid, g["name"], g["title"], "Phones",
+            pid, g["slug"], g["name"], g["title"], "Phones",
             g["rating"], g["reviews"], g["image"] or None,
             g["images"] or None, True, g["keywords"][:5000],
             best.get("source"), best.get("price", 0), best.get("url"),
@@ -222,72 +335,70 @@ def write_db(groups):
         for m in sm:
             mkt_rows.append((pid, m["source"], m["price"], m["url"]))
 
-    conn = psycopg2.connect(DB_URL)
-    try:
-        with conn:
-            with conn.cursor() as cur:
-                # ── Narx tarixi ─────────────────────────────────────────────
-                # product_markets TRUNCATE qilinishidan OLDIN joriy narxlarni
-                # saqlab qolamiz. Buni shu yerda qilish shart: sinxronizatsiya
-                # jadvalni har safar to'liq qayta yozadi, ya'ni snapshot
-                # olinmasa eski narxlar butunlay yo'qoladi va Tahlil sahifasi
-                # ham, narx grafigi ham bo'sh qoladi.
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS price_history (
-                        id          BIGSERIAL      PRIMARY KEY,
-                        product_id  VARCHAR(60)    NOT NULL,
-                        source      VARCHAR(100)   NOT NULL,
-                        price       DECIMAL(15, 2) NOT NULL,
-                        recorded_at TIMESTAMPTZ    DEFAULT NOW()
-                    )
-                """)
-                cur.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_price_history_product "
-                    "ON price_history(product_id, recorded_at DESC)"
+    with conn:
+        with conn.cursor() as cur:
+            # ── Narx tarixi ─────────────────────────────────────────────────
+            # product_markets TRUNCATE qilinishidan OLDIN joriy narxlarni
+            # saqlab qolamiz. Buni shu yerda qilish shart: sinxronizatsiya
+            # jadvalni har safar to'liq qayta yozadi, ya'ni snapshot olinmasa
+            # eski narxlar butunlay yo'qoladi va Tahlil sahifasi ham, narx
+            # grafigi ham bo'sh qoladi.
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS price_history (
+                    id          BIGSERIAL      PRIMARY KEY,
+                    product_id  VARCHAR(60)    NOT NULL,
+                    source      VARCHAR(100)   NOT NULL,
+                    price       DECIMAL(15, 2) NOT NULL,
+                    recorded_at TIMESTAMPTZ    DEFAULT NOW()
                 )
-                # Faqat narxi O'ZGARGANLARINI yozamiz. Har safar hammasini
-                # yozsak, kuniga ~22 ming qator qo'shilib, Supabase'ning bepul
-                # 500 MB chegarasi bir necha oyda to'lib qolardi.
-                cur.execute("""
-                    WITH latest AS (
-                        SELECT DISTINCT ON (product_id, source)
-                               product_id, source, price
-                        FROM price_history
-                        ORDER BY product_id, source, recorded_at DESC
-                    )
-                    INSERT INTO price_history (product_id, source, price, recorded_at)
-                    SELECT pm.product_id, pm.source, pm.price, NOW()
-                    FROM product_markets pm
-                    LEFT JOIN latest l
-                           ON l.product_id = pm.product_id AND l.source = pm.source
-                    WHERE l.price IS NULL OR l.price <> pm.price
-                """)
-                snapshots = cur.rowcount
-
-                # Eskilarini tozalab turamiz — tahlil uchun 180 kun yetarli
-                cur.execute(
-                    "DELETE FROM price_history "
-                    "WHERE recorded_at < NOW() - INTERVAL '180 days'"
+            """)
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_price_history_product "
+                "ON price_history(product_id, recorded_at DESC)"
+            )
+            # Faqat narxi O'ZGARGANLARINI yozamiz. Har safar hammasini yozsak,
+            # kuniga ~22 ming qator qo'shilib, Supabase'ning bepul 500 MB
+            # chegarasi bir necha oyda to'lib qolardi.
+            cur.execute("""
+                WITH latest AS (
+                    SELECT DISTINCT ON (product_id, source)
+                           product_id, source, price
+                    FROM price_history
+                    ORDER BY product_id, source, recorded_at DESC
                 )
-                print(f"[history] {snapshots} ta narx o'zgarishi yozildi, "
-                      f"{cur.rowcount} ta eski yozuv o'chirildi", flush=True)
+                INSERT INTO price_history (product_id, source, price, recorded_at)
+                SELECT pm.product_id, pm.source, pm.price, NOW()
+                FROM product_markets pm
+                LEFT JOIN latest l
+                       ON l.product_id = pm.product_id AND l.source = pm.source
+                WHERE l.price IS NULL OR l.price <> pm.price
+            """)
+            snapshots = cur.rowcount
 
-                cur.execute("TRUNCATE product_markets, products")
-                if prod_rows:
-                    psycopg2.extras.execute_values(
-                        cur,
-                        "INSERT INTO products (id,name,title,category,rating,reviews,image,images,in_stock,keywords,source,price,url,updated_at) VALUES %s",
-                        prod_rows, page_size=500,
-                    )
-                if mkt_rows:
-                    psycopg2.extras.execute_values(
-                        cur,
-                        "INSERT INTO product_markets (product_id,source,price,url) VALUES %s",
-                        mkt_rows, page_size=1000,
-                    )
-        return len(prod_rows), len(mkt_rows)
-    finally:
-        conn.close()
+            # Eskilarini tozalab turamiz — tahlil uchun 180 kun yetarli
+            cur.execute(
+                "DELETE FROM price_history "
+                "WHERE recorded_at < NOW() - INTERVAL '180 days'"
+            )
+            print(f"[history] {snapshots} ta narx o'zgarishi yozildi, "
+                  f"{cur.rowcount} ta eski yozuv o'chirildi", flush=True)
+
+            cur.execute("TRUNCATE product_markets, products")
+            if prod_rows:
+                psycopg2.extras.execute_values(
+                    cur,
+                    "INSERT INTO products (id,slug,name,title,category,rating,"
+                    "reviews,image,images,in_stock,keywords,source,price,url,"
+                    "updated_at) VALUES %s",
+                    prod_rows, page_size=500,
+                )
+            if mkt_rows:
+                psycopg2.extras.execute_values(
+                    cur,
+                    "INSERT INTO product_markets (product_id,source,price,url) VALUES %s",
+                    mkt_rows, page_size=1000,
+                )
+    return len(prod_rows), len(mkt_rows)
 
 
 if __name__ == "__main__":

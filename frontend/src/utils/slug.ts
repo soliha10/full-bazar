@@ -1,15 +1,19 @@
 /**
- * Mahsulot URL lari uchun slug.
+ * Mahsulot URL lari.
  *
- * Eski ko'rinish:  /product/prod-8fc7e81f5ca9aeb6051c
- * Yangi ko'rinish: /product/samsung-galaxy-s24-ultra-prod-8fc7e81f5ca9aeb6051c
+ * Eski ko'rinish:  /product/samsung-galaxy-s24-ultra-prod-8fc7e81f5ca9aeb6051c
+ * Yangi ko'rinish: /product/samsung-galaxy-s24-ultra
  *
- * ID oxirida saqlanadi, chunki backendda slug ustuni yo'q — shu sababli
- * ma'lumotlar bazasiga tegmasdan ham URL dan ID ni aniq ajratib olamiz.
- * Barcha ID lar `prod-` + 20 ta hex belgidan iborat (butun baza tekshirilgan).
+ * Manzilda endi na `prod-`, na ID bor — faqat mahsulot nomi. Buni mumkin
+ * qilgan narsa: `products` jadvalidagi `slug` ustuni (python/sync_csv.py
+ * to'ldiradi, unikal indeks bilan himoyalangan). API `/api/products/{ref}` ni
+ * slug bilan ham, ID bilan ham qabul qiladi, shuning uchun tashqarida
+ * tarqalgan eski havolalar ishlashda davom etadi — netlify edge funksiyasi
+ * ularni kanonik manzilga 301 bilan yo'naltiradi.
  */
 
-const PRODUCT_ID_RE = /(prod-[0-9a-f]{20})$/i;
+/** Eski manzillarda slugdan keyin turgan ID: ...-prod-8fc7e81f5ca9aeb6051c */
+const LEGACY_ID_RE = /(prod-[0-9a-f]{20})$/i;
 
 /** Kirill → lotin. Mahsulot nomlarining ko'pi ruscha ("Телефон Novey 108"). */
 const CYRILLIC: Record<string, string> = {
@@ -21,7 +25,11 @@ const CYRILLIC: Record<string, string> = {
   ў: 'o', қ: 'q', ғ: 'g', ҳ: 'h',
 };
 
-/** Matnni URL ga yaroqli slugga aylantiradi */
+/**
+ * Matnni URL ga yaroqli slugga aylantiradi.
+ * python/sync_csv.py dagi `_slugify` bilan bir xil natija berishi SHART —
+ * slug bazada saqlanadi, bu yerdagi nusxa faqat ko'rsatish uchun.
+ */
 export function slugify(input: string): string {
   return (input || '')
     .toLowerCase()
@@ -36,19 +44,36 @@ export function slugify(input: string): string {
     .replace(/-+$/g, '');
 }
 
-/** Mahsulot uchun kanonik yo'l: /product/<slug>-<id> */
-export function productPath(product: { id: string | number; name?: string; title?: string }): string {
-  const id = String(product.id);
-  const slug = slugify(product.title || product.name || '');
-  return slug ? `/product/${slug}-${id}` : `/product/${id}`;
+export interface ProductRef {
+  id: string | number;
+  slug?: string | null;
+  name?: string;
+  title?: string;
 }
 
 /**
- * URL parametridan mahsulot ID sini ajratadi.
- * Slug bilan ham, eski toza ID bilan ham ishlaydi.
+ * Mahsulot uchun kanonik yo'l: /product/<slug>
+ *
+ * Slug kelmagan bo'lsa (eski keshdagi javob yoki qisqartirilgan ma'lumot),
+ * ID ga qaytamiz. Nomdan slug YASAMAYMIZ: u bazadagisidan farq qilishi va
+ * 404 berishi mumkin, ID esa har doim ishlaydi va sahifa ochilgach manzil
+ * kanonik ko'rinishga almashtiriladi.
  */
-export function extractProductId(param: string | undefined): string {
+export function productPath(product: ProductRef): string {
+  const slug = (product.slug || '').trim();
+  if (slug) return `/product/${slug}`;
+  return `/product/${encodeURIComponent(String(product.id))}`;
+}
+
+/**
+ * URL parametridan API ga yuboriladigan murojaat kalitini oladi.
+ *
+ * Yangi manzilda bu slugning o'zi. Eski manzilda esa slugdan keyin ID turadi —
+ * o'shanda ID ni ajratib olamiz, chunki eski slug bazadagisiga to'g'ri
+ * kelmasligi mumkin.
+ */
+export function productRef(param: string | undefined): string {
   if (!param) return '';
-  const match = param.match(PRODUCT_ID_RE);
+  const match = param.match(LEGACY_ID_RE);
   return match ? match[1].toLowerCase() : param;
 }

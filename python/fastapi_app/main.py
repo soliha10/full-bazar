@@ -32,6 +32,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 from sklearn.metrics.pairwise import paired_cosine_distances
 from starlette.middleware.base import BaseHTTPMiddleware
 
+import brands
 from specs_seed import SPEC_SEED
 
 DATABASE_URL = os.getenv(
@@ -152,23 +153,6 @@ class UpdateProfileRequest(BaseModel):
 # If the model file doesn't exist yet (before first training run), all
 # /api/ml/match requests fall back to plain cosine similarity.
 
-_BRAND_KWS: dict[str, list[str]] = {
-    # "Redmi"/"Poco" must come before "Xiaomi" — titles like "Xiaomi Redmi
-    # Note 15 Pro" contain both words, and the sub-brand is the more specific
-    # (and more consistently present) match across different stores' titles.
-    "Apple":   ["apple", "iphone"],
-    "Samsung": ["samsung", "galaxy"],
-    "Redmi":   ["redmi"],
-    "Poco":    ["poco"],
-    "Xiaomi":  ["xiaomi"],
-    "Honor":   ["honor"],
-    "Vivo":    ["vivo"],
-    "Oppo":    ["oppo"],
-    "Realme":  ["realme"],
-    "Tecno":   ["tecno", "camon", "spark"],
-    "Infinix": ["infinix"],
-    "Zte":     ["zte", "nubia"],
-}
 _STORAGE_RE = re.compile(r"(\d+)\s*(?:gb|tb)", re.I)
 _DIFF_RE = re.compile(
     r"\b(pro|max|plus|ultra|lite|mini|fe|note|edge|fold|se|\d+)\b", re.I
@@ -196,35 +180,11 @@ def _extract_storage(text: str) -> str:
     return m.group(1).lower() if m else ""
 
 
-def _extract_brand(text: str) -> str:
-    text = text.lower()
-    for canonical, kws in _BRAND_KWS.items():
-        if any(kw in text for kw in kws):
-            return canonical.lower()
-    return ""
-
-
-_SPEC_NORM_RE = re.compile(r"[^a-z0-9\s]")
-
-
-def _normalize_spec_text(text: str) -> str:
-    text = _SPEC_NORM_RE.sub(" ", text.lower())
-    return " ".join(text.split())
-
-
-def _match_spec_row(name: str, keywords: str, spec_rows: list[dict]) -> dict | None:
-    """Best-effort link from a scraped product's messy title to a seeded spec row."""
-    brand = _extract_brand(f"{name} {keywords}")
-    if not brand:
-        return None
-    candidates = [r for r in spec_rows if r["brand"] == brand]
-    if not candidates:
-        return None
-    norm_name = _normalize_spec_text(f"{name} {keywords}")
-    for row in sorted(candidates, key=lambda r: len(r["model_key"]), reverse=True):
-        if row["model_key"] in norm_name:
-            return row
-    return None
+# Brend jadvali va nom moslashtirish endi brands.py da — scraper ham,
+# sync_specs.py ham AYNAN shu funksiyalarni chaqiradi, ya'ni bu yerda
+# ko'rinadigan xususiyat sahifadagisi bilan bir xil bo'lishi kafolatlangan.
+_extract_brand = brands.extract_brand
+_match_spec_row = brands.match_spec_row
 
 
 def _jaccard(a: str, b: str) -> float:
@@ -401,6 +361,12 @@ async def lifespan(app: FastAPI):
                 created_at TIMESTAMPTZ DEFAULT NOW()
             )
         """)
+        # Mahsulot manzili faqat nomdan iborat bo'lishi uchun slug ustuni.
+        # sync_csv.py uni to'ldiradi; bu yerdagi ALTER eski bazalar uchun.
+        await conn.execute("ALTER TABLE products ADD COLUMN IF NOT EXISTS slug VARCHAR(200)")
+        await conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_products_slug ON products(slug)"
+        )
         # Product spec sheet (for the compare feature) — seeded from specs_seed.py
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS product_specs (
@@ -462,7 +428,7 @@ async def lifespan(app: FastAPI):
             ],
         )
         spec_rows = await conn.fetch("SELECT * FROM product_specs")
-        app.state.spec_rows = [dict(r) for r in spec_rows]
+        _store_specs([dict(r) for r in spec_rows])
     yield
     await app.state.pool.close()
 
@@ -571,6 +537,9 @@ def _row_to_product(row: asyncpg.Record, markets: list[dict]) -> dict[str, Any]:
     best = sorted_markets[0] if sorted_markets else {}
     return {
         "id": row["id"],
+        # Kanonik manzil bo'lagi. Sinxronizatsiya hali ishlamagan bo'lsa NULL
+        # bo'lishi mumkin — bunda mijoz ID ga qaytadi.
+        "slug": (row["slug"] if "slug" in row.keys() else None) or None,
         "name": row["name"],
         "title": row["title"],
         "category": row["category"],
@@ -585,6 +554,61 @@ def _row_to_product(row: asyncpg.Record, markets: list[dict]) -> dict[str, Any]:
         "url": best.get("url", row["url"] or "#"),
         "markets": sorted_markets,
     }
+
+
+# ── Xususiyatlar keshi ───────────────────────────────────────────────────────
+# GSMArena dan endi ~15 000 model keladi va ro'yxat haftada bir yangilanadi.
+# Uni har so'rovda bazadan olish ham, ishga tushganda bir marta o'qib abadiy
+# ushlab turish ham to'g'ri emas: birinchisi sekin, ikkinchisi yangilangan
+# xususiyatlarni API qayta ishga tushmaguncha ko'rsatmaydi.
+_SPEC_TTL = 900  # 15 daqiqa
+
+
+def _store_specs(rows: list[dict]) -> tuple[list[dict], brands.SpecIndex]:
+    payload = (rows, brands.build_spec_index(rows))
+    app.state.spec_rows = rows
+    return _cache_put("specs", payload)
+
+
+async def _get_specs(pool: asyncpg.Pool) -> tuple[list[dict], brands.SpecIndex]:
+    """(yozuvlar, indeks) — 15 daqiqada bir marta yangilanadi."""
+    cached = _cache_get("specs", _SPEC_TTL)
+    if cached is not None:
+        return cached
+    rows = await pool.fetch("SELECT * FROM product_specs")
+    return _store_specs([dict(r) for r in rows])
+
+
+# Eski manzillar: /product/samsung-galaxy-s24-prod-8fc7e81f5ca9aeb6051c
+_LEGACY_ID_RE = re.compile(r"(prod-[0-9a-f]{20})$", re.I)
+
+
+async def _find_product(pool: asyncpg.Pool, ref: str) -> asyncpg.Record | None:
+    """
+    Mahsulotni slug yoki ID bo'yicha topadi.
+
+    Manzillarda endi faqat nom turadi (/product/iphone-15-pro-256gb), lekin
+    tashqarida tarqalgan eski havolalar ham ishlashi kerak: ular slug oxirida
+    `-prod-<hex>` bilan kelardi, ba'zilari esa toza ID edi.
+    """
+    ref = (ref or "").strip()
+    if not ref:
+        return None
+
+    row = await pool.fetchrow("SELECT * FROM products WHERE slug = $1", ref)
+    if row is not None:
+        return row
+
+    row = await pool.fetchrow("SELECT * FROM products WHERE id = $1", ref)
+    if row is not None:
+        return row
+
+    legacy = _LEGACY_ID_RE.search(ref)
+    if legacy:
+        return await pool.fetchrow(
+            "SELECT * FROM products WHERE id = $1", legacy.group(1).lower()
+        )
+    return None
 
 
 async def _fetch_markets(pool: asyncpg.Pool, product_ids: list[str]) -> dict[str, list[dict]]:
@@ -622,10 +646,11 @@ async def _get_spec_index(pool: asyncpg.Pool) -> dict[str, dict]:
     if cached is not None:
         return cached
 
+    _, spec_index = await _get_specs(pool)
     rows = await pool.fetch("SELECT id, name, keywords FROM products")
     index: dict[str, dict] = {}
     for r in rows:
-        spec = _match_spec_row(r["name"] or "", r["keywords"] or "", app.state.spec_rows)
+        spec = _match_spec_row(r["name"] or "", r["keywords"] or "", spec_index)
         if spec is not None:
             index[r["id"]] = spec
     return _cache_put("spec-index", index)
@@ -666,7 +691,7 @@ async def get_products(
             where_parts.append(f"(lower(p.name) LIKE ${i} OR lower(p.keywords) LIKE ${i})")
 
     if brand:
-        kws = _BRAND_KWS.get(brand, [brand.lower()])
+        kws = brands.keywords_for(brand)
         brand_parts = []
         for kw in kws:
             params.append(f"%{kw}%")
@@ -765,14 +790,15 @@ async def get_products(
     return {"products": products, "total": total, "page": page, "limit": limit, "hasMore": offset + limit < total}
 
 
-@app.get("/api/products/{product_id}")
-async def get_product(product_id: str) -> dict:
+@app.get("/api/products/{product_ref}")
+async def get_product(product_ref: str) -> dict:
+    """`product_ref` — slug (kanonik) yoki ID (eski havolalar uchun)."""
     pool: asyncpg.Pool = app.state.pool
-    row = await pool.fetchrow("SELECT * FROM products WHERE id = $1", product_id)
+    row = await _find_product(pool, product_ref)
     if row is None:
         raise HTTPException(status_code=404, detail="Not Found")
-    markets_map = await _fetch_markets(pool, [product_id])
-    return _row_to_product(row, markets_map.get(product_id, []))
+    markets_map = await _fetch_markets(pool, [row["id"]])
+    return _row_to_product(row, markets_map.get(row["id"], []))
 
 
 # ── Specs & compare ────────────────────────────────────────────────────────────
@@ -800,38 +826,232 @@ _SPEC_DIFF_FIELDS = [
 ]
 
 
-@app.get("/api/products/{product_id}/specs")
-async def get_product_specs(product_id: str) -> dict:
+@app.get("/api/products/{product_ref}/specs")
+async def get_product_specs(product_ref: str) -> dict:
     pool: asyncpg.Pool = app.state.pool
-    row = await pool.fetchrow("SELECT name, keywords FROM products WHERE id = $1", product_id)
+    row = await _find_product(pool, product_ref)
     if row is None:
         raise HTTPException(status_code=404, detail="Not Found")
-    spec = _match_spec_row(row["name"] or "", row["keywords"] or "", app.state.spec_rows)
+    _, spec_index = await _get_specs(pool)
+    spec = _match_spec_row(row["name"] or "", row["keywords"] or "", spec_index)
     return {"matched": spec is not None, "specs": _spec_payload(spec) if spec else None}
+
+
+# ── Solishtirish xulosasi (tavsiya) ──────────────────────────────────────────
+# Solishtirish jadvali o'z-o'zidan javob bermaydi: foydalanuvchi 10 ta qatorni
+# o'qib chiqib, "xo'sh, qaysinisini olay va qayerdan?" degan savol bilan qoladi.
+# Quyidagi hisob shu savolga aniq javob beradi — qaysi model kuchli, qaysi biri
+# arzon va eng arzoni qaysi do'konlarda bor.
+
+_MP_RE       = re.compile(r"(\d+(?:\.\d+)?)\s*MP", re.I)
+_HZ_RE       = re.compile(r"(\d+)\s*Hz", re.I)
+_WATT_RE     = re.compile(r"(\d+(?:\.\d+)?)\s*W\b", re.I)
+_CAPACITY_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(TB|GB|MB)", re.I)
+
+
+def _max_capacity_gb(options: list[str] | None) -> float:
+    """["128GB", "1TB"] -> 1024.0"""
+    best = 0.0
+    for item in options or []:
+        m = _CAPACITY_RE.search(str(item))
+        if not m:
+            continue
+        value = float(m.group(1))
+        unit = m.group(2).upper()
+        gb = value * (1024 if unit == "TB" else 1 if unit == "GB" else 1 / 1024)
+        best = max(best, gb)
+    return best
+
+
+def _first_number(pattern: re.Pattern, text: str | None) -> float:
+    m = pattern.search(text or "")
+    return float(m.group(1)) if m else 0.0
+
+
+# (kalit, sarlavha, og'irlik) — og'irliklar telefon tanlashda odatda qanchalik
+# muhimligiga qarab qo'yilgan, yig'indisi 1.0 bo'lishi shart emas.
+_SPEC_METRICS: tuple[tuple[str, str, float], ...] = (
+    ("batteryMah",  "Batareya",     1.0),
+    ("ramGb",       "RAM",          0.9),
+    ("storageGb",   "Xotira",       0.7),
+    ("mainCameraMp", "Asosiy kamera", 0.9),
+    ("selfieCameraMp", "Old kamera", 0.4),
+    ("displayHz",   "Ekran chastotasi", 0.6),
+    ("chargingW",   "Zaryadlash quvvati", 0.5),
+    ("releaseYear", "Yangiligi",    0.8),
+)
+
+_METRIC_UNITS = {
+    "batteryMah": "mAh", "ramGb": "GB", "storageGb": "GB",
+    "mainCameraMp": "MP", "selfieCameraMp": "MP", "displayHz": "Hz",
+    "chargingW": "W", "releaseYear": "",
+}
+
+
+def _spec_metrics(specs: dict | None) -> dict[str, float]:
+    """Xususiyatlardan solishtirsa bo'ladigan sonlarni ajratadi."""
+    if not specs:
+        return {}
+    return {
+        "batteryMah":      float(specs.get("batteryMah") or 0),
+        "ramGb":           _max_capacity_gb(specs.get("ramOptions")),
+        "storageGb":       _max_capacity_gb(specs.get("storageOptions")),
+        "mainCameraMp":    _first_number(_MP_RE, specs.get("mainCamera")),
+        "selfieCameraMp":  _first_number(_MP_RE, specs.get("selfieCamera")),
+        "displayHz":       _first_number(_HZ_RE, specs.get("display")),
+        "chargingW":       _first_number(_WATT_RE, specs.get("charging")),
+        "releaseYear":     float(specs.get("releaseYear") or 0),
+    }
+
+
+def _compare_verdict(items: list[dict]) -> dict | None:
+    """
+    Solishtirilgan mahsulotlar bo'yicha xulosa:
+      · har bir xususiyat bo'yicha g'olib
+      · eng arzon variant va u qaysi do'konlarda bor
+      · umumiy tavsiya (xususiyat ballari + narx muvozanati)
+    """
+    if len(items) < 2:
+        return None
+
+    metrics = [_spec_metrics(it.get("specs")) for it in items]
+    prices = [float(it["product"].get("price") or 0) for it in items]
+
+    # ── Har bir o'lchov bo'yicha g'olib va normallashtirilgan ball ───────────
+    winners: dict[str, dict] = {}
+    spec_scores = [0.0] * len(items)
+    weight_used = 0.0
+
+    for key, label, weight in _SPEC_METRICS:
+        values = [m.get(key, 0.0) for m in metrics]
+        present = [v for v in values if v > 0]
+        # Hamma qiymat bir xil bo'lsa g'olib ham, ball ham yo'q — bu qator
+        # tanlovga ta'sir qilmaydi.
+        if len(present) < 2 or len(set(present)) < 2:
+            continue
+
+        hi, lo = max(values), min(present)
+        weight_used += weight
+        for i, value in enumerate(values):
+            if value > 0 and hi > lo:
+                spec_scores[i] += weight * (value - lo) / (hi - lo)
+
+        best_i = max(range(len(values)), key=lambda i: values[i])
+        unit = _METRIC_UNITS.get(key, "")
+        winners[key] = {
+            "productId": items[best_i]["product"]["id"],
+            "label": label,
+            "value": f"{values[best_i]:g}{(' ' + unit) if unit else ''}".strip(),
+        }
+
+    if weight_used > 0:
+        spec_scores = [round(100 * v / weight_used) for v in spec_scores]
+    else:
+        spec_scores = [0] * len(items)
+
+    # ── Narx ballari: eng arzoni 100 ────────────────────────────────────────
+    valid_prices = [p for p in prices if p > 0]
+    lo_price = min(valid_prices) if valid_prices else 0
+    hi_price = max(valid_prices) if valid_prices else 0
+    price_scores = []
+    for p in prices:
+        if p <= 0 or hi_price == lo_price:
+            price_scores.append(100 if p > 0 else 0)
+        else:
+            price_scores.append(round(100 * (hi_price - p) / (hi_price - lo_price)))
+
+    # ── Eng arzon variant va u mavjud do'konlar ─────────────────────────────
+    cheapest = None
+    if valid_prices:
+        idx = min(
+            (i for i, p in enumerate(prices) if p > 0),
+            key=lambda i: prices[i],
+        )
+        product = items[idx]["product"]
+        markets = sorted(product.get("markets") or [], key=lambda m: m["price"])
+        cheapest = {
+            "productId": product["id"],
+            "slug": product.get("slug"),
+            "name": product["name"],
+            "price": prices[idx],
+            # Eng arzon narx qaysi do'konda — "qayerdan olay?" degan savolga javob
+            "bestMarket": markets[0] if markets else None,
+            "markets": markets,
+            "marketCount": len(markets),
+            # Eng qimmat taklifga nisbatan tejaladigan summa
+            "maxSaving": (markets[-1]["price"] - markets[0]["price"]) if len(markets) > 1 else 0,
+            "vsMostExpensive": round(hi_price - prices[idx]) if hi_price > prices[idx] else 0,
+        }
+
+    # ── Umumiy tavsiya ──────────────────────────────────────────────────────
+    # 60% xususiyat, 40% narx: solishtirish sahifasiga kirgan odam eng arzonni
+    # emas, "puliga arziydiganini" qidiradi.
+    overall = [round(0.6 * spec_scores[i] + 0.4 * price_scores[i]) for i in range(len(items))]
+    best_i = max(range(len(items)), key=lambda i: overall[i])
+    best_id = items[best_i]["product"]["id"]
+
+    reasons: list[str] = []
+    won = [w["label"] for w in winners.values() if w["productId"] == best_id]
+    if won:
+        reasons.append(", ".join(won[:3]) + " bo'yicha eng yaxshisi")
+    if cheapest and cheapest["productId"] == best_id:
+        reasons.append("solishtirilganlar orasida eng arzoni")
+    elif prices[best_i] > 0 and lo_price > 0 and prices[best_i] > lo_price:
+        reasons.append(f"eng arzonidan {round(prices[best_i] - lo_price):,} so'm qimmat"
+                       .replace(",", " "))
+    if not reasons:
+        reasons.append("narx va xususiyatlar muvozanati bo'yicha oldinda")
+
+    return {
+        "scores": [
+            {
+                "productId": items[i]["product"]["id"],
+                "specScore": spec_scores[i],
+                "priceScore": price_scores[i],
+                "overall": overall[i],
+            }
+            for i in range(len(items))
+        ],
+        "winners": winners,
+        "cheapest": cheapest,
+        "recommended": {"productId": best_id, "reasons": reasons},
+    }
 
 
 @app.get("/api/compare")
 async def compare_products(ids: str = Query(..., min_length=1)) -> dict:
     pool: asyncpg.Pool = app.state.pool
-    id_list = [i.strip() for i in ids.split(",") if i.strip()][:4]
-    if not id_list:
+    refs = [i.strip() for i in ids.split(",") if i.strip()][:4]
+    if not refs:
         raise HTTPException(status_code=400, detail="No product ids given")
 
-    rows = await pool.fetch("SELECT * FROM products WHERE id = ANY($1)", id_list)
+    # Solishtirishga slug bilan ham, ID bilan ham murojaat qilinadi.
+    rows = await pool.fetch(
+        "SELECT * FROM products WHERE id = ANY($1::text[]) OR slug = ANY($1::text[])",
+        refs,
+    )
     if not rows:
         raise HTTPException(status_code=404, detail="Not Found")
 
-    by_id = {r["id"]: r for r in rows}
-    markets_map = await _fetch_markets(pool, list(by_id.keys()))
+    by_ref: dict[str, asyncpg.Record] = {}
+    for r in rows:
+        by_ref[r["id"]] = r
+        if r["slug"]:
+            by_ref[r["slug"]] = r
+
+    markets_map = await _fetch_markets(pool, [r["id"] for r in rows])
+    _, spec_index = await _get_specs(pool)
 
     items = []
-    for pid in id_list:
-        row = by_id.get(pid)
-        if row is None:
+    seen: set[str] = set()
+    for ref in refs:
+        row = by_ref.get(ref)
+        if row is None or row["id"] in seen:
             continue
-        spec = _match_spec_row(row["name"] or "", row["keywords"] or "", app.state.spec_rows)
+        seen.add(row["id"])
+        spec = _match_spec_row(row["name"] or "", row["keywords"] or "", spec_index)
         items.append({
-            "product": _row_to_product(row, markets_map.get(pid, [])),
+            "product": _row_to_product(row, markets_map.get(row["id"], [])),
             "specs": _spec_payload(spec) if spec else None,
         })
 
@@ -839,7 +1059,11 @@ async def compare_products(ids: str = Query(..., min_length=1)) -> dict:
         field for field in _SPEC_DIFF_FIELDS
         if len({json.dumps((it["specs"] or {}).get(field)) for it in items}) > 1
     ]
-    return {"items": items, "diffFields": diff_fields}
+    return {
+        "items": items,
+        "diffFields": diff_fields,
+        "verdict": _compare_verdict(items),
+    }
 
 
 # ── Recommendations ───────────────────────────────────────────────────────────
@@ -1125,6 +1349,40 @@ async def get_markets(response: Response) -> dict:
     })
 
 
+@app.get("/api/brands")
+async def get_brands(response: Response) -> dict:
+    """
+    Bazada haqiqatda mahsuloti bor brendlar va ularning soni.
+
+    Filtr ro'yxati ilgari mijozda qo'lda yozilgan edi va bazada bir dona ham
+    mahsuloti yo'q brendlarni ham ko'rsatardi — bosgan odam bo'sh sahifaga
+    tushib, "topilmayapti" degan xulosaga kelardi. Endi ro'yxat bazadan
+    keladi: mahsuloti yo'q brend o'z-o'zidan ko'rinmaydi.
+    """
+    response.headers["Cache-Control"] = "public, max-age=300"
+    cached = _cache_get("brands", 300)
+    if cached is not None:
+        return cached
+
+    pool: asyncpg.Pool = app.state.pool
+    rows = await pool.fetch("SELECT name, keywords FROM products")
+
+    counts: Counter[str] = Counter()
+    for r in rows:
+        brand = brands.extract_brand(f"{r['name'] or ''} {r['keywords'] or ''}")
+        if brand:
+            counts[brand] += 1
+
+    # Ko'rsatiladigan nom: "poco" -> "Poco", "zte" -> "ZTE"
+    special = {"zte": "ZTE", "lg": "LG", "tcl": "TCL", "oneplus": "OnePlus"}
+    return _cache_put("brands", {
+        "brands": [
+            {"key": key, "name": special.get(key, key.capitalize()), "count": count}
+            for key, count in counts.most_common()
+        ]
+    })
+
+
 @app.get("/api/spec-facets")
 async def spec_facets(response: Response) -> dict:
     """Xususiyat filtrlari uchun mavjud qiymatlar.
@@ -1139,7 +1397,8 @@ async def spec_facets(response: Response) -> dict:
     storage_counts: Counter = Counter()
     batteries: list[int] = []
 
-    for row in app.state.spec_rows:
+    spec_rows, _ = await _get_specs(app.state.pool)
+    for row in spec_rows:
         for o in (row["ram_options"] or []):
             ram_counts[o] += 1
         for o in (row["storage_options"] or []):

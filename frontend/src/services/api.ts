@@ -63,6 +63,24 @@ export const fetchProductById = async (id: string | number) => {
   }
 };
 
+/**
+ * Mahsulotning texnik xususiyatlari (GSMArena dan yig'ilgan).
+ *
+ * `ref` — slug yoki ID. Mos model topilmasa `matched: false` qaytadi va
+ * sahifa xususiyatlar bo'limini ko'rsatmaydi — bo'sh jadval o'rniga hech narsa
+ * ko'rsatmaslik to'g'riroq.
+ */
+export const fetchProductSpecs = async (ref: string | number) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/products/${ref}/specs`);
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching specs for ${ref}:`, error);
+    return { matched: false, specs: null };
+  }
+};
+
 export const fetchPersonalizedRecommendations = async (limit = 8) => {
   try {
     const response = await fetch(

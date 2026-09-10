@@ -9,17 +9,28 @@ Yozuvlar `source = 'gsmarena'` belgisi bilan saqlanadi. FastAPI ishga
 tushganda specs_seed.py dagi qo'lda yozilgan yozuvlarni jadvalga qo'yadi,
 lekin faqat `source = 'seed'` bo'lganlarini yangilaydi — shuning uchun bu
 yerda yozilgan aniqroq ma'lumot API qayta ishga tushganda o'chib ketmaydi.
+
+Ikki rejim:
+    python python/sync_specs.py --export   bazadagi gsmarena yozuvlarini CSV ga
+                                           chiqaradi (scraper undan boshlaydi)
+    python python/sync_specs.py            CSV ni bazaga yozadi + qamrov hisoboti
+
+--export scraperdan OLDIN chaqiriladi: shu tufayli o'tgan haftalarda yig'ilgan
+model sahifalari qaytadan yuklanmaydi va tafsilot qamrovi ish sayin ortadi.
 """
 from __future__ import annotations
 
 import csv
 import json
 import os
-import re
 import sys
 
 import psycopg2
 import psycopg2.extras
+
+# Brend jadvali API bilan bitta manbadan — takrorlanmasin.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "fastapi_app"))
+import brands as brand_table  # noqa: E402
 
 DATA_DIR = os.getenv("DATA_DIR", "./data")
 DB_URL = os.getenv("PRODUCTS_DB_URL", "postgresql://postgres:postgres@postgres:5432/fullbazar")
@@ -145,75 +156,104 @@ def write_db(rows: list[tuple]) -> int:
         conn.close()
 
 
-_NORM_RE = re.compile(r"[^a-z0-9\s]")
-
-# main.py dagi _BRAND_KWS bilan bir xil (tartib ham muhim)
-_BRAND_KWS = {
-    "apple": ["apple", "iphone"], "samsung": ["samsung", "galaxy"],
-    "redmi": ["redmi"], "poco": ["poco"], "xiaomi": ["xiaomi"],
-    "honor": ["honor"], "vivo": ["vivo"], "oppo": ["oppo"],
-    "realme": ["realme"], "tecno": ["tecno", "camon", "spark"],
-    "infinix": ["infinix"], "zte": ["zte", "nubia"],
-}
-
-
-def _normalize(text: str) -> str:
-    return " ".join(_NORM_RE.sub(" ", (text or "").lower()).split())
-
-
-def _brand_of(text: str) -> str:
-    text = (text or "").lower()
-    for canonical, kws in _BRAND_KWS.items():
-        if any(kw in text for kw in kws):
-            return canonical
-    return ""
 
 
 def coverage_report() -> None:
     """
-    Nechta mahsulot xususiyatlarga ega bo'ldi — main.py dagi _match_spec_row
-    bilan bir xil mantiq. "Yana manba kerakmi?" degan savolni o'lchovli qiladi.
+    Nechta mahsulot xususiyatlarga ega bo'ldi — API dagi bilan AYNAN bir xil
+    mantiq (brands.match_spec_row). "Yana manba kerakmi?" degan savolni
+    o'lchovli qiladi.
     """
     conn = psycopg2.connect(DB_URL)
     try:
         with conn.cursor() as cur:
             cur.execute("SELECT brand, model_key FROM product_specs")
-            specs: dict[str, list[str]] = {}
-            for brand, key in cur.fetchall():
-                specs.setdefault(brand, []).append(key)
-            for keys in specs.values():
-                keys.sort(key=len, reverse=True)
-
+            spec_index = brand_table.build_spec_index(
+                [{"brand": b, "model_key": k} for b, k in cur.fetchall()]
+            )
             cur.execute("SELECT name, keywords FROM products")
             products = cur.fetchall()
     finally:
         conn.close()
 
     if not products:
+        print("[qamrov] products jadvali bo'sh", flush=True)
         return
 
     matched = 0
     unmatched_brands: dict[str, int] = {}
     for name, keywords in products:
-        blob = f"{name or ''} {keywords or ''}"
-        brand = _brand_of(blob)
-        norm = _normalize(blob)
-        if brand and any(k in norm for k in specs.get(brand, [])):
+        if brand_table.match_spec_row(name or "", keywords or "", spec_index):
             matched += 1
         else:
-            unmatched_brands[brand or "(brend aniqlanmadi)"] = \
-                unmatched_brands.get(brand or "(brend aniqlanmadi)", 0) + 1
+            brand = brand_table.extract_brand(f"{name or ''} {keywords or ''}")
+            key = brand or "(brend aniqlanmadi)"
+            unmatched_brands[key] = unmatched_brands.get(key, 0) + 1
 
     pct = matched * 100 // len(products)
     print(f"[qamrov] {matched}/{len(products)} mahsulot ({pct}%) xususiyatlarga ega",
           flush=True)
     if unmatched_brands:
-        top = sorted(unmatched_brands.items(), key=lambda kv: -kv[1])[:6]
+        top = sorted(unmatched_brands.items(), key=lambda kv: -kv[1])[:8]
         print("[qamrov] eng ko'p yetishmayotgan brendlar: "
               + ", ".join(f"{b}={n}" for b, n in top), flush=True)
 
 
+EXPORT_COLUMNS = [
+    "brand", "model_key", "display_name", "display", "chipset", "ram_options",
+    "storage_options", "main_camera", "selfie_camera", "battery_mah",
+    "charging", "os", "body", "release_year", "source_url",
+]
+
+
+def export_csv() -> int:
+    """
+    Bazadagi gsmarena yozuvlarini CSV ga qaytaradi.
+
+    Scraper shu fayldan boshlaydi va `source_url` bo'yicha allaqachon o'qilgan
+    model sahifalarini qayta yuklamaydi — ya'ni tafsilot qamrovi har haftada
+    o'sib boradi, nolga qaytmaydi.
+    """
+    conn = psycopg2.connect(DB_URL)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(DDL)
+            cur.execute(
+                "SELECT brand, model_key, display_name, display, chipset,"
+                "       ram_options, storage_options, main_camera, selfie_camera,"
+                "       battery_mah, charging, os, body, release_year, source_url"
+                "  FROM product_specs WHERE source = 'gsmarena' AND source_url IS NOT NULL"
+            )
+            rows = cur.fetchall()
+        conn.commit()
+    finally:
+        conn.close()
+
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(CSV_PATH, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=EXPORT_COLUMNS)
+        writer.writeheader()
+        for r in rows:
+            record = dict(zip(EXPORT_COLUMNS, r))
+            record["ram_options"] = json.dumps(list(record["ram_options"] or []))
+            record["storage_options"] = json.dumps(list(record["storage_options"] or []))
+            record["battery_mah"] = record["battery_mah"] or ""
+            record["release_year"] = record["release_year"] or ""
+            writer.writerow({k: (v if v is not None else "") for k, v in record.items()})
+    print(f"[eksport] {len(rows)} ta yozuv {CSV_PATH} ga chiqarildi", flush=True)
+    return len(rows)
+
+
 if __name__ == "__main__":
+    if "--export" in sys.argv:
+        try:
+            export_csv()
+        except Exception as exc:
+            # Eksport ixtiyoriy tezlashtirish — u yiqilsa scraper noldan
+            # boshlaydi, ish baribir davom etishi kerak.
+            print(f"[eksport] bajarilmadi: {exc}", flush=True)
+        sys.exit(0)
+
     specs = load_rows()
     print(f"[specs] CSV dan {len(specs)} ta yozuv o'qildi", flush=True)
     if not specs:

@@ -11,6 +11,8 @@ import { productPath } from '../utils/slug';
 
 export interface Product {
   id: string | number;
+  /** Kanonik URL bo'lagi (/product/<slug>). Eski javoblarda bo'lmasligi mumkin. */
+  slug?: string | null;
   name: string;
   title?: string;
   price: number;

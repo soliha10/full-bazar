@@ -24,7 +24,12 @@ HEADERS = {
     ),
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     "Accept-Language": "uz-UZ,uz;q=0.9,ru;q=0.8,en-US;q=0.7",
-    "Accept-Encoding": "gzip, deflate, br",
+    # DIQQAT: "br" ATAYLAB yo'q. requests brotlini faqat `brotli`/`brotlicffi`
+    # o'rnatilgan bo'lsa ocha oladi; ular yo'q paytda esa xato ham bermaydi —
+    # javob sifatida siqilgan baytlarni matn deb qaytaradi. Natijada asaxiy,
+    # texnomart va olcha jimgina "0 mahsulot" bergan (sahifa HTML emas, axlat).
+    # Faqat o'zimiz ocha oladigan kodlashlarni so'raymiz.
+    "Accept-Encoding": "gzip, deflate",
     "Connection": "keep-alive",
 }
 

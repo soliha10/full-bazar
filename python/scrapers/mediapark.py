@@ -68,8 +68,14 @@ class MediaparkScraper(BaseScraper):
                 photos = item.get("mobile_photos") or item.get("photos") or []
                 image_url = photos[0] if photos else ""
 
-                slug = (item.get("url_slug") or {}).get("ru", "")
+                # API maydoni "slug", "url_slug" emas — eski nom bilan hamma
+                # qatorga bo'sh havola yozilardi va do'konga o'tish ishlamasdi.
+                slug = (item.get("slug") or {}).get("ru") or (item.get("slug") or {}).get("uz") or ""
                 product_url = f"https://mediapark.uz/ru/product/{slug}" if slug else ""
+
+                # Sotuvda yo'q mahsulotning narxi solishtirishga yaramaydi
+                if item.get("is_available") is False:
+                    continue
 
                 yield ProductRow(
                     title=name,
@@ -77,6 +83,7 @@ class MediaparkScraper(BaseScraper):
                     store=self.store_name,
                     image_url=image_url,
                     product_url=product_url,
+                    rating=str(item.get("rating") or ""),
                 )
 
             logger.info("[mediapark] page %d: %d products", page, len(products))

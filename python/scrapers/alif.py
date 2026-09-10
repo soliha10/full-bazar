@@ -34,21 +34,29 @@ def _resolve(val: Any, data: list, depth: int = 0, visited: set | None = None) -
 
 
 def _extract_products(nuxt_data: list) -> list[dict]:
-    """Walk the dehydrated Nuxt state array and collect product dicts."""
+    """Walk the dehydrated Nuxt state array and collect product dicts.
+
+    Tanlash `slug` + `name` + `price` kalitlari bo'yicha ketadi. Ilgari
+    `offer_id` talab qilinardi, lekin katalogdagi takliflarda u NULL bo'ladi
+    (haqiqiy identifikator — `moderated_offer_id`). Takrorlarni ham `offer_id`
+    bo'yicha tashlar edi, ya'ni barcha None lar bitta deb hisoblanib, har
+    sahifadan atigi BITTA mahsulot chiqardi (24 tasi o'rniga).
+    """
     products = []
-    seen_ids = set()
+    seen: set[str] = set()
     for item in nuxt_data:
         if not isinstance(item, dict):
             continue
-        if "offer_id" in item and "name" in item and "price" in item:
-            resolved = _resolve(item, nuxt_data)
-            if not isinstance(resolved, dict):
-                continue
-            oid = resolved.get("offer_id")
-            if oid in seen_ids:
-                continue
-            seen_ids.add(oid)
-            products.append(resolved)
+        if not {"slug", "name", "price"} <= item.keys():
+            continue
+        resolved = _resolve(item, nuxt_data)
+        if not isinstance(resolved, dict):
+            continue
+        key = str(resolved.get("moderated_offer_id") or resolved.get("slug") or "")
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        products.append(resolved)
     return products
 
 
@@ -101,8 +109,11 @@ class AlifScraper(BaseScraper):
                     if not price:
                         continue
 
-                    slug = prod.get("slug") or prod.get("offer_id") or ""
-                    product_url = f"{BASE}/uz/products/{slug}" if slug else ""
+                    # Mahsulot sahifasi `/uz/moderated-offer/<slug>` da turadi.
+                    # `/uz/products/<slug>` — 404: shu sababli alif dan kelgan
+                    # HAR BIR "do'konga o'tish" havolasi ishlamas edi.
+                    slug = prod.get("slug") or ""
+                    product_url = f"{BASE}/uz/moderated-offer/{slug}" if slug else ""
 
                     image_path = prod.get("image_path") or prod.get("image") or ""
                     if image_path and not str(image_path).startswith("http"):

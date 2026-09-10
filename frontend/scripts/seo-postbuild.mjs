@@ -218,7 +218,14 @@ ${urls.join('\n')}
 const products = await fetchAllProducts();
 if (products && products.length > 0) {
   fs.writeFileSync(path.join(DIST, 'sitemap.xml'), buildSitemap(products));
-  console.log(`[seo] sitemap.xml: ${ROUTES.filter((r) => !r.noindex).length} statik + ${products.length} mahsulot URL (slug bilan)`);
+  // Slugi bo'lmagan mahsulot ID li manzil bilan tushadi — sinxronizatsiya hali
+  // slug ustunini to'ldirmagan bo'lsa shunday bo'ladi. Buni jimgina "slug bilan"
+  // deb yozib qo'ymaymiz, aks holda muammo ko'rinmay qoladi.
+  const withSlug = products.filter((p) => p.slug).length;
+  console.log(
+    `[seo] sitemap.xml: ${ROUTES.filter((r) => !r.noindex).length} statik + ` +
+    `${products.length} mahsulot URL (${withSlug} tasi slug bilan)`,
+  );
 } else {
   // API yetib bo'lmadi — sayt baribir deploy bo'lsin, faqat statik sitemap bilan
   fs.writeFileSync(path.join(DIST, 'sitemap.xml'), buildSitemap([]));

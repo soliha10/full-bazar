@@ -13,23 +13,33 @@ import { formatSum } from '../utils/productMapper';
 import { SEO, SITE_URL } from '../components/SEO';
 
 
-const BRANDS = [
-  'Apple', 'Samsung', 'Redmi', 'Xiaomi', 'Poco',
-  'Honor', 'Vivo', 'Oppo', 'Realme', 'Tecno', 'Infinix',
-];
+/**
+ * Brend ro'yxati endi bazadan (/api/brands) keladi — qattiq yozilmagan.
+ *
+ * Ilgari bu ro'yxat qo'lda yozilardi va bazada mahsuloti yo'q brend ham
+ * ko'rinardi: foydalanuvchi uni bosib bo'sh sahifaga tushardi. Endi brend
+ * faqat haqiqatda mahsuloti bo'lsa ko'rinadi va yonida soni turadi.
+ */
+interface BrandFacet { key: string; name: string; count: number }
 
 const BRAND_COLORS: Record<string, string> = {
-  Apple:   '#555',
-  Samsung: '#1428A0',
-  Redmi:   '#FF6900',
-  Xiaomi:  '#F97316',
-  Poco:    '#FFCD00',
-  Honor:   '#CF0A2C',
-  Vivo:    '#415FFF',
-  Oppo:    '#1D8348',
-  Realme:  '#E8B800',
-  Tecno:   '#00AEEF',
-  Infinix: '#E63946',
+  apple:    '#555',
+  samsung:  '#1428A0',
+  redmi:    '#FF6900',
+  xiaomi:   '#F97316',
+  poco:     '#FFCD00',
+  honor:    '#CF0A2C',
+  huawei:   '#C8102E',
+  vivo:     '#415FFF',
+  oppo:     '#1D8348',
+  realme:   '#E8B800',
+  tecno:    '#00AEEF',
+  infinix:  '#E63946',
+  itel:     '#0EA5E9',
+  zte:      '#0057B8',
+  nokia:    '#124191',
+  motorola: '#5C92FA',
+  google:   '#34A853',
 };
 
 const MARKETPLACES = [
@@ -39,10 +49,8 @@ const MARKETPLACES = [
   { name: 'Mediapark',  key: 'mediapark',  color: '#10B981' },
   { name: 'Chakana',    key: 'chakana',    color: '#0EA5E9' },
   { name: 'Glotr',      key: 'glotr',      color: '#8B5CF6' },
-  { name: 'Olx',        key: 'olx',        color: '#22C55E' },
   { name: 'Openshop',   key: 'openshop',   color: '#6366F1' },
   { name: 'Idea',       key: 'idea',       color: '#F59E0B' },
-  { name: 'Brandstore', key: 'brandstore', color: '#4F46E5' },
   { name: 'Beemarket',    key: 'beemarket',    color: '#EC4899' },
   { name: 'Castore',      key: 'castore',      color: '#14B8A6' },
   { name: 'Joybox',       key: 'joybox',       color: '#F43F5E' },
@@ -128,6 +136,7 @@ export function ProductListing() {
     battery: { min: number; max: number } | null;
   }>({ ram: [], storage: [], battery: null });
   const [marketCounts,   setMarketCounts]   = useState<Record<string, number>>({});
+  const [brandFacets,    setBrandFacets]    = useState<BrandFacet[]>([]);
   const [showAllMarkets, setShowAllMarkets] = useState(false);
   const [localSearch, setLocalSearch] = useState(searchQuery);
 
@@ -283,7 +292,17 @@ export function ProductListing() {
         for (const m of d.markets) c[m.key] = m.count;
         setMarketCounts(c);
       }).catch(() => {});
+
+    fetch('/api/brands').then(r => r.json())
+      .then((d: { brands: BrandFacet[] }) => setBrandFacets(d.brands ?? []))
+      .catch(() => {});
   }, []);
+
+  // Filtr kaliti kichik harfda ("poco"), ekranda esa chiroyli nomi kerak.
+  const brandLabel = useCallback(
+    (key: string) => brandFacets.find(b => b.key === key)?.name ?? key,
+    [brandFacets],
+  );
 
   const categories = ['All', 'Phones'];
   const categoryLabel: Record<string, string> = {
@@ -641,20 +660,21 @@ export function ProductListing() {
               )}
             </div>
             <div className="space-y-0.5">
-              {BRANDS.map(b => {
-                const on = brand === b;
+              {brandFacets.map(({ key, name, count }) => {
+                const on = brand === key;
                 return (
-                  <button key={b} type="button" onClick={() => setBr(on ? null : b)}
+                  <button key={key} type="button" onClick={() => setBr(on ? null : key)}
                     className="flex w-full items-center gap-2.5 rounded-xl px-2 py-2.5 text-left hover:bg-gray-100/60 dark:hover:bg-gray-900/60 transition-colors group"
                   >
                     <Cb on={on} />
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: BRAND_COLORS[b] ?? '#9ca3af' }} />
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: BRAND_COLORS[key] ?? '#9ca3af' }} />
                     <span className={`flex-1 text-[13px] transition-colors ${
                       on ? 'text-violet-600 dark:text-violet-400 font-semibold'
                          : 'text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100'
                     }`}>
-                      {b}
+                      {name}
                     </span>
+                    <span className="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums">({count})</span>
                   </button>
                 );
               })}
@@ -860,7 +880,7 @@ export function ProductListing() {
             {selectedBrand && (
               <span className="flex items-center gap-1 shrink-0 rounded-lg border border-violet-100 dark:border-violet-950 bg-violet-50/50 dark:bg-violet-950/20 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:text-violet-400">
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: BRAND_COLORS[selectedBrand] ?? '#555' }} />
-                {selectedBrand}
+                {brandLabel(selectedBrand)}
                 <button onClick={() => setSelectedBrand(null)} className="ml-1 opacity-60 hover:opacity-100"><X className="w-2.5 h-2.5" /></button>
               </span>
             )}
@@ -989,7 +1009,7 @@ export function ProductListing() {
                 {selectedBrand && (
                   <span className="flex items-center gap-1 rounded-full border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 px-2.5 py-1 text-[11px] font-semibold text-violet-700 dark:text-violet-400">
                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: BRAND_COLORS[selectedBrand] ?? '#555' }} />
-                    {selectedBrand}
+                    {brandLabel(selectedBrand)}
                     <button onClick={() => setSelectedBrand(null)} className="ml-0.5 opacity-60 hover:opacity-100"><X className="w-3 h-3" /></button>
                   </span>
                 )}
@@ -1168,7 +1188,7 @@ export function ProductListing() {
                   else if (tab.key === 'price') {
                     if (draftMinPrice || draftMaxPrice) sub = `${draftMinPrice || '0'}-${draftMaxPrice || '∞'}`;
                   }
-                  else if (tab.key === 'brand') sub = draftBrand || allLabel;
+                  else if (tab.key === 'brand') sub = draftBrand ? brandLabel(draftBrand) : allLabel;
                   else if (tab.key === 'store') sub = draftMarketplaces.length > 0 ? `${draftMarketplaces.length} ta` : allLabel;
                   else if (tab.key === 'rating') sub = draftRating > 0 ? `★ ${draftRating}+` : allLabel;
                   else if (tab.key === 'specs') {

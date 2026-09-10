@@ -12,7 +12,7 @@
  */
 import type { Config, Context } from '@netlify/edge-functions';
 // Ilova bilan bir xil slug mantig'i — Deno TS ni to'g'ridan-to'g'ri o'qiydi
-import { extractProductId, productPath } from '../../src/utils/slug.ts';
+import { productPath, productRef } from '../../src/utils/slug.ts';
 
 const SITE = 'https://bazarcom.online';
 const API = Deno.env.get('SEO_API_URL') ?? 'https://full-bazar-api.onrender.com';
@@ -26,6 +26,7 @@ interface Market {
 
 interface Product {
   id: string;
+  slug?: string | null;
   name?: string;
   title?: string;
   category?: string;
@@ -67,12 +68,12 @@ export default async (request: Request, context: Context) => {
 
   const requestUrl = new URL(request.url);
   const param = requestUrl.pathname.split('/')[2];
-  const id = extractProductId(param);
-  if (!id) return response;
+  const ref = productRef(param);
+  if (!ref) return response;
 
   let product: Product | null = null;
   try {
-    const res = await fetch(`${API}/api/products/${encodeURIComponent(id)}`, {
+    const res = await fetch(`${API}/api/products/${encodeURIComponent(ref)}`, {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       headers: { accept: 'application/json' },
     });

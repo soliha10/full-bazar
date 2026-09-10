@@ -11,6 +11,15 @@ from .base import BaseScraper, ProductRow
 logger = logging.getLogger(__name__)
 BASE = "https://asaxiy.uz"
 
+# Ilgari qidiruv ishlatilardi: `/product?key=smartfon&display=40&page=N`.
+# Ikkita muammo bor edi:
+#   1. Sahifa raqami QUERY da emas, YO'LDA bo'lishi kerak ekan
+#      (`/product/page=2?...`). Shuning uchun `?page=N` e'tiborga olinmay,
+#      har safar birinchi sahifa qaytardi — CSV ga 15 marta takrorlangan
+#      bir xil 23 ta mahsulot yozilardi.
+#   2. Qidiruv natijasi kategoriyadan tor: 151 ta mahsulot, kategoriyada 219 ta.
+CATEGORY = "/product/telefony-i-gadzhety/telefony/smartfony"
+
 
 def _first_number(text: str) -> float:
     """Extract the first integer run from a string (handles installment text like 'x 12 oy')."""
@@ -24,10 +33,13 @@ def _first_number(text: str) -> float:
 class AsaxiyScraper(BaseScraper):
     store_name = "asaxiy"
 
+    MAX_PAGES = 40
+
     def scrape(self) -> Iterator[ProductRow]:
-        page = 1
-        while page <= 15:
-            url = f"{BASE}/product?key=smartfon&display=40&page={page}"
+        seen: set[str] = set()
+
+        for page in range(1, self.MAX_PAGES + 1):
+            url = BASE + CATEGORY if page == 1 else f"{BASE}{CATEGORY}/page={page}"
             try:
                 resp = self.get(url)
                 if not resp.ok:
@@ -53,11 +65,19 @@ class AsaxiyScraper(BaseScraper):
                     logger.info(f"[asaxiy] page {page}: no cards found, stopping")
                     break
 
+                new_on_page = 0
                 for el in cards:
+                    href = el["href"]
+                    if href in seen:
+                        continue
+
                     name_el = el.select_one('[class*=name]')
                     title = name_el.get_text(strip=True) if name_el else ""
                     if not title:
                         continue
+
+                    seen.add(href)
+                    new_on_page += 1
 
                     price_el = el.select_one('[class*=price]')
                     price_text = price_el.get_text(separator=" ", strip=True) if price_el else ""
@@ -71,7 +91,6 @@ class AsaxiyScraper(BaseScraper):
                             image = src
                             break
 
-                    href = el["href"]
                     product_url = href if href.startswith("http") else BASE + href
 
                     yield ProductRow(
@@ -84,8 +103,12 @@ class AsaxiyScraper(BaseScraper):
                         review_count="",
                     )
 
+                # Oxirgi sahifadan keyin asaxiy yana birinchi sahifani beradi —
+                # yangi mahsulot chiqmasa, aylanishni to'xtatamiz.
+                if new_on_page == 0:
+                    logger.info(f"[asaxiy] page {page}: yangi mahsulot yo'q, to'xtatildi")
+                    break
+
             except Exception as exc:
                 logger.warning(f"[asaxiy] page {page} error: {exc}")
                 break
-
-            page += 1

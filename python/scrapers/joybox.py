@@ -1,71 +1,76 @@
 from __future__ import annotations
 
 import logging
-import re
 from typing import Iterator
-
-from bs4 import BeautifulSoup
 
 from .base import BaseScraper, ProductRow
 
 logger = logging.getLogger(__name__)
-BASE = "https://joybox.uz"
 
+# Sayt Nuxt SPA ga o'tdi: katalog sahifasi serverdan faqat birinchi 20 ta
+# kartani beradi va `?page=2` e'tiborga olinmaydi — qolgani brauzerda
+# yuklanadi. Shuning uchun HTML o'rniga saytning o'z JSON API si o'qiladi.
+API = "https://api.joybox.uz/api/v1/shop/products"
+CATEGORY_SLUG = "smartfony"
+PRODUCT_BASE = "https://joybox.uz/product"
 
-def _price(text: str) -> float:
-    nums = re.sub(r"[^\d]", "", text)
-    return float(nums) if nums else 0.0
-
-
-CATEGORY = f"{BASE}/magazin/smartfony-i-gadjety/smartfony"
+# API narxni tiyinda qaytaradi (329900000 = 3 299 000 so'm)
+PRICE_DIVISOR = 100
 
 
 class JoyboxScraper(BaseScraper):
     store_name = "joybox"
 
+    PAGE_LIMIT = 60
+    MAX_PAGES = 40
+
     def scrape(self) -> Iterator[ProductRow]:
-        for page in range(1, 25):
-            url = f"{CATEGORY}/page/{page}/" if page > 1 else f"{CATEGORY}/"
+        page = 1
+        while page <= self.MAX_PAGES:
+            url = (f"{API}?categorySlug={CATEGORY_SLUG}"
+                   f"&page={page}&limit={self.PAGE_LIMIT}")
             try:
-                resp = self.get(url)
+                resp = self.get(url, json_mode=True)
                 if not resp.ok:
                     logger.warning("[joybox] page %d HTTP %d", page, resp.status_code)
                     break
-                soup = BeautifulSoup(resp.text, "lxml")
 
-                cards = soup.select("div.wd-product")
-                if not cards:
-                    logger.info("[joybox] page %d: no cards, stopping", page)
+                payload = resp.json().get("data") or {}
+                items = payload.get("items") or []
+                if not items:
+                    logger.info("[joybox] page %d: mahsulot yo'q, to'xtatildi", page)
                     break
 
-                for card in cards:
-                    name_el = card.select_one(".wd-entities-title")
-                    title = name_el.get_text(strip=True) if name_el else ""
-                    if not title:
-                        a_link = card.select_one("a[aria-label]")
-                        title = (a_link.get("aria-label") or "").strip() if a_link else ""
+                for item in items:
+                    title = (item.get("name") or "").strip()
                     if not title:
                         continue
 
-                    price_el = card.select_one(".woocommerce-Price-amount")
-                    price = _price(price_el.get_text() if price_el else "")
-                    if not price:
+                    # salePrice — chegirmadagi joriy narx; bo'lmasa oddiy narx.
+                    raw = item.get("salePrice") or item.get("price") or 0
+                    price = float(raw) / PRICE_DIVISOR
+                    if price <= 0:
                         continue
 
-                    img = card.find("img")
-                    src = (img.get("src") or img.get("data-src") or "") if img else ""
-                    if src and not src.startswith("http"):
-                        src = BASE + src
+                    # Sotuvda yo'q mahsulotning narxi solishtirishga yaramaydi
+                    if item.get("inStock") is False:
+                        continue
 
-                    a_el = card.find("a", href=True)
-                    href = a_el["href"] if a_el else ""
-                    product_url = href if href.startswith("http") else BASE + href
-
+                    slug = item.get("slug") or ""
                     yield ProductRow(
-                        title=title, price=price, store=self.store_name,
-                        image_url=src, product_url=product_url,
+                        title=title,
+                        price=price,
+                        store=self.store_name,
+                        image_url=item.get("imageUrl") or "",
+                        product_url=f"{PRODUCT_BASE}/{slug}/" if slug else "",
                     )
+
+                meta = payload.get("meta") or {}
+                if page >= (meta.get("totalPages") or page):
+                    break
 
             except Exception as exc:
                 logger.warning("[joybox] page %d error: %s", page, exc)
                 break
+
+            page += 1
