@@ -2,6 +2,7 @@ import { Heart, Bell, LogOut, Moon, Sun, Globe, ChevronRight, User, ArrowLeft } 
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import { brandLabel } from '../hooks/useBrands';
 import { useFavorites } from '../hooks/useFavorites';
 import { usePriceWatch } from '../hooks/usePriceWatch';
 import { useTheme } from '../contexts/ThemeContext';
@@ -232,7 +233,7 @@ export function Profile() {
             <div className="flex flex-wrap gap-2">
               {user.profile.preferredBrands.map(b => (
                 <span key={b} className="text-xs font-bold bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-3 py-1.5 rounded-full">
-                  {b}
+                  {brandLabel(b)}
                 </span>
               ))}
             </div>

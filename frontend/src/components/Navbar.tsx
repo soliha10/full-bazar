@@ -12,6 +12,7 @@ import { useFavorites } from '../hooks/useFavorites';
 import { useAuth } from '../contexts/AuthContext';
 import { usePriceWatch } from '../hooks/usePriceWatch';
 import { useCompare } from '../contexts/CompareContext';
+import { brandLabel } from '../hooks/useBrands';
 
 interface NavbarProps {
   onSearchChange?: (value: string) => void;
@@ -387,7 +388,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                               <div className="flex flex-wrap gap-1">
                                 {user.profile.preferredBrands.slice(0, 4).map(b => (
                                   <span key={b} className="text-[10px] font-bold bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full">
-                                    {b}
+                                    {brandLabel(b)}
                                   </span>
                                 ))}
                                 {user.profile.preferredBrands.length > 4 && (
@@ -796,7 +797,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                   <div className="flex flex-wrap gap-1.5">
                     {user.profile.preferredBrands.map(b => (
                       <span key={b} className="text-xs font-bold bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-3 py-1 rounded-full">
-                        {b}
+                        {brandLabel(b)}
                       </span>
                     ))}
                   </div>

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Product } from '../components/ProductCard';
 import { useFavorites } from './useFavorites';
 import { useAuth } from '../contexts/AuthContext';
+import { brandKeyOf } from './useBrands';
 
 /**
  * Content-based recommendation engine (frontend-only, no backend needed).
@@ -33,7 +34,7 @@ export function useRecommendations(allProducts: Product[], limit = 8): Product[]
     let priceCount = 0;
 
     for (const p of favorites) {
-      const brand = extractBrand(p.name);
+      const brand = brandKeyOf(p.name);
       if (brand) likedBrands.set(brand, (likedBrands.get(brand) ?? 0) + 1);
       for (const m of p.markets ?? []) {
         likedMarkets.set(m.source.toLowerCase(), (likedMarkets.get(m.source.toLowerCase()) ?? 0) + 1);
@@ -42,9 +43,13 @@ export function useRecommendations(allProducts: Product[], limit = 8): Product[]
       priceCount++;
     }
 
-    // Merge profile preferred brands into signal
+    // Merge profile preferred brands into signal.
+    // Profil qiymatlari kichik harfli kalit ("poco"), eski hisoblarda esa
+    // ko'rinadigan nom ("Poco") saqlangan — ikkalasi ham brandKeyOf bilan
+    // bir xil kalitga tushishi uchun kichik harfga keltiramiz.
     for (const b of user?.profile.preferredBrands ?? []) {
-      likedBrands.set(b, (likedBrands.get(b) ?? 0) + 0.5);
+      const key = b.trim().toLowerCase();
+      if (key) likedBrands.set(key, (likedBrands.get(key) ?? 0) + 0.5);
     }
 
     const avgPrice = priceCount > 0 ? totalPrice / priceCount : 0;
@@ -75,7 +80,7 @@ export function useRecommendations(allProducts: Product[], limit = 8): Product[]
     // ── Score each candidate ──────────────────────────────────────────────────
     const scored = candidates.map(p => {
       // 1. Brand match (0–1)
-      const brand = extractBrand(p.name);
+      const brand = brandKeyOf(p.name);
       const brandCount = brand ? (likedBrands.get(brand) ?? 0) : 0;
       const maxBrandCount = Math.max(...likedBrands.values(), 1);
       const brandScore = brandCount / maxBrandCount;
@@ -118,15 +123,6 @@ export function useRecommendations(allProducts: Product[], limit = 8): Product[]
       .slice(0, limit)
       .map(s => s.product);
   }, [allProducts, favorites, user]);
-}
-
-function extractBrand(name: string): string | null {
-  const brands = [
-    'Apple', 'Samsung', 'Xiaomi', 'Redmi', 'Poco', 'Honor',
-    'Vivo', 'Oppo', 'Realme', 'Tecno', 'Infinix',
-  ];
-  const lower = name.toLowerCase();
-  return brands.find(b => lower.includes(b.toLowerCase())) ?? null;
 }
 
 function normCat(cat: string): string {

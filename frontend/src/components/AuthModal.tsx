@@ -4,8 +4,8 @@ import {
   ChevronRight, Check, Sparkles,
 } from 'lucide-react';
 import { useAuth, RegisterData } from '../contexts/AuthContext';
+import { useBrands, BRAND_COLORS } from '../hooks/useBrands';
 
-const BRANDS     = ['Apple', 'Samsung', 'Xiaomi', 'Redmi', 'Honor', 'Vivo', 'Oppo', 'Realme'];
 const CATEGORIES = ['Telefonlar', 'Noutbuklar', 'Planshetlar', 'Aksessuarlar', 'Audio', 'TV'];
 
 const AGE_GROUPS: { value: RegisterData['ageGroup']; label: string }[] = [
@@ -60,6 +60,10 @@ export function AuthModal() {
   const [ageGroup,            setAgeGroup]            = useState<RegisterData['ageGroup']>('25-34');
   const [budgetLevel,         setBudgetLevel]         = useState<RegisterData['budgetLevel']>('mid');
   const [preferredBrands,     setPreferredBrands]     = useState<string[]>([]);
+  // Katalog filtri bilan AYNAN bir xil ro'yxat — bazadagi haqiqiy brendlar.
+  // Ilgari bu yerda 8 ta brend qo'lda yozilgan edi va Poco, Tecno, Infinix,
+  // Huawei tanlab bo'lmasdi, holbuki katalogda ular bor.
+  const brands = useBrands();
   const [preferredCategories, setPreferredCategories] = useState<string[]>([]);
 
   if (!isAuthOpen) return null;
@@ -325,14 +329,17 @@ export function AuthModal() {
                   Sevimli brendlar <span className="text-gray-300 font-medium normal-case">(ixtiyoriy)</span>
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {BRANDS.map(b => {
-                    const on = preferredBrands.includes(b);
+                  {brands.map(({ key, name }) => {
+                    const on = preferredBrands.includes(key);
                     return (
-                      <button key={b} type="button" onClick={() => setPreferredBrands(prev => toggle(prev, b))}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 ${
+                      <button key={key} type="button" onClick={() => setPreferredBrands(prev => toggle(prev, key))}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 ${
                           on ? 'bg-violet-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                         }`}>
-                        {on && <Check className="w-3 h-3 inline mr-1" />}{b}
+                        {on
+                          ? <Check className="w-3 h-3" />
+                          : <span className="w-2 h-2 rounded-full" style={{ backgroundColor: BRAND_COLORS[key] ?? '#9ca3af' }} />}
+                        {name}
                       </button>
                     );
                   })}

@@ -7,40 +7,12 @@ import {
 import { ProductCard } from '../components/ProductCard';
 import { useProducts } from '../hooks/useProducts';
 import { fetchSpecFacets } from '../services/api';
+import { useBrands, BRAND_COLORS } from '../hooks/useBrands';
 import { useSearchParams, useNavigate, Link, useLocation, useNavigationType } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatSum } from '../utils/productMapper';
 import { SEO, SITE_URL } from '../components/SEO';
 
-
-/**
- * Brend ro'yxati endi bazadan (/api/brands) keladi — qattiq yozilmagan.
- *
- * Ilgari bu ro'yxat qo'lda yozilardi va bazada mahsuloti yo'q brend ham
- * ko'rinardi: foydalanuvchi uni bosib bo'sh sahifaga tushardi. Endi brend
- * faqat haqiqatda mahsuloti bo'lsa ko'rinadi va yonida soni turadi.
- */
-interface BrandFacet { key: string; name: string; count: number }
-
-const BRAND_COLORS: Record<string, string> = {
-  apple:    '#555',
-  samsung:  '#1428A0',
-  redmi:    '#FF6900',
-  xiaomi:   '#F97316',
-  poco:     '#FFCD00',
-  honor:    '#CF0A2C',
-  huawei:   '#C8102E',
-  vivo:     '#415FFF',
-  oppo:     '#1D8348',
-  realme:   '#E8B800',
-  tecno:    '#00AEEF',
-  infinix:  '#E63946',
-  itel:     '#0EA5E9',
-  zte:      '#0057B8',
-  nokia:    '#124191',
-  motorola: '#5C92FA',
-  google:   '#34A853',
-};
 
 const MARKETPLACES = [
   { name: 'Asaxiy',     key: 'asaxiy',     color: '#7C3AED' },
@@ -136,7 +108,9 @@ export function ProductListing() {
     battery: { min: number; max: number } | null;
   }>({ ram: [], storage: [], battery: null });
   const [marketCounts,   setMarketCounts]   = useState<Record<string, number>>({});
-  const [brandFacets,    setBrandFacets]    = useState<BrandFacet[]>([]);
+  // Brendlar bazadan keladi; API javob bermasa zaxira ro'yxat ishlatiladi,
+  // ya'ni filtr hech qachon bo'sh qolmaydi.
+  const brandFacets = useBrands();
   const [showAllMarkets, setShowAllMarkets] = useState(false);
   const [localSearch, setLocalSearch] = useState(searchQuery);
 
@@ -292,10 +266,6 @@ export function ProductListing() {
         for (const m of d.markets) c[m.key] = m.count;
         setMarketCounts(c);
       }).catch(() => {});
-
-    fetch('/api/brands').then(r => r.json())
-      .then((d: { brands: BrandFacet[] }) => setBrandFacets(d.brands ?? []))
-      .catch(() => {});
   }, []);
 
   // Filtr kaliti kichik harfda ("poco"), ekranda esa chiroyli nomi kerak.
@@ -674,7 +644,9 @@ export function ProductListing() {
                     }`}>
                       {name}
                     </span>
-                    <span className="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums">({count})</span>
+                    {count > 0 && (
+                      <span className="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums">({count})</span>
+                    )}
                   </button>
                 );
               })}
