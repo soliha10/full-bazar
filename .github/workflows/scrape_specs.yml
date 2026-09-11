@@ -11,8 +11,9 @@ name: Scrape specs to Supabase
 #
 # Uch qadam: EKSPORT -> SCRAPE -> SYNC.
 #   · eksport: bazadagi mavjud yozuvlar CSV ga qaytariladi
-#   · scrape:  barcha brendlarning barcha ro'yxat sahifalari o'qiladi (to'liq
-#              qamrov), so'ng vaqt byudjeti doirasida model sahifalari
+#   · scrape:  brendlarning ro'yxat sahifalari (LIST byudjeti doirasida,
+#              ustuvor brendlardan boshlab), so'ng model sahifalari (DETAIL
+#              byudjeti). Ikkala byudjet ham timeout-minutes ichiga sig'ishi shart
 #   · sync:    CSV bazaga yoziladi + qamrov hisoboti
 # Eksport tufayli o'tgan haftalarda olingan model sahifalari qayta
 # yuklanmaydi — tafsilot qamrovi har ish bilan o'sib boradi.
@@ -23,6 +24,10 @@ on:
     - cron: '0 3 * * 0'
   workflow_dispatch:
     inputs:
+      list_budget:
+        description: "Ro'yxat sahifalariga sarflanadigan vaqt (sekund)"
+        required: false
+        default: '1500'
       detail_budget:
         description: 'Model sahifalariga sarflanadigan vaqt (sekund)'
         required: false
@@ -38,7 +43,10 @@ permissions:
 jobs:
   specs:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    # Ikki byudjet (1500 + 2400 = 65 daqiqa) + o'rnatish/sync uchun zaxira.
+    # Byudjetlarni oshirsangiz shu qiymatni ham oshiring — timeout qadamni
+    # o'ldiradi va sync ishlamay qoladi.
+    timeout-minutes: 80
 
     steps:
       - name: Checkout repository
@@ -66,6 +74,7 @@ jobs:
       - name: Scrape specs from GSMArena
         working-directory: python
         env:
+          GSMARENA_LIST_BUDGET: ${{ github.event.inputs.list_budget || '1500' }}
           GSMARENA_DETAIL_BUDGET: ${{ github.event.inputs.detail_budget || '2400' }}
         run: |
           mkdir -p ../data

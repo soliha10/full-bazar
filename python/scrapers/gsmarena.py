@@ -20,13 +20,19 @@ qisqacha tavsifi turadi:
 Ya'ni brend, model, yil, ekran, protsessor, batareya, xotira va RAM ni
 50 ta qurilma uchun BITTA so'rovda olsa bo'ladi. Shuning uchun:
 
-  1-bosqich (to'liq)  — barcha brendlarning barcha ro'yxat sahifalari
-                        (~300 so'rov, ~6 daqiqa) → HAR BIR telefon bazaga tushadi.
+  1-bosqich (byudjet) — brendlarning ro'yxat sahifalari, ustuvor brendlardan
+                        boshlab → HAR BIR telefon bazaga tushadi.
   2-bosqich (byudjet) — kamera, zaryadlash, OS va korpus faqat model
                         sahifasida bor. Ular vaqt byudjeti doirasida, eng
                         yangi va eng talabgir brendlardan boshlab yig'iladi.
 
-Ikkinchi bosqich uzilib qolsa ham birinchisi to'liq bo'ladi. Har hafta
+HAR IKKALA bosqich vaqt byudjeti bilan cheklangan. Bu majburiy: 429 dan keyingi
+kutishlar tufayli 1-bosqich soatlab cho'zilishi va butun CI ishi timeout ga
+uchrashi mumkin — u holda CSV umuman yozilmay, bir soatlik ish yo'qoladi.
+CSV 1-bosqich oxirida va 2-bosqich davomida oraliq saqlanadi, shuning uchun
+qadam uzilib qolsa ham yig'ilgani sync ga yetib boradi.
+
+Ikkinchi bosqich uzilib qolsa ham birinchisining natijasi saqlanadi. Har hafta
 ishga tushganda mavjud CSV (yoki bazadan eksport) qayta ishlatiladi, ya'ni
 tafsilotlar to'plami asta-sekin to'lib boradi va hech narsa qaytadan
 yuklanmaydi.
@@ -251,9 +257,20 @@ class GsmarenaSpecsScraper(BaseScraper):
 
     store_name = "gsmarena"
 
-    # 2-bosqich (model sahifalari) uchun vaqt byudjeti — sekundlarda.
-    # 0 bo'lsa tafsilot bosqichi butunlay o'tkazib yuboriladi.
+    # Har bosqich uchun ALOHIDA vaqt byudjeti — sekundlarda. Ikkalasining
+    # yig'indisi workflow dagi `timeout-minutes` dan kichik bo'lishi SHART:
+    # timeout bo'lsa qadam o'ldiriladi va sync umuman ishlamaydi.
+    #
+    # 1-bosqich (ro'yxat sahifalari). Brendlar ustuvorlik bo'yicha saralangan,
+    # shuning uchun byudjet tugasa qolgan (kam uchraydigan) brendlar keyingi
+    # ishga qoladi — mavjud CSV/eksport tufayli hech narsa yo'qolmaydi.
+    LIST_BUDGET_SEC = int(os.getenv("GSMARENA_LIST_BUDGET", "1500"))
+    # 2-bosqich (model sahifalari). 0 bo'lsa tafsilot bosqichi o'tkazib yuboriladi.
     DETAIL_BUDGET_SEC = int(os.getenv("GSMARENA_DETAIL_BUDGET", "2400"))
+    # 429 dan keyin kechikish shu qiymatgacha o'sadi
+    MAX_DELAY = 5.0
+    # 2-bosqichda har shuncha modeldan keyin CSV oraliq saqlanadi
+    FLUSH_EVERY = 200
     # Sinov uchun brend sonini cheklash (0 = hammasi)
     MAX_BRANDS = int(os.getenv("GSMARENA_MAX_BRANDS", "0"))
     # Bitta brenddan nechta ro'yxat sahifasi (0 = hammasi)
@@ -264,22 +281,46 @@ class GsmarenaSpecsScraper(BaseScraper):
         # bersa ham 1.2 s dan pastga tushmaymiz. Tezroq so'rov 429 keltiradi va
         # natijada umumiy vaqt UZAYADI (har cheklovdan keyin daqiqalab kutish).
         super().__init__(output_dir, delay=max(delay, 1.2))
+        # 429 kelganda self.delay vaqtincha oshadi, so'ng shu qiymatga qaytadi
+        self._base_delay = self.delay
+        # Joriy bosqichning tugash vaqti (time.monotonic); None = cheklovsiz
+        self._deadline: float | None = None
+
+    # ── Vaqt byudjeti ──────────────────────────────────────────────────────
+    def _start_budget(self, seconds: int) -> None:
+        self._deadline = time.monotonic() + seconds if seconds > 0 else None
+
+    def _time_left(self) -> float:
+        if self._deadline is None:
+            return float("inf")
+        return self._deadline - time.monotonic()
+
+    def _expired(self) -> bool:
+        return self._time_left() <= 0
 
     # ── So'rov (429 uchun qayta urinish bilan) ──────────────────────────────
-    # GSMArena tez so'rovlarda 429 beradi va cheklov bir necha DAQIQA saqlanadi.
-    # Qisqa kutish (20-40 s) yetmaydi: shu sababli kutish har urinishda ikki
-    # barobar oshadi va oxirgisi ~4 daqiqa bo'ladi. Bitta brend uchun yo'qotilgan
-    # vaqt — butun brendni yo'qotishdan arzon.
-    RETRY_WAITS = (30, 60, 120, 240)
+    # GSMArena tez so'rovlarda 429 beradi va cheklov bir necha DAQIQA saqlanadi,
+    # shuning uchun kutish har urinishda ikki barobar oshadi.
+    # Zanjir ataylab qisqa (jami 3.5 daqiqa): oldingi 30+60+120+240 varianti
+    # bitta bloklangan URL uchun 7.5 daqiqagacha yeb qo'yardi va ish CI
+    # timeout iga uchrardi. Uzoq kutishning o'rniga umumiy kechikish oshiriladi
+    # (pastga qarang) — bu qayta cheklanishning oldini yaxshiroq oladi.
+    RETRY_WAITS = (30, 60, 120)
 
     def _fetch(self, url: str):
         resp = None
         for wait in (*self.RETRY_WAITS, None):
             resp = self.get(url)
-            if resp.status_code not in (429, 503) or wait is None:
+            if resp.status_code not in (429, 503):
+                # Sog'lom javob — kechikishni asta-sekin normaga qaytaramiz
+                self.delay = max(self._base_delay, self.delay * 0.97)
                 return resp
-            logger.warning("[gsmarena] %s HTTP %d — %d s kutilmoqda",
-                           url, resp.status_code, wait)
+            # Cheklovga tushdik: keyingi so'rovlar odobliroq bo'lsin
+            self.delay = min(self.delay * 1.5, self.MAX_DELAY)
+            if wait is None or wait >= self._time_left():
+                return resp
+            logger.warning("[gsmarena] %s HTTP %d — %d s kutilmoqda (kechikish %.1f s)",
+                           url, resp.status_code, wait, self.delay)
             time.sleep(wait)
         return resp
 
@@ -324,6 +365,10 @@ class GsmarenaSpecsScraper(BaseScraper):
         pages = 0
 
         while page_url and page_url not in seen_pages:
+            if self._expired():
+                logger.info("[gsmarena] %s: byudjet tugadi, %d sahifada to'xtadi",
+                            maker, pages)
+                return
             seen_pages.add(page_url)
             resp = self._fetch(f"{BASE}/{page_url}")
             if not resp.ok:
@@ -528,12 +573,19 @@ class GsmarenaSpecsScraper(BaseScraper):
         cached = self._load_existing()
 
         # ── 1-bosqich ───────────────────────────────────────────────────────
+        # Byudjet makers.php3 dan boshlanadi — u ham 429 ga tushishi mumkin.
+        self._start_budget(self.LIST_BUDGET_SEC)
         makers = self._makers()
         if self.MAX_BRANDS:
             makers = makers[: self.MAX_BRANDS]
 
         collected: dict[str, SpecRow] = {}
-        for maker, listing in makers:
+        for idx, (maker, listing) in enumerate(makers):
+            if self._expired():
+                logger.warning(
+                    "[gsmarena] ro'yxat byudjeti tugadi — %d/%d brend o'qildi, "
+                    "qolgani keyingi ishga qoladi", idx, len(makers))
+                break
             try:
                 before = len(collected)
                 for row in self._scrape_listing(maker, listing):
@@ -568,7 +620,11 @@ class GsmarenaSpecsScraper(BaseScraper):
         for url, row in cached.items():
             collected.setdefault(url, row)
 
-        logger.info("[gsmarena] 1-bosqich tugadi: %d ta telefon", len(collected))
+        # 2-bosqich uzilib qolsa ham (timeout, tarmoq) ro'yxat ma'lumoti
+        # yo'qolmasin — CSV ni shu yerda yozib qo'yamiz.
+        self._write_csv(list(collected.values()))
+        logger.info("[gsmarena] 1-bosqich tugadi: %d ta telefon (CSV saqlandi)",
+                    len(collected))
 
         # ── 2-bosqich ───────────────────────────────────────────────────────
         pending = [r for r in collected.values() if not r.has_detail]
@@ -578,19 +634,26 @@ class GsmarenaSpecsScraper(BaseScraper):
         ))
 
         if self.DETAIL_BUDGET_SEC > 0 and pending:
-            deadline = time.monotonic() + self.DETAIL_BUDGET_SEC
-            done = 0
+            self._start_budget(self.DETAIL_BUDGET_SEC)
+            done = flushed = 0
             for row in pending:
-                if time.monotonic() >= deadline:
-                    logger.info("[gsmarena] tafsilot byudjeti tugadi", )
+                if self._expired():
+                    logger.info("[gsmarena] tafsilot byudjeti tugadi")
                     break
                 try:
                     collected[row.source_url] = self._fetch_detail(row)
                     done += 1
                 except Exception as exc:
                     logger.warning("[gsmarena] %s tahlil qilinmadi: %s", row.source_url, exc)
+                # Ish kutilmaganda uzilsa ham yig'ilgan tafsilotlar qolsin
+                if done - flushed >= self.FLUSH_EVERY:
+                    self._write_csv(list(collected.values()))
+                    flushed = done
+                    logger.info("[gsmarena] oraliq saqlash: %d/%d ta tafsilot",
+                                done, len(pending))
             logger.info("[gsmarena] 2-bosqich: %d/%d ta modelning tafsiloti olindi",
                         done, len(pending))
+        self._deadline = None
 
         count = self._write_csv(list(collected.values()))
         with_detail = sum(1 for r in collected.values() if r.has_detail)
