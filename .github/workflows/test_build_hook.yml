@@ -1,0 +1,58 @@
+name: Test Netlify build hook
+
+# NETLIFY_BUILD_HOOK sirini tekshirish uchun. Butun skreyper ishini (30-60
+# daqiqa) kutmaslik uchun alohida ajratilgan — bu yerda faqat bitta so'rov
+# ketadi, ya'ni natija ~10 soniyada ma'lum bo'ladi.
+#
+# Diqqat: bu haqiqiy Netlify build'ini ishga tushiradi. Bu zararsiz — aksincha,
+# sitemap yangilanadi. Tekshirib bo'lgach bu faylni o'chirib tashlasa bo'ladi.
+#
+# Jadval yo'q: faqat qo'lda ishga tushiriladi.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping-hook:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Sir qo'yilganini tekshirish
+        env:
+          HOOK: ${{ secrets.NETLIFY_BUILD_HOOK }}
+        run: |
+          # Asosiy workflow'dan farqli o'laroq, bu yerda sir yo'q bo'lsa
+          # ATAYLAB yiqilamiz — tekshiruvning butun maqsadi shu, "yashil belgi"
+          # noaniq qolmasligi kerak.
+          if [ -z "$HOOK" ]; then
+            echo "::error::NETLIFY_BUILD_HOOK bo'sh. Settings → Secrets and variables"
+            echo "::error::→ Actions → Repository secrets bo'limiga qo'yilganini tekshiring"
+            exit 1
+          fi
+          echo "Sir topildi, uzunligi: ${#HOOK} belgi"
+
+          # Qiymat to'g'ri ko'rinishdami — butun URL ni chop etmaymiz, chunki
+          # uni bilgan har kim saytni qayta build qila oladi.
+          case "$HOOK" in
+            https://api.netlify.com/build_hooks/*)
+              echo "Format to'g'ri: https://api.netlify.com/build_hooks/***" ;;
+            *)
+              echo "::error::Kutilgan format: https://api.netlify.com/build_hooks/XXXX"
+              exit 1 ;;
+          esac
+
+      - name: Build hook'ni turtish
+        env:
+          HOOK: ${{ secrets.NETLIFY_BUILD_HOOK }}
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
+                   -X POST -d '{}' "$HOOK")
+          echo "Netlify javobi: HTTP $code"
+          if [ "$code" = "200" ] || [ "$code" = "201" ]; then
+            echo "✅ Sir ishlayapti — Netlify build ishga tushdi"
+          else
+            echo "::error::Netlify HTTP $code qaytardi. Hook o'chirilgan yoki URL noto'g'ri"
+            exit 1
+          fi
