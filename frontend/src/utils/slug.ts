@@ -74,6 +74,16 @@ export function productPath(product: ProductRef): string {
  */
 export function productRef(param: string | undefined): string {
   if (!param) return '';
-  const match = param.match(LEGACY_ID_RE);
-  return match ? match[1].toLowerCase() : param;
+  // Manzil katta harf yoki yopuvchi chiziqcha bilan kelishi mumkin
+  // (/Product/IPhone-15/ — tashqi saytlar, qo'lda yozilgan havolalar).
+  // Sluglar bazada faqat kichik harfda saqlanadi, ID lar esa kichik
+  // o'n oltilik — normallashtirmasak bunday manzil 404 beradi. Normallashtirsak
+  // API mahsulotni topadi va edge funksiyasi kanonik manzilga 301 qiladi.
+  // Noto'g'ri kodlangan manzil (%E0 kabi) decodeURIComponent'ni yiqitadi —
+  // edge funksiyasida bu butun sahifani 500 qilardi.
+  let raw = param;
+  try { raw = decodeURIComponent(param); } catch { /* xom holicha ishlataveramiz */ }
+  const clean = raw.trim().replace(/\/+$/, '').toLowerCase();
+  const match = clean.match(LEGACY_ID_RE);
+  return match ? match[1] : clean;
 }

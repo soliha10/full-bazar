@@ -1,10 +1,16 @@
 services:
   - type: web
     name: full-bazar-api
-    runtime: python
+    # Render'dagi servis Docker runtime'ida turibdi. Bu yerda `python` deb
+    # yozilgani uchun ikkisi bir-biriga to'g'ri kelmasdi va deploy
+    # "failed to read dockerfile" bilan uzilardi.
+    runtime: docker
     rootDir: python/fastapi_app
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    # Yo'llar rootDir ga nisbatan
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # buildCommand / startCommand Docker runtime'da ishlatilmaydi —
+    # o'rnatish va ishga tushirish Dockerfile ichida.
     envVars:
       - key: DATABASE_URL
         sync: false

@@ -158,7 +158,10 @@ async function fetchAllProducts() {
   const items = [];
   const take = (data) => {
     for (const p of data?.products || []) {
-      if (p?.id) items.push({ id: p.id, name: p.name, title: p.title });
+      // slug SHART: usiz productPath() ID li manzilga qaytadi va sitemap
+      // butunlay kanonik bo'lmagan URL lar bilan to'ladi (har biri edge
+      // funksiyasida 301 yeydi).
+      if (p?.id) items.push({ id: p.id, slug: p.slug ?? null, name: p.name, title: p.title });
     }
   };
 
@@ -226,6 +229,12 @@ if (products && products.length > 0) {
     `[seo] sitemap.xml: ${ROUTES.filter((r) => !r.noindex).length} statik + ` +
     `${products.length} mahsulot URL (${withSlug} tasi slug bilan)`,
   );
+  if (withSlug < products.length) {
+    console.warn(
+      `[seo] ${products.length - withSlug} ta mahsulotda slug yo'q — ular sitemapga ` +
+      `ID li manzil bilan tushdi. API slug qaytaryaptimi (python/sync_csv.py ishladimi)?`,
+    );
+  }
 } else {
   // API yetib bo'lmadi — sayt baribir deploy bo'lsin, faqat statik sitemap bilan
   fs.writeFileSync(path.join(DIST, 'sitemap.xml'), buildSitemap([]));

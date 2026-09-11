@@ -62,6 +62,27 @@ jobs:
         run: |
           python python/sync_csv.py
 
+      # Sitemap `npm run build` paytida yaratiladi (frontend/scripts/seo-postbuild.mjs).
+      # Mahsulotlar esa kuniga 4 marta yangilanadi: deploy qilinmasa sitemap
+      # eskirib qoladi — Google'ga allaqachon o'chirilgan mahsulot manzillari
+      # ko'rsatiladi (ular 404 qaytaradi) va yangilari umuman tushmaydi.
+      # Shuning uchun sinxronizatsiyadan keyin Netlify build'ini turtamiz.
+      #
+      # NETLIFY_BUILD_HOOK — Netlify: Site settings → Build & deploy →
+      # Build hooks dan olinadigan URL. Sir qo'yilmagan bo'lsa qadam
+      # jimgina o'tkazib yuboriladi, ish muvaffaqiyatsiz bo'lmaydi.
+      - name: Rebuild frontend (sitemap yangilanishi uchun)
+        env:
+          HOOK: ${{ secrets.NETLIFY_BUILD_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::warning::NETLIFY_BUILD_HOOK sozlanmagan — sitemap eski holicha qoladi"
+            exit 0
+          fi
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 -X POST -d '{}' "$HOOK")
+          echo "Netlify build hook: HTTP $code"
+          [ "$code" = "200" ] || [ "$code" = "201" ]
+
       - name: Report results
         run: |
           echo "Scrape & Sync completed at $(date)"

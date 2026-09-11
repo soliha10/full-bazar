@@ -1,5 +1,6 @@
 import { Star, ArrowRight, ExternalLink, Store, TrendingDown, Heart, Bell, Scale } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import type { MouseEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { formatSum } from '../utils/productMapper';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useFavorites } from '../hooks/useFavorites';
@@ -65,6 +66,14 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
   const watching = isWatched(product.id);
   const comparing = isComparing(product.id);
   const compareDisabled = !comparing && compareIds.length >= MAX_COMPARE;
+  // Kartaning bosiladigan qismi <div onClick> edi — qidiruv robotlari bunday
+  // "havola"ni ko'rmaydi, ya'ni katalogdan birorta mahsulot manzili ham
+  // indeksga tushmaydi. Endi nom va CTA haqiqiy <a href> bo'ladi; karta
+  // o'zining onClick'ini saqlab qoladi (butun karta bosiladigan bo'lib
+  // qolishi uchun), lekin havola bosilganda hodisa yuqoriga chiqmaydi —
+  // aks holda bir bosishda ikki marta navigatsiya bo'lardi.
+  const href = productPath(product);
+  const stop = (e: MouseEvent) => e.stopPropagation();
 
   const activeSet = new Set(activeMarkets.map(m => m.toLowerCase()));
   const sortedMarkets = [...(product.markets ?? [])].sort((a, b) => {
@@ -82,7 +91,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
   if (viewMode === 'list') {
     return (
       <div
-        onClick={() => navigate(productPath(product))}
+        onClick={() => navigate(href)}
         className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-3 flex gap-3 group hover:shadow-lg hover:shadow-violet-500/8 hover:border-violet-200 dark:hover:border-violet-800/50 transition-all duration-200 cursor-pointer active:scale-[0.99]"
       >
         {/* Image */}
@@ -136,7 +145,9 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
               )}
             </div>
             <h3 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug">
-              {product.name}
+              <Link to={href} onClick={stop} className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors">
+                {product.name}
+              </Link>
             </h3>
           </div>
 
@@ -161,7 +172,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
   // ── Grid view ──────────────────────────────────────────────────────────────
   return (
     <div
-      onClick={() => navigate(productPath(product))}
+      onClick={() => navigate(href)}
       className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col hover:shadow-xl hover:shadow-violet-500/10 dark:hover:shadow-violet-900/20 hover:-translate-y-0.5 hover:border-violet-200/70 dark:hover:border-violet-800/50 transition-all duration-200 cursor-pointer active:scale-[0.98]"
     >
       {/* Image */}
@@ -243,7 +254,9 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
 
         {/* Name */}
         <h3 className="font-bold text-gray-900 dark:text-white text-[13px] md:text-[15px] leading-snug line-clamp-2 flex-1 min-h-[36px] md:min-h-[42px]">
-          {product.name}
+          <Link to={href} onClick={stop} className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors">
+            {product.name}
+          </Link>
         </h3>
 
         {/* Price + best store */}
@@ -280,13 +293,14 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
         </div>
 
         {/* CTA (Desktop only) */}
-        <button
-          onClick={(e) => { e.stopPropagation(); navigate(productPath(product)); }}
+        <Link
+          to={href}
+          onClick={stop}
           className="hidden md:flex w-full items-center justify-center gap-1.5 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-black text-xs md:text-[13px] py-3 md:py-3.5 rounded-xl shadow-sm shadow-violet-500/20 hover:shadow-violet-500/30 active:scale-[0.98] transition-all mt-2"
         >
           {t.landing.trending.comparePrices}
           <ArrowRight className="w-3.5 h-3.5" />
-        </button>
+        </Link>
       </div>
     </div>
   );

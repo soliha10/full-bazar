@@ -1,0 +1,13 @@
+# Image ichiga tushmasligi kerak bo'lgan narsalar — build kontekstini yengil
+# saqlaydi va keshni bekorga buzmaydi.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
