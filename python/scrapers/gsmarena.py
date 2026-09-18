@@ -134,6 +134,10 @@ class SpecRow:
         return bool(self.main_camera or self.selfie_camera or self.charging)
 
 
+class RateLimited(RuntimeError):
+    """GSMArena IP ni uzoq muddatga cheklab qo'ydi — ishni davom ettirish besamar."""
+
+
 def _clip(text: str, limit: int) -> str:
     text = " ".join((text or "").split())
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
@@ -271,6 +275,16 @@ class GsmarenaSpecsScraper(BaseScraper):
     MAX_DELAY = 5.0
     # 2-bosqichda har shuncha modeldan keyin CSV oraliq saqlanadi
     FLUSH_EVERY = 200
+    # Ro'yxat bosqichini butunlay o'tkazib yuborish (mavjud CSV asos bo'ladi)
+    DETAILS_ONLY = False
+    # Do'konlarimizdagi mahsulot sarlavhalari (normalizatsiyalanmagan).
+    # Berilsa, ish faqat SOTILAYOTGAN telefonlar bilan cheklanadi:
+    #   · ro'yxat bosqichi — faqat shu sarlavhalarda uchraydigan brendlar
+    #   · tafsilot bosqichi — faqat biror sarlavhaga mos kelgan modellar
+    # Bu so'rovlar sonini bir necha barobar kamaytiradi, ya'ni GSMArena
+    # cheklovigacha bo'lgan resurs aynan saytda ko'rinadigan ma'lumotga
+    # sarflanadi. Bo'sh bo'lsa hamma narsa yig'iladi (eski xatti-harakat).
+    STORE_TITLES: list[str] = []
     # Sinov uchun brend sonini cheklash (0 = hammasi)
     MAX_BRANDS = int(os.getenv("GSMARENA_MAX_BRANDS", "0"))
     # Bitta brenddan nechta ro'yxat sahifasi (0 = hammasi)
@@ -285,6 +299,8 @@ class GsmarenaSpecsScraper(BaseScraper):
         self._base_delay = self.delay
         # Joriy bosqichning tugash vaqti (time.monotonic); None = cheklovsiz
         self._deadline: float | None = None
+        # Ketma-ket to'liq cheklangan manzillar soni (BAN_GIVEUP ga qarang)
+        self._banned_streak = 0
 
     # ── Vaqt byudjeti ──────────────────────────────────────────────────────
     def _start_budget(self, seconds: int) -> None:
@@ -306,18 +322,38 @@ class GsmarenaSpecsScraper(BaseScraper):
     # timeout iga uchrardi. Uzoq kutishning o'rniga umumiy kechikish oshiriladi
     # (pastga qarang) — bu qayta cheklanishning oldini yaxshiroq oladi.
     RETRY_WAITS = (30, 60, 120)
+    # Vaqt byudjeti bo'lmaganda (mahalliy ish) cheklovni KUTIB o'tirish
+    # brendni tashlab ketishdan yaxshi. 2026-09-18 dagi mahalliy ishda
+    # GSMArena ~300 so'rovdan keyin cheklovni yoqdi va qisqa zanjir tufayli
+    # har brend 3.5 daqiqa kutib, 0 ta telefon bilan o'tib ketaverdi —
+    # Google, OnePlus, Asus, Lenovo shunday yo'qoldi.
+    LONG_RETRY_WAITS = (30, 60, 120, 300, 600, 900)
+
+    # Ketma-ket shuncha URL to'liq kutish zanjiridan keyin ham 429 bersa,
+    # bu vaqtinchalik tiqilinch emas — IP uzoq muddatga cheklangan. Davom
+    # etish har URL uchun yana 33 daqiqa yeydi va baribir 0 natija beradi,
+    # shuning uchun to'xtaymiz va yig'ilganini saqlaymiz.
+    BAN_GIVEUP = 3
 
     def _fetch(self, url: str):
         resp = None
-        for wait in (*self.RETRY_WAITS, None):
+        # Byudjet cheklovsiz bo'lsa uzoq kutamiz, aks holda CI ni bloklamaymiz.
+        waits = self.LONG_RETRY_WAITS if self._deadline is None else self.RETRY_WAITS
+        for wait in (*waits, None):
             resp = self.get(url)
             if resp.status_code not in (429, 503):
                 # Sog'lom javob — kechikishni asta-sekin normaga qaytaramiz
                 self.delay = max(self._base_delay, self.delay * 0.97)
+                self._banned_streak = 0
                 return resp
             # Cheklovga tushdik: keyingi so'rovlar odobliroq bo'lsin
             self.delay = min(self.delay * 1.5, self.MAX_DELAY)
             if wait is None or wait >= self._time_left():
+                self._banned_streak += 1
+                if self._banned_streak >= self.BAN_GIVEUP:
+                    raise RateLimited(
+                        f"{self._banned_streak} ta manzil ketma-ket cheklandi"
+                    )
                 return resp
             logger.warning("[gsmarena] %s HTTP %d — %d s kutilmoqda (kechikish %.1f s)",
                            url, resp.status_code, wait, self.delay)
@@ -357,6 +393,40 @@ class GsmarenaSpecsScraper(BaseScraper):
             except ValueError:
                 return (len(PRIORITY_BRANDS), key)
         return sorted(makers, key=rank)
+
+    # ── Do'kon talabiga qarab cheklash ──────────────────────────────────────
+    def _only_sold_brands(self, makers: list[tuple[str, str]]) -> list[tuple[str, str]]:
+        """Do'konlarimizda umuman uchramaydigan brendlarni ro'yxatdan chiqaradi."""
+        if not self.STORE_TITLES:
+            return makers
+        sold = {b for b in (brand_table.extract_brand(t) for t in self.STORE_TITLES) if b}
+        kept = [m for m in makers
+                if (brand_table.extract_brand(m[0]) or normalize(m[0])) in sold]
+        logger.info("[gsmarena] do'kon filtri: %d brenddan %d tasi qoldi",
+                    len(makers), len(kept))
+        return kept or makers
+
+    def _only_sold_models(self, rows: list[SpecRow]) -> list[SpecRow]:
+        """
+        Faqat biror do'kon sarlavhasiga mos keladigan modellarni qoldiradi.
+
+        Moslik API dagi bilan AYNAN bir xil mantiq (brands.match_spec_row) —
+        ya'ni tafsilot aynan saytda ko'rinadigan telefonlar uchun olinadi.
+        """
+        if not self.STORE_TITLES or not rows:
+            return rows
+        index = brand_table.build_spec_index(
+            [{"brand": r.brand, "model_key": r.model_key} for r in rows]
+        )
+        wanted: set[tuple[str, str]] = set()
+        for title in self.STORE_TITLES:
+            hit = brand_table.match_spec_row(title, "", index)
+            if hit:
+                wanted.add((hit["brand"], hit["model_key"]))
+        kept = [r for r in rows if (r.brand, r.model_key) in wanted]
+        logger.info("[gsmarena] do'kon filtri: %d modeldan %d tasi sotilmoqda",
+                    len(rows), len(kept))
+        return kept
 
     # ── 1-bosqich: ro'yxat sahifalari ───────────────────────────────────────
     def _scrape_listing(self, maker: str, first_page: str) -> Iterator[SpecRow]:
@@ -572,10 +642,25 @@ class GsmarenaSpecsScraper(BaseScraper):
         os.makedirs(self.output_dir, exist_ok=True)
         cached = self._load_existing()
 
+        # ── Faqat tafsilot rejimi ───────────────────────────────────────────
+        # GSMArena ~350 so'rovdan keyin IP ni cheklaydi, ya'ni bitta ishda
+        # olinadigan sahifa soni CHEKLANGAN resurs. Ro'yxatlar allaqachon
+        # yig'ilgan bo'lsa, o'sha resursni ularni qayta o'qishga emas, hali
+        # bo'sh turgan kamera/zaryadlash/OS ustunlariga sarflash foydaliroq.
+        if self.DETAILS_ONLY:
+            if not cached:
+                logger.error("[gsmarena] --details-only uchun mavjud CSV kerak, "
+                             "u topilmadi — avval ro'yxatlarni yig'ing")
+                return 0
+            logger.info("[gsmarena] faqat tafsilot rejimi: %d ta yozuv asos qilinadi",
+                        len(cached))
+            return self._collect_details(dict(cached))
+
         # ── 1-bosqich ───────────────────────────────────────────────────────
         # Byudjet makers.php3 dan boshlanadi — u ham 429 ga tushishi mumkin.
         self._start_budget(self.LIST_BUDGET_SEC)
         makers = self._makers()
+        makers = self._only_sold_brands(makers)
         if self.MAX_BRANDS:
             makers = makers[: self.MAX_BRANDS]
 
@@ -607,7 +692,22 @@ class GsmarenaSpecsScraper(BaseScraper):
                             display_name=old.display_name or row.display_name,
                         )
                     collected[row.source_url] = row
-                logger.info("[gsmarena] %s: %d ta telefon", maker, len(collected) - before)
+                added = len(collected) - before
+                logger.info("[gsmarena] %s: %d ta telefon", maker, added)
+                # Har brenddan keyin saqlaymiz. Ilgari CSV faqat 1-bosqich
+                # OXIRIDA yozilardi: ish uzilsa (cheklov, Ctrl+C, timeout)
+                # soatlab yig'ilgan hamma narsa yo'qolardi.
+                if added:
+                    self._write_csv([
+                        *collected.values(),
+                        *(r for url, r in cached.items() if url not in collected),
+                    ])
+            except RateLimited as exc:
+                logger.error(
+                    "[gsmarena] IP cheklandi (%s) — 1-bosqich to'xtatildi. "
+                    "Yig'ilgani saqlanadi; bir necha soatdan keyin qayta uring.",
+                    exc)
+                break
             except Exception as exc:
                 logger.warning("[gsmarena] %s ro'yxati olinmadi: %s", maker, exc)
 
@@ -626,8 +726,13 @@ class GsmarenaSpecsScraper(BaseScraper):
         logger.info("[gsmarena] 1-bosqich tugadi: %d ta telefon (CSV saqlandi)",
                     len(collected))
 
-        # ── 2-bosqich ───────────────────────────────────────────────────────
-        pending = [r for r in collected.values() if not r.has_detail]
+        return self._collect_details(collected)
+
+    # ── 2-bosqich: model sahifalari ─────────────────────────────────────────
+    def _collect_details(self, collected: dict[str, SpecRow]) -> int:
+        pending = self._only_sold_models(
+            [r for r in collected.values() if not r.has_detail]
+        )
         pending.sort(key=lambda r: (
             PRIORITY_BRANDS.index(r.brand) if r.brand in PRIORITY_BRANDS else len(PRIORITY_BRANDS),
             -(r.release_year or 0),
@@ -643,6 +748,9 @@ class GsmarenaSpecsScraper(BaseScraper):
                 try:
                     collected[row.source_url] = self._fetch_detail(row)
                     done += 1
+                except RateLimited as exc:
+                    logger.error("[gsmarena] IP cheklandi (%s) — 2-bosqich to'xtatildi", exc)
+                    break
                 except Exception as exc:
                     logger.warning("[gsmarena] %s tahlil qilinmadi: %s", row.source_url, exc)
                 # Ish kutilmaganda uzilsa ham yig'ilgan tafsilotlar qolsin

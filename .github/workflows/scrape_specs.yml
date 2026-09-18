@@ -1,40 +1,44 @@
-name: Scrape specs to Supabase
+name: Sync specs to Supabase
 
-# Texnik xususiyatlar (ekran, protsessor, batareya...) GSMArena dan yig'iladi va
-# product_specs jadvaliga yoziladi. Solishtirish sahifasi va mahsulot
-# sahifasidagi "Xususiyatlar" bo'limi shundan oziqlanadi.
+# Texnik xususiyatlar (ekran, protsessor, batareya, kamera...) product_specs
+# jadvaliga yoziladi. Solishtirish sahifasi va mahsulot sahifasidagi
+# "Xususiyatlar" bo'limi shundan oziqlanadi.
 #
-# Narx yig'adigan scrape_and_sync.yml dan ALOHIDA turadi, chunki:
-#   · specs tez-tez o'zgarmaydi — haftada bir marta yetarli
-#   · GSMArena ga nisbatan odobli bo'lish kerak (so'rovlar orasida kutish)
-#   · uzoqroq davom etadi va narx yangilanishini kechiktirmasligi kerak
+# ── Nega bu ish endi HECH NARSA YIG'MAYDI ─────────────────────────────────────
+# GSMArena GitHub Actions IP larini agressiv cheklaydi. 2026-09-13 dagi ish
+# (run 34746104533) buni aniq ko'rsatdi:
+#   · 126 brenddan 10 tasi o'qildi, ulardan faqat Samsung natija berdi —
+#     Xiaomi, Apple, Honor, Infinix, Tecno, Realme, Oppo, vivo, Huawei: 0 ta
+#   · model sahifalari: 1564 tadan 15 tasi (qolgani 429) → kamera, zaryadlash,
+#     OS ustunlari butunlay bo'sh qoldi
+#   · 65 daqiqalik byudjetning katta qismi 429 dan keyingi kutishlarga ketdi
+# O'sha URL lar oddiy uy/ofis internetidan 200 qaytaradi. Ya'ni muammo kodda
+# emas, IP da — byudjetni oshirish yordam bermaydi.
 #
-# Uch qadam: EKSPORT -> SCRAPE -> SYNC.
-#   · eksport: bazadagi mavjud yozuvlar CSV ga qaytariladi
-#   · scrape:  brendlarning ro'yxat sahifalari (LIST byudjeti doirasida,
-#              ustuvor brendlardan boshlab), so'ng model sahifalari (DETAIL
-#              byudjeti). Ikkala byudjet ham timeout-minutes ichiga sig'ishi shart
-#   · sync:    CSV bazaga yoziladi + qamrov hisoboti
-# Eksport tufayli o'tgan haftalarda olingan model sahifalari qayta
-# yuklanmaydi — tafsilot qamrovi har ish bilan o'sib boradi.
+# Shuning uchun yig'ish MAHALLIY bajariladi:
+#     python python/scrape_specs_local.py            # data/gsmarena_specs.csv
+#     git add data/gsmarena_specs.csv && git commit  # natija repoga tushadi
+# Bu ish esa faqat commit qilingan CSV ni Supabase ga yozadi — bir necha
+# soniya, cheklovsiz, tushib qolmaydi.
+#
+# sync_specs.py dagi UPSERT bo'sh qiymat bilan bazadagi tayyor tafsilotni
+# o'chirmaydi, shuning uchun CSV chala bo'lsa ham xavfsiz.
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/gsmarena_specs.csv'
+      - 'python/sync_specs.py'
+      - '.github/workflows/scrape_specs.yml'
   schedule:
-    # Har yakshanba 03:00 UTC = 08:00 Toshkent
+    # Har yakshanba 03:00 UTC = 08:00 Toshkent — CSV o'zgarmagan bo'lsa ham
+    # qamrov hisobotini beradi va yangi mahsulotlarga moslikni tekshiradi.
     - cron: '0 3 * * 0'
   workflow_dispatch:
-    inputs:
-      list_budget:
-        description: "Ro'yxat sahifalariga sarflanadigan vaqt (sekund)"
-        required: false
-        default: '1500'
-      detail_budget:
-        description: 'Model sahifalariga sarflanadigan vaqt (sekund)'
-        required: false
-        default: '2400'
 
 concurrency:
-  group: scrape-specs
+  group: sync-specs
   cancel-in-progress: false
 
 permissions:
@@ -43,10 +47,7 @@ permissions:
 jobs:
   specs:
     runs-on: ubuntu-latest
-    # Ikki byudjet (1500 + 2400 = 65 daqiqa) + o'rnatish/sync uchun zaxira.
-    # Byudjetlarni oshirsangiz shu qiymatni ham oshiring — timeout qadamni
-    # o'ldiradi va sync ishlamay qoladi.
-    timeout-minutes: 80
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -59,35 +60,7 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: |
-          pip install requests==2.32.3 beautifulsoup4==4.12.3 lxml==5.2.2 psycopg2-binary==2.9.9
-
-      # Bazadagi yozuvlarni CSV ga qaytaramiz — scraper ularni qayta yuklamaydi
-      - name: Export existing specs from Supabase
-        env:
-          PRODUCTS_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-          DATA_DIR: ./data
-        run: |
-          mkdir -p ./data
-          python python/sync_specs.py --export
-
-      - name: Scrape specs from GSMArena
-        working-directory: python
-        env:
-          GSMARENA_LIST_BUDGET: ${{ github.event.inputs.list_budget || '1500' }}
-          GSMARENA_DETAIL_BUDGET: ${{ github.event.inputs.detail_budget || '2400' }}
-        run: |
-          mkdir -p ../data
-          python -c "
-          import sys, logging
-          sys.path.insert(0, '.')
-          logging.basicConfig(level=logging.INFO, format='%(message)s')
-          from scrapers import GsmarenaSpecsScraper
-          n = GsmarenaSpecsScraper(output_dir='../data', delay=1.2).run()
-          print(f'=== {n} ta model yig\'ildi ===')
-          if n == 0:
-              sys.exit('specs yig\'ilmadi — sayt tuzilmasi o\'zgargan bo\'lishi mumkin')
-          "
+        run: pip install psycopg2-binary==2.9.9
 
       - name: Sync specs to Supabase
         env:

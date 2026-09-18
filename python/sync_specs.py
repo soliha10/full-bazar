@@ -64,6 +64,13 @@ ALTER TABLE product_specs
     ADD COLUMN IF NOT EXISTS source_url TEXT;
 """
 
+# CSV — yagona manba, LEKIN u har doim ham to'liq emas: ro'yxat sahifasidan
+# olingan qator kamera/zaryadlash/OS siz keladi. Bunday bo'sh qiymat bazadagi
+# model sahifasidan olingan tayyor ma'lumotni O'CHIRIB yubormasligi kerak —
+# shuning uchun har maydon COALESCE bilan yangilanadi: yangi qiymat bo'sh
+# bo'lsa eskisi qoladi. (Ilgari CI har ishdan oldin bazani CSV ga eksport
+# qilib shu himoyani ta'minlardi; endi yig'ish mahalliy bo'lgani uchun
+# himoya shu yerda turadi.)
 UPSERT = """
 INSERT INTO product_specs
     (brand, model_key, display_name, display, chipset, ram_options,
@@ -71,20 +78,22 @@ INSERT INTO product_specs
      charging, os, body, release_year, source, source_url)
 VALUES %s
 ON CONFLICT (brand, model_key) DO UPDATE SET
-    display_name    = EXCLUDED.display_name,
-    display         = EXCLUDED.display,
-    chipset         = EXCLUDED.chipset,
-    ram_options     = EXCLUDED.ram_options,
-    storage_options = EXCLUDED.storage_options,
-    main_camera     = EXCLUDED.main_camera,
-    selfie_camera   = EXCLUDED.selfie_camera,
-    battery_mah     = EXCLUDED.battery_mah,
-    charging        = EXCLUDED.charging,
-    os              = EXCLUDED.os,
-    body            = EXCLUDED.body,
-    release_year    = EXCLUDED.release_year,
+    display_name    = COALESCE(NULLIF(EXCLUDED.display_name, ''), product_specs.display_name),
+    display         = COALESCE(EXCLUDED.display,         product_specs.display),
+    chipset         = COALESCE(EXCLUDED.chipset,         product_specs.chipset),
+    ram_options     = CASE WHEN EXCLUDED.ram_options = '{}'
+                           THEN product_specs.ram_options ELSE EXCLUDED.ram_options END,
+    storage_options = CASE WHEN EXCLUDED.storage_options = '{}'
+                           THEN product_specs.storage_options ELSE EXCLUDED.storage_options END,
+    main_camera     = COALESCE(EXCLUDED.main_camera,     product_specs.main_camera),
+    selfie_camera   = COALESCE(EXCLUDED.selfie_camera,   product_specs.selfie_camera),
+    battery_mah     = COALESCE(EXCLUDED.battery_mah,     product_specs.battery_mah),
+    charging        = COALESCE(EXCLUDED.charging,        product_specs.charging),
+    os              = COALESCE(EXCLUDED.os,              product_specs.os),
+    body            = COALESCE(EXCLUDED.body,            product_specs.body),
+    release_year    = COALESCE(EXCLUDED.release_year,    product_specs.release_year),
     source          = EXCLUDED.source,
-    source_url      = EXCLUDED.source_url
+    source_url      = COALESCE(EXCLUDED.source_url,      product_specs.source_url)
 """
 
 

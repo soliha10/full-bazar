@@ -30,7 +30,31 @@ _NOT_SMARTPHONE_RE = re.compile(
 # Faoliyati to'xtagan yoki eskirgan saytlar — bu CSV fayllarini o'tkazib yuboramiz
 # brandstore: domen umuman ulanmaydi. olx: barcha so'rovlarga 403 va
 # e'lonlardagi ishlatilgan telefonlar narx solishtirishni buzadi.
-_INACTIVE_SITES = {"ozon", "premier", "wildberries", "prom", "brandstore", "olx"}
+# Ozon qaytarildi: scrapers/ozon.py haqiqiy Chrome (CDP) orqali antibotdan
+# o'tadi va data/ozon_products.csv ni to'ldiradi. U mahalliy yig'iladi
+# (python/scrape_ozon_local.py), CI da emas.
+_INACTIVE_SITES = {"premier", "wildberries", "prom", "brandstore", "olx"}
+
+# Mahalliy yig'iladigan do'konlar (Ozon) CSV si repoga commit qilinadi va CI
+# uni YANGILAMAYDI — ish kuniga 4 marta o'sha faylni qayta o'qiydi. Agar
+# mahalliy yig'ish bir necha hafta qilinmasa, sayt eski narxni yangidek
+# ko'rsatib turaveradi. Shuning uchun scraper yozgan `<do'kon>_products.meta`
+# fayldagi sana tekshiriladi: eskirgan bo'lsa manba butunlay o'tkazib
+# yuboriladi — narxsiz qolgan afzal, noto'g'ri narxdan ko'ra.
+# (.meta fayli yo'q manbalar — CI da har ish oldidan yangilanadiganlari —
+#  har doim o'qiladi.)
+MAX_CSV_AGE_DAYS = int(os.getenv("MAX_CSV_AGE_DAYS", "10"))
+
+
+def _too_old(meta_path: str) -> int | None:
+    """`.meta` dagi ISO sanadan bugungacha nechta kun o'tgan (eskirgan bo'lsa)."""
+    try:
+        with open(meta_path, encoding="utf-8") as fh:
+            stamp = fh.read().strip()
+        age = (datetime.now().astimezone() - datetime.fromisoformat(stamp)).days
+        return age if age > MAX_CSV_AGE_DAYS else None
+    except (OSError, ValueError):
+        return None  # o'qib bo'lmadi — to'sib qo'ymaymiz
 _DIFF_WORDS = re.compile(r"\b(max|plus|ultra|pro|lite|mini|fe|note|edge|fold|\d+gb|\d+tb|\d+\/\d+)\b")
 
 # ── Variantni ajratish ────────────────────────────────────────────────────────
@@ -209,6 +233,11 @@ def load_rows():
         # Faoliyati to'xtagan saytlarni o'tkazib yuboramiz
         if src_fallback.lower() in _INACTIVE_SITES:
             print(f"[sync] Skipping inactive site: {fn}", flush=True)
+            continue
+        stale = _too_old(os.path.join(DATA_DIR, fn.replace(".csv", ".meta")))
+        if stale is not None:
+            print(f"[sync] Skipping stale source: {fn} ({stale} kun oldin yig'ilgan, "
+                  f"chegara {MAX_CSV_AGE_DAYS} kun)", flush=True)
             continue
         fpath = os.path.join(DATA_DIR, fn)
         try:

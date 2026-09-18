@@ -55,6 +55,14 @@ jobs:
           print(f'Total scrapers: {len(results)}')
           "
 
+      # DIQQAT: Ozon bu yerda yig'ilmaydi — uning antiboti faqat haqiqiy,
+      # avtomatlashtirilmagan Chrome ni o'tkazadi (scrapers/ozon.py ga qarang),
+      # ya'ni runner da ishlamaydi. Uning narxlari repodagi
+      # data/ozon_products.csv dan olinadi va u MAHALLIY yangilanadi:
+      #     python python/scrape_ozon_local.py
+      # Fayl eskirib qolsa sync uni butunlay o'tkazib yuboradi
+      # (data/ozon_products.meta + MAX_CSV_AGE_DAYS), shuning uchun eski narx
+      # saytda yangidek ko'rinmaydi.
       - name: Sync CSV data to Supabase
         env:
           PRODUCTS_DB_URL: ${{ secrets.SUPABASE_DB_URL }}

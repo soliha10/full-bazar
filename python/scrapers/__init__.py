@@ -18,6 +18,15 @@ from .ucell import UcellScraper
 # GSMArena narx emas, xususiyat manbai — ALL_SCRAPERS ga kirmaydi,
 # alohida oqim bilan product_specs jadvalini to'ldiradi.
 from .gsmarena import GsmarenaSpecsScraper
+# Ozon ham ALL_SCRAPERS ga kirmaydi: antibot faqat haqiqiy, avtomatlashtirilmagan
+# Chrome ni o'tkazadi (requests, Playwright ning o'z Chromium/Chrome/Firefox/WebKit
+# i — hammasi 403). Shuning uchun CI da emas, mahalliy ishlatiladi:
+#     python python/scrape_ozon_local.py
+from .ozon import OzonScraper
+# Uzum Market ham shu sababdan yo'q: uzum.uz Yandex antibotiga o'xshash
+# himoya bilan `?_ycch=` ga cheksiz yo'naltiradi, graphql.uzum.uz esa 401
+# beradi. Kerak bo'lsa Ozon dagi kabi (haqiqiy Chrome + CDP) yondashuv bilan
+# qo'shish mumkin.
 # Wildberries/Prom o'chirildi — saytlar faoliyati to'xtagan yoki eskirgan.
 # Brandstore ham o'chirildi: brandstore.uz ham, api.brandstore.uz ham 443
 # portga ulanmaydi (sayt yopilgan). OLX esa barcha so'rovlarga 403 beradi
