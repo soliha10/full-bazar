@@ -9,13 +9,13 @@ Endi 0 mahsulot — xato. Ish baribir davom etadi (qolgan do'konlar yangilanishi
 kerak), lekin GitHub Actions sahifasida ogohlantirish ko'rinadi va yakuniy
 xulosada FAIL deb yoziladi.
 
-    python python/run_scrapers.py --output ../data --delay 0.5
+    python python/run_scrapers.py --delay 0.5
 
 Mahalliy yig'iladigan do'konlar (asaxiy, olcha, chakana) ALL_SCRAPERS ga
 kirmaydi — ular CI IP laridan bloklanadi (sabablari scrapers/__init__.py da).
 Ularni uy/ofis internetidan shunday yig'iladi:
 
-    python python/run_scrapers.py --local --output ./data --delay 1.5
+    python python/run_scrapers.py --local --delay 1.5
 
 Natija CSV + `.meta` fayllarini repoga commit qilish kerak, aks holda CI
 ularni ko'rmaydi va `.meta` eskirgach sync ularni butunlay tashlab ketadi.
@@ -30,7 +30,13 @@ import sys
 import time
 import traceback
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _HERE)
+
+# Sukut bo'yicha repodagi data/ — cwd ga bog'liq emas. Ilgari "../data" edi va
+# u faqat python/ ichidan chaqirilganda to'g'ri ishlardi; boshqa joydan
+# ishga tushirilsa tasodifiy papka yaratib qo'yardi.
+DEFAULT_OUTPUT = os.path.join(os.path.dirname(_HERE), "data")
 
 from scrapers import ALL_SCRAPERS, LOCAL_SCRAPERS  # noqa: E402
 
@@ -45,7 +51,8 @@ def _annotate(level: str, message: str) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Barcha scraperlarni ishga tushirish")
-    ap.add_argument("--output", default="../data", help="CSV lar yoziladigan papka")
+    ap.add_argument("--output", default=DEFAULT_OUTPUT,
+                    help="CSV lar yoziladigan papka (sukut: repodagi data/)")
     ap.add_argument("--delay", type=float, default=0.5,
                     help="so'rovlar orasidagi tanaffus (sekund)")
     ap.add_argument("--only", default="", help="vergul bilan: faqat shu do'konlar")
@@ -55,7 +62,6 @@ def main() -> int:
 
     logging.basicConfig(level=logging.INFO,
                         format="%(levelname)s:%(name)s:%(message)s")
-    os.makedirs(args.output, exist_ok=True)
 
     pool = LOCAL_SCRAPERS if args.local else ALL_SCRAPERS
     wanted = {s.strip() for s in args.only.split(",") if s.strip()}
@@ -63,6 +69,8 @@ def main() -> int:
     if not scrapers:
         sys.exit(f"--only '{args.only}' hech bir do'konga mos kelmadi. "
                  f"Mavjud: {', '.join(c.store_name for c in pool)}")
+
+    os.makedirs(args.output, exist_ok=True)
 
     results: list[tuple[str, int, str]] = []
     for cls in scrapers:
