@@ -1,8 +1,8 @@
 """CSV → PostgreSQL sinxronizatsiyasi. GitHub Actions ishga tushiradi."""
 from __future__ import annotations
-import csv, hashlib, math, os, re, sys, unicodedata
+import csv, hashlib, math, os, re, sys, time, unicodedata
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone
 
 import psycopg2, psycopg2.extras
 
@@ -337,14 +337,112 @@ def load_existing_slugs(conn) -> dict:
         return dict(cur.fetchall())
 
 
+# ── Supabase ga ulanish ───────────────────────────────────────────────────────
+# CI dagi ishlar muntazam ikki xil xato bilan tushardi:
+#
+#   psycopg2.OperationalError: ... (ECHECKOUTTIMEOUT) unable to check out
+#   connection from the pool after 15000ms in Session mode
+#       → pooler band edi. Bu vaqtinchalik holat: bir necha soniyadan keyin
+#         qayta urinish yetadi, lekin kod birinchi urinishdayoq tushardi.
+#
+#   psycopg2.errors.QueryCanceled: canceling statement due to statement timeout
+#       → bepul Supabase sekin: 5500 qatorlik INSERT server tomondagi sukut
+#         bo'yicha chegaradan oshib ketardi. Sessiyaga o'z chegaramizni
+#         qo'yamiz va partiyalarni kichraytiramiz.
+CONNECT_ATTEMPTS = 5
+CONNECT_BACKOFF = (5, 15, 30, 60)
+
+# Bitta buyruq uchun. 5500 qatorlik yozuvga yetarli, lekin cheksiz emas —
+# osilib qolgan buyruq CI ni 60 daqiqa ushlab turmasin.
+STATEMENT_TIMEOUT_MS = 10 * 60 * 1000
+# TRUNCATE ga ACCESS EXCLUSIVE qulf kerak, uni esa saytning o'qish so'rovlari
+# ushlab turishi mumkin. Kutishning cheki bo'lmasa, butun byudjet shunga ketadi.
+LOCK_TIMEOUT_MS = 60 * 1000
+# Tranzaksiya ochiq turib, kod tomonda nimadir osilib qolsa — pooler dagi
+# ulanishni band qilib qo'ymaslik uchun.
+IDLE_TX_TIMEOUT_MS = 5 * 60 * 1000
+
+
+def connect():
+    """Supabase ga ulanadi; pooler band bo'lsa kutib qayta uriniladi."""
+    last: Exception | None = None
+    for attempt in range(CONNECT_ATTEMPTS):
+        try:
+            conn = psycopg2.connect(
+                DB_URL,
+                connect_timeout=30,
+                # Uzoq INSERT paytida NAT/pooler ulanishni jim o'ldirmasin
+                keepalives=1, keepalives_idle=30,
+                keepalives_interval=10, keepalives_count=5,
+            )
+        except psycopg2.OperationalError as exc:
+            last = exc
+            if attempt == CONNECT_ATTEMPTS - 1:
+                break
+            wait = CONNECT_BACKOFF[attempt]
+            print(f"[db] ulanmadi ({str(exc).strip()}) — {wait}s dan keyin "
+                  f"qayta urinish ({attempt + 2}/{CONNECT_ATTEMPTS})", flush=True)
+            time.sleep(wait)
+            continue
+
+        # DSN pooler ning SESSION rejimiga (5432-port) ulanadi, ya'ni bu
+        # sozlamalar butun sessiya davomida saqlanadi. Agar pooler biror
+        # sozlamani rad etsa — sinxronizatsiyani to'xtatmaymiz, chunki server
+        # sukuti ham ishlaydi, shunchaki kamroq bardoshli bo'ladi.
+        conn.autocommit = True
+        for name, value in (
+            ("statement_timeout", STATEMENT_TIMEOUT_MS),
+            ("lock_timeout", LOCK_TIMEOUT_MS),
+            ("idle_in_transaction_session_timeout", IDLE_TX_TIMEOUT_MS),
+        ):
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(f"SET {name} = {value}")
+            except psycopg2.Error as exc:
+                print(f"[db] {name} o'rnatilmadi: {str(exc).strip()[:120]}",
+                      flush=True)
+        conn.autocommit = False
+        return conn
+
+    raise last  # type: ignore[misc]
+
+
+# Yozish tranzaksiyasi tushishi mumkin bo'lgan, o'tkinchi sabablar: qulf
+# kutilmadi (saytning o'qish so'rovlari TRUNCATE ni to'sib turibdi), buyruq
+# chegaradan oshdi, yoki ulanish uzildi. Ularning hammasi bir necha daqiqadan
+# keyin o'tib ketadi — butun ishni tashlash o'rniga qayta uriniladi.
+WRITE_ATTEMPTS = 3
+WRITE_BACKOFF = (30, 90)
+# QueryCanceled (statement/lock timeout), LockNotAvailable, DeadlockDetected
+# va uzilgan ulanish — hammasi OperationalError ning avlodlari.
+_RETRYABLE = psycopg2.OperationalError
+
+
 def write_db(groups):
-    conn = psycopg2.connect(DB_URL)
+    conn = connect()
     try:
         # Sluglarni TRUNCATE dan oldin o'qiymiz: mahsulotning manzili bir marta
         # berilib, keyin o'zgarmasligi kerak.
         with conn:
             assign_slugs(groups, load_existing_slugs(conn))
-        return _write_rows(conn, groups)
+
+        for attempt in range(WRITE_ATTEMPTS):
+            try:
+                return _write_rows(conn, groups)
+            except _RETRYABLE as exc:
+                if attempt == WRITE_ATTEMPTS - 1:
+                    raise
+                wait = WRITE_BACKOFF[attempt]
+                print(f"[db] yozish tushdi ({type(exc).__name__}: "
+                      f"{str(exc).strip()[:150]}) — {wait}s dan keyin qayta "
+                      f"urinish ({attempt + 2}/{WRITE_ATTEMPTS})", flush=True)
+                # Ulanish uzilgan bo'lishi mumkin — yangisini olamiz.
+                try:
+                    conn.close()
+                except psycopg2.Error:
+                    pass
+                time.sleep(wait)
+                conn = connect()
     finally:
         conn.close()
 
@@ -359,7 +457,9 @@ def _write_rows(conn, groups):
             g["rating"], g["reviews"], g["image"] or None,
             g["images"] or None, True, g["keywords"][:5000],
             best.get("source"), best.get("price", 0), best.get("url"),
-            datetime.utcnow(),
+            # utcnow() naive qiymat beradi va TIMESTAMPTZ ustunida uni server
+            # o'z mintaqasida talqin qiladi. Aniq UTC yozamiz.
+            datetime.now(timezone.utc),
         ))
         for m in sm:
             mkt_rows.append((pid, m["source"], m["price"], m["url"]))
@@ -413,20 +513,25 @@ def _write_rows(conn, groups):
                   f"{cur.rowcount} ta eski yozuv o'chirildi", flush=True)
 
             cur.execute("TRUNCATE product_markets, products")
+            # Partiyalar ataylab kichik: `keywords` qatori 5 KB gacha bo'lishi
+            # mumkin, ya'ni 500 qatorlik INSERT bepul Supabase uchun 2.5 MB lik
+            # bitta buyruq — aynan shunisi "statement timeout" bilan tushardi.
             if prod_rows:
                 psycopg2.extras.execute_values(
                     cur,
                     "INSERT INTO products (id,slug,name,title,category,rating,"
                     "reviews,image,images,in_stock,keywords,source,price,url,"
                     "updated_at) VALUES %s",
-                    prod_rows, page_size=500,
+                    prod_rows, page_size=200,
                 )
+                print(f"[db] {len(prod_rows)} ta mahsulot yozildi", flush=True)
             if mkt_rows:
                 psycopg2.extras.execute_values(
                     cur,
                     "INSERT INTO product_markets (product_id,source,price,url) VALUES %s",
-                    mkt_rows, page_size=1000,
+                    mkt_rows, page_size=500,
                 )
+                print(f"[db] {len(mkt_rows)} ta narx yozuvi yozildi", flush=True)
     return len(prod_rows), len(mkt_rows)
 
 

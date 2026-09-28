@@ -9,10 +9,34 @@ import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Iterator
+from urllib.parse import urlsplit
 
 import requests
 
 logger = logging.getLogger(__name__)
+
+# ── Nega curl_cffi ────────────────────────────────────────────────────────────
+# asaxiy.uz va olcha.uz Cloudflare ortida turadi va GitHub Actions dan kelgan
+# so'rovga 403 qaytaradi (o'sha manzil uy internetidan 200). Sarlavhalar
+# to'g'ri bo'lsa ham rad etiladi, chunki Cloudflare TLS qo'l berishuvining
+# barmoq izini (JA3/JA4) ham qaraydi: `requests` (OpenSSL) ning izi hech bir
+# brauzernikiga o'xshamaydi.
+#
+# curl_cffi Chrome ning aynan o'sha TLS + HTTP/2 izini takrorlaydi. O'rnatilgan
+# bo'lsa ishlatiladi, bo'lmasa kod avvalgidek `requests` bilan ishlaydi —
+# ya'ni bu majburiy bog'liqlik emas.
+try:  # pragma: no cover - ixtiyoriy bog'liqlik
+    from curl_cffi import requests as curl_requests
+except ImportError:  # pragma: no cover
+    curl_requests = None
+
+# curl_cffi qaysi brauzerni takrorlashi. Kutubxona yangilanganda profil nomi
+# eskirishi mumkin — shunda muhit o'zgaruvchisi bilan almashtirish mumkin.
+IMPERSONATE = os.getenv("SCRAPER_IMPERSONATE", "chrome")
+
+NETWORK_ERRORS: tuple[type[BaseException], ...] = (requests.RequestException,)
+if curl_requests is not None:
+    NETWORK_ERRORS += (curl_requests.exceptions.RequestException,)
 
 CSV_FIELDS = ["title", "price", "store", "image_url", "product_url", "rating", "review_count"]
 
@@ -31,13 +55,54 @@ HEADERS = {
     # Faqat o'zimiz ocha oladigan kodlashlarni so'raymiz.
     "Accept-Encoding": "gzip, deflate",
     "Connection": "keep-alive",
+    # Haqiqiy Chrome HAR SO'ROVDA yuboradigan sarlavhalar. Ularsiz so'rov
+    # Cloudflare uchun "brauzer emas" deb belgilanadi — asaxiy va olcha
+    # GitHub Actions dan 403 qaytarardi (o'sha URL uy internetidan 200).
+    # Bu IP obro'sini o'zgartirmaydi, lekin oddiy WAF qoidalaridan o'tkazadi.
+    "Upgrade-Insecure-Requests": "1",
+    "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Windows"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
 }
 
 JSON_HEADERS = {
     **HEADERS,
     "Accept": "application/json, text/plain, */*",
     "X-Requested-With": "XMLHttpRequest",
+    # XHR uchun navigatsiya sarlavhalari noto'g'ri — brauzer boshqacha yuboradi.
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
 }
+JSON_HEADERS.pop("Upgrade-Insecure-Requests", None)
+JSON_HEADERS.pop("Sec-Fetch-User", None)
+
+# curl_cffi rejimida sessiya sarlavhalari ustiga to'liq to'plam yozilmaydi —
+# faqat XHR ni HTML navigatsiyasidan ajratib turadigan qismi qo'shiladi.
+XHR_HEADERS = {
+    "Accept": "application/json, text/plain, */*",
+    "X-Requested-With": "XMLHttpRequest",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+}
+
+# Vaqtinchalik bo'lishi mumkin bo'lgan javoblar — qayta urinib ko'ramiz.
+# 403 ham shu ro'yxatda: Cloudflare ba'zan birinchi so'rovni rad etib,
+# cookie o'rnatilgandan keyingisini o'tkazadi.
+RETRY_STATUSES = frozenset({403, 408, 429, 500, 502, 503, 504})
+
+# Nechta urinish va ular orasidagi kutish (sekund). Uzun emas: CI dagi butun
+# yig'ish 60 daqiqaga sig'ishi kerak, scraperlar esa birinchi xato sahifadayoq
+# to'xtaydi — ya'ni amalda bu qayta urinishlar sahifa boshiga bir marta.
+MAX_ATTEMPTS = 3
+# Sinovda radius.uz bir necha soniya 500 qaytarib turdi — 2-5 soniyalik
+# oyna undan o'tib ketishga yetmagan edi.
+RETRY_BACKOFF = (3.0, 12.0)
 
 
 @dataclass
@@ -57,18 +122,82 @@ class BaseScraper(ABC):
     def __init__(self, output_dir: str, delay: float = 1.5):
         self.output_dir = output_dir
         self.delay = delay
-        self.session = requests.Session()
-        self.session.headers.update(HEADERS)
+        self.session = self._new_session()
+        self._warmed: set[str] = set()
+
+    @staticmethod
+    def _new_session():
+        if curl_requests is not None:
+            session = curl_requests.Session(impersonate=IMPERSONATE)
+            # Qolgan sarlavhalarni curl_cffi ning o'zi Chrome dagidek tartibda
+            # qo'yadi — ustiga yozsak, taqlid sifati pasayadi.
+            session.headers.update({"Accept-Language": HEADERS["Accept-Language"]})
+            return session
+        session = requests.Session()
+        session.headers.update(HEADERS)
+        return session
 
     @abstractmethod
     def scrape(self) -> Iterator[ProductRow]:
         pass
 
-    def get(self, url: str, json_mode: bool = False, **kwargs) -> requests.Response:
-        time.sleep(self.delay + random.uniform(0, 0.5))
+    def _warm_up(self, url: str) -> None:
+        """Katalogdan oldin bosh sahifani ochib, cookie larni olamiz.
+
+        Cloudflare ortidagi do'konlar (asaxiy, olcha) katalogga to'g'ridan-to'g'ri
+        kelgan, hech qanday cookie si yo'q so'rovni bot deb belgilaydi. Brauzer
+        hech qachon shunday qilmaydi — u avval bosh sahifadan o'tadi. Har host
+        uchun bir marta bajariladi.
+        """
+        parts = urlsplit(url)
+        host = parts.netloc
+        if not host or host in self._warmed:
+            return
+        self._warmed.add(host)
+        try:
+            self.session.get(f"{parts.scheme}://{host}/", timeout=20)
+        except NETWORK_ERRORS as exc:
+            logger.debug("[%s] warm-up %s: %s", self.store_name, host, exc)
+
+    def get(self, url: str, json_mode: bool = False, **kwargs):
+        """Sahifani oladi; vaqtinchalik xatolarda qayta urinadi.
+
+        Qaytadigan javob `requests` yoki `curl_cffi` niki — ikkalasida ham
+        `.ok`, `.status_code`, `.text`, `.json()` bir xil ishlaydi.
+        """
         if json_mode:
-            kwargs.setdefault("headers", JSON_HEADERS)
-        return self.session.get(url, timeout=20, **kwargs)
+            # curl_cffi da butun to'plamni almashtirmaymiz — taqlid qilingan
+            # sarlavhalar tartibi saqlanib qolsin, faqat XHR ga xoslari qo'shiladi.
+            kwargs.setdefault(
+                "headers", XHR_HEADERS if curl_requests is not None else JSON_HEADERS
+            )
+        else:
+            self._warm_up(url)
+
+        kwargs.setdefault("timeout", 20)
+        last_exc: BaseException | None = None
+        resp = None
+
+        for attempt in range(MAX_ATTEMPTS):
+            time.sleep(self.delay + random.uniform(0, 0.5))
+            try:
+                resp = self.session.get(url, **kwargs)
+            except NETWORK_ERRORS as exc:
+                last_exc = exc
+                logger.warning("[%s] %s urinish %d: %s",
+                               self.store_name, url, attempt + 1, exc)
+            else:
+                if resp.status_code not in RETRY_STATUSES:
+                    return resp
+                logger.warning("[%s] %s urinish %d: HTTP %d",
+                               self.store_name, url, attempt + 1, resp.status_code)
+
+            if attempt < MAX_ATTEMPTS - 1:
+                time.sleep(RETRY_BACKOFF[attempt])
+
+        if resp is not None:
+            return resp  # chaqiruvchi `resp.ok` ni o'zi tekshiradi
+        raise last_exc  # type: ignore[misc]
 
     def run(self) -> int:
         os.makedirs(self.output_dir, exist_ok=True)

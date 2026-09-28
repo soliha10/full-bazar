@@ -28,32 +28,21 @@ jobs:
         run: |
           pip install requests==2.32.3 beautifulsoup4==4.12.3 lxml==5.2.2 psycopg2-binary==2.9.9
 
+      # curl_cffi Chrome ning TLS barmoq izini takrorlaydi — Cloudflare ortidagi
+      # asaxiy va olcha runner IP laridan kelgan oddiy `requests` so'rovini 403
+      # bilan rad etardi. Bu ixtiyoriy: scrapers/base.py uni topolmasa,
+      # avvalgidek `requests` bilan ishlayveradi, shuning uchun g'ildirak
+      # yig'ilmay qolsa ish to'xtamaydi.
+      - name: Install curl_cffi (ixtiyoriy — Cloudflare uchun)
+        continue-on-error: true
+        run: pip install "curl_cffi>=0.7,<0.8"
+
+      # Mantiq python/run_scrapers.py da: 0 mahsulot bergan do'kon endi 'OK'
+      # emas, 'FAIL' deb belgilanadi va Actions sahifasida ogohlantirish
+      # ko'rinadi. Ish baribir davom etadi — qolgan do'konlarning yangi
+      # narxlari sinxronizatsiyaga tushishi kerak.
       - name: Run all scrapers
-        working-directory: python
-        run: |
-          mkdir -p ../data
-          python -c "
-          import sys, os
-          sys.path.insert(0, '.')
-          from scrapers import ALL_SCRAPERS
-          import logging
-          logging.basicConfig(level=logging.INFO)
-          results = []
-          for cls in ALL_SCRAPERS:
-              try:
-                  print(f'[{cls.store_name}] Starting...', flush=True)
-                  s = cls(output_dir='../data', delay=0.5)
-                  count = s.run()
-                  results.append((cls.store_name, count, 'OK'))
-                  print(f'[{cls.store_name}] Done: {count} products', flush=True)
-              except Exception as e:
-                  results.append((cls.store_name, 0, str(e)))
-                  print(f'[{cls.store_name}] ERROR: {e}', flush=True)
-          print('\n=== SCRAPE SUMMARY ===')
-          for name, count, status in results:
-              print(f'{name}: {count} ({status})')
-          print(f'Total scrapers: {len(results)}')
-          "
+        run: python python/run_scrapers.py --output ./data --delay 0.5
 
       # DIQQAT: Ozon bu yerda yig'ilmaydi — uning antiboti faqat haqiqiy,
       # avtomatlashtirilmagan Chrome ni o'tkazadi (scrapers/ozon.py ga qarang),

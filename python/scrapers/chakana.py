@@ -24,9 +24,12 @@ def _curl_json(url: str, delay: float = 1.0) -> list | dict | None:
             capture_output=True, text=True, timeout=20,
         )
         if not r.stdout.strip():
+            logger.warning("[chakana] curl bo'sh javob qaytardi (exit %d): %s",
+                           r.returncode, (r.stderr or "").strip()[:200])
             return None
         return json.loads(r.stdout)
-    except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError):
+    except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError) as exc:
+        logger.warning("[chakana] curl xatoligi: %r", exc)
         return None
 
 
@@ -43,13 +46,20 @@ class ChakanaScraper(BaseScraper):
                 if resp.ok:
                     products = resp.json()
                 else:
-                    raise ValueError(f"HTTP {resp.status_code}")
-            except Exception:
+                    raise ValueError(f"HTTP {resp.status_code}: {resp.text[:200]}")
+            except Exception as exc:
                 # Fallback: use curl (handles TLS 1.3 on macOS)
+                logger.warning("[chakana] page %d requests bilan olinmadi (%s), "
+                               "curl ga o'tilmoqda", page, exc)
                 products = _curl_json(url, delay=self.delay)
 
             if not isinstance(products, list) or not products:
-                logger.info("[chakana] page %d: no products, stopping", page)
+                # Ilgari bu "no products" deb INFO bilan yozilardi va CI da
+                # chakana jimgina 0 ta mahsulot berardi — sabab ko'rinmasdi.
+                # Birinchi sahifadayoq bo'sh qolish — bu xato, oxir emas.
+                level = logger.warning if page == 1 else logger.info
+                level("[chakana] page %d: mahsulot qaytmadi (javob turi: %s), "
+                      "to'xtatildi", page, type(products).__name__)
                 break
 
             for prod in products:
