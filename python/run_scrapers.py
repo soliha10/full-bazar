@@ -10,6 +10,16 @@ kerak), lekin GitHub Actions sahifasida ogohlantirish ko'rinadi va yakuniy
 xulosada FAIL deb yoziladi.
 
     python python/run_scrapers.py --output ../data --delay 0.5
+
+Mahalliy yig'iladigan do'konlar (asaxiy, olcha, chakana) ALL_SCRAPERS ga
+kirmaydi — ular CI IP laridan bloklanadi (sabablari scrapers/__init__.py da).
+Ularni uy/ofis internetidan shunday yig'iladi:
+
+    python python/run_scrapers.py --local --output ./data --delay 1.5
+
+Natija CSV + `.meta` fayllarini repoga commit qilish kerak, aks holda CI
+ularni ko'rmaydi va `.meta` eskirgach sync ularni butunlay tashlab ketadi.
+(Ozon — alohida, unga haqiqiy Chrome kerak: python/scrape_ozon_local.py)
 """
 from __future__ import annotations
 
@@ -22,7 +32,7 @@ import traceback
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from scrapers import ALL_SCRAPERS  # noqa: E402
+from scrapers import ALL_SCRAPERS, LOCAL_SCRAPERS  # noqa: E402
 
 
 def _annotate(level: str, message: str) -> None:
@@ -39,14 +49,20 @@ def main() -> int:
     ap.add_argument("--delay", type=float, default=0.5,
                     help="so'rovlar orasidagi tanaffus (sekund)")
     ap.add_argument("--only", default="", help="vergul bilan: faqat shu do'konlar")
+    ap.add_argument("--local", action="store_true",
+                    help="CI da bloklangan, mahalliy yig'iladigan do'konlar")
     args = ap.parse_args()
 
     logging.basicConfig(level=logging.INFO,
                         format="%(levelname)s:%(name)s:%(message)s")
     os.makedirs(args.output, exist_ok=True)
 
+    pool = LOCAL_SCRAPERS if args.local else ALL_SCRAPERS
     wanted = {s.strip() for s in args.only.split(",") if s.strip()}
-    scrapers = [c for c in ALL_SCRAPERS if not wanted or c.store_name in wanted]
+    scrapers = [c for c in pool if not wanted or c.store_name in wanted]
+    if not scrapers:
+        sys.exit(f"--only '{args.only}' hech bir do'konga mos kelmadi. "
+                 f"Mavjud: {', '.join(c.store_name for c in pool)}")
 
     results: list[tuple[str, int, str]] = []
     for cls in scrapers:
@@ -81,6 +97,16 @@ def main() -> int:
     print(f"Total scrapers: {len(results)}, failed: {len(failed)}", flush=True)
     if failed:
         _annotate("warning", "Natija bermagan do'konlar: " + ", ".join(failed))
+
+    # Mahalliy yig'ish natijasi repoga tushmasa, butun ish behuda: CI o'z
+    # nusxasini ko'radi va `.meta` eskirgach sync manbani tashlab ketadi.
+    ok = [name for name, _, status in results if status == "OK"]
+    if args.local and ok:
+        files = " ".join(f"{args.output.rstrip('/')}/{n}_products.*" for n in ok)
+        print("\nNatijani repoga commit qiling:", flush=True)
+        print(f"    git add {files}", flush=True)
+        print("    git commit -m \"chore(data): mahalliy do'konlar yangilandi\"",
+              flush=True)
 
     # Chiqish kodi 0: qolgan do'konlarning yangi narxlari baribir bazaga
     # yozilishi kerak. Muammo xulosadan va ogohlantirishlardan ko'rinadi.

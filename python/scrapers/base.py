@@ -8,6 +8,7 @@ import shutil
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Iterator
 from urllib.parse import urlsplit
 
@@ -226,6 +227,20 @@ class BaseScraper(ABC):
 
         if count > 0:
             shutil.move(tmp_path, filepath)
+            # Yonidagi `.meta` — CSV QACHON yig'ilgani. sync_csv shunga qarab
+            # eskirgan manbani butunlay o'tkazib yuboradi (MAX_CSV_AGE_DAYS).
+            # Mahalliy yig'iladigan do'konlar (asaxiy, olcha, chakana, ozon)
+            # uchun bu yagona himoya: ularning CSV si repoda turadi va CI da
+            # yangilanmaydi, ya'ni sana bo'lmasa eski narx yangidek ko'rinardi.
+            #
+            # Har scraper uchun yoziladi, faqat mahalliylari uchun emas: aks
+            # holda CI biror kuni o'sha do'konni muvaffaqiyatli yig'sa, repodagi
+            # eski `.meta` tufayli YANGI ma'lumot eskirgan deb tashlanardi.
+            meta_path = os.path.join(
+                self.output_dir, f"{self.store_name}_products.meta"
+            )
+            with open(meta_path, "w", encoding="utf-8") as fh:
+                fh.write(datetime.now().astimezone().isoformat(timespec="seconds"))
             logger.info(f"[{self.store_name}] Saved {count} products → {filepath}")
         else:
             if os.path.exists(tmp_path):

@@ -45,7 +45,6 @@ import socket
 import subprocess
 import tempfile
 import time
-from datetime import datetime
 from typing import Iterator
 
 from .base import BaseScraper, ProductRow
@@ -260,16 +259,6 @@ class OzonScraper(BaseScraper):
             time.sleep(self.delay)
 
         logger.info("[ozon] %s: %d ta mahsulot", path, len(seen) - started)
-
-    def run(self) -> int:
-        count = super().run()
-        if count > 0:
-            # sync_csv shu sanaga qarab eskirgan manbani o'tkazib yuboradi:
-            # bu CSV CI da yangilanmaydi, faqat mahalliy ish bilan.
-            meta = os.path.join(self.output_dir, f"{self.store_name}_products.meta")
-            with open(meta, "w", encoding="utf-8") as fh:
-                fh.write(datetime.now().astimezone().isoformat(timespec="seconds"))
-        return count
 
     # ── Asosiy oqim ─────────────────────────────────────────────────────────
     def scrape(self) -> Iterator[ProductRow]:
