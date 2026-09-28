@@ -331,6 +331,7 @@ SLUG_DDL = (
 def load_existing_slugs(conn) -> dict:
     """{product_id: slug} — oldingi sinxronizatsiyada berilgan manzillar."""
     with conn.cursor() as cur:
+        _apply_timeouts(cur)
         for stmt in SLUG_DDL:
             cur.execute(stmt)
         cur.execute("SELECT id, slug FROM products WHERE slug IS NOT NULL")
@@ -385,16 +386,11 @@ def connect():
             time.sleep(wait)
             continue
 
-        # DSN pooler ning SESSION rejimiga (5432-port) ulanadi, ya'ni bu
-        # sozlamalar butun sessiya davomida saqlanadi. Agar pooler biror
-        # sozlamani rad etsa — sinxronizatsiyani to'xtatmaymiz, chunki server
-        # sukuti ham ishlaydi, shunchaki kamroq bardoshli bo'ladi.
+        # Sessiya darajasida qo'yamiz — 5432-portdagi SESSION rejimida shu
+        # yetadi. Pooler rad etsa to'xtamaymiz: server sukuti ham ishlaydi,
+        # qolaversa har tranzaksiya ichida SET LOCAL bilan takrorlanadi.
         conn.autocommit = True
-        for name, value in (
-            ("statement_timeout", STATEMENT_TIMEOUT_MS),
-            ("lock_timeout", LOCK_TIMEOUT_MS),
-            ("idle_in_transaction_session_timeout", IDLE_TX_TIMEOUT_MS),
-        ):
+        for name, value in _TIMEOUTS:
             try:
                 with conn.cursor() as cur:
                     cur.execute(f"SET {name} = {value}")
@@ -405,6 +401,25 @@ def connect():
         return conn
 
     raise last  # type: ignore[misc]
+
+
+_TIMEOUTS = (
+    ("statement_timeout", STATEMENT_TIMEOUT_MS),
+    ("lock_timeout", LOCK_TIMEOUT_MS),
+    ("idle_in_transaction_session_timeout", IDLE_TX_TIMEOUT_MS),
+)
+
+
+def _apply_timeouts(cur) -> None:
+    """Chegaralarni JORIY TRANZAKSIYA uchun qo'yadi.
+
+    DSN pooler ning TRANSACTION rejimiga (6543-port) ko'chirilsa, ulanish
+    paytidagi `SET` saqlanmaydi: u yerda har tranzaksiya boshqa server
+    ulanishiga tushishi mumkin. `SET LOCAL` esa ikkala rejimda ham ishlaydi,
+    shuning uchun chegaralar portga bog'liq bo'lmay qoladi.
+    """
+    for name, value in _TIMEOUTS:
+        cur.execute(f"SET LOCAL {name} = {value}")
 
 
 # Yozish tranzaksiyasi tushishi mumkin bo'lgan, o'tkinchi sabablar: qulf
@@ -466,6 +481,7 @@ def _write_rows(conn, groups):
 
     with conn:
         with conn.cursor() as cur:
+            _apply_timeouts(cur)
             # ── Narx tarixi ─────────────────────────────────────────────────
             # product_markets TRUNCATE qilinishidan OLDIN joriy narxlarni
             # saqlab qolamiz. Buni shu yerda qilish shart: sinxronizatsiya
