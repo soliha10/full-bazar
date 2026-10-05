@@ -27,6 +27,7 @@ import sys
 
 import psycopg2
 import psycopg2.extras
+from urllib.parse import urlsplit
 
 # Brend jadvali API bilan bitta manbadan — takrorlanmasin.
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "fastapi_app"))
@@ -49,10 +50,35 @@ def _annotate(level: str, message: str) -> None:
         print(f"[{level}] {message}", flush=True)
 
 
+def _dsn_problem(dsn: str) -> str | None:
+    """DSN da psycopg2 tushunmaydigan ko'rinadigan xato bormi.
+
+    Eng ko'p uchraydigani — parolda kodlanmagan `@`. libpq userinfo ni
+    BIRINCHI `@` da ajratadi, shuning uchun parolning qolgan qismi host
+    nomiga qo'shilib ketadi va xato `could not translate host name
+    "...@aws-0-....pooler.supabase.com"` bo'lib chiqadi — parolga umuman
+    ishora qilmaydi. Shuning uchun o'zimiz aytamiz.
+    """
+    netloc = urlsplit(dsn).netloc
+    if netloc.count("@") > 1:
+        return ("DSN da bittadan ko'p `@` bor — parolingizdagi maxsus "
+                "belgilar kodlanmagan. URI da parolni percent-encoding "
+                "bilan yozing: @ → %40, : → %3A, / → %2F, # → %23, "
+                "? → %3F, & → %26, % → %25")
+    if not urlsplit(dsn).hostname:
+        return "DSN da host yo'q — connection string to'liq ko'chirilmaganga o'xshaydi"
+    return None
+
+
 def check_db_url() -> None:
     """DSN bo'sh bo'lsa darhol to'xtaydi (sync_csv.check_db_url bilan bir xil)."""
-    if os.getenv("PRODUCTS_DB_URL", "").strip():
-        return
+    raw = os.getenv("PRODUCTS_DB_URL", "").strip()
+    if raw:
+        problem = _dsn_problem(raw)
+        if problem is None:
+            return
+        _annotate("error", f"PRODUCTS_DB_URL noto'g'ri: {problem}")
+        sys.exit(1)
     if os.getenv("GITHUB_ACTIONS") == "true":
         _annotate("error", "PRODUCTS_DB_URL bo'sh — SUPABASE_DB_URL siri "
                            "o'rnatilmagan yoki bo'sh qiymat bilan saqlangan.")

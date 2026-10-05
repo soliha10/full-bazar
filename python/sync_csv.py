@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv, hashlib, math, os, re, sys, time, unicodedata
 from collections import Counter
 from datetime import datetime, timezone
+from urllib.parse import urlsplit
 
 import psycopg2, psycopg2.extras
 
@@ -576,6 +577,26 @@ def _write_rows(conn, groups):
     return len(prod_rows), len(mkt_rows)
 
 
+def _dsn_problem(dsn: str) -> str | None:
+    """DSN da psycopg2 tushunmaydigan ko'rinadigan xato bormi.
+
+    Eng ko'p uchraydigani — parolda kodlanmagan `@`. libpq userinfo ni
+    BIRINCHI `@` da ajratadi, shuning uchun parolning qolgan qismi host
+    nomiga qo'shilib ketadi va xato `could not translate host name
+    "...@aws-0-....pooler.supabase.com"` bo'lib chiqadi — parolga umuman
+    ishora qilmaydi. Shuning uchun o'zimiz aytamiz.
+    """
+    netloc = urlsplit(dsn).netloc
+    if netloc.count("@") > 1:
+        return ("DSN da bittadan ko'p `@` bor — parolingizdagi maxsus "
+                "belgilar kodlanmagan. URI da parolni percent-encoding "
+                "bilan yozing: @ → %40, : → %3A, / → %2F, # → %23, "
+                "? → %3F, & → %26, % → %25")
+    if not urlsplit(dsn).hostname:
+        return "DSN da host yo'q — connection string to'liq ko'chirilmaganga o'xshaydi"
+    return None
+
+
 def check_db_url() -> None:
     """CSV larni o'qishdan OLDIN DSN ni tekshiradi.
 
@@ -584,8 +605,13 @@ def check_db_url() -> None:
     to'xtaymiz va sababini aytamiz — CI dagi "socket topilmadi" xatosi
     o'rniga.
     """
-    if os.getenv("PRODUCTS_DB_URL", "").strip():
-        return
+    raw = os.getenv("PRODUCTS_DB_URL", "").strip()
+    if raw:
+        problem = _dsn_problem(raw)
+        if problem is None:
+            return
+        _annotate("error", f"PRODUCTS_DB_URL noto'g'ri: {problem}")
+        sys.exit(1)
     if os.getenv("GITHUB_ACTIONS") == "true":
         print("::error::PRODUCTS_DB_URL bo'sh — SUPABASE_DB_URL siri "
               "o'rnatilmagan yoki bo'sh qiymat bilan saqlangan. Settings → "
