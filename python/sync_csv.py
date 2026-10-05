@@ -594,6 +594,17 @@ def _dsn_problem(dsn: str) -> str | None:
                 "? → %3F, & → %26, % → %25")
     if not urlsplit(dsn).hostname:
         return "DSN da host yo'q — connection string to'liq ko'chirilmaganga o'xshaydi"
+    host = urlsplit(dsn).hostname or ""
+    user = urlsplit(dsn).username or ""
+    # Supabase pooler foydalanuvchi nomidan qaysi loyihaga ulanishni biladi:
+    # u `postgres.<project-ref>` bo'lishi SHART. Oddiy `postgres` berilsa
+    # pooler marshrutni topa olmaydi va buni "password authentication
+    # failed" deb aytadi — ya'ni parolni qayta-qayta tekshirishga undaydi,
+    # holbuki parol to'g'ri.
+    if host.endswith(".pooler.supabase.com") and "." not in user:
+        return (f"pooler uchun foydalanuvchi nomi `postgres.<project-ref>` "
+                f"bo'lishi kerak, hozir `{user}`. Supabase → Connect dagi "
+                f"satrni to'liq ko'chiring (parolgina almashtiriladi).")
     return None
 
 
