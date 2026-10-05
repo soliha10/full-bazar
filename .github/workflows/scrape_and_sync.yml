@@ -15,6 +15,29 @@ jobs:
     timeout-minutes: 60
 
     steps:
+      # Yig'ish 15 daqiqa, sinxronizatsiya esa sirsiz baribir yiqiladi.
+      # 2026-09-28 dan 2026-10-05 gacha har ish aynan shunday behuda ketdi:
+      # SUPABASE_DB_URL bo'sh qiymat bilan qayta yozilgan edi, bu esa faqat
+      # oxirgi qadamda, "socket topilmadi" degan chalg'ituvchi xato bo'lib
+      # ko'rinardi. Endi birinchi soniyada aytiladi.
+      - name: Tekshirish — SUPABASE_DB_URL siri bor va bo'sh emasmi
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "${DB_URL//[[:space:]]/}" ]; then
+            echo "::error::SUPABASE_DB_URL siri bo'sh yoki o'rnatilmagan."
+            echo "Settings → Secrets and variables → Actions → SUPABASE_DB_URL"
+            echo "ni Supabase connection string i bilan qayta yozing, masalan:"
+            echo "  postgresql://postgres.<ref>:<parol>@aws-0-<region>.pooler.supabase.com:5432/postgres"
+            exit 1
+          fi
+          case "$DB_URL" in
+            postgresql://*|postgres://*) ;;
+            *) echo "::error::SUPABASE_DB_URL postgresql:// bilan boshlanmaydi."
+               exit 1 ;;
+          esac
+          echo "SUPABASE_DB_URL o'rnatilgan (${#DB_URL} belgi)."
+
       - name: Checkout repository
         uses: actions/checkout@v7
 

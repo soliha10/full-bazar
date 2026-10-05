@@ -7,7 +7,18 @@ from datetime import datetime, timezone
 import psycopg2, psycopg2.extras
 
 DATA_DIR = os.getenv("DATA_DIR", "./data")
-DB_URL = os.getenv("PRODUCTS_DB_URL", "postgresql://postgres:postgres@postgres:5432/fullbazar")
+
+# Docker compose dagi mahalliy baza — faqat zaxira qiymat.
+LOCAL_DB_URL = "postgresql://postgres:postgres@postgres:5432/fullbazar"
+
+# DIQQAT: `os.getenv(nom, zaxira)` BO'SH satrni ham haqiqiy qiymat deb oladi.
+# 2026-09-28 da SUPABASE_DB_URL siri bo'sh qiymat bilan qayta yozilgan va
+# natijada bu yerga "" tushgan: psycopg2 bo'sh DSN ni "mahalliy Unix soket"
+# deb tushunib, runner ichidagi yo'q PostgreSQL ga ulanishga urinardi
+# (`/var/run/postgresql/.s.PGSQL.5432 ... No such file or directory`). Xato
+# xabari sirga umuman ishora qilmagani uchun muammo bir hafta sezilmadi.
+# Shuning uchun bo'sh/probellardan iborat qiymat BERILMAGAN deb qaraladi.
+DB_URL = os.getenv("PRODUCTS_DB_URL", "").strip() or LOCAL_DB_URL
 
 _SMARTPHONE_RE = re.compile(
     r"(iphone|samsung|redmi|xiaomi|oppo|vivo|realme|honor|smartfon|pixel|"
@@ -44,6 +55,14 @@ _INACTIVE_SITES = {"premier", "wildberries", "prom", "brandstore", "olx"}
 # (.meta fayli yo'q manbalar — CI da har ish oldidan yangilanadiganlari —
 #  har doim o'qiladi.)
 MAX_CSV_AGE_DAYS = int(os.getenv("MAX_CSV_AGE_DAYS", "10"))
+
+
+def _annotate(level: str, message: str) -> None:
+    """GitHub Actions ogohlantirishi (mahalliy ishda oddiy satr)."""
+    if os.getenv("GITHUB_ACTIONS") == "true":
+        print(f"::{level}::{message}", flush=True)
+    else:
+        print(f"[{level}] {message}", flush=True)
 
 
 def _too_old(meta_path: str) -> int | None:
@@ -236,8 +255,14 @@ def load_rows():
             continue
         stale = _too_old(os.path.join(DATA_DIR, fn.replace(".csv", ".meta")))
         if stale is not None:
-            print(f"[sync] Skipping stale source: {fn} ({stale} kun oldin yig'ilgan, "
-                  f"chegara {MAX_CSV_AGE_DAYS} kun)", flush=True)
+            # Oddiy `print` emas: bu butun bir do'konning narxlari saytdan
+            # tushib qolishini bildiradi. Ozon 2026-09-18 dan buyon aynan
+            # shunday jim tashlab yuborilgan edi — Actions sahifasida hech
+            # qanday belgi yo'q edi.
+            _annotate("warning",
+                      f"{fn} eskirgan ({stale} kun oldin yig'ilgan, chegara "
+                      f"{MAX_CSV_AGE_DAYS} kun) — bu do'kon narxlari saytda "
+                      f"ko'rinmaydi. Mahalliy yig'ib repoga commit qiling.")
             continue
         fpath = os.path.join(DATA_DIR, fn)
         try:
@@ -551,7 +576,28 @@ def _write_rows(conn, groups):
     return len(prod_rows), len(mkt_rows)
 
 
+def check_db_url() -> None:
+    """CSV larni o'qishdan OLDIN DSN ni tekshiradi.
+
+    Yig'ish 15 daqiqa, guruhlash yana yarim daqiqa ketadi; DSN yo'qligi esa
+    shundan keyin, ulanish urinishlarida ma'lum bo'lardi. Bu yerda darhol
+    to'xtaymiz va sababini aytamiz — CI dagi "socket topilmadi" xatosi
+    o'rniga.
+    """
+    if os.getenv("PRODUCTS_DB_URL", "").strip():
+        return
+    if os.getenv("GITHUB_ACTIONS") == "true":
+        print("::error::PRODUCTS_DB_URL bo'sh — SUPABASE_DB_URL siri "
+              "o'rnatilmagan yoki bo'sh qiymat bilan saqlangan. Settings → "
+              "Secrets and variables → Actions da uni Supabase ning "
+              "connection string i bilan qayta yozing.", flush=True)
+        sys.exit(1)
+    print(f"[db] PRODUCTS_DB_URL berilmadi — mahalliy bazaga ulanamiz "
+          f"({LOCAL_DB_URL})", flush=True)
+
+
 if __name__ == "__main__":
+    check_db_url()
     print(f"Loading CSVs from {DATA_DIR} ...", flush=True)
     rows = load_rows()
     print(f"Loaded {len(rows)} valid rows", flush=True)

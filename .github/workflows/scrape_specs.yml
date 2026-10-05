@@ -50,6 +50,19 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      # Sir bo'sh bo'lsa sync_specs.py birinchi qadamda to'xtaydi, lekin
+      # sababini bu yerda aytish arzonroq va aniqroq.
+      - name: Tekshirish — SUPABASE_DB_URL siri bor va bo'sh emasmi
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "${DB_URL//[[:space:]]/}" ]; then
+            echo "::error::SUPABASE_DB_URL siri bo'sh yoki o'rnatilmagan."
+            echo "Settings → Secrets and variables → Actions da uni qayta yozing."
+            exit 1
+          fi
+          echo "SUPABASE_DB_URL o'rnatilgan (${#DB_URL} belgi)."
+
       - name: Checkout repository
         uses: actions/checkout@v7
 

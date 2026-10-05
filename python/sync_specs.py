@@ -33,8 +33,33 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "fas
 import brands as brand_table  # noqa: E402
 
 DATA_DIR = os.getenv("DATA_DIR", "./data")
-DB_URL = os.getenv("PRODUCTS_DB_URL", "postgresql://postgres:postgres@postgres:5432/fullbazar")
+
+# Zaxira — docker compose dagi mahalliy baza. Bo'sh muhit o'zgaruvchisi
+# BERILMAGAN deb qaraladi; sababi sync_csv.py dagi izohda.
+LOCAL_DB_URL = "postgresql://postgres:postgres@postgres:5432/fullbazar"
+DB_URL = os.getenv("PRODUCTS_DB_URL", "").strip() or LOCAL_DB_URL
 CSV_PATH = os.path.join(DATA_DIR, "gsmarena_specs.csv")
+
+
+def _annotate(level: str, message: str) -> None:
+    """GitHub Actions ogohlantirishi (mahalliy ishda oddiy satr)."""
+    if os.getenv("GITHUB_ACTIONS") == "true":
+        print(f"::{level}::{message}", flush=True)
+    else:
+        print(f"[{level}] {message}", flush=True)
+
+
+def check_db_url() -> None:
+    """DSN bo'sh bo'lsa darhol to'xtaydi (sync_csv.check_db_url bilan bir xil)."""
+    if os.getenv("PRODUCTS_DB_URL", "").strip():
+        return
+    if os.getenv("GITHUB_ACTIONS") == "true":
+        _annotate("error", "PRODUCTS_DB_URL bo'sh — SUPABASE_DB_URL siri "
+                           "o'rnatilmagan yoki bo'sh qiymat bilan saqlangan.")
+        sys.exit(1)
+    print(f"[db] PRODUCTS_DB_URL berilmadi — mahalliy baza ({LOCAL_DB_URL})",
+          flush=True)
+
 
 # API ham shu jadvalni yaratadi; bu skript undan oldin ishlashi mumkin,
 # shuning uchun sxema shu yerda ham ta'minlanadi.
@@ -112,7 +137,12 @@ def _json_list(value: str) -> list[str]:
 
 def load_rows() -> list[tuple]:
     if not os.path.exists(CSV_PATH):
-        print(f"[specs] {CSV_PATH} topilmadi — o'tkazib yuborildi", flush=True)
+        # Ilgari bu oddiy `print` edi va ish 11 soniyada YASHIL tugardi:
+        # xususiyatlar oylab yozilmayotgani Actions sahifasidan bilinmasdi.
+        _annotate("warning", f"{CSV_PATH} topilmadi — xususiyatlar "
+                             f"yangilanmadi. GSMArena ni mahalliy yig'ib "
+                             f"(python/scrape_specs_local.py) natijani "
+                             f"repoga commit qilish kerak.")
         return []
 
     rows: list[tuple] = []
@@ -254,6 +284,7 @@ def export_csv() -> int:
 
 
 if __name__ == "__main__":
+    check_db_url()
     if "--export" in sys.argv:
         try:
             export_csv()
