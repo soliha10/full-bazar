@@ -351,6 +351,9 @@ def build_groups(rows):
 SLUG_DDL = (
     "ALTER TABLE products ADD COLUMN IF NOT EXISTS slug VARCHAR(200)",
     "CREATE UNIQUE INDEX IF NOT EXISTS idx_products_slug ON products(slug)",
+    # _write_rows narxlarni (product_id, source) bo'yicha UPSERT qiladi
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_product_markets_product_source "
+    "ON product_markets(product_id, source)",
 )
 
 
@@ -509,8 +512,16 @@ def write_db(groups):
         conn.close()
 
 
+# products ning sinxronizatsiya yozadigan ustunlari (id va updated_at dan
+# tashqari). Qator faqat shulardan biri o'zgarsa yangilanadi.
+_PRODUCT_COLS = ("slug", "name", "title", "category", "rating", "reviews",
+                 "image", "images", "in_stock", "keywords", "source", "price",
+                 "url")
+
+
 def _write_rows(conn, groups):
     prod_rows, mkt_rows = [], []
+    now = datetime.now(timezone.utc)
     for pid, g in groups.items():
         sm = sorted(g["markets"].values(), key=lambda m: m["price"])
         best = sm[0] if sm else {}
@@ -521,7 +532,7 @@ def _write_rows(conn, groups):
             best.get("source"), best.get("price", 0), best.get("url"),
             # utcnow() naive qiymat beradi va TIMESTAMPTZ ustunida uni server
             # o'z mintaqasida talqin qiladi. Aniq UTC yozamiz.
-            datetime.now(timezone.utc),
+            now,
         ))
         for m in sm:
             mkt_rows.append((pid, m["source"], m["price"], m["url"]))
@@ -575,36 +586,67 @@ def _write_rows(conn, groups):
             print(f"[history] {snapshots} ta narx o'zgarishi yozildi, "
                   f"{cur.rowcount} ta eski yozuv o'chirildi", flush=True)
 
-            # TRUNCATE EMAS, DELETE: TRUNCATE ACCESS EXCLUSIVE qulf oladi va u
-            # COMMIT gacha turadi — butun yozish davomida (ba'zan 30+ daqiqa)
-            # saytning HAR BIR o'qish so'rovi kutib qolardi, Netlify esa 28 s
-            # da 504 qaytarardi. Kutayotgan o'qishlar pooler ulanishlarini ham
-            # band qilib, boshqa endpointlarni ECHECKOUTTIMEOUT ga tushirardi.
-            # DELETE o'qishni to'smaydi: tranzaksiya tugaguncha sayt eski
-            # ma'lumotni ko'radi, COMMIT da yangisiga birdan o'tadi. 5-6 ming
-            # qator uchun tezlik farqi sezilmaydi; o'lik qatorlarni autovacuum
-            # tozalaydi.
-            cur.execute("DELETE FROM product_markets")
-            cur.execute("DELETE FROM products")
+            # ── Faqat O'ZGARGANINI yozamiz ──────────────────────────────────
+            # Ilgari har safar ikkala jadval to'liq o'chirilib, 5500 mahsulot
+            # qaytadan yozilardi. products da to'rtta GIN indeks bor (nom va
+            # 5 KB gacha keywords bo'yicha trigram/tsvector) — har yozuv ularni
+            # qayta qurdirardi. Bepul Supabase ning disk resursi shunga ketib,
+            # yozish 30+ daqiqa cho'zilar va shu vaqt saytning o'qish so'rovlari
+            # ham kutib qolardi. Aslida har sinxronizatsiyada bir necha o'nlab
+            # narx o'zgaradi xolos.
+            #   1. yo'qolgan mahsulotlar o'chiriladi (yangi slug ular bilan
+            #      to'qnashmasligi uchun UPSERT dan OLDIN);
+            #   2. products — UPSERT, lekin qator faqat biror maydoni farq
+            #      qilsa yangilanadi (WHERE ... IS DISTINCT FROM) — o'zgarmagan
+            #      qator uchun yangi kortej ham, indeks yozuvi ham yo'q;
+            #   3. product_markets — tor jadval, GIN siz: UPSERT + eskilarini
+            #      o'chirish. created_at har safar yangilanadi — sahifadagi
+            #      "tekshirilgan" vaqti shundan olinadi.
+            ids = [r[0] for r in prod_rows]
+            cur.execute("DELETE FROM product_markets WHERE NOT (product_id = ANY(%s))", (ids,))
+            cur.execute("DELETE FROM products WHERE NOT (id = ANY(%s))", (ids,))
+            removed = cur.rowcount
+
             # Partiyalar ataylab kichik: `keywords` qatori 5 KB gacha bo'lishi
             # mumkin, ya'ni 500 qatorlik INSERT bepul Supabase uchun 2.5 MB lik
             # bitta buyruq — aynan shunisi "statement timeout" bilan tushardi.
+            changed = 0
             if prod_rows:
-                psycopg2.extras.execute_values(
+                written = psycopg2.extras.execute_values(
                     cur,
                     "INSERT INTO products (id,slug,name,title,category,rating,"
                     "reviews,image,images,in_stock,keywords,source,price,url,"
-                    "updated_at) VALUES %s",
-                    prod_rows, page_size=200,
+                    "updated_at) VALUES %s "
+                    "ON CONFLICT (id) DO UPDATE SET "
+                    + ", ".join(f"{c} = EXCLUDED.{c}" for c in _PRODUCT_COLS + ("updated_at",))
+                    + " WHERE (" + ", ".join(f"products.{c}" for c in _PRODUCT_COLS)
+                    + ") IS DISTINCT FROM ("
+                    + ", ".join(f"EXCLUDED.{c}" for c in _PRODUCT_COLS) + ") "
+                    "RETURNING 1",
+                    prod_rows, page_size=200, fetch=True,
                 )
-                print(f"[db] {len(prod_rows)} ta mahsulot yozildi", flush=True)
+                changed = len(written)
+            print(f"[db] mahsulotlar: {len(prod_rows)} ta, shundan {changed} tasi "
+                  f"yangi/o'zgargan, {removed} tasi o'chirildi", flush=True)
+
             if mkt_rows:
+                cur.execute(
+                    "DELETE FROM product_markets pm WHERE NOT EXISTS ("
+                    " SELECT 1 FROM unnest(%s::text[], %s::text[]) AS n(pid, src)"
+                    " WHERE n.pid = pm.product_id AND n.src = pm.source)",
+                    ([m[0] for m in mkt_rows], [m[1] for m in mkt_rows]),
+                )
+                stale = cur.rowcount
                 psycopg2.extras.execute_values(
                     cur,
-                    "INSERT INTO product_markets (product_id,source,price,url) VALUES %s",
-                    mkt_rows, page_size=500,
+                    "INSERT INTO product_markets (product_id,source,price,url,created_at) "
+                    "VALUES %s ON CONFLICT (product_id, source) DO UPDATE SET "
+                    "price = EXCLUDED.price, url = EXCLUDED.url, "
+                    "created_at = EXCLUDED.created_at",
+                    [m + (now,) for m in mkt_rows], page_size=500,
                 )
-                print(f"[db] {len(mkt_rows)} ta narx yozuvi yozildi", flush=True)
+                print(f"[db] {len(mkt_rows)} ta narx yozuvi yangilandi, "
+                      f"{stale} ta eskisi o'chirildi", flush=True)
     return len(prod_rows), len(mkt_rows)
 
 
