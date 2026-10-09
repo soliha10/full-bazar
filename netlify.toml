@@ -3,6 +3,11 @@
   command = "npm run build"
   publish = "build"
   edge_functions = "netlify/edge-functions"
+  # Faqat frontend/ yoki shu fayl o'zgarganda build qilamiz. data/ va python/
+  # ga tushadigan commitlar (narxlar, scraperlar) saytni o'zgartirmaydi, lekin
+  # har biri production deploy — ya'ni Netlify kreditlari — hisoblanadi.
+  # Buyruq base (frontend/) ichida ishlaydi; 0 qaytarsa build o'tkaziladi.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../netlify.toml"
 
 [build.environment]
   NODE_VERSION = "22"

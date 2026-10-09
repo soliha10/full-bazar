@@ -6,39 +6,18 @@
  *     Bu JavaScript ishlatmaydigan botlar (Telegram, Facebook, WhatsApp, Twitter)
  *     uchun yagona ishlaydigan yo'l.
  *
- *  2. sitemap.xml ni API'dagi barcha mahsulot sahifalari bilan to'ldiradi.
- *     API javob bermasa build to'xtamaydi — statik marshrutlar bilan cheklanadi.
+ *  sitemap.xml bu yerda yaratilmaydi — fayl oxiridagi izohga qarang.
  *
  * `vite build` dan keyin avtomatik ishlaydi (package.json → "build").
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import esbuild from 'esbuild';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/**
- * slug.ts ni ilova bilan bir xil manbadan yuklaymiz — slug mantig'i ikki
- * joyda takrorlanib, vaqt o'tishi bilan bir-biridan ajralib ketmasligi uchun.
- * esbuild vite bilan birga keladi, qo'shimcha bog'liqlik kerak emas.
- */
-async function loadTs(relPath) {
-  const result = await esbuild.build({
-    entryPoints: [path.join(ROOT, relPath)],
-    bundle: true,
-    format: 'esm',
-    platform: 'neutral',
-    write: false,
-  });
-  const code = result.outputFiles[0].text;
-  return import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
-}
-
-const { productPath } = await loadTs('src/utils/slug.ts');
 const DIST = path.join(ROOT, 'build');
 const SITE = 'https://bazarcom.online';
-const API = process.env.SEO_API_URL || 'https://full-bazar-api.onrender.com';
 
 const BRAND = 'Bazarcom';
 
@@ -152,91 +131,9 @@ fs.writeFileSync(
 
 console.log(`[seo] ${ROUTES.length} ta statik marshrut + 404.html prerender qilindi`);
 
-// ── 2-bosqich: mahsulotlarni olib sitemap yaratish ─────────────────────────
-async function fetchAllProducts() {
-  const LIMIT = 200;
-  const items = [];
-  const take = (data) => {
-    for (const p of data?.products || []) {
-      // slug SHART: usiz productPath() ID li manzilga qaytadi va sitemap
-      // butunlay kanonik bo'lmagan URL lar bilan to'ladi (har biri edge
-      // funksiyasida 301 yeydi).
-      if (p?.id) items.push({ id: p.id, slug: p.slug ?? null, name: p.name, title: p.title });
-    }
-  };
-
-  const first = await fetchJson(`${API}/api/products?page=1&limit=${LIMIT}`);
-  if (!first) return null;
-  take(first);
-
-  const pages = Math.ceil((Number(first.total) || 0) / LIMIT);
-  for (let page = 2; page <= pages; page++) {
-    const data = await fetchJson(`${API}/api/products?page=${page}&limit=${LIMIT}`);
-    if (!data) break;
-    take(data);
-  }
-  return items;
-}
-
-async function fetchJson(url, attempt = 1) {
-  try {
-    // Render bepul planida "cold start" bo'lishi mumkin — birinchi so'rov sekin
-    const res = await fetch(url, { signal: AbortSignal.timeout(attempt === 1 ? 90_000 : 30_000) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } catch (err) {
-    if (attempt < 3) return fetchJson(url, attempt + 1);
-    console.warn(`[seo] ${url} olinmadi: ${err.message}`);
-    return null;
-  }
-}
-
-function buildSitemap(products) {
-  const today = new Date().toISOString().slice(0, 10);
-  const urls = ROUTES.filter((r) => !r.noindex).map(
-    (r) => `  <url>
-    <loc>${SITE}${r.path === '/' ? '/' : r.path}</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>${r.changefreq}</changefreq>
-    <priority>${r.priority}</priority>
-  </url>`,
-  );
-
-  for (const product of products) {
-    urls.push(`  <url>
-    <loc>${SITE}${productPath(product)}</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>`);
-  }
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.join('\n')}
-</urlset>
-`;
-}
-
-const products = await fetchAllProducts();
-if (products && products.length > 0) {
-  fs.writeFileSync(path.join(DIST, 'sitemap.xml'), buildSitemap(products));
-  // Slugi bo'lmagan mahsulot ID li manzil bilan tushadi — sinxronizatsiya hali
-  // slug ustunini to'ldirmagan bo'lsa shunday bo'ladi. Buni jimgina "slug bilan"
-  // deb yozib qo'ymaymiz, aks holda muammo ko'rinmay qoladi.
-  const withSlug = products.filter((p) => p.slug).length;
-  console.log(
-    `[seo] sitemap.xml: ${ROUTES.filter((r) => !r.noindex).length} statik + ` +
-    `${products.length} mahsulot URL (${withSlug} tasi slug bilan)`,
-  );
-  if (withSlug < products.length) {
-    console.warn(
-      `[seo] ${products.length - withSlug} ta mahsulotda slug yo'q — ular sitemapga ` +
-      `ID li manzil bilan tushdi. API slug qaytaryaptimi (python/sync_csv.py ishladimi)?`,
-    );
-  }
-} else {
-  // API yetib bo'lmadi — sayt baribir deploy bo'lsin, faqat statik sitemap bilan
-  fs.writeFileSync(path.join(DIST, 'sitemap.xml'), buildSitemap([]));
-  console.warn('[seo] API javob bermadi — sitemap faqat statik marshrutlar bilan yozildi');
-}
+// ── Sitemap ───────────────────────────────────────────────────────────────
+// Bu yerda endi YARATILMAYDI. Mahsulotlar kuniga 4 marta yangilanadi va
+// sitemap yangi bo'lib turishi uchun har safar Netlify build qilinardi —
+// oyiga ~120 deploy Netlify kreditlarini tugatib, saytni pauzaga tushirdi.
+// /sitemap.xml endi API dan proksi qilinadi (public/_redirects →
+// python/fastapi_app/main.py: sitemap()), shuning uchun deploy talab qilmaydi.

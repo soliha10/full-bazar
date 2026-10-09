@@ -16,7 +16,8 @@ from collections import Counter, defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal, Optional
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
+from xml.sax.saxutils import escape as xml_escape
 
 import asyncpg
 import bcrypt
@@ -1537,6 +1538,56 @@ async def track_event(event: TrackEvent):
         event.session_id, event.event_type, event.product_id, event.search_query,
     )
     return {"ok": True}
+
+
+# ── Sitemap ───────────────────────────────────────────────────────────────────
+# Ilgari sitemap Netlify build paytida yaratilardi va yangilanishi uchun scrape
+# workflow kuniga 4 marta build hook ni turtardi — oyiga ~120 production deploy.
+# Netlify kreditli tarifida bu bepul limitni bir necha kunda yeb, akkauntdagi
+# hamma loyihani pauzaga tushirdi (2026-10). Endi sitemap shu yerda, bazadan
+# to'g'ridan-to'g'ri yaratiladi; Netlify /sitemap.xml ni bu yerga proksi qiladi
+# (frontend/public/_redirects), ya'ni narxlar yangilanganda deploy kerak emas.
+SITEMAP_SITE = "https://bazarcom.online"
+# frontend/scripts/seo-postbuild.mjs dagi ROUTES ning indekslanadigan qismi
+SITEMAP_ROUTES = (
+    ("/", "daily", "1.0"),
+    ("/products", "daily", "0.9"),
+    ("/trends", "daily", "0.8"),
+    ("/feedback", "monthly", "0.4"),
+)
+
+
+def _sitemap_url(loc: str, lastmod: str, changefreq: str, priority: str) -> str:
+    return (f"  <url>\n    <loc>{xml_escape(loc)}</loc>\n"
+            f"    <lastmod>{lastmod}</lastmod>\n"
+            f"    <changefreq>{changefreq}</changefreq>\n"
+            f"    <priority>{priority}</priority>\n  </url>")
+
+
+@app.get("/sitemap.xml")
+async def sitemap() -> Response:
+    xml = _cache_get("sitemap", 3600)
+    if xml is None:
+        pool: asyncpg.Pool = app.state.pool
+        rows = await pool.fetch("SELECT id, slug FROM products ORDER BY id")
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        urls = [_sitemap_url(SITEMAP_SITE + path, today, freq, prio)
+                for path, freq, prio in SITEMAP_ROUTES]
+        for r in rows:
+            # src/utils/slug.ts → productPath bilan bir xil: slug, bo'lmasa ID
+            slug = (r["slug"] or "").strip()
+            path = f"/product/{slug}" if slug else f"/product/{quote(str(r['id']), safe='')}"
+            urls.append(_sitemap_url(SITEMAP_SITE + path, today, "weekly", "0.7"))
+        xml = _cache_put("sitemap", (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            + "\n".join(urls) + "\n</urlset>\n"
+        ))
+    return Response(
+        content=xml,
+        media_type="application/xml; charset=utf-8",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
 
 
 @app.get("/health")

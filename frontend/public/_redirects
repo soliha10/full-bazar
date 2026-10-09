@@ -5,6 +5,10 @@
 # API proxy
 /api/*  https://full-bazar-api.onrender.com/api/:splat  200
 
+# Sitemap API da bazadan yaratiladi — narxlar yangilanganda Netlify deploy
+# kerak bo'lmasin (python/fastapi_app/main.py: sitemap()).
+/sitemap.xml  https://full-bazar-api.onrender.com/sitemap.xml  200!
+
 # ── Eski WordPress sayti ────────────────────────────────────────────────────
 # Bu domenda ilgari WordPress ishlagan va Google indeksida undan qolgan
 # sahifalar bor (masalan /sample-page-3/). Pastdagi SPA fallback tufayli ular
