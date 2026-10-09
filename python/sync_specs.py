@@ -224,6 +224,12 @@ def write_db(rows: list[tuple]) -> int:
     try:
         with conn:
             with conn.cursor() as cur:
+                # Supabase sukuti 7000 qatorlik UPSERT ga yetmaydi
+                # ("canceling statement due to statement timeout"). 6543-port
+                # TRANSACTION rejimida ulanishdagi SET saqlanmaydi, shuning
+                # uchun SET LOCAL — sync_csv._apply_timeouts dagidek.
+                cur.execute("SET LOCAL statement_timeout = 600000")
+                cur.execute("SET LOCAL lock_timeout = 60000")
                 cur.execute(DDL)
                 if rows:
                     psycopg2.extras.execute_values(cur, UPSERT, rows, page_size=200)
