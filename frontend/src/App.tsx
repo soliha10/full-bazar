@@ -9,13 +9,12 @@ import {
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { FavoritesProvider } from "./contexts/FavoritesContext";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { PriceWatchProvider } from "./contexts/PriceWatchContext";
 import { CompareProvider } from "./contexts/CompareContext";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { MobileToolbar } from "./components/MobileToolbar";
-import { AuthModal } from "./components/AuthModal";
 import { CompareBar } from "./components/CompareBar";
 import { Landing } from "./pages/Landing";
 
@@ -31,6 +30,8 @@ const Profile        = lazy(() => import("./pages/Profile").then(m => ({ default
 const Trends         = lazy(() => import("./pages/Trends").then(m => ({ default: m.Trends })));
 const Feedback       = lazy(() => import("./pages/Feedback").then(m => ({ default: m.Feedback })));
 const Compare        = lazy(() => import("./pages/Compare").then(m => ({ default: m.Compare })));
+// Modal faqat "Kirish" bosilganda kerak — birinchi yuklanishga qo'shilmasin
+const AuthModal      = lazy(() => import("./components/AuthModal").then(m => ({ default: m.AuthModal })));
 const NotFound       = lazy(() => import("./pages/NotFound").then(m => ({ default: m.NotFound })));
 
 export default function App() {
@@ -111,8 +112,18 @@ function AppContent() {
 
       {!hideFooter && <Footer />}
       <MobileToolbar />
-      <AuthModal />
+      <AuthModalSlot />
       <CompareBar />
     </div>
+  );
+}
+
+function AuthModalSlot() {
+  const { isAuthOpen } = useAuth();
+  if (!isAuthOpen) return null;
+  return (
+    <Suspense fallback={null}>
+      <AuthModal />
+    </Suspense>
   );
 }

@@ -53,6 +53,17 @@
     build: {
       target: 'esnext',
       outDir: 'build',
+      rollupOptions: {
+        output: {
+          // Kutubxonalar kamdan-kam o'zgaradi — alohida chunk bo'lsa, har
+          // deploy'dan keyin brauzer ularni keshdan oladi, faqat ilova kodi
+          // qayta yuklanadi.
+          manualChunks: {
+            react: ['react', 'react-dom', 'react-router', 'react-router-dom'],
+            query: ['@tanstack/react-query'],
+          },
+        },
+      },
     },
     server: {
       port: 3000,

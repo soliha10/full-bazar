@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
-import { motion } from 'framer-motion';
+// m + LazyMotion: to'liq `motion` bosh sahifa bundle'iga ~30 KB (gzip) qo'shardi
+import { m, LazyMotion } from 'framer-motion';
+
+const loadMotionFeatures = () => import('../utils/motionFeatures').then(r => r.default);
 import {
   ArrowRight, TrendingUp, ShieldCheck, RefreshCw,
   Zap, Sparkles, ChevronRight, ChevronLeft,
@@ -9,7 +12,6 @@ import { Link } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatSum } from '../utils/productMapper';
-import axios from 'axios';
 import { fetchPersonalizedRecommendations } from '../services/api';
 import { mapProduct } from '../utils/productMapper';
 import { useRecommendations } from '../hooks/useRecommendations';
@@ -224,8 +226,10 @@ export function Landing() {
   const showClientRecs = clientRecs.length > 0 && (favorites.length > 0 || !!user?.profile.preferredBrands.length);
 
   useEffect(() => {
-    axios.get('/api/recommendations')
-      .then(res => setRecommendations(res.data.products || []))
+    // axios emas, fetch: bosh sahifa bundle'idan ~13 KB (gzip) tushadi
+    fetch('/api/recommendations')
+      .then(res => (res.ok ? res.json() : Promise.reject(res.status)))
+      .then(data => setRecommendations(data.products || []))
       .catch(() => {})
       .finally(() => setLoadingRecs(false));
   }, []);
@@ -247,6 +251,7 @@ export function Landing() {
     : "Bazarcom - Платформа для анализа и сравнения цен на смартфоны во всех интернет-магазинах Узбекистана.";
 
   return (
+    <LazyMotion features={loadMotionFeatures}>
     <div className="min-h-screen bg-white dark:bg-gray-950 pb-24 md:pb-0 transition-colors">
       <SEO
         title={seoTitle}
@@ -258,7 +263,7 @@ export function Landing() {
 
       {/* ══ HERO ══ */}
       <section className="md:px-4 md:pt-8 md:max-w-7xl md:mx-auto">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -267,7 +272,7 @@ export function Landing() {
         >
           {/* Decorative blobs */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <motion.div
+            <m.div
               animate={{ scale: [1, 1.08, 1], opacity: [0.05, 0.08, 0.05] }}
               transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
               className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white"
@@ -283,7 +288,7 @@ export function Landing() {
 
               {/* Left */}
               <div className="flex-1">
-                <motion.div
+                <m.div
                   initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15, duration: 0.5 }}
                   className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1 mb-4"
@@ -294,26 +299,26 @@ export function Landing() {
                       ? t.landing.hero.productCount.replace('{{count}}', total.toLocaleString())
                       : t.landing.hero.livePrices}
                   </span>
-                </motion.div>
+                </m.div>
 
-                <motion.h1
+                <m.h1
                   initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.25, duration: 0.55 }}
                   className="text-white font-black leading-[1.12] tracking-tight mb-2.5"
                   style={{ fontSize: 'clamp(1.75rem, 7vw, 3.25rem)' }}
                 >
                   {t.landing.hero.title}
-                </motion.h1>
+                </m.h1>
 
-                <motion.p
+                <m.p
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   transition={{ delay: 0.38, duration: 0.5 }}
                   className="text-white/70 text-sm md:text-lg leading-relaxed mb-5 max-w-xs md:max-w-sm"
                 >
                   {t.landing.hero.subtitle}
-                </motion.p>
+                </m.p>
 
-                <motion.div
+                <m.div
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.48, duration: 0.45 }}
                 >
@@ -324,11 +329,11 @@ export function Landing() {
                     {t.landing.hero.cta}
                     <ArrowRight className="w-4 h-4" />
                   </Link>
-                </motion.div>
+                </m.div>
               </div>
 
               {/* Desktop right card */}
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3, duration: 0.6, ease: 'easeOut' }}
                 className="hidden md:flex flex-col gap-3 shrink-0"
@@ -360,7 +365,7 @@ export function Landing() {
                     </div>
                   ))}
                 </div>
-              </motion.div>
+              </m.div>
             </div>
           </div>
 
@@ -379,7 +384,7 @@ export function Landing() {
               ))}
             </div>
           </div>
-        </motion.div>
+        </m.div>
       </section>
 
       {/* ══ CATEGORY CHIPS — mobile ══ */}
@@ -419,7 +424,7 @@ export function Landing() {
       </section>
 
       {/* ══ TRUST BAR — desktop ══ */}
-      <motion.section
+      <m.section
         variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true }}
         className="hidden md:block mt-6 px-4 max-w-7xl mx-auto"
       >
@@ -427,7 +432,7 @@ export function Landing() {
           {t.landing.trustBar.map(({ title, desc }, idx) => {
             const Icon = TRUST_ICONS[idx];
             return (
-              <motion.div
+              <m.div
                 key={idx}
                 whileHover={{ y: -2, boxShadow: '0 8px 24px -4px rgba(139,92,246,0.15)' }}
                 className="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl px-4 py-4 shadow-sm border border-violet-100/60 dark:border-violet-900/30 cursor-default transition-shadow"
@@ -439,11 +444,11 @@ export function Landing() {
                   <p className="text-[14px] font-black text-gray-900 dark:text-white">{title}</p>
                   <p className="text-[12px] text-gray-500 dark:text-gray-400 font-medium">{desc}</p>
                 </div>
-              </motion.div>
+              </m.div>
             );
           })}
         </div>
-      </motion.section>
+      </m.section>
 
       {/* ══ PARTNER MARKETS — infinite marquee ══ */}
       <section className="mt-5 md:mt-8 bg-gray-50 dark:bg-gray-900/60 border-y border-gray-100 dark:border-gray-800/60 py-4 md:py-6 overflow-hidden">
@@ -455,7 +460,7 @@ export function Landing() {
           <div className="absolute left-0 top-0 bottom-0 w-12 bg-linear-to-r from-gray-50 dark:from-gray-900/60 to-transparent z-10 pointer-events-none" />
           <div className="absolute right-0 top-0 bottom-0 w-12 bg-linear-to-l from-gray-50 dark:from-gray-900/60 to-transparent z-10 pointer-events-none" />
 
-          <motion.div
+          <m.div
             animate={{ x: ['0%', '-50%'] }}
             transition={{ duration: 35, repeat: Infinity, ease: 'linear' }}
             className="flex gap-2 w-max"
@@ -471,12 +476,12 @@ export function Landing() {
                 <span className="text-[13px] font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">{name}</span>
               </Link>
             ))}
-          </motion.div>
+          </m.div>
         </div>
       </section>
 
       {/* ══ AI BEST DEALS — carousel ══ */}
-      <motion.section
+      <m.section
         variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true, margin: '-60px' }}
         className="mt-6 md:mt-10 px-4 max-w-7xl mx-auto"
       >
@@ -506,11 +511,11 @@ export function Landing() {
                 ]
           }
         </Carousel>
-      </motion.section>
+      </m.section>
 
       {/* ══ CLIENT RECS — carousel ══ */}
       {showClientRecs && (
-        <motion.section
+        <m.section
           variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true, margin: '-60px' }}
           className="mt-6 md:mt-12 px-4 max-w-7xl mx-auto"
         >
@@ -530,12 +535,12 @@ export function Landing() {
               />
             ))}
           </Carousel>
-        </motion.section>
+        </m.section>
       )}
 
       {/* ══ SERVER PERSONALIZED — carousel ══ */}
       {!showClientRecs && personalizedRecs.length > 0 && personalizedType === 'personalized' && (
-        <motion.section
+        <m.section
           variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true, margin: '-60px' }}
           className="mt-6 md:mt-12 px-4 max-w-7xl mx-auto"
         >
@@ -551,11 +556,11 @@ export function Landing() {
               <MiniProductCard key={p.id} id={p.id} slug={p.slug} image={p.image} name={p.name} price={p.price} />
             ))}
           </Carousel>
-        </motion.section>
+        </m.section>
       )}
 
       {/* ══ HOW IT WORKS ══ */}
-      <motion.section
+      <m.section
         variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true, margin: '-60px' }}
         className="mt-8 md:mt-20 bg-gray-50 dark:bg-gray-900/60 border-y border-gray-100 dark:border-gray-800/60 py-7 md:py-16"
       >
@@ -582,7 +587,7 @@ export function Landing() {
           {/* Desktop */}
           <div className="hidden md:grid grid-cols-3 gap-6">
             {t.landing.howItWorks.steps.map((item, idx) => (
-              <motion.div
+              <m.div
                 key={idx}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -601,20 +606,20 @@ export function Landing() {
                     <ArrowRight className="w-5 h-5" />
                   </div>
                 )}
-              </motion.div>
+              </m.div>
             ))}
           </div>
         </div>
-      </motion.section>
+      </m.section>
 
       {/* ══ BOTTOM CTA ══ */}
-      <motion.section
+      <m.section
         variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true, margin: '-40px' }}
         className="px-4 py-7 md:py-12 max-w-7xl mx-auto"
       >
         <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-linear-to-br from-violet-600 via-violet-700 to-violet-900 p-6 md:p-14 shadow-xl shadow-violet-500/20">
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <motion.div
+            <m.div
               animate={{ scale: [1, 1.1, 1], opacity: [0.06, 0.1, 0.06] }}
               transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
               className="absolute -top-10 -left-10 w-56 h-56 rounded-full bg-white"
@@ -641,7 +646,8 @@ export function Landing() {
             </Link>
           </div>
         </div>
-      </motion.section>
+      </m.section>
     </div>
+    </LazyMotion>
   );
 }

@@ -252,6 +252,37 @@ async def _setup_jsonb_codec(conn: asyncpg.Connection) -> None:
     )
 
 
+# ── Uyg'oq tutish ─────────────────────────────────────────────────────────────
+# Render bepul tarifi 15 daqiqa so'rovsiz qolgan servisni uxlatadi; uyg'onish
+# 30-60 s, Netlify proksisi esa ~28 s da 504 beradi — sayt "ishlamayapti"
+# ko'rinadi. keepalive.yml (GitHub cron, */5) buni hal qilmasdi: GitHub
+# jadvalni amalda har 4-7 soatda bir ishga tushirardi.
+#
+# Shuning uchun pingni Supabase o'zi yuboradi: pg_cron + pg_net, har 10
+# daqiqada. Ishga tushishda idempotent ro'yxatdan o'tkaziladi (cron.schedule
+# shu nomdagi ishni yangilaydi). Faqat Render'da — RENDER_EXTERNAL_URL ni
+# Render o'zi qo'yadi, mahalliy ishga tushirish bazaga cron yozmaydi.
+KEEP_WARM_JOB = "keep-render-warm"
+
+
+async def _schedule_keep_warm(pool: asyncpg.Pool) -> None:
+    base = os.getenv("RENDER_EXTERNAL_URL", "").rstrip("/")
+    if not base:
+        return
+    try:
+        async with pool.acquire() as conn:
+            await conn.execute("CREATE EXTENSION IF NOT EXISTS pg_cron")
+            await conn.execute("CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions")
+            await conn.execute(
+                "SELECT cron.schedule($1, '*/10 * * * *', $2)",
+                KEEP_WARM_JOB,
+                f"SELECT net.http_get('{base}/health')",
+            )
+        print(f"[keep-warm] pg_cron: {base}/health har 10 daqiqada", flush=True)
+    except Exception as exc:  # cron bo'lmasa ham API ishlashi kerak
+        print(f"[keep-warm] o'rnatilmadi: {exc}", flush=True)
+
+
 # ── Lifespan ──────────────────────────────────────────────────────────────────
 
 @asynccontextmanager
@@ -430,6 +461,7 @@ async def lifespan(app: FastAPI):
         )
         spec_rows = await conn.fetch("SELECT * FROM product_specs")
         _store_specs([dict(r) for r in spec_rows])
+    await _schedule_keep_warm(app.state.pool)
     yield
     await app.state.pool.close()
 
@@ -448,9 +480,25 @@ _RATE_LIMIT = 60   # requests
 _RATE_WINDOW = 60  # seconds
 
 
+def _client_ip(request: Request) -> str:
+    """Haqiqiy mijoz IP si.
+
+    request.client.host Render'da yuklama muvozanatlagichning IP si — uvicorn
+    proxy sarlavhalariga ishonmaydi. Shu sabab limit hamma foydalanuvchiga
+    BITTA bo'lib, 60 so'rov/daqiqa butun sayt uchun umumiy edi: bir necha
+    kishi bir vaqtda kirsa 429 boshlanardi. Netlify mijoz IP sini alohida
+    sarlavhada beradi; to'g'ridan-to'g'ri kelgan so'rovda X-Forwarded-For.
+    """
+    ip = request.headers.get("x-nf-client-connection-ip")
+    if not ip:
+        fwd = request.headers.get("x-forwarded-for", "")
+        ip = fwd.split(",")[0].strip()
+    return ip or (request.client.host if request.client else "unknown")
+
+
 class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        ip = request.client.host if request.client else "unknown"
+        ip = _client_ip(request)
         now = time.time()
         window_start = now - _RATE_WINDOW
         _rate_store[ip] = [t for t in _rate_store[ip] if t > window_start]
@@ -471,6 +519,37 @@ app = FastAPI(
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
 )
+# ── Netlify CDN keshi ─────────────────────────────────────────────────────────
+# Ommaviy o'qish javoblari Netlify chekkasida saqlanadi. stale-while-revalidate
+# tufayli kesh eskirgan bo'lsa ham foydalanuvchi darhol javob oladi, yangilash
+# esa fonda ketadi — Render uxlab qolgan bo'lsa ham sayt kutmaydi. Narxlar
+# kuniga 4 marta yangilanadi, 5 daqiqalik s-maxage yetarlicha yangi.
+# Foydalanuvchiga xos javoblar (users/*, personalized, auth) bu yerga KIRMAYDI.
+_CDN_CACHEABLE = (
+    "/api/products", "/api/compare", "/api/recommendations", "/api/trends",
+    "/api/stats", "/api/markets", "/api/brands", "/api/spec-facets",
+    "/api/search-trends", "/api/market-analytics", "/sitemap.xml",
+)
+_CDN_DEFAULT = "public, durable, s-maxage=300, stale-while-revalidate=604800"
+# Rasmlar o'zgarmaydi — bir kun saqlaymiz, olx ga har safar bormaymiz
+_CDN_IMAGES = "public, durable, s-maxage=86400, stale-while-revalidate=604800"
+
+
+class CdnCacheMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if (request.method == "GET" and response.status_code == 200
+                and "authorization" not in request.headers):
+            if path == "/api/proxy-image":
+                response.headers["Netlify-CDN-Cache-Control"] = _CDN_IMAGES
+            elif (path.startswith(_CDN_CACHEABLE)
+                  and not path.startswith("/api/recommendations/personalized")):
+                response.headers["Netlify-CDN-Cache-Control"] = _CDN_DEFAULT
+        return response
+
+
+app.add_middleware(CdnCacheMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
