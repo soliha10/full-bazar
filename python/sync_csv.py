@@ -433,6 +433,18 @@ def connect():
             except psycopg2.Error as exc:
                 print(f"[db] {name} o'rnatilmadi: {str(exc).strip()[:120]}",
                       flush=True)
+        # Pooler ulanishni qabul qilib, birinchi buyruqdayoq uzishi mumkin
+        # ("SSL connection has been closed unexpectedly"). Bu ham vaqtinchalik
+        # — yopiq ulanishni qaytarmasdan, qaytadan ulanamiz.
+        if conn.closed:
+            last = psycopg2.OperationalError("ulanish birinchi buyruqda uzildi")
+            if attempt == CONNECT_ATTEMPTS - 1:
+                break
+            wait = CONNECT_BACKOFF[attempt]
+            print(f"[db] ulanish uzildi — {wait}s dan keyin qayta urinish "
+                  f"({attempt + 2}/{CONNECT_ATTEMPTS})", flush=True)
+            time.sleep(wait)
+            continue
         conn.autocommit = False
         return conn
 
