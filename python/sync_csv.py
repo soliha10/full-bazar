@@ -404,6 +404,16 @@ def connect():
             )
         except psycopg2.OperationalError as exc:
             last = exc
+            # Noto'g'ri parol vaqtinchalik emas — kutib qayta urinish faqat
+            # 2 daqiqani behuda yeydi.
+            if "password authentication failed" in str(exc):
+                _annotate("error", "Supabase parolni rad etdi — SUPABASE_DB_URL "
+                          "dagi parol bazaning joriy paroliga mos emas.")
+                break
+            if "tenant/user" in str(exc):
+                _annotate("error", "pooler bunday loyihani topmadi — "
+                          "`postgres.<project-ref>` dagi ref noto'g'ri.")
+                break
             if attempt == CONNECT_ATTEMPTS - 1:
                 break
             wait = CONNECT_BACKOFF[attempt]
@@ -635,6 +645,12 @@ def check_db_url() -> None:
 
 if __name__ == "__main__":
     check_db_url()
+    # CI yig'ishdan OLDIN chaqiradi: ulanib bo'lmasa, 15 daqiqalik yig'ish
+    # behuda ketmasin.
+    if "--check-db" in sys.argv:
+        connect().close()
+        print("[db] ulanish OK", flush=True)
+        sys.exit(0)
     print(f"Loading CSVs from {DATA_DIR} ...", flush=True)
     rows = load_rows()
     print(f"Loaded {len(rows)} valid rows", flush=True)

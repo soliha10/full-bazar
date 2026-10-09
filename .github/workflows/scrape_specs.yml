@@ -61,6 +61,11 @@ jobs:
             echo "Settings → Secrets and variables → Actions da uni qayta yozing."
             exit 1
           fi
+          case "$DB_URL" in
+            postgresql://*|postgres://*) ;;
+            *) echo "::error::SUPABASE_DB_URL postgresql:// bilan boshlanmaydi — faqat parol emas, to'liq connection string kerak."
+               exit 1 ;;
+          esac
           echo "SUPABASE_DB_URL o'rnatilgan (${#DB_URL} belgi)."
 
       - name: Checkout repository

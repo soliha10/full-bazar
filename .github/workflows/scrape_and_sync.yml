@@ -51,6 +51,14 @@ jobs:
         run: |
           pip install requests==2.32.3 beautifulsoup4==4.12.3 lxml==5.2.2 psycopg2-binary==2.9.9
 
+      # Ulanishni yig'ishdan OLDIN tekshiramiz. 2026-10-05 dan 2026-10-09 gacha
+      # har ish 15 daqiqa yig'ib, faqat oxirida "password authentication
+      # failed" bilan yiqilardi. Endi bunday xato birinchi daqiqada chiqadi.
+      - name: Tekshirish — Supabase ga ulanish
+        env:
+          PRODUCTS_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: python python/sync_csv.py --check-db
+
       # curl_cffi Chrome ning TLS barmoq izini takrorlaydi — Cloudflare ortidagi
       # asaxiy va olcha runner IP laridan kelgan oddiy `requests` so'rovini 403
       # bilan rad etardi. Bu ixtiyoriy: scrapers/base.py uni topolmasa,
