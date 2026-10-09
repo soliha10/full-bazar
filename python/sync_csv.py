@@ -361,8 +361,22 @@ def load_existing_slugs(conn) -> dict:
     """{product_id: slug} — oldingi sinxronizatsiyada berilgan manzillar."""
     with conn.cursor() as cur:
         _apply_timeouts(cur)
-        for stmt in SLUG_DDL:
-            cur.execute(stmt)
+        # ALTER TABLE ... IF NOT EXISTS ham, CREATE INDEX ... IF NOT EXISTS ham
+        # ustun/indeks BOR bo'lsa-da avval jadval qulfini oladi (ALTER —
+        # ACCESS EXCLUSIVE). Qulf navbatida turgan buyruq orqasida saytning
+        # o'qishlari ham to'xtaydi, shuning uchun faqat haqiqatan yo'q
+        # bo'lganda bajaramiz.
+        cur.execute("""
+            SELECT
+              EXISTS (SELECT 1 FROM information_schema.columns
+                      WHERE table_name = 'products' AND column_name = 'slug'),
+              EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_products_slug'),
+              EXISTS (SELECT 1 FROM pg_indexes
+                      WHERE indexname = 'idx_product_markets_product_source')
+        """)
+        for stmt, present in zip(SLUG_DDL, cur.fetchone()):
+            if not present:
+                cur.execute(stmt)
         cur.execute("SELECT id, slug FROM products WHERE slug IS NOT NULL")
         return dict(cur.fetchall())
 
