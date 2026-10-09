@@ -382,8 +382,7 @@ CONNECT_BACKOFF = (5, 15, 30, 60)
 # Bitta buyruq uchun. 5500 qatorlik yozuvga yetarli, lekin cheksiz emas —
 # osilib qolgan buyruq CI ni 60 daqiqa ushlab turmasin.
 STATEMENT_TIMEOUT_MS = 10 * 60 * 1000
-# TRUNCATE ga ACCESS EXCLUSIVE qulf kerak, uni esa saytning o'qish so'rovlari
-# ushlab turishi mumkin. Kutishning cheki bo'lmasa, butun byudjet shunga ketadi.
+# Qulf kutish cheki (DDL va DELETE uchun) — kutish butun byudjetni yemasin.
 LOCK_TIMEOUT_MS = 60 * 1000
 # Tranzaksiya ochiq turib, kod tomonda nimadir osilib qolsa — pooler dagi
 # ulanishni band qilib qo'ymaslik uchun.
@@ -484,7 +483,7 @@ _RETRYABLE = psycopg2.OperationalError
 def write_db(groups):
     conn = connect()
     try:
-        # Sluglarni TRUNCATE dan oldin o'qiymiz: mahsulotning manzili bir marta
+        # Sluglarni jadval tozalanishidan oldin o'qiymiz: mahsulotning manzili bir marta
         # berilib, keyin o'zgarmasligi kerak.
         with conn:
             assign_slugs(groups, load_existing_slugs(conn))
@@ -531,7 +530,7 @@ def _write_rows(conn, groups):
         with conn.cursor() as cur:
             _apply_timeouts(cur)
             # ── Narx tarixi ─────────────────────────────────────────────────
-            # product_markets TRUNCATE qilinishidan OLDIN joriy narxlarni
+            # product_markets tozalanishidan OLDIN joriy narxlarni
             # saqlab qolamiz. Buni shu yerda qilish shart: sinxronizatsiya
             # jadvalni har safar to'liq qayta yozadi, ya'ni snapshot olinmasa
             # eski narxlar butunlay yo'qoladi va Tahlil sahifasi ham, narx
@@ -576,7 +575,17 @@ def _write_rows(conn, groups):
             print(f"[history] {snapshots} ta narx o'zgarishi yozildi, "
                   f"{cur.rowcount} ta eski yozuv o'chirildi", flush=True)
 
-            cur.execute("TRUNCATE product_markets, products")
+            # TRUNCATE EMAS, DELETE: TRUNCATE ACCESS EXCLUSIVE qulf oladi va u
+            # COMMIT gacha turadi — butun yozish davomida (ba'zan 30+ daqiqa)
+            # saytning HAR BIR o'qish so'rovi kutib qolardi, Netlify esa 28 s
+            # da 504 qaytarardi. Kutayotgan o'qishlar pooler ulanishlarini ham
+            # band qilib, boshqa endpointlarni ECHECKOUTTIMEOUT ga tushirardi.
+            # DELETE o'qishni to'smaydi: tranzaksiya tugaguncha sayt eski
+            # ma'lumotni ko'radi, COMMIT da yangisiga birdan o'tadi. 5-6 ming
+            # qator uchun tezlik farqi sezilmaydi; o'lik qatorlarni autovacuum
+            # tozalaydi.
+            cur.execute("DELETE FROM product_markets")
+            cur.execute("DELETE FROM products")
             # Partiyalar ataylab kichik: `keywords` qatori 5 KB gacha bo'lishi
             # mumkin, ya'ni 500 qatorlik INSERT bepul Supabase uchun 2.5 MB lik
             # bitta buyruq — aynan shunisi "statement timeout" bilan tushardi.
