@@ -237,8 +237,41 @@ def _cosim(a, b):
     return num / den if den else 0.0
 
 
+# ── Soxta (nusxa) telefonlar ──────────────────────────────────────────────────
+# Ozon va ba'zi marketplace'larda brend nomini ataylab buzib yozilgan nusxalar
+# ko'p: "App!e 18 Pro Max", "GaIaxy S25 Ultra", "H0N0R 600", "Samsvng",
+# "IP17PROMAX" — "1 TB" li "iPhone" ~1 mln so'mga. Ular haqiqiy modellar bilan
+# bitta guruhga tushib, "eng arzon narx" sifatida ko'rinardi va mahsulot
+# sahifasida foydalanuvchini aldardi. 2026-10-10 da 5509 tadan 290 ga yaqini
+# shunday edi (deyarli hammasi Ozon).
+_FAKE_BRAND_RE = re.compile(
+    r"app[!1|]e|\bh0n0r|\bh0nor|\bhon0r|\bp0c0|\bpoc0|\bp0co|samsvng|samsumg|"
+    r"galxy|galxay|\btenco\b|\btecn0\b|x1ao ?mi|xia0mi|xiaom1|redm1|samsun9|"
+    r"\biphome|\baphone|\bip ?1[5-9] ?pro ?max|\bi ?1[5-9] ?pro ?max|\bi1[5-9]pro",
+    re.I)
+# Kichik "l" o'rniga katta "I" (GaIaxy, ApIe) — registr muhim
+_FAKE_BRAND_CASE_RE = re.compile(r"Ga[I1]axy|GA1AXY|ApIe|AppIe")
+# 1 TB va undan katta xotira ("16/1 ТБ", "2 TB")
+_TB_RE = re.compile(r"(?<!\d)[12]\s*(тб|tb)\b", re.I)
+_FLAGSHIP_RE = re.compile(r"iphone 1[3-9]|pro max|ultra|galaxy s2\d|galaxy z|\bfold", re.I)
+
+
+def fake_reason(title: str, price: float) -> str | None:
+    """Nusxa telefon bo'lsa — sababi, aks holda None."""
+    if _FAKE_BRAND_RE.search(title) or _FAKE_BRAND_CASE_RE.search(title):
+        return "buzilgan brend nomi"
+    # Haqiqiy 1 TB li smartfon 4 mln so'mdan ancha qimmat
+    if _TB_RE.search(title) and price < 4_000_000:
+        return "1 TB arzon narxda"
+    # Flagman nomi (iPhone 13+, Pro Max, Ultra, Galaxy S/Z) 2 mln so'mdan arzon
+    if _FLAGSHIP_RE.search(title) and price < 2_000_000:
+        return "flagman nomi, nusxa narxi"
+    return None
+
+
 def load_rows():
     rows = []
+    fakes: Counter = Counter()
     # FAQAT scraper chiqarigan "<do'kon>_products.csv" fayllari.
     # Ilgari papkadagi HAR QANDAY .csv o'qilardi va bu ikki xatoga olib kelardi:
     #   · data/olcha_phones.csv — bir yil oldingi eskirgan narxlar. Manba nomi
@@ -283,6 +316,9 @@ def load_rows():
                     price = float(re.sub(r"[^\d.]", "", str(raw).replace(" ", "")) or 0)
                     if price < 100_000:
                         continue
+                    if fake_reason(title, price):
+                        fakes[src_fallback] += 1
+                        continue
                     rows.append({
                         "title": title,
                         "image": (row.get("image_url") or row.get("image") or row.get("img") or "").strip(),
@@ -294,6 +330,9 @@ def load_rows():
                     })
         except Exception as exc:
             print(f"  skip {fn}: {exc}", flush=True)
+    if fakes:
+        print(f"[sync] soxta (nusxa) telefonlar tashlandi: {sum(fakes.values())} ta — "
+              + ", ".join(f"{k} {v}" for k, v in fakes.most_common()), flush=True)
     return rows
 
 

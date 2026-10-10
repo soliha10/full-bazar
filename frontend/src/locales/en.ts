@@ -165,6 +165,8 @@ export const en = {
     youSave: "You save",
     analyzingPrices: "Analyzing market prices...",
     productNotFound: "Product Not Found",
+    loadFailed: "Couldn't load the product — the server is busy. Please try again shortly.",
+    retry: "Try again",
     backToMarketplace: "Back to Marketplace",
     productDetails: "Product Details",
     bestSeller: "BEST SELLER",

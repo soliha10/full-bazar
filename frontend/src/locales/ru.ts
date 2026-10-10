@@ -165,6 +165,8 @@ export const ru = {
     youSave: "Вы экономите",
     analyzingPrices: "Анализ цен...",
     productNotFound: "Товар не найден",
+    loadFailed: "Не удалось загрузить данные — сервер занят. Попробуйте чуть позже.",
+    retry: "Повторить",
     backToMarketplace: "Вернуться в магазин",
     productDetails: "Детали товара",
     bestSeller: "БЕСТСЕЛЛЕР",

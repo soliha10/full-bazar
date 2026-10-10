@@ -52,15 +52,38 @@ export const fetchSpecFacets = async () => {
   }
 };
 
-export const fetchProductById = async (id: string | number) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/products/${id}`);
-    if (!response.ok) throw new Error('Network response was not ok');
-    return await response.json();
-  } catch (error) {
-    console.error(`Error fetching product ${id}:`, error);
-    throw error;
+/** HTTP holati bilan xato — sahifa 404 ni server nosozligidan ajrata olsin */
+export class ApiError extends Error {
+  constructor(public status: number) {
+    super(`HTTP ${status}`);
   }
+}
+
+/**
+ * Mahsulotni oladi. 404 — mahsulot haqiqatan yo'q, darhol qaytariladi.
+ * Server/tarmoq xatosi (baza vaqtincha band, Render uyg'onmoqda) esa
+ * vaqtinchalik — ikki marta qayta urinamiz, aks holda foydalanuvchi mavjud
+ * mahsulot uchun "topilmadi" ni ko'rardi.
+ */
+export const fetchProductById = async (id: string | number) => {
+  let last: unknown;
+  for (const wait of [0, 1500, 4000]) {
+    if (wait) await new Promise((r) => setTimeout(r, wait));
+    try {
+      const response = await fetch(`${API_BASE_URL}/products/${id}`);
+      if (response.status === 404) throw new ApiError(404);
+      if (!response.ok) {
+        last = new ApiError(response.status);
+        continue;
+      }
+      return await response.json();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) throw error;
+      last = error;
+    }
+  }
+  console.error(`Error fetching product ${id}:`, last);
+  throw last;
 };
 
 /**

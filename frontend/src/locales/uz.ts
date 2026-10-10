@@ -165,6 +165,8 @@ export const uz = {
     youSave: "Siz tejaydingiz",
     analyzingPrices: "Narxlar tahlil qilinmoqda...",
     productNotFound: "Mahsulot topilmadi",
+    loadFailed: "Ma'lumotni yuklab bo'lmadi — server band. Birozdan keyin qayta urinib ko'ring.",
+    retry: "Qayta urinish",
     backToMarketplace: "Bozorga qaytish",
     productDetails: "Mahsulot tafsilotlari",
     bestSeller: "ENG YAXSHI",
