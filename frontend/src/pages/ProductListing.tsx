@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { useProducts } from '../hooks/useProducts';
-import { fetchSpecFacets } from '../services/api';
+import { fetchSpecFacets, ServerSort } from '../services/api';
 import { useBrands, BRAND_COLORS } from '../hooks/useBrands';
 import { useSearchParams, useNavigate, Link, useLocation, useNavigationType } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -32,7 +32,9 @@ const MARKETPLACES = [
   { name: 'Radius',       key: 'radius',       color: '#84CC16' },
   { name: 'Mi',           key: 'mi',           color: '#FF6900' },
   { name: 'Ucell',        key: 'ucell',        color: '#65A30D' },
+  { name: 'Ozon',         key: 'ozon',         color: '#005BFF' },
 ];
+const MARKET_COLOR: Record<string, string> = Object.fromEntries(MARKETPLACES.map(m => [m.key, m.color]));
 
 const MARKETS_VISIBLE = 8;
 
@@ -43,6 +45,9 @@ const SORT_OPTIONS = [
   { key: 'rating'    as const, labelKey: 'rating'    },
 ];
 type SortKey = 'relevance' | 'priceLow' | 'priceHigh' | 'rating';
+const SERVER_SORT: Record<SortKey, ServerSort> = {
+  relevance: 'relevance', priceLow: 'price_asc', priceHigh: 'price_desc', rating: 'rating',
+};
 
 const FILTER_KEY = 'productListingFilters';
 
@@ -130,7 +135,7 @@ export function ProductListing() {
   const [sortBy,    setSortBy]    = useState<SortKey>(saved.current?.sortBy ?? 'relevance');
   const [viewMode,  setViewMode]  = useState<'grid' | 'list'>(saved.current?.viewMode ?? 'grid');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-  const [activeFilterTab, setActiveFilterTab] = useState<'category' | 'price' | 'brand' | 'store' | 'rating' | 'specs'>('category');
+  const [activeFilterTab, setActiveFilterTab] = useState<'price' | 'brand' | 'store' | 'rating' | 'specs'>('price');
   // ── Xususiyat filtrlari (RAM / xotira / batareya) ──
   const [selectedRam,     setSelectedRam]     = useState<string[]>(saved.current?.selectedRam ?? []);
   const [selectedStorage, setSelectedStorage] = useState<string[]>(saved.current?.selectedStorage ?? []);
@@ -138,8 +143,8 @@ export function ProductListing() {
   const [specFacets, setSpecFacets] = useState<{
     ram: { value: string; count: number }[];
     storage: { value: string; count: number }[];
-    battery: { min: number; max: number } | null;
-  }>({ ram: [], storage: [], battery: null });
+    battery: { min: number; count: number }[];
+  }>({ ram: [], storage: [], battery: [] });
   const [marketCounts,   setMarketCounts]   = useState<Record<string, number>>({});
   // Brendlar bazadan keladi; API javob bermasa zaxira ro'yxat ishlatiladi,
   // ya'ni filtr hech qachon bo'sh qolmaydi.
@@ -232,30 +237,22 @@ export function ProductListing() {
   const loadMoreRef       = useRef<() => void>(() => {});
   const isIntersectingRef = useRef(false);
 
-  const { products: rawProducts, isLoading, isFetchingNextPage, hasMore, loadMore, total } =
+  const priceNum = (v: string) => {
+    const n = parseInt(v.replace(/\s/g, ''), 10);
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  };
+  const { products: filteredProducts, isLoading, isFetchingNextPage, hasMore, loadMore, total } =
     useProducts(1, 20, searchQuery, selectedMarketplaces, selectedBrand ?? '', selectedCategory === 'All' ? '' : selectedCategory,
-      { ram: selectedRam, storage: selectedStorage, batteryMin: minBattery });
+      { ram: selectedRam, storage: selectedStorage, batteryMin: minBattery },
+      { minPrice: priceNum(minPrice), maxPrice: priceNum(maxPrice), minRating: minRating || undefined, sort: SERVER_SORT[sortBy] });
 
   hasMoreRef.current  = hasMore;
   fetchingRef.current = isFetchingNextPage;
   loadMoreRef.current = loadMore;
 
-  const filteredProducts = useMemo(() => {
-    let r = [...rawProducts];
-    if (selectedMarketplaces.length > 0) {
-      const set = new Set(selectedMarketplaces.map(m => m.toLowerCase()));
-      r = r.filter(p => p.markets?.some(m => set.has(m.source.toLowerCase())));
-    }
-    if (minRating > 0) r = r.filter(p => p.rating >= minRating);
-    const mn = parseFloat(minPrice.replace(/\s/g, ''));
-    const mx = parseFloat(maxPrice.replace(/\s/g, ''));
-    if (!isNaN(mn) && mn > 0) r = r.filter(p => p.price >= mn);
-    if (!isNaN(mx) && mx > 0) r = r.filter(p => p.price <= mx);
-    if (sortBy === 'priceLow')  r.sort((a, b) => a.price - b.price);
-    if (sortBy === 'priceHigh') r.sort((a, b) => b.price - a.price);
-    if (sortBy === 'rating')    r.sort((a, b) => b.rating - a.rating);
-    return r;
-  }, [rawProducts, selectedCategory, selectedMarketplaces, minRating, minPrice, maxPrice, sortBy]);
+  // Barcha filtr va saralash serverda (useProducts → /api/products). Ilgari
+  // narx, reyting va saralash shu yerda faqat yuklangan sahifaga qo'llanardi.
+
 
   /**
    * Faol xususiyat filtrlari (RAM / xotira / batareya).
@@ -291,7 +288,6 @@ export function ProductListing() {
 
   const activeFilterCount = useMemo(() => {
     let n = 0;
-    if (selectedCategory !== 'All') n++;
     if (minRating > 0) n++;
     if (selectedBrand) n++;
     n += selectedMarketplaces.length;
@@ -299,7 +295,7 @@ export function ProductListing() {
     n += selectedRam.length + selectedStorage.length;
     if (minBattery > 0) n++;
     return n;
-  }, [selectedCategory, minRating, selectedBrand, selectedMarketplaces, minPrice, maxPrice,
+  }, [minRating, selectedBrand, selectedMarketplaces, minPrice, maxPrice,
       selectedRam, selectedStorage, minBattery]);
 
   useEffect(() => {
@@ -339,11 +335,6 @@ export function ProductListing() {
     [brandFacets],
   );
 
-  const categories = ['All', 'Phones'];
-  const categoryLabel: Record<string, string> = {
-    All: t.listing.all,
-    Phones: t.detail.categories.phones,
-  };
 
   useEffect(() => { setSelectedCategory(categoryParam); }, [categoryParam]);
 
@@ -431,21 +422,25 @@ export function ProductListing() {
     setSelectedMarketplaces(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   }, []);
 
-  const visibleMarkets = (showAllMarkets || isMobileFilterOpen) ? MARKETPLACES : MARKETPLACES.slice(0, MARKETS_VISIBLE);
+  // Do'konlar ro'yxati /api/markets dan: yangi do'kon qo'shilsa (Ozon shunday
+  // ro'yxatdan tushib qolgan edi) yoki biri yopilsa, filtr o'zi moslashadi.
+  // Eng ko'p mahsulotli do'konlar tepada. API javob bermasa — statik ro'yxat.
+  const markets = useMemo(() => {
+    const keys = Object.keys(marketCounts);
+    if (keys.length === 0) return MARKETPLACES;
+    const names = Object.fromEntries(MARKETPLACES.map(m => [m.key, m.name]));
+    return keys
+      .sort((a, b) => marketCounts[b] - marketCounts[a])
+      .map(key => ({
+        key,
+        name: names[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
+        color: MARKET_COLOR[key] ?? '#9ca3af',
+      }));
+  }, [marketCounts]);
+  const visibleMarkets = (showAllMarkets || isMobileFilterOpen) ? markets : markets.slice(0, MARKETS_VISIBLE);
 
   // ── filter panel ──
-  const FilterPanel = (isMobile: boolean, mobileTab?: 'category' | 'price' | 'brand' | 'store' | 'rating' | 'specs') => {
-    // Category mapping
-    const cat = isMobile ? draftCategory : selectedCategory;
-    const setCat = (v: string) => {
-      if (isMobile) {
-        setDraftCategory(v);
-      } else {
-        setSelectedCategory(v);
-        updateUrlCategory(v);
-      }
-    };
-
+  const FilterPanel = (isMobile: boolean, mobileTab?: 'price' | 'brand' | 'store' | 'rating' | 'specs') => {
     // Marketplace mapping
     const mps = isMobile ? draftMarketplaces : selectedMarketplaces;
     const toggleMp = (key: string) => {
@@ -493,36 +488,8 @@ export function ProductListing() {
 
     return (
       <div className={isMobile ? "px-1" : "divide-y divide-gray-100 dark:divide-gray-800"}>
-        {/* Kategoriya */}
-        {(!isMobile || mobileTab === 'category') && (
-          <div className={isMobile ? "py-1" : "py-3"}>
-            <SLabel>{t.listing.categories}</SLabel>
-            <div className="space-y-0.5">
-              {categories.map(c => {
-                const active = cat === c;
-                return (
-                  <button
-                    key={c} type="button"
-                    onClick={() => setCat(c)}
-                    className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-3 text-left text-[14px] transition-colors ${
-                      active
-                      ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 font-semibold'
-                      : 'text-gray-700 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-gray-100/55 dark:hover:bg-gray-900/40'
-                    }`}
-                  >
-                    <span className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                      active ? 'border-violet-600' : 'border-gray-300 dark:border-gray-600'
-                    }`}>
-                      {active && <span className="w-2 h-2 rounded-full bg-violet-600" />}
-                    </span>
-                    {categoryLabel[c] ?? c}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
+        {/* Kategoriya filtri olib tashlandi: katalogdagi barcha mahsulotlar
+            bitta "Phones" kategoriyasida, ya'ni u hech narsani filtrlamasdi. */}
         {/* Narx */}
         {(!isMobile || mobileTab === 'price') && (
           <div className={isMobile ? "py-1" : "py-3"}>
@@ -590,12 +557,12 @@ export function ProductListing() {
               <>
                 <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-1.5">RAM</p>
                 <div className="flex flex-wrap gap-1.5 mb-3">
-                  {specFacets.ram.map(({ value }) => {
+                  {specFacets.ram.map(({ value, count }) => {
                     const on = ramSel.includes(value);
                     return (
                       <button key={value} type="button"
                         onClick={() => toggleSpec(ramSel, value, setRam)}
-                        aria-pressed={on}
+                        aria-pressed={on} title={`${count}`}
                         className={`px-2.5 py-1.5 rounded-lg text-[12px] font-bold border transition-colors ${
                           on ? 'bg-violet-600 border-violet-600 text-white'
                              : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-violet-400'
@@ -612,12 +579,12 @@ export function ProductListing() {
               <>
                 <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-1.5">Xotira</p>
                 <div className="flex flex-wrap gap-1.5 mb-3">
-                  {specFacets.storage.map(({ value }) => {
+                  {specFacets.storage.map(({ value, count }) => {
                     const on = storageSel.includes(value);
                     return (
                       <button key={value} type="button"
                         onClick={() => toggleSpec(storageSel, value, setStorage)}
-                        aria-pressed={on}
+                        aria-pressed={on} title={`${count}`}
                         className={`px-2.5 py-1.5 rounded-lg text-[12px] font-bold border transition-colors ${
                           on ? 'bg-violet-600 border-violet-600 text-white'
                              : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-violet-400'
@@ -630,11 +597,11 @@ export function ProductListing() {
               </>
             )}
 
-            {specFacets.battery && (
+            {specFacets.battery.length > 0 && (
               <>
                 <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-1.5">Batareya</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {[0, 4000, 5000, 6000].map(v => (
+                  {[0, ...specFacets.battery.map(b => b.min)].map(v => (
                     <button key={v} type="button"
                       onClick={() => setBattery(v)}
                       aria-pressed={batterySel === v}
@@ -751,11 +718,11 @@ export function ProductListing() {
                 );
               })}
             </div>
-            {!isMobile && MARKETPLACES.length > MARKETS_VISIBLE && (
+            {!isMobile && markets.length > MARKETS_VISIBLE && (
               <button type="button" onClick={() => setShowAllMarkets(v => !v)}
                 className="mt-1.5 ml-1.5 text-[12px] font-semibold text-violet-600 dark:text-violet-400 hover:underline"
               >
-                {showAllMarkets ? t.listing.showLess : t.listing.showAll.replace('{{count}}', MARKETPLACES.length.toString())}
+                {showAllMarkets ? t.listing.showLess : t.listing.showAll.replace('{{count}}', markets.length.toString())}
               </button>
             )}
           </div>
@@ -1222,7 +1189,6 @@ export function ProductListing() {
               {/* Left Tabs Column */}
               <div className="w-[38%] shrink-0 border-r border-gray-100/80 dark:border-gray-800/80 bg-white dark:bg-gray-950 overflow-y-auto flex flex-col divide-y divide-gray-100/50 dark:divide-gray-900/50">
                 {([
-                  { key: 'category' as const, label: t.listing.categories },
                   { key: 'price'    as const, label: t.listing.priceRange },
                   { key: 'brand'    as const, label: t.listing.brands },
                   { key: 'store'    as const, label: t.listing.stores },
@@ -1233,8 +1199,7 @@ export function ProductListing() {
                   // Compute subtitle
                   const allLabel = language === 'uz' ? 'Barchasi' : 'Все';
                   let sub = allLabel;
-                  if (tab.key === 'category') sub = categoryLabel[draftCategory] ?? draftCategory;
-                  else if (tab.key === 'price') {
+                  if (tab.key === 'price') {
                     if (draftMinPrice || draftMaxPrice) sub = `${draftMinPrice || '0'}-${draftMaxPrice || '∞'}`;
                   }
                   else if (tab.key === 'brand') sub = draftBrand ? brandLabel(draftBrand) : allLabel;

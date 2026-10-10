@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { fetchProducts } from '../services/api';
+import { fetchProducts, ListFilters } from '../services/api';
 import { mapProduct } from '../utils/productMapper';
 import { Product } from '../components/ProductCard';
 
@@ -30,11 +30,13 @@ export function useProducts(
   brand = '',
   category = '',
   specs: SpecFilters = {},
+  extra: ListFilters = {},
 ): UseProductsResult {
   const normalizedSearch = search.trim();
   // queryKey ga barqaror kalit kerak: har renderда yangi obyekt kelsa,
   // react-query uni yangi so'rov deb hisoblab qayta yuklab yuborardi.
   const specsKey = JSON.stringify([specs.ram ?? [], specs.storage ?? [], specs.batteryMin ?? 0]);
+  const extraKey = JSON.stringify([extra.minPrice ?? 0, extra.maxPrice ?? 0, extra.minRating ?? 0, extra.sort ?? 'relevance']);
 
   const {
     data,
@@ -47,9 +49,9 @@ export function useProducts(
     status,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ['products', normalizedSearch, limit, markets, brand, category, specsKey],
+    queryKey: ['products', normalizedSearch, limit, markets, brand, category, specsKey, extraKey],
     queryFn: ({ pageParam = 1, signal }) =>
-      fetchProducts(pageParam, limit, normalizedSearch, signal, markets, brand, category, specs),
+      fetchProducts(pageParam, limit, normalizedSearch, signal, markets, brand, category, specs, extra),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       return lastPage?.hasMore ? lastPage.page + 1 : undefined;

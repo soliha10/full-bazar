@@ -2,6 +2,15 @@ import { sessionId } from './tracking';
 
 const API_BASE_URL = '/api';
 
+export type ServerSort = 'relevance' | 'price_asc' | 'price_desc' | 'rating';
+
+export interface ListFilters {
+  minPrice?: number;
+  maxPrice?: number;
+  minRating?: number;
+  sort?: ServerSort;
+}
+
 export const fetchProducts = async (
   page = 1,
   limit = 12,
@@ -11,6 +20,7 @@ export const fetchProducts = async (
   brand = '',
   category = '',
   specs: { ram?: string[]; storage?: string[]; batteryMin?: number } = {},
+  extra: ListFilters = {},
 ) => {
   try {
     const params = new URLSearchParams({
@@ -27,6 +37,11 @@ export const fetchProducts = async (
     if (specs.ram?.length)     params.set('ram', specs.ram.join(','));
     if (specs.storage?.length) params.set('storage', specs.storage.join(','));
     if (specs.batteryMin)      params.set('battery_min', String(specs.batteryMin));
+    // Narx, reyting va saralash ham serverda — butun katalogga qo'llanadi
+    if (extra.minPrice)  params.set('min_price', String(extra.minPrice));
+    if (extra.maxPrice)  params.set('max_price', String(extra.maxPrice));
+    if (extra.minRating) params.set('min_rating', String(extra.minRating));
+    if (extra.sort && extra.sort !== 'relevance') params.set('sort', extra.sort);
 
     const response = await fetch(`${API_BASE_URL}/products?${params}`, { signal });
     if (!response.ok) throw new Error('Network response was not ok');
@@ -48,7 +63,7 @@ export const fetchSpecFacets = async () => {
     console.error('Error fetching spec facets:', error);
     // Filtr ro'yxati kelmasa sahifa baribir ishlashi kerak — shunchaki
     // xususiyat filtrlari ko'rinmaydi.
-    return { ram: [], storage: [], battery: null };
+    return { ram: [], storage: [], battery: [] };
   }
 };
 

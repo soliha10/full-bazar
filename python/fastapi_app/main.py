@@ -736,6 +736,23 @@ async def _get_spec_index(pool: asyncpg.Pool) -> dict[str, dict]:
     return _cache_put("spec-index", index)
 
 
+# ── Xotira qiymatlari ─────────────────────────────────────────────────────────
+_RAM_FACETS = ("2GB", "3GB", "4GB", "6GB", "8GB", "12GB", "16GB", "24GB")
+_STORAGE_FACETS = ("32GB", "64GB", "128GB", "256GB", "512GB", "1TB", "2TB")
+_BATTERY_FACETS = (4000, 5000, 6000, 7000)
+
+
+def _norm_mem(label: str) -> str:
+    """'8 gb' -> '8GB', '1024GB' -> '1TB' — filtr va facet bir xil kalitda."""
+    m = re.match(r"\s*(\d+(?:\.\d+)?)\s*(mb|gb|tb)", (label or "").lower())
+    if not m:
+        return (label or "").strip().upper()
+    num, unit = float(m.group(1)), m.group(2)
+    if unit == "gb" and num >= 1024 and num % 1024 == 0:
+        num, unit = num / 1024, "tb"
+    return f"{num:g}{unit.upper()}"
+
+
 # ── Products ──────────────────────────────────────────────────────────────────
 
 @app.get("/api/products")
@@ -749,6 +766,10 @@ async def get_products(
     ram: str = Query("", description="Vergul bilan: 8GB,12GB"),
     storage: str = Query("", description="Vergul bilan: 128GB,256GB"),
     battery_min: int = Query(0, ge=0, le=20000),
+    min_price: int = Query(0, ge=0),
+    max_price: int = Query(0, ge=0),
+    min_rating: float = Query(0, ge=0, le=5),
+    sort: Literal["relevance", "price_asc", "price_desc", "rating"] = Query("relevance"),
 ) -> dict:
     pool: asyncpg.Pool = app.state.pool
     offset = (page - 1) * limit
@@ -794,8 +815,8 @@ async def get_products(
     # qo'llaymiz, so'ng mos kelgan model kalitlarini SQL ga naqsh sifatida
     # uzatamiz — bu sxemani o'zgartirishni ham, sinxronizatsiyaga bog'lanishni
     # ham talab qilmaydi.
-    ram_wanted     = {v.strip().lower() for v in ram.split(",") if v.strip()}
-    storage_wanted = {v.strip().lower() for v in storage.split(",") if v.strip()}
+    ram_wanted     = {_norm_mem(v) for v in ram.split(",") if v.strip()}
+    storage_wanted = {_norm_mem(v) for v in storage.split(",") if v.strip()}
 
     if ram_wanted or storage_wanted or battery_min:
         # Model kalitini SQL da naqsh sifatida qidirib bo'lmaydi: bir modelning
@@ -807,8 +828,8 @@ async def get_products(
         spec_index = await _get_spec_index(pool)
         matched_ids = [
             pid for pid, row in spec_index.items()
-            if not (ram_wanted and not ram_wanted & {o.lower() for o in (row["ram_options"] or [])})
-            and not (storage_wanted and not storage_wanted & {o.lower() for o in (row["storage_options"] or [])})
+            if not (ram_wanted and not ram_wanted & {_norm_mem(o) for o in (row["ram_options"] or [])})
+            and not (storage_wanted and not storage_wanted & {_norm_mem(o) for o in (row["storage_options"] or [])})
             and not (battery_min and (row["battery_mah"] or 0) < battery_min)
         ]
 
@@ -819,7 +840,28 @@ async def get_products(
         params.append(matched_ids)
         where_parts.append(f"p.id = ANY(${len(params)}::text[])")
 
+    # Narx, reyting va saralash SERVERDA. Ilgari ular mijozda faqat yuklangan
+    # 20 talik sahifaga qo'llanardi: "qimmatdan arzonga" birinchi sahifani
+    # saralardi xolos, narx oralig'i esa "total" ni o'zgartirmasdi va
+    # cheksiz aylantirish filtrga mos kelmaydigan sahifalarni yuklayverardi.
+    if min_price:
+        params.append(min_price)
+        where_parts.append(f"p.price >= ${len(params)}")
+    if max_price:
+        params.append(max_price)
+        where_parts.append(f"p.price <= ${len(params)}")
+    if min_rating:
+        params.append(min_rating)
+        where_parts.append(f"p.rating >= ${len(params)}")
+
     where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
+
+    # p.id — teng narxlilar orasida barqaror tartib. Usiz OFFSET sahifalari
+    # orasida bir xil narxli mahsulot takrorlanishi yoki tushib qolishi mumkin.
+    order_sql = {
+        "price_desc": "price DESC, id",
+        "rating":     "rating DESC NULLS LAST, reviews DESC NULLS LAST, price ASC, id",
+    }.get(sort, "price ASC, id")
 
     # Bitta so'rov: sahifa, umumiy son va marketlar birga keladi.
     # Ilgari uchta alohida so'rov ketardi (COUNT, sahifa, marketlar) — bazaga
@@ -834,7 +876,7 @@ async def get_products(
             SELECT p.*, COUNT(*) OVER() AS total_count
             FROM products p
             {where_sql}
-            ORDER BY p.price ASC
+            ORDER BY {order_sql}
             LIMIT ${len(params)+1} OFFSET ${len(params)+2}
         )
         SELECT f.*, COALESCE(m.markets, '[]'::jsonb) AS markets_json
@@ -851,7 +893,7 @@ async def get_products(
             FROM product_markets pm
             WHERE pm.product_id = f.id
         ) m ON TRUE
-        ORDER BY f.price ASC
+        ORDER BY {order_sql}
         """,
         *params, limit, offset,
     )
@@ -1467,36 +1509,35 @@ async def get_brands(response: Response) -> dict:
 async def spec_facets(response: Response) -> dict:
     """Xususiyat filtrlari uchun mavjud qiymatlar.
 
-    Bazaga umuman bormaydi — spec ro'yxati startupda xotiraga o'qiladi.
-    Har bir qiymat yonida nechta model borligi ko'rsatiladi, shunda UI hech
-    qanday natija bermaydigan filtrni taklif qilmaydi.
+    Har bir qiymat yonida nechta MAHSULOT mos kelishi ko'rsatiladi, shunda UI
+    hech qanday natija bermaydigan filtrni taklif qilmaydi. Mahsulot↔xususiyat
+    moslash _get_spec_index da 5 daqiqa keshlanadi.
     """
     response.headers["Cache-Control"] = "public, max-age=3600"
 
+    # Hisoblar saytdagi MAHSULOTLAR bo'yicha (GSMArena modellari emas) va
+    # faqat standart qiymatlar: ilgari ro'yxatda tugmali telefonlardan kelgan
+    # "1MB", "45MB" kabi o'nlab qiymat, "1TB" va "1024GB" esa alohida turardi.
     ram_counts: Counter = Counter()
     storage_counts: Counter = Counter()
-    batteries: list[int] = []
+    battery_counts: Counter = Counter()
 
-    spec_rows, _ = await _get_specs(app.state.pool)
-    for row in spec_rows:
-        for o in (row["ram_options"] or []):
-            ram_counts[o] += 1
-        for o in (row["storage_options"] or []):
-            storage_counts[o] += 1
-        if row["battery_mah"]:
-            batteries.append(row["battery_mah"])
-
-    def _gb(label: str) -> int:
-        """'128GB' -> 128, '1TB' -> 1024 — tartiblash uchun."""
-        m = re.match(r"(\d+)\s*(gb|tb)", label.lower())
-        if not m:
-            return 0
-        return int(m.group(1)) * (1024 if m.group(2) == "tb" else 1)
+    spec_index = await _get_spec_index(app.state.pool)
+    for row in spec_index.values():
+        for o in {_norm_mem(o) for o in (row["ram_options"] or [])}:
+            if o in _RAM_FACETS:
+                ram_counts[o] += 1
+        for o in {_norm_mem(o) for o in (row["storage_options"] or [])}:
+            if o in _STORAGE_FACETS:
+                storage_counts[o] += 1
+        for b in _BATTERY_FACETS:
+            if (row["battery_mah"] or 0) >= b:
+                battery_counts[b] += 1
 
     return {
-        "ram":     [{"value": v, "count": c} for v, c in sorted(ram_counts.items(),     key=lambda x: _gb(x[0]))],
-        "storage": [{"value": v, "count": c} for v, c in sorted(storage_counts.items(), key=lambda x: _gb(x[0]))],
-        "battery": {"min": min(batteries), "max": max(batteries)} if batteries else None,
+        "ram":     [{"value": v, "count": ram_counts[v]} for v in _RAM_FACETS if ram_counts[v]],
+        "storage": [{"value": v, "count": storage_counts[v]} for v in _STORAGE_FACETS if storage_counts[v]],
+        "battery": [{"min": b, "count": battery_counts[b]} for b in _BATTERY_FACETS if battery_counts[b]],
     }
 
 
