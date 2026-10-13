@@ -12,9 +12,10 @@ import pickle
 import re
 import time
 import uuid
-from collections import Counter, defaultdict
+from collections import Counter, OrderedDict, deque
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from typing import Any, Literal, Optional
 from urllib.parse import quote, urlparse
 from xml.sax.saxutils import escape as xml_escape
@@ -22,16 +23,17 @@ from xml.sax.saxutils import escape as xml_escape
 import asyncpg
 import bcrypt
 import httpx
+import orjson
 import jwt as pyjwt
 import numpy as np
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from sklearn.metrics.pairwise import paired_cosine_distances
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.datastructures import Headers, MutableHeaders
 
 import brands
 from specs_seed import SPEC_SEED
@@ -462,7 +464,18 @@ async def lifespan(app: FastAPI):
         spec_rows = await conn.fetch("SELECT * FROM product_specs")
         _store_specs([dict(r) for r in spec_rows])
     await _schedule_keep_warm(app.state.pool)
+    # Rasm proksisi uchun bitta umumiy klient: har so'rovda yangi klient ochish
+    # olxcdn bilan TCP+TLS ni har safar qaytadan o'rnatardi (~100-200 ms).
+    app.state.http = httpx.AsyncClient(
+        follow_redirects=True,
+        timeout=10,
+        limits=httpx.Limits(max_connections=50, max_keepalive_connections=20),
+    )
+    flusher = asyncio.create_task(_track_flusher(app.state.pool))
     yield
+    flusher.cancel()
+    await _flush_track(app.state.pool)
+    await app.state.http.aclose()
     await app.state.pool.close()
 
 
@@ -475,41 +488,82 @@ _ALLOWED_ORIGINS = [
     "http://127.0.0.1",
 ]
 
-_rate_store: dict[str, list[float]] = defaultdict(list)
-_RATE_LIMIT = 60   # requests
-_RATE_WINDOW = 60  # seconds
+# ── So'rovlar cheklovi ────────────────────────────────────────────────────────
+# Reklamadan kelgan mehmonlar asosan mobil internetda. Mobil operatorlar
+# ko'p abonentni bitta umumiy IP (CGNAT) orqali chiqaradi, shuning uchun
+# eski 60 so'rov/daqiqa limiti bir necha haqiqiy foydalanuvchiga bitta bo'lib
+# qolardi va 429 boshlanardi. Umumiy limit endi kengroq; parol taxmin qilishni
+# to'sish uchun faqat auth yo'llari qattiq cheklanadi.
+_RATE_LIMIT = 300        # so'rov / oyna — oddiy o'qish
+_AUTH_RATE_LIMIT = 20    # so'rov / oyna — /api/auth/*
+_RATE_WINDOW = 60        # soniya
+# Cheklovdan tashqari: keepalive, va CDN keshlaydigan rasmlar (sahifada
+# o'nlab rasm bo'ladi — ularni hisoblash limitni bir sahifada yeb qo'yardi).
+_RATE_EXEMPT = ("/health", "/api/proxy-image")
+
+_rate_store: dict[str, deque[float]] = {}
+_rate_last_sweep = 0.0
 
 
-def _client_ip(request: Request) -> str:
+def _client_ip(scope: dict) -> str:
     """Haqiqiy mijoz IP si.
 
-    request.client.host Render'da yuklama muvozanatlagichning IP si — uvicorn
+    scope["client"] Render'da yuklama muvozanatlagichning IP si — uvicorn
     proxy sarlavhalariga ishonmaydi. Shu sabab limit hamma foydalanuvchiga
     BITTA bo'lib, 60 so'rov/daqiqa butun sayt uchun umumiy edi: bir necha
     kishi bir vaqtda kirsa 429 boshlanardi. Netlify mijoz IP sini alohida
     sarlavhada beradi; to'g'ridan-to'g'ri kelgan so'rovda X-Forwarded-For.
     """
-    ip = request.headers.get("x-nf-client-connection-ip")
+    headers = Headers(scope=scope)
+    ip = headers.get("x-nf-client-connection-ip")
     if not ip:
-        fwd = request.headers.get("x-forwarded-for", "")
+        fwd = headers.get("x-forwarded-for", "")
         ip = fwd.split(",")[0].strip()
-    return ip or (request.client.host if request.client else "unknown")
+    client = scope.get("client")
+    return ip or (client[0] if client else "unknown")
 
 
-class RateLimitMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        ip = _client_ip(request)
-        now = time.time()
+class RateLimitMiddleware:
+    """Sof ASGI middleware — BaseHTTPMiddleware har so'rovga qo'shimcha
+    vazifa va oqim yaratadi, bu esa 0.1 CPU li bepul Render'da sezilarli."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if (scope["type"] != "http" or scope["method"] == "OPTIONS"
+                or scope["path"].startswith(_RATE_EXEMPT)):
+            return await self.app(scope, receive, send)
+
+        global _rate_last_sweep
+        now = time.monotonic()
         window_start = now - _RATE_WINDOW
-        _rate_store[ip] = [t for t in _rate_store[ip] if t > window_start]
-        if len(_rate_store[ip]) >= _RATE_LIMIT:
-            return JSONResponse(
+
+        # Ketgan mehmonlarning yozuvlarini tozalash — aks holda lug'at har
+        # yangi IP bilan cheksiz o'sib, xotirani asta-sekin yeb borardi.
+        if now - _rate_last_sweep > _RATE_WINDOW:
+            _rate_last_sweep = now
+            for key in [k for k, q in _rate_store.items() if not q or q[-1] <= window_start]:
+                del _rate_store[key]
+
+        ip = _client_ip(scope)
+        is_auth = scope["path"].startswith("/api/auth/")
+        key, limit = (f"auth:{ip}", _AUTH_RATE_LIMIT) if is_auth else (ip, _RATE_LIMIT)
+
+        q = _rate_store.get(key)
+        if q is None:
+            q = _rate_store[key] = deque()
+        while q and q[0] <= window_start:
+            q.popleft()
+        if len(q) >= limit:
+            response = JSONResponse(
                 status_code=429,
                 content={"detail": "Too many requests"},
                 headers={"Retry-After": str(_RATE_WINDOW)},
             )
-        _rate_store[ip].append(now)
-        return await call_next(request)
+            return await response(scope, receive, send)
+        q.append(now)
+        return await self.app(scope, receive, send)
 
 
 app = FastAPI(
@@ -535,18 +589,34 @@ _CDN_DEFAULT = "public, durable, s-maxage=300, stale-while-revalidate=604800"
 _CDN_IMAGES = "public, durable, s-maxage=86400, stale-while-revalidate=604800"
 
 
-class CdnCacheMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
-        path = request.url.path
-        if (request.method == "GET" and response.status_code == 200
-                and "authorization" not in request.headers):
-            if path == "/api/proxy-image":
-                response.headers["Netlify-CDN-Cache-Control"] = _CDN_IMAGES
-            elif (path.startswith(_CDN_CACHEABLE)
-                  and not path.startswith("/api/recommendations/personalized")):
-                response.headers["Netlify-CDN-Cache-Control"] = _CDN_DEFAULT
-        return response
+def _cdn_header(path: str) -> str | None:
+    if path == "/api/proxy-image":
+        return _CDN_IMAGES
+    if path.startswith(_CDN_CACHEABLE) and not path.startswith("/api/recommendations/personalized"):
+        return _CDN_DEFAULT
+    return None
+
+
+class CdnCacheMiddleware:
+    """Sof ASGI: javob sarlavhasiga faqat qo'shimcha qator qo'shadi, tanaga tegmaydi."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope["method"] != "GET":
+            return await self.app(scope, receive, send)
+        value = _cdn_header(scope["path"])
+        if value is None or "authorization" in Headers(scope=scope):
+            return await self.app(scope, receive, send)
+
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start" and message["status"] == 200:
+                headers = MutableHeaders(scope=message)
+                headers["Netlify-CDN-Cache-Control"] = value
+            await send(message)
+
+        return await self.app(scope, receive, send_wrapper)
 
 
 app.add_middleware(CdnCacheMiddleware)
@@ -578,6 +648,64 @@ def _cache_get(key: str, ttl: float) -> Any | None:
 def _cache_put(key: str, value: Any) -> Any:
     _cache_store[key] = (time.time(), value)
     return value
+
+
+# ── Javoblar keshi (tayyor JSON baytlari) ────────────────────────────────────
+# Mahsulot ro'yxati va sahifasi eng ko'p so'raladigan yo'llar. Netlify CDN
+# ularni keshlaydi, lekin har chekka tugun va har yangi URL baribir bir marta
+# bu yerga keladi — reklama oqimida bu bir vaqtda o'nlab bir xil so'rov.
+# Javobni tayyor baytlar ko'rinishida saqlaymiz: qayta so'rov bazaga ham,
+# JSON kodlashga ham bormaydi. Kalitlar qidiruv matniga bog'liq bo'lgani
+# uchun hajm cheklangan (eng eskisi chiqarib tashlanadi).
+_RESP_CACHE_MAX = 2000
+_resp_store: OrderedDict[str, tuple[float, bytes]] = OrderedDict()
+
+# Bir xil kalit uchun hozir bajarilayotgan hisob-kitob. Kesh bo'sh paytda
+# (masalan, Render uyg'ongandan keyin yoki sinxronizatsiyadan so'ng) bir
+# vaqtda 50 ta bir xil so'rov kelsa, bazaga 50 marta emas, BIR marta boriladi,
+# qolganlari o'sha natijani kutadi.
+_inflight: dict[str, asyncio.Task] = {}
+
+
+async def _single_flight(key: str, producer) -> Any:
+    task = _inflight.get(key)
+    if task is None:
+        async def run():
+            try:
+                return await producer()
+            finally:
+                _inflight.pop(key, None)
+        task = asyncio.ensure_future(run())
+        _inflight[key] = task
+    # shield: mijoz uzilib qolsa ham umumiy hisob-kitob boshqalar uchun davom etadi
+    return await asyncio.shield(task)
+
+
+def _json_default(obj: Any) -> Any:
+    if isinstance(obj, Decimal):
+        return float(obj)
+    return str(obj)
+
+
+def _json_response(body: bytes) -> Response:
+    return Response(content=body, media_type="application/json")
+
+
+async def _cached_json(key: str, ttl: float, producer) -> Response:
+    """producer() -> dict; natija baytlar ko'rinishida `ttl` soniya saqlanadi."""
+    hit = _resp_store.get(key)
+    if hit is not None and time.time() - hit[0] <= ttl:
+        return _json_response(hit[1])
+
+    async def build() -> bytes:
+        body = orjson.dumps(await producer(), default=_json_default)
+        _resp_store[key] = (time.time(), body)
+        _resp_store.move_to_end(key)
+        while len(_resp_store) > _RESP_CACHE_MAX:
+            _resp_store.popitem(last=False)
+        return body
+
+    return _json_response(await _single_flight(key, build))
 
 
 # ── ML endpoints ──────────────────────────────────────────────────────────────
@@ -655,8 +783,12 @@ async def _get_specs(pool: asyncpg.Pool) -> tuple[list[dict], brands.SpecIndex]:
     cached = _cache_get("specs", _SPEC_TTL)
     if cached is not None:
         return cached
-    rows = await pool.fetch("SELECT * FROM product_specs")
-    return _store_specs([dict(r) for r in rows])
+
+    async def load():
+        rows = await pool.fetch("SELECT * FROM product_specs")
+        return _store_specs([dict(r) for r in rows])
+
+    return await _single_flight("specs", load)
 
 
 # Eski manzillar: /product/samsung-galaxy-s24-prod-8fc7e81f5ca9aeb6051c
@@ -726,14 +858,19 @@ async def _get_spec_index(pool: asyncpg.Pool) -> dict[str, dict]:
     if cached is not None:
         return cached
 
-    _, spec_index = await _get_specs(pool)
-    rows = await pool.fetch("SELECT id, name, keywords FROM products")
-    index: dict[str, dict] = {}
-    for r in rows:
-        spec = _match_spec_row(r["name"] or "", r["keywords"] or "", spec_index)
-        if spec is not None:
-            index[r["id"]] = spec
-    return _cache_put("spec-index", index)
+    # Butun katalogni ~15 000 modelga moslashtirish CPU ni band qiladi —
+    # kesh eskirgan paytda kelgan parallel filtr so'rovlari uni bir marta hisoblaydi.
+    async def build():
+        _, spec_index = await _get_specs(pool)
+        rows = await pool.fetch("SELECT id, name, keywords FROM products")
+        index: dict[str, dict] = {}
+        for r in rows:
+            spec = _match_spec_row(r["name"] or "", r["keywords"] or "", spec_index)
+            if spec is not None:
+                index[r["id"]] = spec
+        return _cache_put("spec-index", index)
+
+    return await _single_flight("spec-index", build)
 
 
 # ── Xotira qiymatlari ─────────────────────────────────────────────────────────
@@ -770,13 +907,30 @@ async def get_products(
     max_price: int = Query(0, ge=0),
     min_rating: float = Query(0, ge=0, le=5),
     sort: Literal["relevance", "price_asc", "price_desc", "rating"] = Query("relevance"),
-) -> dict:
-    pool: asyncpg.Pool = app.state.pool
-    offset = (page - 1) * limit
-    search = search.strip()
+) -> Response:
+    search = " ".join(search.lower().split())
     market = market.strip().lower()
     brand = brand.strip()
     category = category.strip()
+    key = "products:" + "|".join(map(str, (
+        page, limit, search, market, brand.lower(), category, ram, storage,
+        battery_min, min_price, max_price, min_rating, sort,
+    )))
+    # Netlify CDN 5 daqiqa saqlaydi; bu yerda 1 daqiqa — sinxronizatsiyadan
+    # keyin yangi narxlar tezroq ko'rinsin.
+    return await _cached_json(key, 60, lambda: _query_products(
+        page, limit, search, market, brand, category, ram, storage,
+        battery_min, min_price, max_price, min_rating, sort,
+    ))
+
+
+async def _query_products(
+    page: int, limit: int, search: str, market: str, brand: str, category: str,
+    ram: str, storage: str, battery_min: int, min_price: int, max_price: int,
+    min_rating: float, sort: str,
+) -> dict:
+    pool: asyncpg.Pool = app.state.pool
+    offset = (page - 1) * limit
 
     where_parts: list[str] = []
     params: list = []
@@ -913,14 +1067,17 @@ async def get_products(
 
 
 @app.get("/api/products/{product_ref}")
-async def get_product(product_ref: str) -> dict:
+async def get_product(product_ref: str) -> Response:
     """`product_ref` — slug (kanonik) yoki ID (eski havolalar uchun)."""
-    pool: asyncpg.Pool = app.state.pool
-    row = await _find_product(pool, product_ref)
-    if row is None:
-        raise HTTPException(status_code=404, detail="Not Found")
-    markets_map = await _fetch_markets(pool, [row["id"]])
-    return _row_to_product(row, markets_map.get(row["id"], []))
+    async def load() -> dict:
+        pool: asyncpg.Pool = app.state.pool
+        row = await _find_product(pool, product_ref)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Not Found")
+        markets_map = await _fetch_markets(pool, [row["id"]])
+        return _row_to_product(row, markets_map.get(row["id"], []))
+
+    return await _cached_json(f"product:{product_ref.strip()}", 120, load)
 
 
 # ── Specs & compare ────────────────────────────────────────────────────────────
@@ -1650,12 +1807,39 @@ class TrackEvent(BaseModel):
     search_query: Optional[str] = None
 
 
+# Har ko'rish/qidiruv hodisasi uchun alohida INSERT reklama oqimida ulanish
+# hovuzini (10 ta) shu mayda yozuvlar bilan band qilib, mahsulot so'rovlarini
+# navbatga qo'yardi. Endi hodisalar xotirada yig'ilib, har 5 soniyada bitta
+# executemany bilan yoziladi. Baza ishlamay qolsa bufer cheksiz o'smaydi.
+_TRACK_FLUSH_SECONDS = 5
+_TRACK_BUFFER_MAX = 5000
+_track_buf: deque[tuple] = deque(maxlen=_TRACK_BUFFER_MAX)
+
+
+async def _flush_track(pool: asyncpg.Pool) -> None:
+    if not _track_buf:
+        return
+    batch = list(_track_buf)
+    _track_buf.clear()
+    try:
+        await pool.executemany(
+            "INSERT INTO user_events (session_id, event_type, product_id, search_query) VALUES ($1, $2, $3, $4)",
+            batch,
+        )
+    except Exception as exc:  # analitika yo'qolsa ham API ishlashda davom etadi
+        print(f"[track] {len(batch)} ta hodisa yozilmadi: {exc}", flush=True)
+
+
+async def _track_flusher(pool: asyncpg.Pool) -> None:
+    while True:
+        await asyncio.sleep(_TRACK_FLUSH_SECONDS)
+        await _flush_track(pool)
+
+
 @app.post("/api/track")
 async def track_event(event: TrackEvent):
-    pool: asyncpg.Pool = app.state.pool
-    await pool.execute(
-        "INSERT INTO user_events (session_id, event_type, product_id, search_query) VALUES ($1, $2, $3, $4)",
-        event.session_id, event.event_type, event.product_id, event.search_query,
+    _track_buf.append(
+        (event.session_id, event.event_type, event.product_id, event.search_query)
     )
     return {"ok": True}
 
@@ -2099,21 +2283,24 @@ async def proxy_image(url: str = Query(...)) -> Response:
         raise HTTPException(status_code=403, detail="Host not allowed")
         
     try:
-        async with httpx.AsyncClient(follow_redirects=True, timeout=10) as client:
-            resp = await client.get(
-                url,
-                headers={
-                    "Referer": "https://www.olx.uz/",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                },
-            )
-            content_type = resp.headers.get("content-type", "image/jpeg")
-            if not content_type.startswith("image/"):
-                content_type = "image/jpeg"
-            return Response(
-                content=resp.content,
-                media_type=content_type,
-                headers={"Cache-Control": "public, max-age=86400"},
-            )
+        resp = await app.state.http.get(
+            url,
+            headers={
+                "Referer": "https://www.olx.uz/",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            },
+        )
     except Exception:
         raise HTTPException(status_code=502, detail="Image fetch failed")
+    # olx 404/403 sahifasini rasm sifatida 200 bilan qaytarmaymiz — aks holda
+    # CDN singan rasmni bir kunga keshlab qo'yardi.
+    if resp.status_code != 200:
+        raise HTTPException(status_code=502, detail="Image fetch failed")
+    content_type = resp.headers.get("content-type", "image/jpeg")
+    if not content_type.startswith("image/"):
+        content_type = "image/jpeg"
+    return Response(
+        content=resp.content,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
