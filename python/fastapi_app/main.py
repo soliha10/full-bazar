@@ -556,10 +556,12 @@ def _client_ip(scope: dict) -> str:
     proxy sarlavhalariga ishonmaydi. Shu sabab limit hamma foydalanuvchiga
     BITTA bo'lib, 60 so'rov/daqiqa butun sayt uchun umumiy edi: bir necha
     kishi bir vaqtda kirsa 429 boshlanardi. Netlify mijoz IP sini alohida
-    sarlavhada beradi; to'g'ridan-to'g'ri kelgan so'rovda X-Forwarded-For.
+    sarlavhada beradi, Cloudflare Pages funksiyasi (frontend/functions/_lib/
+    edge-cache.ts) — X-Bazar-Client-IP da; to'g'ridan-to'g'ri kelgan so'rovda
+    X-Forwarded-For.
     """
     headers = Headers(scope=scope)
-    ip = headers.get("x-nf-client-connection-ip")
+    ip = headers.get("x-nf-client-connection-ip") or headers.get("x-bazar-client-ip")
     if not ip:
         fwd = headers.get("x-forwarded-for", "")
         ip = fwd.split(",")[0].strip()
