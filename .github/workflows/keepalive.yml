@@ -39,10 +39,9 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 "$API/health" || echo 000)
           echo "health: HTTP $code"
 
-          # /api/products — ma'lumotlar bazasi ulanish hovuzi ham issiq qolsin
-          t=$(curl -s -o /dev/null -w '%{time_total}' --max-time 90 \
-                "$API/api/products?page=1&limit=1" || echo 0)
-          echo "products: ${t}s"
+          # /api/products ataylab pinglanmaydi: u har 5 daqiqada bazaga og'ir
+          # so'rov yuborardi (~8 s), bepul Supabase ning disk IO si esa shusiz
+          # ham tor. /health bazaga tegmaydi, faqat uning holatini aytadi.
 
           # Uyg'otish urinishidan keyin ham javob bermasa — ish muvaffaqiyatsiz
           if [ "$code" != "200" ]; then

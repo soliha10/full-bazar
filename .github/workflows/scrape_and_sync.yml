@@ -2,11 +2,11 @@ name: Scrape & Sync to Supabase
 
 on:
   schedule:
-    # Kuniga 4 marta: 00:00, 06:00, 12:00, 18:00 (UTC) = 05:00, 11:00, 17:00, 23:00 (Toshkent)
+    # Kuniga 2 marta: 00:00 va 12:00 (UTC) = 05:00 va 17:00 (Toshkent).
+    # Ilgari 4 marta edi — har sinxronizatsiya bepul Supabase ning disk IO
+    # byudjetidan yeydi va 2026-10-24 da u tugab, baza (va API) osilib qoldi.
     - cron: '0 0 * * *'
-    - cron: '0 6 * * *'
     - cron: '0 12 * * *'
-    - cron: '0 18 * * *'
   workflow_dispatch: # Qo'lda ham ishga tushirish mumkin
 
 jobs:

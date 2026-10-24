@@ -56,6 +56,19 @@ _INACTIVE_SITES = {"premier", "wildberries", "prom", "brandstore", "olx"}
 # (.meta fayli yo'q manbalar — CI da har ish oldidan yangilanadiganlari —
 #  har doim o'qiladi.)
 MAX_CSV_AGE_DAYS = int(os.getenv("MAX_CSV_AGE_DAYS", "10"))
+# Eskirgani uchun ataylab tashlab yuborilgan manbalar (kichik harfda). Ularning
+# narxlari bazadan o'chirilishi kerak — pastdagi "scraper yiqildi" himoyasi
+# ularni saqlab qolmasligi uchun shu yerda yig'iladi.
+STALE_SOURCES: set[str] = set()
+
+# Scraper yiqilib, do'kon odatdagidan ancha kam mahsulot bersa (masalan alif
+# sahifasi timeout bo'ldi), o'sha do'konning bazadagi narxlari o'chirilmaydi —
+# aks holda yuzlab mahsulot o'chib, keyingi ishda qayta yozilardi (2026-10-23:
+# 3131 → 2314 → 3131). Saqlangan narxlar PROTECT_MAX_AGE dan eskirsa baribir
+# o'chadi, ya'ni butunlay buzilgan scraper eski narxni abadiy ko'rsatmaydi.
+DROP_RATIO = 0.5
+DROP_MIN_ROWS = 20
+PROTECT_MAX_AGE = "2 days"
 
 
 def _annotate(level: str, message: str) -> None:
@@ -297,6 +310,7 @@ def load_rows():
                       f"{fn} eskirgan ({stale} kun oldin yig'ilgan, chegara "
                       f"{MAX_CSV_AGE_DAYS} kun) — bu do'kon narxlari saytda "
                       f"ko'rinmaydi. Mahalliy yig'ib repoga commit qiling.")
+            STALE_SOURCES.add(src_fallback.lower())
             continue
         fpath = os.path.join(DATA_DIR, fn)
         try:
@@ -338,6 +352,14 @@ def load_rows():
 
 def build_groups(rows):
     groups, brand_g, norm_pid = {}, {}, {}
+    # Natija qatorlar tartibiga bog'liq: guruh ID si birinchi kelgan sarlavhadan
+    # olinadi, rasm/reyting/sarlavha ham birinchisidan. Scraperlar sahifalarni
+    # har safar boshqa tartibda beradi — 2026-10-23 da shu sabab har sinxronizatsiya
+    # ~900 mahsulot ID sini va ~500 ta qatorni "o'zgargan" deb qayta yozardi.
+    # GIN indeksli products ga bunday yozuv bepul Supabase ning disk IO sini
+    # tugatib, bazani (va u bilan birga API ni) osiltirib qo'ydi.
+    rows = sorted(rows, key=lambda r: (_norm(r["title"]), r["src"], r["price"],
+                                       r["url"], r["image"], r["title"]))
     for row in rows:
         n = _norm(row["title"])
         brand = next((b for b in BRANDS if b in n), "other")
@@ -371,12 +393,13 @@ def build_groups(rows):
                 "id": pid, "name": _display(row["title"]), "title": row["title"],
                 "rating": rating, "reviews": reviews,
                 "image": row["image"], "images": [row["image"]] if row["image"] else [],
-                "keywords": row["title"].lower(), "markets": {},
+                "keywords": set(), "markets": {},
             }
         g = groups[pid]
         if len(row["title"]) > len(g["title"]):
             g["title"] = row["title"]
-        g["keywords"] += " " + row["title"].lower()
+        # Takroriy sarlavhalar keywords ni 5 KB gacha shishirardi
+        g["keywords"].add(row["title"].lower())
         if row["image"] and row["image"] not in g["images"]:
             g["images"].append(row["image"])
         if row["image"] and not g["image"]:
@@ -384,6 +407,8 @@ def build_groups(rows):
         src, price = row["src"], row["price"]
         if src not in g["markets"] or price < g["markets"][src]["price"]:
             g["markets"][src] = {"source": src.capitalize(), "price": price, "url": row["url"]}
+    for g in groups.values():
+        g["keywords"] = " ".join(sorted(g["keywords"]))
     return groups
 
 
@@ -572,6 +597,25 @@ _PRODUCT_COLS = ("slug", "name", "title", "category", "rating", "reviews",
                  "url")
 
 
+def _protected_sources(cur, mkt_rows) -> list[str]:
+    """Bu safar odatdagidan keskin kam mahsulot bergan do'konlar (kichik harfda)."""
+    new_counts = Counter(m[1].lower() for m in mkt_rows)
+    cur.execute(
+        "SELECT lower(source), count(*) FROM product_markets "
+        f"WHERE created_at > NOW() - INTERVAL '{PROTECT_MAX_AGE}' GROUP BY 1"
+    )
+    protected = []
+    for src, old in cur.fetchall():
+        if src in STALE_SOURCES or old < DROP_MIN_ROWS:
+            continue
+        if new_counts.get(src, 0) < old * DROP_RATIO:
+            protected.append(src)
+            _annotate("warning",
+                      f"{src}: {new_counts.get(src, 0)} ta narx (avval {old}) — "
+                      f"scraper yiqilgan ko'rinadi, eski narxlar saqlab qolindi.")
+    return protected
+
+
 def _write_rows(conn, groups):
     prod_rows, mkt_rows = [], []
     now = datetime.now(timezone.utc)
@@ -656,9 +700,43 @@ def _write_rows(conn, groups):
             #      o'chirish. created_at har safar yangilanadi — sahifadagi
             #      "tekshirilgan" vaqti shundan olinadi.
             ids = [r[0] for r in prod_rows]
-            cur.execute("DELETE FROM product_markets WHERE NOT (product_id = ANY(%s))", (ids,))
-            cur.execute("DELETE FROM products WHERE NOT (id = ANY(%s))", (ids,))
+            protected = _protected_sources(cur, mkt_rows)
+            # Yangi ro'yxatda yo'q narxlar — himoyalangan do'konnikidan tashqari
+            cur.execute(
+                "DELETE FROM product_markets pm WHERE NOT EXISTS ("
+                " SELECT 1 FROM unnest(%s::text[], %s::text[]) AS n(pid, src)"
+                " WHERE n.pid = pm.product_id AND n.src = pm.source)"
+                " AND NOT (lower(pm.source) = ANY(%s)"
+                f"          AND pm.created_at > NOW() - INTERVAL '{PROTECT_MAX_AGE}')",
+                ([m[0] for m in mkt_rows], [m[1] for m in mkt_rows], protected),
+            )
+            stale = cur.rowcount
+            # Mahsulot faqat birorta ham narxi qolmaganda o'chadi
+            cur.execute(
+                "DELETE FROM products p WHERE NOT (p.id = ANY(%s)) AND NOT EXISTS ("
+                " SELECT 1 FROM product_markets pm WHERE pm.product_id = p.id)",
+                (ids,),
+            )
             removed = cur.rowcount
+
+            # Himoya tufayli qolgan mahsulotlar o'z slugini band qilib turadi.
+            # O'sha slugni olgan yangi guruhga ID qo'shimchasini beramiz
+            # (assign_slugs dagi to'qnashuv qoidasi bilan bir xil).
+            cur.execute("SELECT slug FROM products WHERE NOT (id = ANY(%s)) "
+                        "AND slug IS NOT NULL", (ids,))
+            kept = {r[0] for r in cur.fetchall()}
+            if kept:
+                used = {r[1] for r in prod_rows} | kept
+                for i, r in enumerate(prod_rows):
+                    if r[1] not in kept:
+                        continue
+                    suffix = r[0].replace("prod-", "")[:6]
+                    slug, n = f"{r[1][:70 - len(suffix) - 1]}-{suffix}", 2
+                    while slug in used:
+                        slug = f"{r[1][:66]}-{suffix}-{n}"
+                        n += 1
+                    used.add(slug)
+                    prod_rows[i] = r[:1] + (slug,) + r[2:]
 
             # Partiyalar ataylab kichik: `keywords` qatori 5 KB gacha bo'lishi
             # mumkin, ya'ni 500 qatorlik INSERT bepul Supabase uchun 2.5 MB lik
@@ -683,13 +761,6 @@ def _write_rows(conn, groups):
                   f"yangi/o'zgargan, {removed} tasi o'chirildi", flush=True)
 
             if mkt_rows:
-                cur.execute(
-                    "DELETE FROM product_markets pm WHERE NOT EXISTS ("
-                    " SELECT 1 FROM unnest(%s::text[], %s::text[]) AS n(pid, src)"
-                    " WHERE n.pid = pm.product_id AND n.src = pm.source)",
-                    ([m[0] for m in mkt_rows], [m[1] for m in mkt_rows]),
-                )
-                stale = cur.rowcount
                 psycopg2.extras.execute_values(
                     cur,
                     "INSERT INTO product_markets (product_id,source,price,url,created_at) "

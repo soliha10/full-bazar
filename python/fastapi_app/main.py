@@ -287,13 +287,9 @@ async def _schedule_keep_warm(pool: asyncpg.Pool) -> None:
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    app.state.pool = await asyncpg.create_pool(
-        DATABASE_URL, min_size=2, max_size=10, init=_setup_jsonb_codec,
-    )
-    _load_matcher()  # warm up model at startup
-    async with app.state.pool.acquire() as conn:
+async def _prepare_db(pool: asyncpg.Pool) -> None:
+    """Jadvallar/indekslar va spec seed — ulanish ochilgandan keyin bir marta."""
+    async with pool.acquire() as conn:
         # Auth tables (may not exist on volumes created before auth was added)
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -463,7 +459,48 @@ async def lifespan(app: FastAPI):
         )
         spec_rows = await conn.fetch("SELECT * FROM product_specs")
         _store_specs([dict(r) for r in spec_rows])
-    await _schedule_keep_warm(app.state.pool)
+
+
+# Supabase bo'g'ilib qolganda (2026-10-24: disk IO tugagan, pooler
+# "auth_query secret check timed out") `create_pool` timeoutsiz edi va lifespan
+# cheksiz kutardi — Render uyg'otgan instansiya hech qachon port ochmas, har
+# so'rov 150+ s osilib turardi. Endi ilova bazasiz ham ishga tushadi: baza
+# kelguncha /api so'rovlari darhol 503 oladi, ulanish fonda qayta uriniladi.
+DB_CONNECT_TIMEOUT = 10      # s — bitta ulanish
+DB_COMMAND_TIMEOUT = 30      # s — bitta so'rov; osilgan so'rov hovuzni yemasin
+DB_STARTUP_WAIT = 15         # s — ishga tushishda bazani shuncha kutamiz
+DB_RETRY_DELAY = 30          # s
+
+
+async def _connect_db(app: FastAPI) -> None:
+    """Hovuzni ochadi va tayyorlaydi; muvaffaqiyatsiz bo'lsa qayta urinadi."""
+    while True:
+        pool = None
+        try:
+            pool = await asyncpg.create_pool(
+                DATABASE_URL, min_size=1, max_size=10, init=_setup_jsonb_codec,
+                timeout=DB_CONNECT_TIMEOUT, command_timeout=DB_COMMAND_TIMEOUT,
+            )
+            await _prepare_db(pool)
+        except Exception as exc:
+            print(f"[db] ulanmadi: {type(exc).__name__}: {exc} — "
+                  f"{DB_RETRY_DELAY}s dan keyin qayta urinish", flush=True)
+            if pool is not None:
+                pool.terminate()
+            await asyncio.sleep(DB_RETRY_DELAY)
+            continue
+        app.state.pool = pool
+        print("[db] ulanish tayyor", flush=True)
+        await _schedule_keep_warm(pool)
+        app.state.flusher = asyncio.create_task(_track_flusher(pool))
+        return
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.pool = None
+    app.state.flusher = None
+    _load_matcher()  # warm up model at startup
     # Rasm proksisi uchun bitta umumiy klient: har so'rovda yangi klient ochish
     # olxcdn bilan TCP+TLS ni har safar qaytadan o'rnatardi (~100-200 ms).
     app.state.http = httpx.AsyncClient(
@@ -471,12 +508,19 @@ async def lifespan(app: FastAPI):
         timeout=10,
         limits=httpx.Limits(max_connections=50, max_keepalive_connections=20),
     )
-    flusher = asyncio.create_task(_track_flusher(app.state.pool))
+    connector = asyncio.create_task(_connect_db(app))
+    try:
+        await asyncio.wait_for(asyncio.shield(connector), DB_STARTUP_WAIT)
+    except asyncio.TimeoutError:
+        print("[db] baza hali javob bermayapti — API bazasiz ishga tushdi", flush=True)
     yield
-    flusher.cancel()
-    await _flush_track(app.state.pool)
+    connector.cancel()
+    if app.state.flusher:
+        app.state.flusher.cancel()
     await app.state.http.aclose()
-    await app.state.pool.close()
+    if app.state.pool is not None:
+        await _flush_track(app.state.pool)
+        await app.state.pool.close()
 
 
 _ALLOWED_ORIGINS = [
@@ -619,6 +663,34 @@ class CdnCacheMiddleware:
         return await self.app(scope, receive, send_wrapper)
 
 
+class DbReadyMiddleware:
+    """Baza hali ulanmagan bo'lsa /api so'rovlariga darhol 503 qaytaradi.
+
+    Aks holda har endpoint `app.state.pool` None da AttributeError bilan 500
+    berardi. 503 + Retry-After CDN da keshlanmaydi (CdnCacheMiddleware faqat
+    200 ga sarlavha qo'yadi), frontend esa qayta urinadi.
+    """
+
+    _NEEDS_DB = ("/api/", "/sitemap.xml")
+    _NO_DB = ("/api/track", "/api/proxy-image", "/api/docs", "/api/redoc", "/api/openapi.json")
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if (scope["type"] == "http"
+                and getattr(app.state, "pool", None) is None
+                and scope["path"].startswith(self._NEEDS_DB)
+                and not scope["path"].startswith(self._NO_DB)):
+            response = JSONResponse(
+                {"detail": "Ma'lumotlar bazasi vaqtincha javob bermayapti"},
+                status_code=503, headers={"Retry-After": "30"},
+            )
+            return await response(scope, receive, send)
+        return await self.app(scope, receive, send)
+
+
+app.add_middleware(DbReadyMiddleware)
 app.add_middleware(CdnCacheMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
@@ -1897,7 +1969,11 @@ async def sitemap() -> Response:
 @app.get("/health")
 async def health() -> dict:
     matcher = _load_matcher()
-    return {"status": "ok", "matcher_model": "loaded" if matcher else "not_trained_yet"}
+    return {
+        "status": "ok",
+        "db": "ready" if getattr(app.state, "pool", None) is not None else "connecting",
+        "matcher_model": "loaded" if matcher else "not_trained_yet",
+    }
 
 
 # ── Auth endpoints ────────────────────────────────────────────────────────────
