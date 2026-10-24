@@ -1098,17 +1098,23 @@ async def _query_products(
     #                        ya'ni alohida COUNT so'roviga ehtiyoj qolmaydi.
     #   • LATERAL          — CTE dan keyin turgani uchun faqat qaytadigan
     #                        satrlar (≤200) uchun ishlaydi, butun jadval uchun emas.
+    #   • CTE faqat id ni saralaydi. Ilgari `p.*` saralanardi — har satr bilan
+    #     5 KB gacha keywords va images butun jadval bo'yicha o'qilib, xotirada
+    #     tartiblanardi. Sog' bazada ham ~8 s edi, Supabase disk IO budjeti
+    #     tugaganda (2026-10-24) 30 s dan oshib, 500 berardi.
     rows = await pool.fetch(
         f"""
         WITH filtered AS (
-            SELECT p.*, COUNT(*) OVER() AS total_count
+            SELECT p.id, COUNT(*) OVER() AS total_count,
+                   ROW_NUMBER() OVER (ORDER BY {order_sql}) AS rn
             FROM products p
             {where_sql}
             ORDER BY {order_sql}
             LIMIT ${len(params)+1} OFFSET ${len(params)+2}
         )
-        SELECT f.*, COALESCE(m.markets, '[]'::jsonb) AS markets_json
+        SELECT p.*, f.total_count, COALESCE(m.markets, '[]'::jsonb) AS markets_json
         FROM filtered f
+        JOIN products p ON p.id = f.id
         LEFT JOIN LATERAL (
             SELECT jsonb_agg(
                        jsonb_build_object(
@@ -1121,7 +1127,7 @@ async def _query_products(
             FROM product_markets pm
             WHERE pm.product_id = f.id
         ) m ON TRUE
-        ORDER BY {order_sql}
+        ORDER BY f.rn
         """,
         *params, limit, offset,
     )
