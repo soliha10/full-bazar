@@ -1,0 +1,78 @@
+# bazarcom.online — Caddy HTTPS sertifikatini Let's Encrypt dan o'zi oladi.
+# netlify.toml / public/_redirects / scripts/cloudflare-postbuild.mjs dagi
+# qoidalarning VPS dagi nusxasi.
+
+# API rate limiter mijoz IP sini shu sarlavhadan oladi (main.py: _client_ip).
+# Mijoz yuborgan qiymatlar ustidan yoziladi — aks holda limitni chetlab o'tardi.
+(api) {
+	reverse_proxy api:10000 {
+		header_up X-Bazar-Client-Ip {remote_host}
+		header_up -X-Nf-Client-Connection-Ip
+	}
+}
+
+(site) {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "geolocation=(), microphone=(), camera=(), interest-cohort=()"
+		-Server
+	}
+
+	@api path /api/* /sitemap.xml /health
+	handle @api {
+		import api
+	}
+
+	# Mahsulot sahifasi: meta teglar API da yoziladi (main.py: product_page)
+	handle /product/* {
+		import api
+	}
+
+	# Eski WordPress sayti qoldiqlari — Google indeksdan olib tashlashi uchun 404
+	@wordpress path /sample-page /sample-page-2 /sample-page-3 /wp-admin/* /wp-content/* /wp-includes/* /wp-json/* /wp-login.php /wp-cron.php /xmlrpc.php /feed /feed/* /comments/feed/* /category/* /tag/* /author/* /2025/* /2026/*
+	handle @wordpress {
+		root * /srv/site
+		rewrite * /404.html
+		file_server {
+			status 404
+		}
+	}
+
+	handle {
+		root * /srv/site
+		# Vite asset nomlarida hash bor — abadiy keshlash mumkin
+		header /assets/* Cache-Control "public, max-age=31536000, immutable"
+		header /robots.txt Cache-Control "public, max-age=3600"
+		@html path *.html /
+		header @html Cache-Control "public, max-age=0, must-revalidate"
+		try_files {path} {path}/index.html /index.html
+		file_server
+	}
+
+	# API ishlamay qolsa mahsulot sahifasi oddiy SPA sifatida ochilsin
+	handle_errors 502 503 504 {
+		@page path /product/*
+		handle @page {
+			root * /srv/site
+			rewrite * /index.html
+			file_server
+		}
+	}
+}
+
+bazarcom.online {
+	import site
+}
+
+www.bazarcom.online {
+	redir https://bazarcom.online{uri} permanent
+}
+
+# DNS ko'chirilgunga qadar IP orqali tekshirish uchun (faqat HTTP)
+http://{$SERVER_IP} {
+	import site
+}

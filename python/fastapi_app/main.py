@@ -26,9 +26,9 @@ import httpx
 import orjson
 import jwt as pyjwt
 import numpy as np
-from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -36,6 +36,7 @@ from sklearn.metrics.pairwise import paired_cosine_distances
 from starlette.datastructures import Headers, MutableHeaders
 
 import brands
+import seo
 from specs_seed import SPEC_SEED
 
 DATABASE_URL = os.getenv(
@@ -1972,6 +1973,53 @@ async def sitemap() -> Response:
         media_type="application/xml; charset=utf-8",
         headers={"Cache-Control": "public, max-age=3600"},
     )
+
+
+# ── Mahsulot sahifasi (SEO) ──────────────────────────────────────────────────
+# VPS da Caddy /product/* ni shu yerga uzatadi: SPA ning index.html iga
+# mahsulot meta teglari yoziladi (seo.py). Cloudflare/Netlify dagi
+# frontend/functions/product/[[path]].ts ning o'rnini bosadi. API yoki baza
+# javob bermasa sahifa o'zgarishsiz beriladi — SPA o'zi ma'lumotni yuklaydi.
+FRONTEND_INDEX = os.getenv("FRONTEND_INDEX", "/srv/site/index.html")
+
+
+def _spa_html(page: str, status_code: int = 200) -> HTMLResponse:
+    return HTMLResponse(page, status_code=status_code,
+                        headers={"Cache-Control": "public, max-age=0, must-revalidate"})
+
+
+@app.get("/product/{product_param:path}", include_in_schema=False)
+async def product_page(product_param: str, request: Request) -> Response:
+    try:
+        with open(FRONTEND_INDEX, encoding="utf-8") as f:
+            page = f.read()
+    except OSError:
+        raise HTTPException(status_code=503, detail="Frontend topilmadi")
+
+    ref = seo.product_ref(product_param.split("/")[0])
+    if not ref or getattr(app.state, "pool", None) is None:
+        return _spa_html(page)
+
+    try:
+        res = await asyncio.wait_for(get_product(ref), 3)
+        product = orjson.loads(res.body)
+    except HTTPException as exc:
+        if exc.status_code == 404:
+            # Mahsulot o'chirilgan — "soft 404" o'rniga haqiqiy 404
+            return _spa_html(page, 404)
+        return _spa_html(page)
+    except Exception:
+        return _spa_html(page)
+    if not product.get("name"):
+        return _spa_html(page)
+
+    # Eski (/product/prod-xxx) yoki eskirgan slugli manzil → kanonik, 301
+    canonical = seo.product_path(product)
+    if request.url.path != canonical:
+        target = canonical + (f"?{request.url.query}" if request.url.query else "")
+        return RedirectResponse(target, status_code=301)
+
+    return _spa_html(seo.inject_product_meta(page, product, canonical))
 
 
 @app.get("/health")

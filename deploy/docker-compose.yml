@@ -1,0 +1,104 @@
+# Contabo VPS dagi butun tizim: Postgres + FastAPI + Caddy (HTTPS, statik sayt).
+#
+#   cd /opt/full-bazar/deploy && docker compose up -d --build
+#
+# Sirlar deploy/.env da (gitignore da; namuna — .env.example). Sayt fayllari
+# /var/www/bazarcom da — deploy.sh frontend/build ni o'sha yerga ko'chiradi.
+
+name: bazar
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fullbazar
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?deploy/.env da POSTGRES_PASSWORD yo'q}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - effective_cache_size=3GB
+      - -c
+      - work_mem=16MB
+      - -c
+      - maintenance_work_mem=256MB
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../python/init_db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    # Faqat serverning o'zidan (SSH tunnel orqali) — internetga ochilmaydi
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fullbazar"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ../python/fastapi_app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/fullbazar
+      JWT_SECRET: ${JWT_SECRET:?deploy/.env da JWT_SECRET yo'q}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      FEEDBACK_CHAT_ID: ${FEEDBACK_CHAT_ID:-}
+      MODEL_PATH: ""
+      FRONTEND_INDEX: /srv/site/index.html
+      PORT: "10000"
+    volumes:
+      - /var/www/bazarcom:/srv/site:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:10000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SERVER_IP: ${SERVER_IP:-185.174.255.157}
+    volumes:
+      # Papka butunligicha: git yangi Caddyfile yozganda bitta fayl mount i
+      # eski inode da qolib ketardi va `caddy reload` o'zgarishni ko'rmasdi
+      - ./caddy:/etc/caddy:ro
+      - /var/www/bazarcom:/srv/site:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  # Skreyper + sinxronizatsiya. Doimiy ishlamaydi — cron ishga tushiradi
+  # (deploy/scrape.sh): docker compose --profile jobs run --rm jobs ...
+  jobs:
+    profiles: ["jobs"]
+    build:
+      context: .
+      dockerfile: jobs.Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PRODUCTS_DB_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/fullbazar
+      DATA_DIR: /data
+    working_dir: /repo
+    volumes:
+      # Kod faqat o'qish uchun; CSV lar repodan tashqarida turadi — deploy dagi
+      # `git reset --hard` yangi yig'ilgan narxlarni eskisi bilan almashtirmasin
+      - ..:/repo:ro
+      - /var/lib/bazar/data:/data
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
