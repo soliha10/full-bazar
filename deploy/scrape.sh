@@ -7,7 +7,7 @@
 #                                   (deploy.sh data/ o'zgarganda chaqiradi)
 #
 # CSV lar /var/lib/bazar/data da turadi, repoda emas. Repodan faqat mahalliy
-# yig'iladigan do'konlar (asaxiy, olcha, chakana, ozon — yonida .meta bor) va
+# yig'iladigan do'konlar (asaxiy, olcha, ozon — yonida .meta bor) va
 # gsmarena_specs.csv olinadi, ular kompyuterda yig'ilib commit qilinadi.
 set -euo pipefail
 
@@ -39,6 +39,10 @@ if [ "${1:-}" != "--sync-only" ]; then
   # 0 mahsulot bergan do'kon run_scrapers da FAIL bo'ladi, lekin qolganlarning
   # yangi narxlari baribir bazaga tushishi kerak — shuning uchun `|| true`
   run python python/run_scrapers.py --output /data --delay 0.5 || true
+  # chakana GitHub runner IP laridan ochilmasdi, bu serverdan esa ochiladi
+  # (2026-11-09 da tekshirilgan). asaxiy va olcha bu yerdan ham 403 beradi —
+  # ular ozon bilan birga hali ham kompyuterda yig'iladi.
+  run python python/run_scrapers.py --local --only chakana --output /data --delay 1.5 || true
 fi
 
 run python python/sync_csv.py
