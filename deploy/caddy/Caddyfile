@@ -49,7 +49,7 @@
 		header /robots.txt Cache-Control "public, max-age=3600"
 		@html path *.html /
 		header @html Cache-Control "public, max-age=0, must-revalidate"
-		try_files {path} {path}/index.html /index.html
+		try_files {path} {path}.html {path}/index.html /index.html
 		file_server
 	}
 
