@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  deploy/mac-scrape.sh ni dushanba va payshanba 13:00 da ishga tushiradi.
+  Kompyuter o'sha paytda uxlab yotgan bo'lsa, uyg'onganda ishga tushadi.
+
+  O'rnatish:
+    ln -sf "$PWD/deploy/uz.bazarcom.mac-scrape.plist" ~/Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/uz.bazarcom.mac-scrape.plist
+  O'chirish:
+    launchctl bootout gui/$(id -u)/uz.bazarcom.mac-scrape
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>uz.bazarcom.mac-scrape</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/gulshodatoxtamurodova/Desktop/startup/full-bazar/deploy/mac-scrape.sh</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>13</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>13</integer><key>Minute</key><integer>0</integer></dict>
+  </array>
+  <key>StandardOutPath</key>
+  <string>/Users/gulshodatoxtamurodova/Library/Logs/bazarcom-mac-scrape.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/gulshodatoxtamurodova/Library/Logs/bazarcom-mac-scrape.log</string>
+</dict>
+</plist>
