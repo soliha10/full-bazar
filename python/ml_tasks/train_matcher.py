@@ -221,8 +221,10 @@ def train(data_dir: str = "data") -> None:
             "features": list(X.columns),
         }
         out_path = os.path.join(model_dir, "best_matcher.pkl")
-        with open(out_path, "wb") as f:
+        # Avval vaqtinchalik faylga — API yarim yozilgan pickle ni o'qib qolmasin
+        with open(out_path + ".tmp", "wb") as f:
             pickle.dump(artifact, f)
+        os.replace(out_path + ".tmp", out_path)
         print(f"Best model ({best_model_name}, F1={best_f1:.3f}) saved → {out_path}")
 
 

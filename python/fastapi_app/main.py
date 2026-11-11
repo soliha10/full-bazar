@@ -163,19 +163,27 @@ _DIFF_RE = re.compile(
 )
 
 _matcher: dict | None = None  # {"model": ..., "vectorizer": ..., "features": [...]}
+_matcher_mtime: float = 0.0
 
 
 def _load_matcher() -> dict | None:
-    global _matcher
-    if _matcher is not None:
+    # Dagster (matcher_oqitish) modelni qayta o'qitib faylni almashtiradi —
+    # o'zgarish vaqti yangilansa qayta yuklaymiz, API ni restart qilmasdan
+    global _matcher, _matcher_mtime
+    try:
+        mtime = os.path.getmtime(MODEL_PATH) if MODEL_PATH else 0.0
+    except OSError:
         return _matcher
-    if os.path.exists(MODEL_PATH):
-        try:
-            with open(MODEL_PATH, "rb") as f:
-                _matcher = pickle.load(f)
-            print(f"Loaded matcher model from {MODEL_PATH}")
-        except Exception as e:
-            print(f"Failed to load matcher model: {e}")
+    if _matcher is not None and mtime == _matcher_mtime:
+        return _matcher
+    try:
+        with open(MODEL_PATH, "rb") as f:
+            _matcher = pickle.load(f)
+        _matcher_mtime = mtime
+        print(f"Loaded matcher model from {MODEL_PATH}")
+    except Exception as e:
+        # Yozilayotgan paytda o'qilgan bo'lishi mumkin — eskisi qoladi, keyingi so'rovda yana urinamiz
+        print(f"Failed to load matcher model: {e}")
     return _matcher
 
 
@@ -255,16 +263,7 @@ async def _setup_jsonb_codec(conn: asyncpg.Connection) -> None:
     )
 
 
-# ── Uyg'oq tutish ─────────────────────────────────────────────────────────────
-# Render bepul tarifi 15 daqiqa so'rovsiz qolgan servisni uxlatadi; uyg'onish
-# 30-60 s, Netlify proksisi esa ~28 s da 504 beradi — sayt "ishlamayapti"
-# ko'rinadi. keepalive.yml (GitHub cron, */5) buni hal qilmasdi: GitHub
-# jadvalni amalda har 4-7 soatda bir ishga tushirardi.
-#
-# Shuning uchun pingni Supabase o'zi yuboradi: pg_cron + pg_net, har 10
-# daqiqada. Ishga tushishda idempotent ro'yxatdan o'tkaziladi (cron.schedule
-# shu nomdagi ishni yangilaydi). Faqat Render'da — RENDER_EXTERNAL_URL ni
-# Render o'zi qo'yadi, mahalliy ishga tushirish bazaga cron yozmaydi.
+
 KEEP_WARM_JOB = "keep-render-warm"
 
 

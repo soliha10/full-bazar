@@ -39,6 +39,12 @@ fi
 cd deploy
 docker compose up -d --build --remove-orphans
 docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile >/dev/null
+# Dagster kodni /repo dan o'qiydi, image o'zgarmasa konteyner qayta ishga
+# tushmaydi — yangi definitions.py / skreyperlarni ko'rishi uchun
+if changed deploy/dagster/ python/; then
+  echo "[deploy] dagster qayta ishga tushirilmoqda"
+  docker compose restart dagster-webserver dagster-daemon >/dev/null
+fi
 
 # ── Ma'lumotlar ─────────────────────────────────────────────────────────────
 if changed data/ python/sync_csv.py; then

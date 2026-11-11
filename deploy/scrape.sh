@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Narxlarni yig'ib bazaga yozadi. Cron kuniga 2 marta ishga tushiradi
-# (setup-server.sh): 05:00 va 17:00 Toshkent.
+# Narxlarni yig'ib bazaga yozadi — qo'lda. Jadval bo'yicha buni Dagster
+# bajaradi (deploy/dagster/definitions.py), deploy.sh esa --sync-only ni.
 #
 #   deploy/scrape.sh              — hamma skreyperlar + sinxronizatsiya
 #   deploy/scrape.sh --sync-only  — faqat repodagi CSV larni bazaga yozish

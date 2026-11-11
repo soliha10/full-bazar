@@ -1,0 +1,31 @@
+telemetry:
+  enabled: false
+
+# Webserver va daemon holatni bitta Postgres bazada bo'lishadi
+storage:
+  postgres:
+    postgres_db:
+      username: postgres
+      password:
+        env: POSTGRES_PASSWORD
+      hostname: postgres
+      db_name: dagster
+      port: 5432
+
+# Bir vaqtda bitta yig'ish — ikkitasi bir CSV ga yozib qo'ymasin
+run_coordinator:
+  module: dagster.core.run_coordinator
+  class: QueuedRunCoordinator
+  config:
+    max_concurrent_runs: 1
+
+run_monitoring:
+  enabled: true
+  # Daemon qayta ishga tushganda chala qolgan run FAILED bo'ladi, navbatni to'sib qolmaydi
+  max_resume_run_attempts: 0
+  # To'liq yig'ish + o'qitish ~30 daqiqa; 2 soatdan oshsa osilib qolgan
+  max_runtime_seconds: 7200
+
+retention:
+  schedule:
+    purge_after_days: 30

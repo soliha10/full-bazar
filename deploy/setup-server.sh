@@ -56,13 +56,10 @@ if [ ! -d "$REPO/.git" ]; then
 fi
 mkdir -p /var/www/bazarcom /var/lib/bazar/data /var/log/bazar
 
-# ── Cron: narxlar kuniga 2 marta, xususiyatlar haftada bir ──────────────────
-cat >/etc/cron.d/bazar <<'CRON'
-SHELL=/bin/bash
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-0 5,17 * * * root /opt/full-bazar/deploy/scrape.sh >> /var/log/bazar/scrape.log 2>&1
-0 8 * * 0  root cd /opt/full-bazar/deploy && docker compose --profile jobs run --rm -T jobs python python/sync_specs.py >> /var/log/bazar/specs.log 2>&1
-CRON
+# Narxlar va xususiyatlar jadvali — Dagster da (deploy/dagster/definitions.py),
+# cron emas. Eski cron fayli qolgan bo'lsa ikki marta yig'ilmasin:
+rm -f /etc/cron.d/bazar
+mkdir -p /var/lib/bazar/data/models
 cat >/etc/logrotate.d/bazar <<'ROT'
 /var/log/bazar/*.log {
   weekly

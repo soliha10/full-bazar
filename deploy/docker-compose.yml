@@ -48,11 +48,13 @@ services:
       JWT_SECRET: ${JWT_SECRET:?deploy/.env da JWT_SECRET yo'q}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       FEEDBACK_CHAT_ID: ${FEEDBACK_CHAT_ID:-}
-      MODEL_PATH: ""
+      # Dagster dagi matcher_oqitish yozadi; fayl yangilansa API o'zi qayta yuklaydi
+      MODEL_PATH: /models/best_matcher.pkl
       FRONTEND_INDEX: /srv/site/index.html
       PORT: "10000"
     volumes:
       - /var/www/bazarcom:/srv/site:ro
+      - /var/lib/bazar/data/models:/models:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:10000/health', timeout=5)"]
       interval: 30s
@@ -70,6 +72,8 @@ services:
       - "443:443/udp"
     environment:
       SERVER_IP: ${SERVER_IP:-185.174.255.157}
+      # dagster./mlflow. panellari paroli (bcrypt; `caddy hash-password`)
+      PANEL_PASSWORD_HASH: ${PANEL_PASSWORD_HASH:?deploy/.env da PANEL_PASSWORD_HASH yo'q}
     volumes:
       # Papka butunligicha: git yangi Caddyfile yozganda bitta fayl mount i
       # eski inode da qolib ketardi va `caddy reload` o'zgarishni ko'rmasdi
@@ -78,8 +82,60 @@ services:
       - caddy_data:/data
       - caddy_config:/config
 
-  # Skreyper + sinxronizatsiya. Doimiy ishlamaydi — cron ishga tushiradi
-  # (deploy/scrape.sh): docker compose --profile jobs run --rm jobs ...
+  # ── Dagster: narxlarni jadval bo'yicha yig'ish (deploy/dagster/definitions.py)
+  dagster-webserver:
+    build: ./dagster
+    image: bazar-dagster
+    restart: unless-stopped
+    command: dagster-webserver -h 0.0.0.0 -p 3000 -w /repo/deploy/dagster/workspace.yaml
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment: &dagster-env
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PRODUCTS_DB_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/fullbazar
+      DATA_DIR: /data
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      TZ: Asia/Tashkent
+    # IPv6 nima uchun o'chirilgani — pastda, jobs xizmatida
+    sysctls: &no-ipv6
+      net.ipv6.conf.all.disable_ipv6: 1
+    volumes: &dagster-volumes
+      - ..:/repo:ro
+      - /var/lib/bazar/data:/data
+
+  # Jadvalni kuzatadi va run larni ishga tushiradi — op lar shu konteynerda ishlaydi
+  dagster-daemon:
+    build: ./dagster
+    image: bazar-dagster
+    restart: unless-stopped
+    command: dagster-daemon run -w /repo/deploy/dagster/workspace.yaml
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment: *dagster-env
+    sysctls: *no-ipv6
+    volumes: *dagster-volumes
+
+  # ── MLflow: matcher o'qitish natijalari (train_matcher.py yozadi)
+  mlflow:
+    build: ./dagster
+    image: bazar-dagster
+    restart: unless-stopped
+    command: >-
+      mlflow server --host 0.0.0.0 --port 5000
+      --backend-store-uri postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/mlflow
+      --artifacts-destination /mlartifacts --serve-artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - mlartifacts:/mlartifacts
+
+  # Skreyper + sinxronizatsiya, qo'lda yoki deploy.sh dan (deploy/scrape.sh):
+  # docker compose --profile jobs run --rm jobs ... Jadval bo'yicha — Dagster.
   jobs:
     profiles: ["jobs"]
     build:
@@ -106,3 +162,4 @@ volumes:
   pgdata:
   caddy_data:
   caddy_config:
+  mlartifacts:

@@ -72,6 +72,24 @@ www.bazarcom.online {
 	redir https://bazarcom.online{uri} permanent
 }
 
+# Ichki panellar — parol bilan (login: admin, hash deploy/.env da)
+(panel) {
+	basic_auth {
+		admin {$PANEL_PASSWORD_HASH}
+	}
+	header -Server
+}
+
+dagster.bazarcom.online {
+	import panel
+	reverse_proxy dagster-webserver:3000
+}
+
+mlflow.bazarcom.online {
+	import panel
+	reverse_proxy mlflow:5000
+}
+
 # DNS ko'chirilgunga qadar IP orqali tekshirish uchun (faqat HTTP)
 http://{$SERVER_IP} {
 	import site
