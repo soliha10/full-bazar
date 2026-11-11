@@ -19,7 +19,8 @@ git reset --hard --quiet origin/main
 new=$(git rev-parse HEAD)
 echo "[deploy] ${old:0:7} → ${new:0:7}"
 
-changed() { [ "$old" != "$new" ] && ! git diff --quiet "$old" "$new" -- "$@"; }
+# Yo'llar repo ildiziga nisbatan — pastda `cd deploy` dan keyin ham to'g'ri ishlasin
+changed() { [ "$old" != "$new" ] && ! git -C "$REPO" diff --quiet "$old" "$new" -- "$@"; }
 first_run=$([ -f "$SITE/index.html" ] && echo no || echo yes)
 
 # ── Frontend ────────────────────────────────────────────────────────────────
