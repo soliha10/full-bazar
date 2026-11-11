@@ -91,6 +91,10 @@ services:
     environment:
       PRODUCTS_DB_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/fullbazar
       DATA_DIR: /data
+    # Docker tarmog'ida IPv6 yo'q, Cloudflare ortidagi do'konlar (texnomart)
+    # esa AAAA ham beradi — curl IPv6 ni tanlasa "0 ms da ulanmadi" bo'lardi
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: 1
     working_dir: /repo
     volumes:
       # Kod faqat o'qish uchun; CSV lar repodan tashqarida turadi — deploy dagi
