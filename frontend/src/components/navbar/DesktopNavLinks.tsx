@@ -20,10 +20,10 @@ export function DesktopNavLinks() {
         const active = location.pathname === path || location.pathname.startsWith(path + '/');
         return (
           <Link key={path} to={path}
-            className={`px-3 py-1.5 rounded-xl text-sm font-black transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               active
-                ? 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300'
-                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                ? 'text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}>
             {label}
           </Link>

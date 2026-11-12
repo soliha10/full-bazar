@@ -1,13 +1,12 @@
 import { useLanguage } from "../../contexts/LanguageContext";
-import { formatSum } from "../../utils/productMapper";
-import type { PriceStats } from "./priceStats";
 import { SPEC_GROUPS, specValue, type Specs } from "./specs";
 
 export type DetailTab = 'overview' | 'specs' | 'priceHistory';
 
-export function SpecsSection({ specs, sortedMarkets, activeTab }: {
+// Do'kon narxlari bu yerda takrorlanmaydi — ular sahifa tepasidagi
+// takliflar jadvalida bor (ilgari bir sahifada uch marta chiqardi).
+export function SpecsSection({ specs, activeTab }: {
   specs: Specs | null;
-  sortedMarkets: PriceStats['sortedMarkets'];
   activeTab: DetailTab;
 }) {
   const { t } = useLanguage();
@@ -15,9 +14,9 @@ export function SpecsSection({ specs, sortedMarkets, activeTab }: {
   return (
     <section
       id="specs"
-      className={`${activeTab !== 'specs' && 'hidden md:block'} space-y-6 bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl p-6 md:p-10 border border-gray-100 dark:border-gray-800 shadow-sm`}
+      className={`${activeTab !== 'specs' && 'hidden md:block'} space-y-6 bg-white dark:bg-gray-900 rounded-2xl p-6 md:p-8 border border-gray-200 dark:border-gray-800`}
     >
-      <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{t.detail.mainSpecifications}</h2>
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">{t.detail.mainSpecifications}</h2>
 
       {/* Texnik xususiyatlar — GSMArena dan. Mos model topilmasa
           bo'limni umuman ko'rsatmaymiz: bo'sh jadval "ma'lumot yo'q"
@@ -31,14 +30,14 @@ export function SpecsSection({ specs, sortedMarkets, activeTab }: {
             if (rows.length === 0) return null;
             return (
               <div key={group.group} className="space-y-3">
-                <h3 className="text-xs font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest border-b border-violet-100 dark:border-violet-900/30 pb-2">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-800 pb-2">
                   {t.detailPage.specGroups[group.group]}
                 </h3>
                 <dl className="space-y-2.5">
                   {rows.map(row => (
                     <div key={row.label} className="flex justify-between gap-4 text-sm">
-                      <dt className="font-bold text-gray-400 dark:text-gray-500 shrink-0">{row.label}</dt>
-                      <dd className="font-bold text-gray-900 dark:text-white text-right">{row.value}</dd>
+                      <dt className="text-gray-500 dark:text-gray-400 shrink-0">{row.label}</dt>
+                      <dd className="text-gray-900 dark:text-white text-right">{row.value}</dd>
                     </div>
                   ))}
                 </dl>
@@ -47,33 +46,11 @@ export function SpecsSection({ specs, sortedMarkets, activeTab }: {
           })}
         </div>
       ) : (
-        <p className="text-sm font-bold text-gray-400 dark:text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {t.detailPage.specsUnavailable}
         </p>
       )}
 
-      {/* Do'kon narxlari — xususiyatlarni ko'rgandan keyingi keyingi
-          qadam: "qaysi do'kondan olsam arzon bo'ladi?" */}
-      <div className="space-y-3 pt-2">
-        <h3 className="text-xs font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest border-b border-violet-100 dark:border-violet-900/30 pb-2">
-          {t.detail.compareStores}
-        </h3>
-        <div className="grid sm:grid-cols-2 gap-x-10 gap-y-2.5">
-          {sortedMarkets.map((market, i) => (
-            <div key={`${market.source}-${i}`} className="flex justify-between items-center text-sm">
-              <span className="font-bold text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
-                {market.source}
-                {i === 0 && sortedMarkets.length > 1 && (
-                  <span className="text-[9px] font-black uppercase text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded-full">
-                    {t.detailPage.cheapestBadge}
-                  </span>
-                )}
-              </span>
-              <span className="font-black text-gray-900 dark:text-white">{formatSum(market.price)}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </section>
   );
 }

@@ -1,7 +1,10 @@
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { formatPriceInput, normalizePriceRange, priceNum } from '../constants';
 import type { ListingFilters } from '../useListingFilters';
-import { SLabel } from './ui';
+import { ClearButton, Section } from './ui';
+
+const inputClass =
+  'w-full min-w-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2.5 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:border-violet-500 transition-colors';
 
 export function PriceFilter({ f, isMobile }: { f: ListingFilters; isMobile: boolean }) {
   const { t } = useLanguage();
@@ -20,52 +23,48 @@ export function PriceFilter({ f, isMobile }: { f: ListingFilters; isMobile: bool
   };
   const minN = priceNum(minPr), maxN = priceNum(maxPr);
   const priceReversed = minN !== undefined && maxN !== undefined && minN > maxN;
+  // Qo'llanmagan qiymat bormi — "Qo'llash" faqat shunda ko'rinadi
+  const dirty = draftMinPrice !== f.minPrice || draftMaxPrice !== f.maxPrice;
+
+  const clear = (minPr || maxPr) ? (
+    <ClearButton label={t.listing.clear} onClick={() => {
+      setDraftMinPrice('');
+      setDraftMaxPrice('');
+      if (!isMobile) {
+        setMinPrice('');
+        setMaxPrice('');
+      }
+    }} />
+  ) : null;
 
   return (
-    <div className={isMobile ? "py-1" : "py-3"}>
-      <div className="flex items-center justify-between mb-2.5">
-        <SLabel>{t.listing.priceRange}</SLabel>
-        {(minPr || maxPr) && (
-          <button onClick={() => {
-            setDraftMinPrice('');
-            setDraftMaxPrice('');
-            if (!isMobile) {
-              setMinPrice('');
-              setMaxPrice('');
-            }
-          }}
-            className="text-[11px] text-violet-500 hover:underline leading-none">{t.listing.clear}</button>
-        )}
-      </div>
+    <Section title={`${t.listing.priceRange}, ${t.listing.currency}`} action={clear} isMobile={isMobile}>
       <div className="flex items-center gap-2">
         <input type="text" inputMode="numeric" placeholder={t.listing.priceFrom} value={minPr}
+          aria-label={t.listing.priceFrom}
           onChange={e => setDraftMinPrice(formatPriceInput(e.target.value))}
           onKeyDown={e => { if (e.key === 'Enter') handleApplyPriceDesktop(); }}
-          className="w-full min-w-0 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-800 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-300/40 transition"
+          className={inputClass}
         />
-        <span className="text-gray-400 text-sm shrink-0">—</span>
+        <span className="text-gray-300 dark:text-gray-600 text-sm shrink-0" aria-hidden="true">–</span>
         <input type="text" inputMode="numeric" placeholder={t.listing.priceTo} value={maxPr}
+          aria-label={t.listing.priceTo}
           onChange={e => setDraftMaxPrice(formatPriceInput(e.target.value))}
           onKeyDown={e => { if (e.key === 'Enter') handleApplyPriceDesktop(); }}
-          className="w-full min-w-0 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-800 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-300/40 transition"
+          className={inputClass}
         />
       </div>
-      <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-2 font-semibold uppercase tracking-wider">{t.listing.currency}</p>
       {priceReversed && (
-        <p role="alert" className="mt-1.5 text-[11px] leading-snug font-semibold text-amber-600 dark:text-amber-400">
+        <p role="alert" className="mt-2 text-xs leading-snug text-amber-600 dark:text-amber-400">
           {t.listing.priceRangeSwapped}
         </p>
       )}
-
-      {!isMobile && (
-        <button
-          type="button"
-          onClick={handleApplyPriceDesktop}
-          className="mt-2.5 w-full bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-[11px] font-black py-2 rounded-xl shadow-md shadow-violet-500/10 transition-all"
-        >
-          {t.listing.viewResults}
+      {!isMobile && dirty && (
+        <button type="button" onClick={handleApplyPriceDesktop}
+          className="mt-2 w-full rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium py-2 transition-colors">
+          {t.common.apply}
         </button>
       )}
-    </div>
+    </Section>
   );
 }

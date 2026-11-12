@@ -52,7 +52,7 @@ export function TelegramPanel({ token }: { token: string }) {
           <CheckCircle className="w-4 h-4 text-white" />
         </div>
         <div>
-          <p className="text-sm font-black text-emerald-700 dark:text-emerald-400">{t.watchlist.telegram.linked}</p>
+          <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{t.watchlist.telegram.linked}</p>
           <p className="text-[11px] text-emerald-600/70 dark:text-emerald-500">{t.watchlist.telegram.linkedInfo.replace('{{chatId}}', chatId)}</p>
         </div>
       </div>
@@ -72,12 +72,12 @@ export function TelegramPanel({ token }: { token: string }) {
               <Send className="w-4 h-4 text-white" />
             </div>
             <div>
-              <p className="text-sm font-black text-blue-700 dark:text-blue-300">{t.watchlist.telegram.title}</p>
+              <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">{t.watchlist.telegram.title}</p>
               <p className="text-[11px] text-blue-600/70 dark:text-blue-400">{t.watchlist.telegram.subtitle}</p>
             </div>
           </div>
           <button onClick={() => setStep('instructions')}
-            className="px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-black hover:bg-blue-700 transition-all shrink-0">
+            className="px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-all shrink-0">
             {t.watchlist.telegram.connect}
           </button>
         </div>
@@ -86,18 +86,18 @@ export function TelegramPanel({ token }: { token: string }) {
       {step === 'instructions' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-black text-blue-700 dark:text-blue-300">{t.watchlist.telegram.connectTitle}</p>
+            <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">{t.watchlist.telegram.connectTitle}</p>
             <button onClick={() => setStep('idle')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
               <X className="w-4 h-4" />
             </button>
           </div>
           <ol className="space-y-2 text-xs text-blue-700 dark:text-blue-300">
-            <li className="flex gap-2"><span className="font-black shrink-0">1.</span><span>{t.watchlist.telegram.step1Before}<strong>@BazarcomPriceBot</strong>{t.watchlist.telegram.step1After}</span></li>
-            <li className="flex gap-2"><span className="font-black shrink-0">2.</span><span>{t.watchlist.telegram.step2Before}<strong>/start</strong>{t.watchlist.telegram.step2After}</span></li>
-            <li className="flex gap-2"><span className="font-black shrink-0">3.</span><span>{t.watchlist.telegram.step3Before}<strong>Chat ID</strong>{t.watchlist.telegram.step3After}</span></li>
+            <li className="flex gap-2"><span className="font-semibold shrink-0">1.</span><span>{t.watchlist.telegram.step1Before}<strong>@BazarcomPriceBot</strong>{t.watchlist.telegram.step1After}</span></li>
+            <li className="flex gap-2"><span className="font-semibold shrink-0">2.</span><span>{t.watchlist.telegram.step2Before}<strong>/start</strong>{t.watchlist.telegram.step2After}</span></li>
+            <li className="flex gap-2"><span className="font-semibold shrink-0">3.</span><span>{t.watchlist.telegram.step3Before}<strong>Chat ID</strong>{t.watchlist.telegram.step3After}</span></li>
           </ol>
           <button onClick={() => setStep('input')}
-            className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-xs font-black hover:bg-blue-700 transition-all">
+            className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-all">
             {t.watchlist.telegram.enterChatId}
           </button>
         </div>
@@ -106,7 +106,7 @@ export function TelegramPanel({ token }: { token: string }) {
       {step === 'input' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-black text-blue-700 dark:text-blue-300">{t.watchlist.telegram.enterChatId}</p>
+            <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">{t.watchlist.telegram.enterChatId}</p>
             <button onClick={() => setStep('instructions')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
               <X className="w-4 h-4" />
             </button>
@@ -123,7 +123,7 @@ export function TelegramPanel({ token }: { token: string }) {
           />
           {error && <p className="text-xs text-red-500 font-bold">{error}</p>}
           <button onClick={handleSave} disabled={saving}
-            className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-xs font-black hover:bg-blue-700 disabled:opacity-60 transition-all">
+            className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-60 transition-all">
             {saving ? t.watchlist.telegram.saving : t.watchlist.telegram.confirm}
           </button>
         </div>

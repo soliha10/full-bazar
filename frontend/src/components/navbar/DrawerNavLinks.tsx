@@ -23,7 +23,7 @@ export function DrawerNavLinks({ compareCount, favoritesCount, closeMenu }: Draw
 
   return (
     <div className="px-3 pt-3">
-      <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.15em] px-2 mb-2">
+      <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-[0.15em] px-2 mb-2">
         {t.common.menu}
       </p>
       <div className="space-y-0.5">
@@ -44,20 +44,20 @@ export function DrawerNavLinks({ compareCount, favoritesCount, closeMenu }: Draw
             >
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                 isActive
-                  ? 'bg-violet-600 shadow-sm shadow-violet-500/40'
+                  ? 'bg-violet-600'
                   : 'bg-gray-100 dark:bg-gray-800/80'
               }`}>
                 <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`} />
               </div>
               <span className={`flex-1 text-sm leading-none ${
                 isActive
-                  ? 'font-black text-violet-700 dark:text-violet-300'
+                  ? 'font-semibold text-violet-700 dark:text-violet-300'
                   : 'font-semibold text-gray-800 dark:text-gray-200'
               }`}>
                 {label}
               </span>
               {count > 0 ? (
-                <span className={`min-w-[20px] h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center ${
+                <span className={`min-w-[20px] h-5 px-1 rounded-full text-[10px] font-semibold flex items-center justify-center ${
                   path === '/wishlist' ? 'bg-red-500 text-white' : 'bg-violet-600 text-white'
                 }`}>
                   {count > 9 ? '9+' : count}

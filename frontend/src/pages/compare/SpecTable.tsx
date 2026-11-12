@@ -54,10 +54,10 @@ export function SpecTable({ items, diffFields, verdict, onRemove, onOpen }: {
                     {item.product.name}
                   </p>
                   <div className="flex items-center gap-1.5">
-                    <p className="text-base font-black text-violet-600">{formatSum(item.product.price)}</p>
+                    <p className="text-base font-semibold text-violet-600">{formatSum(item.product.price)}</p>
                     {priceVaries && item.product.price === bestPrice && (
-                      <span className="flex items-center gap-0.5 text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded-full">
-                        <Trophy className="w-2.5 h-2.5" /> {t.compare.cheapestBadge}
+                      <span className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded-full">
+                        {t.compare.cheapestBadge}
                       </span>
                     )}
                   </div>
@@ -77,14 +77,14 @@ export function SpecTable({ items, diffFields, verdict, onRemove, onOpen }: {
               <tr>
                 <td
                   colSpan={items.length + 1}
-                  className="sticky left-0 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-violet-600 dark:text-violet-400 bg-violet-50/60 dark:bg-violet-900/10 border-t border-gray-100 dark:border-gray-800"
+                  className="sticky left-0 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400 bg-violet-50/60 dark:bg-violet-900/10 border-t border-gray-100 dark:border-gray-800"
                 >
                   {t.compare.groups[group.label]}
                 </td>
               </tr>
               {group.rows.map((row) => (
                 <tr key={row.key}>
-                  <td className="p-3 text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wide align-top sticky left-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+                  <td className="p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide align-top sticky left-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
                     {t.compare.specs[row.label]}
                   </td>
                   {items.map((item) => {

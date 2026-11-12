@@ -22,7 +22,7 @@ export function CompareBar() {
       <button
         onClick={() => navigate('/compare')}
         disabled={!ready}
-        className="bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:hover:bg-violet-600 text-white text-xs font-black px-3 py-1.5 rounded-xl transition-colors whitespace-nowrap"
+        className="bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:hover:bg-violet-600 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-colors whitespace-nowrap"
       >
         {t.common.compare}
       </button>

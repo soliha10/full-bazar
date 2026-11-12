@@ -1,4 +1,3 @@
-import { TrendingDown } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
@@ -32,14 +31,13 @@ export function PriceHistoryChart({ priceHistory, activeTab }: { priceHistory: P
 
   return (
     <div className={`${activeTab !== 'priceHistory' && 'hidden lg:block'} mt-10`}>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl p-6 md:p-10 border border-gray-100 dark:border-gray-800 shadow-sm">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 md:p-8 border border-gray-200 dark:border-gray-800">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-3">
-            <div className="w-1 h-6 bg-violet-600 rounded-full" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             {t.detailPage.priceHistoryTitle}
           </h2>
           {priceHistory.length === 0 && (
-            <span className="text-xs font-bold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
+            <span className="text-xs text-gray-400 dark:text-gray-500">
               {t.detailPage.collectingData}
             </span>
           )}
@@ -47,10 +45,7 @@ export function PriceHistoryChart({ priceHistory, activeTab }: { priceHistory: P
 
         {priceHistory.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
-              <TrendingDown className="w-7 h-7 text-violet-400" />
-            </div>
-            <p className="text-sm font-bold text-gray-400 dark:text-gray-500 text-center max-w-xs">
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-xs">
               {t.detailPage.noPriceHistory}
             </p>
           </div>

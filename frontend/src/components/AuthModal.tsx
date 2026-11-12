@@ -48,7 +48,7 @@ export function AuthModal() {
           {step === 'credentials' && (
             <p className="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
               {isRegister ? a.haveAccount : a.noAccount}{' '}
-              <button type="button" onClick={() => switchMode()} className="font-black text-violet-600 dark:text-violet-400 hover:underline">
+              <button type="button" onClick={() => switchMode()} className="font-semibold text-violet-600 dark:text-violet-400 hover:underline">
                 {isRegister ? a.login : a.register}
               </button>
             </p>

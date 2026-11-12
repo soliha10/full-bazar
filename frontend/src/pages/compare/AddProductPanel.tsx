@@ -69,7 +69,7 @@ export function AddProductPanel({ search, onPick }: {
               className="w-10 h-10 object-contain shrink-0"
             />
             <span className="flex-1 text-sm font-bold text-gray-800 dark:text-gray-200 truncate">{p.name}</span>
-            <span className="text-xs font-black text-violet-600 shrink-0">{formatSum(p.price)}</span>
+            <span className="text-xs font-semibold text-violet-600 shrink-0">{formatSum(p.price)}</span>
           </button>
         ))}
       </div>

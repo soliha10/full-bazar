@@ -35,10 +35,10 @@ export function Profile() {
         <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-90 transition-all">
           <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
         </button>
-        <span className="text-base font-black text-gray-900 dark:text-white flex-1">{t.nav.profile}</span>
+        <span className="text-base font-semibold text-gray-900 dark:text-white flex-1">{t.nav.profile}</span>
         <button
           onClick={() => { logout(); navigate('/'); }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black text-red-500 bg-red-50 dark:bg-red-900/20 active:scale-95 transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-red-500 bg-red-50 dark:bg-red-900/20 active:scale-95 transition-all"
         >
           <LogOut className="w-3.5 h-3.5" />
           {t.nav.logout}
@@ -67,7 +67,7 @@ export function Profile() {
         >
           <button
             onClick={() => { logout(); navigate('/'); }}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-red-200 dark:border-red-900/40 text-red-500 font-black text-sm hover:bg-red-50 dark:hover:bg-red-900/20 active:scale-[0.98] transition-all"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-red-200 dark:border-red-900/40 text-red-500 font-semibold text-sm hover:bg-red-50 dark:hover:bg-red-900/20 active:scale-[0.98] transition-all"
           >
             <LogOut className="w-4 h-4" />
             {t.profile.logoutAccount}

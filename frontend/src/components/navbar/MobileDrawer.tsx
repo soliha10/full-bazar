@@ -55,11 +55,11 @@ export function MobileDrawer(props: MobileDrawerProps) {
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-4 h-14 shrink-0 border-b border-gray-100 dark:border-gray-800/80">
           <Link to="/" onClick={closeMenu} className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-linear-to-br from-violet-500 to-violet-700 rounded-xl flex items-center justify-center shadow-md shadow-violet-500/25">
+            <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center">
               <ShoppingBag className="w-4 h-4 text-white" />
             </div>
             <div>
-              <p className="text-[13px] font-black tracking-tight text-gray-900 dark:text-white leading-none">BAZARCOM</p>
+              <p className="text-[13px] font-semibold tracking-tight text-gray-900 dark:text-white leading-none">BAZARCOM</p>
               <p className="text-[8px] font-bold text-violet-400 tracking-[0.2em] uppercase leading-none mt-0.5">Price Compare</p>
             </div>
           </Link>

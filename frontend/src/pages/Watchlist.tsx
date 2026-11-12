@@ -28,7 +28,7 @@ export function Watchlist() {
           <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-90 transition-all">
             <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           </button>
-          <span className="text-base font-black text-gray-900 dark:text-white">{t.watchlist.title}</span>
+          <span className="text-base font-semibold text-gray-900 dark:text-white">{t.watchlist.title}</span>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-5">
           <motion.div
@@ -39,7 +39,7 @@ export function Watchlist() {
             <Bell className="w-10 h-10 text-violet-400" />
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <h2 className="text-lg font-black text-gray-900 dark:text-white mb-1">{t.watchlist.loginTitle}</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{t.watchlist.loginTitle}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
               {t.watchlist.loginSubtitle}
             </p>
@@ -47,7 +47,7 @@ export function Watchlist() {
           <motion.button
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.17 }}
             onClick={openLogin}
-            className="px-8 py-3 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-black text-sm shadow-md shadow-violet-500/25 active:scale-95 transition-all"
+            className="px-8 py-3 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm active:scale-95 transition-all"
           >
             {t.auth.login}
           </motion.button>
@@ -73,10 +73,9 @@ export function Watchlist() {
             <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           </button>
           <div className="flex items-center gap-2 flex-1">
-            <Bell className="w-4 h-4 text-violet-600" />
-            <span className="text-base font-black text-gray-900 dark:text-white">{t.watchlist.title}</span>
+            <span className="text-base font-semibold text-gray-900 dark:text-white">{t.watchlist.title}</span>
             {watched.length > 0 && (
-              <span className="bg-violet-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
+              <span className="bg-violet-600 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
                 {watched.length}
               </span>
             )}
@@ -97,11 +96,8 @@ export function Watchlist() {
         {/* Desktop header */}
         <div className="hidden md:flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
-              <Bell className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-            </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">{t.watchlist.title}</h1>
+              <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white">{t.watchlist.title}</h1>
               <p className="text-xs text-gray-500 dark:text-gray-400">{t.watchlist.trackingCount.replace('{{count}}', String(watched.length))}</p>
             </div>
           </div>
@@ -120,9 +116,8 @@ export function Watchlist() {
         <TelegramPanel token={user.token} />
 
         {/* Info banner */}
-        <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800/40 rounded-2xl px-4 py-3 mb-4 flex items-start gap-3">
-          <Bell className="w-4 h-4 text-violet-500 mt-0.5 shrink-0" />
-          <p className="text-xs text-violet-700 dark:text-violet-300 leading-relaxed">
+        <div className="bg-gray-50 dark:bg-gray-900 rounded-xl px-4 py-3 mb-4">
+          <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
             {t.watchlist.infoBefore}<strong>{t.watchlist.infoBell}</strong>{t.watchlist.infoAfter}
           </p>
         </div>
@@ -142,13 +137,13 @@ export function Watchlist() {
               >
                 <Bell className="w-10 h-10 text-gray-200 dark:text-gray-700" />
               </motion.div>
-              <h2 className="text-lg font-black text-gray-900 dark:text-white mb-2">{t.watchlist.emptyTitle}</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t.watchlist.emptyTitle}</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-xs">
                 {t.watchlist.emptySubtitle}
               </p>
               <Link
                 to="/products"
-                className="bg-violet-600 hover:bg-violet-700 text-white font-black text-sm px-6 py-3 rounded-2xl active:scale-95 transition-all"
+                className="bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm px-6 py-3 rounded-2xl active:scale-95 transition-all"
               >
                 {t.watchlist.browseProducts}
               </Link>

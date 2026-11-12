@@ -1,5 +1,4 @@
 import { m } from 'framer-motion';
-import { TrendingDown, Sparkles } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { formatSum } from '../../utils/productMapper';
 import type { Product } from '../../components/ProductCard';
@@ -22,7 +21,7 @@ export function DealsSection({ deals, status, onRetry }: {
   return (
     <m.section {...reveal} aria-labelledby="deals-title" className="mt-10 md:mt-14 px-4 max-w-7xl mx-auto">
       <SectionHeader id="deals-title" title={h.savingsTitle} subtitle={h.savingsSubtitle}
-        icon={TrendingDown} linkTo="/products" linkLabel={t.landing.trending.viewAll} />
+        linkTo="/products" linkLabel={t.landing.trending.viewAll} />
       {status === 'error' ? (
         <LoadError text={h.loadError} retry={h.retry} onRetry={onRetry} />
       ) : (
@@ -58,7 +57,7 @@ export function PersonalSection({ clientRecs, showClientRecs, fromFavorites, per
         <m.section {...reveal} aria-labelledby="foryou-title" className="mt-10 md:mt-14 px-4 max-w-7xl mx-auto">
           <SectionHeader id="foryou-title" title={t.landing.forYouTitle}
             subtitle={fromFavorites ? t.landing.forYouFromFavorites : t.landing.forYouFromProfile}
-            icon={Sparkles} linkTo="/products" linkLabel={t.landing.trending.viewAll} />
+            linkTo="/products" linkLabel={t.landing.trending.viewAll} />
           <Carousel>
             {clientRecs.map(p => (
               <MiniProductCard key={p.id} product={p}
@@ -70,7 +69,7 @@ export function PersonalSection({ clientRecs, showClientRecs, fromFavorites, per
       {!showClientRecs && personalizedType === 'personalized' && personalizedRecs.length > 0 && (
         <m.section {...reveal} aria-labelledby="special-title" className="mt-10 md:mt-14 px-4 max-w-7xl mx-auto">
           <SectionHeader id="special-title" title={t.landing.specialTitle} subtitle={t.landing.specialSubtitle}
-            icon={Sparkles} linkTo="/products" linkLabel={t.landing.trending.viewAll} />
+            linkTo="/products" linkLabel={t.landing.trending.viewAll} />
           <Carousel>
             {personalizedRecs.map(p => <MiniProductCard key={p.id} product={p} />)}
           </Carousel>

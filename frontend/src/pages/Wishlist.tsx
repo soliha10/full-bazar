@@ -23,11 +23,8 @@ export function Wishlist() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
-              <Heart className="w-5 h-5 text-red-500 fill-red-500" />
-            </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+              <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white tracking-tight">
                 {t.footer.wishlist}
               </h1>
               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
@@ -64,7 +61,7 @@ export function Wishlist() {
               >
                 <Heart className="w-10 h-10 text-gray-200 dark:text-gray-700" />
               </motion.div>
-              <h2 className="text-lg font-black text-gray-900 dark:text-white mb-2">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 {t.wishlistPage.emptyTitle}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-xs">
@@ -72,7 +69,7 @@ export function Wishlist() {
               </p>
               <Link
                 to="/products"
-                className="bg-violet-600 hover:bg-violet-700 text-white font-black text-sm px-6 py-3 rounded-2xl transition-all active:scale-95"
+                className="bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm px-6 py-3 rounded-2xl transition-all active:scale-95"
               >
                 {t.common.browseProducts}
               </Link>

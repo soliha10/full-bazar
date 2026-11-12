@@ -21,14 +21,10 @@ export function NavIconLinks({ compareCount, favoritesCount, watchedCount, isDar
           foydalanuvchi nechta mahsulot tanlaganini eslab qolishi shart emas. */}
       <Link to="/compare"
         title={t.nav.compare}
-        className="hidden md:flex relative w-8 h-8 items-center justify-center rounded-xl
-          bg-gray-50 dark:bg-gray-800
-          hover:bg-violet-50 dark:hover:bg-violet-900/30
-          text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400
-          transition-all active:scale-90">
+        className="hidden md:flex relative w-9 h-9 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors">
         <Scale className={`w-4 h-4 transition-colors ${compareCount > 0 ? 'text-violet-600 dark:text-violet-400' : ''}`} />
         {compareCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-600 text-white text-[9px] font-black flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-600 text-white text-[9px] font-semibold flex items-center justify-center">
             {compareCount}
           </span>
         )}
@@ -36,14 +32,10 @@ export function NavIconLinks({ compareCount, favoritesCount, watchedCount, isDar
 
       {/* Favorites — desktop */}
       <Link to="/wishlist"
-        className="hidden md:flex relative w-8 h-8 items-center justify-center rounded-xl
-          bg-gray-50 dark:bg-gray-800
-          hover:bg-red-50 dark:hover:bg-red-900/20
-          text-gray-500 dark:text-gray-400 hover:text-red-500
-          transition-all active:scale-90">
-        <Heart className={`w-4 h-4 transition-colors ${favoritesCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+        className="hidden md:flex relative w-9 h-9 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors">
+        <Heart className={`w-4 h-4 transition-colors ${favoritesCount > 0 ? 'fill-current text-gray-900 dark:text-white' : ''}`} />
         {favoritesCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-600 text-white text-[9px] font-semibold flex items-center justify-center">
             {favoritesCount > 9 ? '9+' : favoritesCount}
           </span>
         )}
@@ -53,16 +45,12 @@ export function NavIconLinks({ compareCount, favoritesCount, watchedCount, isDar
       {watchedCount !== null && (
         <Link
           to="/watchlist"
-          className="hidden md:flex relative w-8 h-8 items-center justify-center rounded-xl
-            bg-gray-50 dark:bg-gray-800
-            hover:bg-violet-50 dark:hover:bg-violet-900/30
-            text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400
-            transition-all active:scale-90"
+          className="hidden md:flex relative w-9 h-9 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors"
           title={t.nav.priceWatch}
         >
           <Bell className={`w-4 h-4 transition-colors ${watchedCount > 0 ? 'text-violet-600 dark:text-violet-400' : ''}`} />
           {watchedCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-600 text-white text-[9px] font-black flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-600 text-white text-[9px] font-semibold flex items-center justify-center">
               {watchedCount > 9 ? '9+' : watchedCount}
             </span>
           )}
@@ -71,11 +59,7 @@ export function NavIconLinks({ compareCount, favoritesCount, watchedCount, isDar
 
       {/* Theme toggle — desktop */}
       <button onClick={toggleTheme} aria-label={t.nav.toggleTheme}
-        className="hidden md:flex w-8 h-8 items-center justify-center rounded-xl
-          bg-gray-50 dark:bg-gray-800
-          hover:bg-violet-50 dark:hover:bg-violet-900/30
-          text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400
-          transition-all active:scale-90">
+        className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors">
         {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
       </button>
     </>

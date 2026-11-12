@@ -18,25 +18,21 @@ export function PriceSection({ product, stats, selectedMarketIndex, onSelectMark
   const { selectedMarket, sortedMarkets } = stats;
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl p-5 md:p-7 border border-gray-100 dark:border-gray-800 shadow-sm space-y-5">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 md:p-6 border border-gray-200 dark:border-gray-800 space-y-5">
       {/* Best price display */}
       <div className="flex items-end justify-between gap-3">
         <div>
           <div>
-          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
-            {t.detail.bestPriceMarket}: <span className="text-violet-600 dark:text-violet-400">{selectedMarket?.source}</span>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+            {t.detail.bestPriceMarket}: <span className="text-gray-900 dark:text-white">{selectedMarket?.source}</span>
           </p>
-          {/* <span className="text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30 shrink-0 text-center">
-            {t.detail.lowestPrice30Days}
-          </span> */}
-
           </div>
           <div className="flex items-baseline gap-3">
-            <span className="text-3xl md:text-4xl font-black text-violet-600 dark:text-violet-400 tracking-tighter">
+            <span className="text-3xl font-semibold text-gray-900 dark:text-white tracking-tight">
               {formatSum(selectedMarket?.price || product.price)}
             </span>
             {product.originalPrice && (
-              <span className="text-lg text-gray-300 dark:text-gray-600 line-through decoration-2">
+              <span className="text-base text-gray-400 dark:text-gray-500 line-through">
                 {formatSum(product.originalPrice)}
               </span>
             )}

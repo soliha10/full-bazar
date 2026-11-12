@@ -13,7 +13,7 @@ export function DrawerSettings({ isDark, toggleTheme, closeMenu }: DrawerSetting
   const { language, setLanguage, t } = useLanguage();
   return (
     <div className="px-3 pb-3">
-      <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.15em] px-2 mb-2">
+      <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-[0.15em] px-2 mb-2">
         {t.common.settings}
       </p>
 
@@ -57,9 +57,9 @@ export function DrawerSettings({ isDark, toggleTheme, closeMenu }: DrawerSetting
             <button
               key={code}
               onClick={() => { setLanguage(code); closeMenu(); }}
-              className={`flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-black transition-all active:scale-95 ${
+              className={`flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
                 language === code
-                  ? 'bg-violet-600 text-white shadow-sm shadow-violet-500/30'
+                  ? 'bg-violet-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >

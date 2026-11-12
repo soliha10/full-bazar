@@ -19,7 +19,7 @@ export function DetailError({ error, onBack }: { error: string | null; onBack: (
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4 transition-colors">
       <div className="bg-white dark:bg-gray-900 rounded-3xl p-10 text-center shadow-xl border border-gray-100 dark:border-gray-800 max-w-sm w-full">
-        <h2 className="text-xl font-black text-gray-900 dark:text-white mb-6">{error || t.detail.productNotFound}</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{error || t.detail.productNotFound}</h2>
         {error === t.detail.loadFailed && (
           <Button variant="primary" onClick={() => window.location.reload()} className="rounded-2xl px-10 mb-3 w-full">
             {t.detail.retry}

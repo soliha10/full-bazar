@@ -1,4 +1,3 @@
-import { ExternalLink, Store } from 'lucide-react';
 import { formatSum } from '../../utils/productMapper';
 import { trackStoreClick } from '../../services/tracking';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -13,13 +12,13 @@ export function StorePricesRows({ items }: { items: CompareItem[] }) {
       <tr>
         <td
           colSpan={items.length + 1}
-          className="sticky left-0 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-violet-600 dark:text-violet-400 bg-violet-50/60 dark:bg-violet-900/10 border-t border-gray-100 dark:border-gray-800"
+          className="sticky left-0 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400 bg-violet-50/60 dark:bg-violet-900/10 border-t border-gray-100 dark:border-gray-800"
         >
           {t.compare.storePricesGroup}
         </td>
       </tr>
       <tr>
-        <td className="p-3 text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wide align-top sticky left-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+        <td className="p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide align-top sticky left-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
           {t.compare.prices}
         </td>
         {items.map((item) => (
@@ -39,10 +38,10 @@ export function StorePricesRows({ items }: { items: CompareItem[] }) {
                   }`}
                 >
                   <span className="flex items-center gap-1 truncate">
-                    <Store className="w-3 h-3 shrink-0" /> {mkt.source}
+                    {mkt.source}
                   </span>
                   <span className="flex items-center gap-1 shrink-0">
-                    {formatSum(mkt.price)} <ExternalLink className="w-3 h-3" />
+                    {formatSum(mkt.price)}
                   </span>
                 </a>
               ))}

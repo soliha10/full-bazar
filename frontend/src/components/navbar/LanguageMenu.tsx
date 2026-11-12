@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Globe } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { languages } from './languages';
 
@@ -11,13 +10,13 @@ export function LanguageMenu() {
     <div className="relative hidden lg:block">
       <button
         onClick={() => setIsLangOpen(v => !v)}
-        className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl
-          hover:bg-violet-50 dark:hover:bg-violet-900/30
-          text-gray-600 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400
-          font-semibold text-sm transition-all"
+        aria-label={language.toUpperCase()}
+        aria-expanded={isLangOpen}
+        className="px-2.5 py-1.5 rounded-lg text-xs font-medium uppercase
+          text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800
+          hover:text-gray-900 dark:hover:text-white transition-colors"
       >
-        <Globe className="w-4 h-4" />
-        <span className="font-black text-xs uppercase tracking-wider hidden xl:block">{language}</span>
+        {language}
       </button>
       {isLangOpen && (
         <>
@@ -25,14 +24,14 @@ export function LanguageMenu() {
           <div className="absolute right-0 top-full mt-2 w-44
             bg-white dark:bg-gray-900
             border border-gray-100 dark:border-gray-700
-            rounded-2xl shadow-xl shadow-black/10
+            rounded-xl shadow-lg shadow-black/5
             overflow-hidden z-50">
             {languages.map((lang) => (
               <button key={lang.code}
                 onClick={() => { setLanguage(lang.code); setIsLangOpen(false); }}
                 className={`flex items-center gap-3 w-full px-4 py-3 text-sm transition-colors ${
                   language === lang.code
-                    ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 font-black'
+                    ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 font-medium'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 font-medium'
                 }`}>
                 <span className="text-base">{lang.flag}</span>

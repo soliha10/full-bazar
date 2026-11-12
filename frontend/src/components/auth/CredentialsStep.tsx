@@ -44,7 +44,7 @@ export function CredentialsStep({ f }: { f: AuthForm }) {
             <button key={m} type="button" role="radio" aria-checked={activeMethod === m}
               onClick={() => { setMethod(m); setServerErrors({}); setFormError(null); }}
               disabled={isLoading}
-              className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-black transition-all ${
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
                 activeMethod === m
                   ? 'bg-white dark:bg-gray-800 text-violet-700 dark:text-violet-300 shadow-sm'
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
@@ -63,7 +63,7 @@ export function CredentialsStep({ f }: { f: AuthForm }) {
       <button
         type="submit" disabled={isLoading || retryLeft > 0}
         aria-busy={isLoading}
-        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-black text-sm shadow-md shadow-violet-500/25 transition-all active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
+        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-semibold text-sm transition-all active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
       >
         {isLoading
           ? <>{spinner}<span>{isRegister ? a.checking : t.common.loading}</span></>

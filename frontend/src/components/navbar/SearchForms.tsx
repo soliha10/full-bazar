@@ -92,7 +92,7 @@ export function MobileSearch({ search }: { search: NavbarSearch }) {
             </button>
           )}
           <button type="submit"
-            className="bg-violet-600 active:bg-violet-700 text-white px-3 h-7 rounded-xl text-[11px] font-black tracking-wide transition-all">
+            className="bg-violet-600 active:bg-violet-700 text-white px-3 h-7 rounded-xl text-[11px] font-semibold tracking-wide transition-all">
             {t.nav.search}
           </button>
         </div>

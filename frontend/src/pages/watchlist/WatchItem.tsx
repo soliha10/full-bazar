@@ -37,11 +37,11 @@ export const WatchItem = forwardRef<HTMLDivElement, {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
       transition={{ duration: 0.3, delay: Math.min(i, 8) * 0.04 }}
-      className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-lg hover:shadow-violet-500/8 hover:border-violet-200/70 dark:hover:border-violet-800/50 transition-all"
+      className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:border-violet-200/70 dark:hover:border-violet-800/50 transition-all"
     >
       {/* Price change banner */}
       {(dropped || rose) && (
-        <div className={`px-3.5 py-1.5 flex items-center gap-2 text-[11px] font-black ${
+        <div className={`px-3.5 py-1.5 flex items-center gap-2 text-[11px] font-semibold ${
           dropped
             ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
             : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
@@ -77,7 +77,7 @@ export const WatchItem = forwardRef<HTMLDivElement, {
 
           {/* Prices */}
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-base font-black text-gray-900 dark:text-white">
+            <span className="text-base font-semibold text-gray-900 dark:text-white">
               {formatSum(currentBestPrice)}
             </span>
             {Math.abs(priceDiff) > 1000 && (

@@ -29,7 +29,7 @@ export function LoggedOutView() {
         <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-90 transition-all">
           <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
         </button>
-        <span className="text-base font-black text-gray-900 dark:text-white">{t.nav.profile}</span>
+        <span className="text-base font-semibold text-gray-900 dark:text-white">{t.nav.profile}</span>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-6">
@@ -37,13 +37,13 @@ export function LoggedOutView() {
           initial={{ scale: 0.85, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-          className="w-24 h-24 rounded-3xl bg-linear-to-br from-violet-500 to-violet-700 flex items-center justify-center shadow-xl shadow-violet-500/30"
+          className="w-24 h-24 rounded-3xl bg-violet-600 flex items-center justify-center"
         >
           <User className="w-12 h-12 text-white" />
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <h1 className="text-xl font-black text-gray-900 dark:text-white mb-2">{t.profile.loginTitle}</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t.profile.loginTitle}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
             {t.profile.loginSubtitle}
           </p>
@@ -52,13 +52,13 @@ export function LoggedOutView() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }} className="w-full max-w-xs flex flex-col gap-3">
           <button
             onClick={openLogin}
-            className="w-full py-3.5 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-black text-sm shadow-md shadow-violet-500/25 active:scale-95 transition-all"
+            className="w-full py-3.5 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm active:scale-95 transition-all"
           >
             {t.auth.login}
           </button>
           <button
             onClick={openRegister}
-            className="w-full py-3.5 rounded-2xl border-2 border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 font-black text-sm active:scale-95 transition-all"
+            className="w-full py-3.5 rounded-2xl border-2 border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 font-semibold text-sm active:scale-95 transition-all"
           >
             {t.auth.register}
           </button>
@@ -93,7 +93,7 @@ export function LoggedOutView() {
                   <button
                     key={code}
                     onClick={() => setLanguage(code)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all active:scale-95 ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
                       language === code
                         ? 'bg-violet-600 text-white shadow-sm'
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'

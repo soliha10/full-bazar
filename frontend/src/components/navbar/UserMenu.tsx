@@ -19,9 +19,9 @@ export function UserMenu({ user, logout }: { user: AuthUser; logout: () => void 
           hover:bg-gray-100 dark:hover:bg-gray-800
           transition-all active:scale-[0.97]"
       >
-        <div className="w-8 h-8 rounded-xl bg-linear-to-br from-violet-500 to-violet-700
-          flex items-center justify-center text-white text-sm font-black shrink-0
-          shadow-sm shadow-violet-500/30">
+        <div className="w-8 h-8 rounded-xl bg-violet-600
+          flex items-center justify-center text-white text-sm font-semibold shrink-0
+         ">
           {user.name.charAt(0).toUpperCase()}
         </div>
         <ChevronDown className={`w-3.5 h-3.5 text-gray-400 shrink-0 transition-transform duration-200 ${
@@ -42,12 +42,12 @@ export function UserMenu({ user, logout }: { user: AuthUser; logout: () => void 
             <div className="px-4 py-4 bg-gray-50 dark:bg-gray-800/60
               border-b border-gray-100 dark:border-gray-700/60">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-violet-500 to-violet-700
-                  flex items-center justify-center text-white font-black text-base shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-violet-600
+                  flex items-center justify-center text-white font-semibold text-base shrink-0">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-black text-gray-900 dark:text-white truncate leading-tight">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate leading-tight">
                     {user.name}
                   </p>
                   <p className="text-[11px] text-gray-400 truncate leading-tight mt-0.5">
@@ -59,20 +59,20 @@ export function UserMenu({ user, logout }: { user: AuthUser; logout: () => void 
 
             {/* Profile details */}
             <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-              <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">{t.nav.profile}</p>
+              <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">{t.nav.profile}</p>
               <div className="grid grid-cols-2 gap-2 mb-2.5">
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
-                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{t.nav.age}</p>
-                  <p className="text-xs font-black text-gray-900 dark:text-white">{user.profile.ageGroup}</p>
+                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide">{t.nav.age}</p>
+                  <p className="text-xs font-semibold text-gray-900 dark:text-white">{user.profile.ageGroup}</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
-                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{t.nav.budget}</p>
-                  <p className="text-xs font-black text-gray-900 dark:text-white">{BUDGET_LABELS[user.profile.budgetLevel]}</p>
+                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide">{t.nav.budget}</p>
+                  <p className="text-xs font-semibold text-gray-900 dark:text-white">{BUDGET_LABELS[user.profile.budgetLevel]}</p>
                 </div>
               </div>
               {user.profile.preferredBrands.length > 0 && (
                 <div>
-                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">{t.nav.brands}</p>
+                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide mb-1.5">{t.nav.brands}</p>
                   <div className="flex flex-wrap gap-1">
                     {user.profile.preferredBrands.slice(0, 4).map(b => (
                       <span key={b} className="text-[10px] font-bold bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full">

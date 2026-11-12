@@ -17,24 +17,17 @@ export function FilterPanel({ f, isMobile, mobileTab }: {
   const { specFacets } = f;
 
   return (
-    <div className={isMobile ? "px-1" : "divide-y divide-gray-100 dark:divide-gray-800"}>
+    <div className={isMobile ? "px-1" : "divide-y divide-gray-200 dark:divide-gray-800"}>
       {/* Kategoriya filtri olib tashlandi: katalogdagi barcha mahsulotlar
           bitta "Phones" kategoriyasida, ya'ni u hech narsani filtrlamasdi. */}
-      {/* Narx */}
+      {/* Tartib foydalilik bo'yicha: narx, brend, do'kon — keyin tafsilotlar */}
       {(!isMobile || mobileTab === 'price') && <PriceFilter f={f} isMobile={isMobile} />}
-
+      {(!isMobile || mobileTab === 'brand') && <BrandFilter f={f} isMobile={isMobile} />}
+      {(!isMobile || mobileTab === 'store') && <StoreFilter f={f} isMobile={isMobile} />}
       {(!isMobile || mobileTab === 'specs') && (specFacets.ram.length > 0 || specFacets.storage.length > 0) && (
         <SpecsFilter f={f} isMobile={isMobile} />
       )}
-
-      {/* Reyting */}
       {(!isMobile || mobileTab === 'rating') && <RatingFilter f={f} isMobile={isMobile} />}
-
-      {/* Brendlar */}
-      {(!isMobile || mobileTab === 'brand') && <BrandFilter f={f} isMobile={isMobile} />}
-
-      {/* Do'konlar */}
-      {(!isMobile || mobileTab === 'store') && <StoreFilter f={f} isMobile={isMobile} />}
     </div>
   );
 }

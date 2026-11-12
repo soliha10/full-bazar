@@ -1,4 +1,3 @@
-import { ExternalLink, Store, Trophy, Award } from 'lucide-react';
 import { formatSum } from '../../utils/productMapper';
 import { trackStoreClick } from '../../services/tracking';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -46,8 +45,8 @@ export function VerdictPanel({ verdict, items, onOpen }: {
     <div className="grid md:grid-cols-2 gap-4 mb-6">
       {/* ── Tavsiya ── */}
       <div className="bg-violet-50/70 dark:bg-violet-950/25 border border-violet-100 dark:border-violet-900/40 rounded-2xl p-4">
-        <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-violet-600 dark:text-violet-400 mb-3">
-          <Award className="w-3.5 h-3.5" /> {t.compare.recommend}
+        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400 mb-3">
+          {t.compare.recommend}
         </p>
         <button
           onClick={() => onOpen(recommended)}
@@ -60,10 +59,10 @@ export function VerdictPanel({ verdict, items, onOpen }: {
             className="w-12 h-12 object-contain shrink-0"
           />
           <span className="min-w-0">
-            <span className="block text-sm font-black text-gray-900 dark:text-white truncate group-hover:text-violet-600">
+            <span className="block text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-violet-600">
               {recommended.product.name}
             </span>
-            <span className="block text-sm font-black text-violet-600">{formatSum(recommended.product.price)}</span>
+            <span className="block text-sm font-semibold text-violet-600">{formatSum(recommended.product.price)}</span>
           </span>
         </button>
 
@@ -86,11 +85,11 @@ export function VerdictPanel({ verdict, items, onOpen }: {
       {/* ── Eng arzon va qayerda bor ── */}
       {cheapest && (
         <div className="bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 rounded-2xl p-4">
-          <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400 mb-3">
-            <Trophy className="w-3.5 h-3.5" /> {t.compare.cheapestOption}
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400 mb-3">
+            {t.compare.cheapestOption}
           </p>
-          <p className="text-sm font-black text-gray-900 dark:text-white line-clamp-2">{cheapest.name}</p>
-          <p className="text-lg font-black text-emerald-700 dark:text-emerald-400">{formatSum(cheapest.price)}</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2">{cheapest.name}</p>
+          <p className="text-lg font-semibold text-emerald-700 dark:text-emerald-400">{formatSum(cheapest.price)}</p>
 
           {cheapest.vsMostExpensive > 0 && (
             <p className="text-xs font-bold text-gray-500 dark:text-gray-400 mt-0.5">
@@ -98,7 +97,7 @@ export function VerdictPanel({ verdict, items, onOpen }: {
             </p>
           )}
 
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 mt-3 mb-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mt-3 mb-1.5">
             {t.compare.availableInStores.replace('{{count}}', String(cheapest.marketCount))}
           </p>
           <div className="flex flex-col gap-1">
@@ -116,10 +115,10 @@ export function VerdictPanel({ verdict, items, onOpen }: {
                 }`}
               >
                 <span className="flex items-center gap-1 truncate">
-                  <Store className="w-3 h-3 shrink-0" /> {market.source}
+                  {market.source}
                 </span>
                 <span className="flex items-center gap-1 shrink-0">
-                  {formatSum(market.price)} <ExternalLink className="w-3 h-3" />
+                  {formatSum(market.price)}
                 </span>
               </a>
             ))}
@@ -139,11 +138,11 @@ export function VerdictPanel({ verdict, items, onOpen }: {
 function ScoreBar({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="w-24 shrink-0 text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">{label}</span>
+      <span className="w-24 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{label}</span>
       <span className="flex-1 h-1.5 rounded-full bg-violet-100 dark:bg-violet-900/40 overflow-hidden">
         <span className="block h-full rounded-full bg-violet-500" style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
       </span>
-      <span className="w-8 shrink-0 text-right text-[11px] font-black text-violet-600 tabular-nums">{value}</span>
+      <span className="w-8 shrink-0 text-right text-[11px] font-semibold text-violet-600 tabular-nums">{value}</span>
     </div>
   );
 }

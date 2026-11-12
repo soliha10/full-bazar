@@ -15,7 +15,7 @@ export function FormField({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+      <label htmlFor={id} className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
         {label}
       </label>
       <div className="relative mt-1">

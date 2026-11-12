@@ -25,7 +25,7 @@ export function Carousel({ children }: { children: React.ReactNode[] }) {
     onSelect();
   }, [emblaApi, onSelect]);
 
-  const arrow = 'hidden md:flex absolute top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full shadow-md hover:border-violet-300 dark:hover:border-violet-700 transition-all z-10';
+  const arrow = 'hidden md:flex absolute top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full hover:border-gray-400 dark:hover:border-gray-500 transition-colors z-10';
   return (
     <div className="relative">
       <div className="overflow-hidden -mx-4 px-4 md:mx-0 md:px-0" ref={emblaRef}>
@@ -54,30 +54,30 @@ export function MiniProductCard({ product, badge, storesLabel }: {
   return (
     <Link
       to={productPath(product)}
-      className="shrink-0 w-[160px] md:w-[220px] group flex flex-col bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-violet-500/10 hover:-translate-y-1 hover:border-violet-200 dark:hover:border-violet-700/60 transition-all duration-200"
+      className="shrink-0 w-[160px] md:w-[220px] group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
     >
       <div className="relative h-36 md:h-44 bg-gray-50 dark:bg-gray-800/50 overflow-hidden">
         <img
           src={product.image || PLACEHOLDER} alt={product.name} loading="lazy"
           onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}
-          className="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-500 mix-blend-multiply dark:mix-blend-normal"
+          className="w-full h-full object-contain p-3 mix-blend-multiply dark:mix-blend-normal"
         />
         {badge && (
-          <span className="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+          <span className="absolute top-2 left-2 bg-white/90 dark:bg-gray-900/90 text-emerald-700 dark:text-emerald-400 text-[11px] font-medium px-2 py-0.5 rounded-md">
             {badge}
           </span>
         )}
         {storesLabel && (
-          <span className="absolute top-2 right-2 bg-white/90 dark:bg-gray-900/90 border border-gray-100 dark:border-gray-700 text-[10px] font-black text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded-lg">
+          <span className="absolute top-2 right-2 bg-white/90 dark:bg-gray-900/90 text-[11px] text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-md">
             {storesLabel}
           </span>
         )}
       </div>
       <div className="p-3 md:p-3.5 flex flex-col flex-1 gap-2">
-        <p className="text-[13px] md:text-sm font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug flex-1 min-h-[36px] md:min-h-[40px]">
+        <p className="text-[13px] md:text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-snug flex-1 min-h-[36px] md:min-h-[40px]">
           {product.name}
         </p>
-        <p className="text-sm md:text-base font-black text-violet-600 dark:text-violet-400 leading-none">
+        <p className="text-sm md:text-base font-semibold text-gray-900 dark:text-white leading-none">
           {formatSum(product.price)}
         </p>
       </div>
@@ -87,7 +87,7 @@ export function MiniProductCard({ product, badge, storesLabel }: {
 
 export function SkeletonCard() {
   return (
-    <div className="shrink-0 w-[160px] md:w-[220px] rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse overflow-hidden" aria-hidden="true">
+    <div className="shrink-0 w-[160px] md:w-[220px] rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse overflow-hidden" aria-hidden="true">
       <div className="h-36 md:h-44 bg-gray-200 dark:bg-gray-700" />
       <div className="p-3 space-y-2">
         <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full w-4/5" />

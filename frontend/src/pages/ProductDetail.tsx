@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useCompare } from "../contexts/CompareContext";
 import { useFavorites } from "../hooks/useFavorites";
@@ -59,11 +58,11 @@ export function ProductDetail() {
         {/* Breadcrumbs — desktop */}
         <nav className="hidden md:flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500 mb-8 overflow-hidden">
           <Link to="/" className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors shrink-0">{t.nav.home}</Link>
-          <ChevronRight className="w-4 h-4 shrink-0" />
+          <span aria-hidden="true">/</span>
           <Link to={`/products?category=${product.category}`} className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors shrink-0 capitalize">
             {(t.detail.categories as any)[(product.category ?? '').toLowerCase()] ?? product.category}
           </Link>
-          <ChevronRight className="w-4 h-4 shrink-0" />
+          <span aria-hidden="true">/</span>
           <span className="text-gray-900 dark:text-white font-medium truncate">{product.name}</span>
         </nav>
 
@@ -100,7 +99,7 @@ export function ProductDetail() {
           </motion.div>
         </div>
 
-        <DetailTabs product={product} specs={specs} sortedMarkets={sortedMarkets}
+        <DetailTabs product={product} specs={specs}
           activeTab={activeTab} onTabChange={setActiveTab} />
 
         <PriceHistoryChart priceHistory={priceHistory} activeTab={activeTab} />

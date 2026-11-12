@@ -17,7 +17,7 @@ export function SettingsBlock() {
       transition={{ delay: 0.21, duration: 0.4 }}
       className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800"
     >
-      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest px-4 pt-4 pb-2">{t.profile.settings}</p>
+      <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-4 pt-4 pb-2">{t.profile.settings}</p>
 
       {/* Dark mode */}
       <button
@@ -47,9 +47,9 @@ export function SettingsBlock() {
             <button
               key={code}
               onClick={() => setLanguage(code)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black transition-all active:scale-95 ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
                 language === code
-                  ? 'bg-violet-600 text-white shadow-sm shadow-violet-500/25'
+                  ? 'bg-violet-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
               }`}
             >

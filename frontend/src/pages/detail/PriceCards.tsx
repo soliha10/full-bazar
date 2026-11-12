@@ -1,4 +1,3 @@
-import { Store, BarChart3 } from "lucide-react";
 import type { Product } from "../../components/ProductCard";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum } from "../../utils/productMapper";
@@ -10,9 +9,8 @@ export function MarketOverview({ product, stats }: { product: Product; stats: Pr
   const { bestPrice, sortedMarkets } = stats;
 
   return (
-    <div className="hidden md:block bg-violet-50/60 dark:bg-violet-900/10 rounded-3xl p-7 border border-violet-100 dark:border-violet-900/30">
-      <h3 className="text-xs font-black text-gray-500 dark:text-gray-400 mb-5 uppercase tracking-widest flex items-center gap-2">
-        <Store className="w-3.5 h-3.5 text-violet-500" />
+    <div className="hidden md:block rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-5">
         {t.detail.compareStores}
       </h3>
       <div className="grid grid-cols-2 gap-y-5 gap-x-8">
@@ -23,8 +21,8 @@ export function MarketOverview({ product, stats }: { product: Product; stats: Pr
           { label: t.detail.specLabels.bestStore,    value: product.source || '—' },
         ].map((spec, i) => (
           <div key={i}>
-            <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">{spec.label}</p>
-            <p className="font-bold text-gray-900 dark:text-white text-sm">{spec.value}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{spec.label}</p>
+            <p className="font-medium text-gray-900 dark:text-white text-sm">{spec.value}</p>
           </div>
         ))}
       </div>
@@ -42,9 +40,8 @@ export function PriceInsight({ stats }: { stats: PriceStats }) {
   const { sortedMarkets, bestPrice, worstPrice, savings, priceChange30 } = stats;
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl p-5 md:p-7 border border-gray-100 dark:border-gray-800 shadow-sm space-y-4">
-      <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
-        <BarChart3 className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400" />
+    <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 md:p-6 border border-gray-200 dark:border-gray-800 space-y-4">
+      <h3 className="text-base font-semibold text-gray-900 dark:text-white">
         {t.detailPage.priceInsight.title}
       </h3>
       <dl className="grid grid-cols-2 gap-3">
@@ -54,14 +51,14 @@ export function PriceInsight({ stats }: { stats: PriceStats }) {
           { label: t.detailPage.priceInsight.gap, value: savings > 0 ? formatSum(savings) : '—', sub: savings > 0 ? `${Math.round((savings / (worstPrice || 1)) * 100)}%` : t.detailPage.priceInsight.singleStore },
           { label: t.detailPage.priceInsight.change30, value: priceChange30 == null ? '—' : `${priceChange30 > 0 ? '+' : ''}${priceChange30.toFixed(1)}%`, sub: priceChange30 == null ? t.detailPage.priceInsight.noHistory : priceChange30 < 0 ? t.detailPage.priceInsight.cheaper : priceChange30 > 0 ? t.detailPage.priceInsight.pricier : t.detailPage.priceInsight.same, tone: priceChange30 == null ? '' : priceChange30 < 0 ? 'text-emerald-600 dark:text-emerald-400' : priceChange30 > 0 ? 'text-red-500' : '' },
         ].map(item => (
-          <div key={item.label} className="rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700 px-3.5 py-3">
-            <dt className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{item.label}</dt>
-            <dd className={`mt-1 text-base font-black text-gray-900 dark:text-white ${(item as { tone?: string }).tone ?? ''}`}>{item.value}</dd>
-            {item.sub && <dd className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">{item.sub}</dd>}
+          <div key={item.label} className="rounded-xl bg-gray-50 dark:bg-gray-800/50 px-3.5 py-3">
+            <dt className="text-xs text-gray-500 dark:text-gray-400">{item.label}</dt>
+            <dd className={`mt-1 text-base font-semibold text-gray-900 dark:text-white ${(item as { tone?: string }).tone ?? ''}`}>{item.value}</dd>
+            {item.sub && <dd className="text-xs text-gray-500 dark:text-gray-400 truncate">{item.sub}</dd>}
           </div>
         ))}
       </dl>
-      <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+      <p className="text-xs text-gray-500 dark:text-gray-400">
         {t.detailPage.priceInsight.storesCount.replace('{{count}}', String(sortedMarkets.length))}
       </p>
     </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, MessageSquareHeart, Star, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Star, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
@@ -65,13 +65,13 @@ export function Feedback() {
         >
           <CheckCircle className="w-10 h-10 text-white" />
         </motion.div>
-        <h1 className="text-xl font-black text-gray-900 dark:text-white">{t.feedback.thankYou}</h1>
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">{t.feedback.thankYou}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
           {t.feedback.successMessage}
         </p>
         <button
           onClick={() => navigate('/')}
-          className="mt-2 px-6 py-3 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-black text-sm active:scale-95 transition-all"
+          className="mt-2 px-6 py-3 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm active:scale-95 transition-all"
         >
           {t.feedback.backToHome}
         </button>
@@ -96,18 +96,15 @@ export function Feedback() {
         <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-90 transition-all">
           <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
         </button>
-        <span className="text-base font-black text-gray-900 dark:text-white">{t.feedback.title}</span>
+        <span className="text-base font-semibold text-gray-900 dark:text-white">{t.feedback.title}</span>
       </div>
 
       <div className="max-w-xl mx-auto px-4 pt-4 md:pt-10">
 
         {/* Desktop header */}
         <div className="hidden md:flex items-center gap-3 mb-6">
-          <div className="w-9 h-9 rounded-xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
-            <MessageSquareHeart className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-          </div>
           <div>
-            <h1 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">{t.feedback.title}</h1>
+            <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white">{t.feedback.title}</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">{t.feedback.subtitle}</p>
           </div>
         </div>
@@ -116,7 +113,7 @@ export function Feedback() {
 
           {/* Rating */}
           <div>
-            <p className="text-sm font-black text-gray-800 dark:text-gray-200 mb-2">{t.feedback.rateSite}</p>
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">{t.feedback.rateSite}</p>
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map((i) => (
                 <button
@@ -184,7 +181,7 @@ export function Feedback() {
           <button
             onClick={handleSubmit}
             disabled={sending}
-            className="w-full py-3.5 rounded-2xl bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-white font-black text-sm shadow-md shadow-violet-500/25 active:scale-95 transition-all"
+            className="w-full py-3.5 rounded-2xl bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-white font-semibold text-sm active:scale-95 transition-all"
           >
             {sending ? t.feedback.sending : t.feedback.send}
           </button>

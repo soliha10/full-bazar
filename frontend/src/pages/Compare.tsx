@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Plus } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { fetchCompare } from '../services/api';
 import { useCompare, MAX_COMPARE } from '../contexts/CompareContext';
 import { SEO, SITE_URL } from '../components/SEO';
@@ -67,13 +67,13 @@ export function Compare() {
       </button>
 
       <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
-        <h1 className="text-2xl font-black text-gray-900 dark:text-white">{t.compare.title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">{t.compare.title}</h1>
         {items.length < MAX_COMPARE && (
           <button
             onClick={() => setShowPicker((v) => !v)}
             className="flex items-center gap-1.5 text-sm font-bold text-violet-600 bg-violet-50 dark:bg-violet-900/30 hover:bg-violet-100 dark:hover:bg-violet-900/50 px-3 py-2 rounded-xl transition-colors"
           >
-            <Plus className="w-4 h-4" /> {t.compare.addProduct}
+            {t.compare.addProduct}
           </button>
         )}
       </div>

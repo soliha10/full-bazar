@@ -1,4 +1,4 @@
-import { Heart, ChevronLeft, ChevronRight, TrendingDown } from "lucide-react";
+import { Heart, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatSum } from "../../utils/productMapper";
 import { FALLBACK_IMAGE, type Gallery } from "./useImageGallery";
 
@@ -17,12 +17,11 @@ export function ImageGallery({ gallery, productName, savings, liked, onToggleLik
 
   return (
     <div className="md:flex md:flex-row-reverse md:items-start gap-3">
-    <div className="relative flex-1 bg-white dark:bg-gray-900 rounded-2xl md:rounded-[2.5rem] border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div className="relative flex-1 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
       {/* Savings badge */}
       {savings > 0 && (
         <div className="absolute top-4 right-14 md:right-4 z-10">
-          <span className="flex items-center gap-1 bg-emerald-500 text-white px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm">
-            <TrendingDown className="w-3 h-3" />
+          <span className="bg-white/90 dark:bg-gray-900/90 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-md text-xs font-medium">
             -{formatSum(savings)}
           </span>
         </div>
@@ -111,7 +110,7 @@ export function ImageGallery({ gallery, productName, savings, liked, onToggleLik
           onClick={() => goToImage(idx)}
           className={`w-full aspect-square shrink-0 bg-white dark:bg-gray-900 rounded-2xl p-2 border-2 transition-all ${
             selectedImage === idx
-              ? "border-violet-600 shadow-md shadow-violet-500/10"
+              ? "border-violet-600"
               : "border-gray-100 dark:border-gray-800 hover:border-violet-200 dark:hover:border-violet-700"
           }`}
         >

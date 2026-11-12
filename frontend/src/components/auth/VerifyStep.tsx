@@ -21,7 +21,7 @@ export function VerifyStep({ f }: { f: AuthForm }) {
       </div>
 
       <div>
-        <label htmlFor={ids.code} className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+        <label htmlFor={ids.code} className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           {a.codeLabel}
         </label>
         <input
@@ -39,7 +39,7 @@ export function VerifyStep({ f }: { f: AuthForm }) {
           aria-invalid={Boolean(serverErrors.code)}
           aria-describedby={serverErrors.code ? `${ids.code}-error` : undefined}
           disabled={isLoading}
-          className={`mt-1 w-full py-3.5 rounded-xl border bg-gray-50 dark:bg-gray-900 text-center text-2xl font-black tracking-[0.5em] text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700 focus:outline-none focus:ring-2 transition disabled:opacity-60 ${
+          className={`mt-1 w-full py-3.5 rounded-xl border bg-gray-50 dark:bg-gray-900 text-center text-2xl font-semibold tracking-[0.5em] text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700 focus:outline-none focus:ring-2 transition disabled:opacity-60 ${
             serverErrors.code
               ? 'border-red-300 dark:border-red-700 focus:ring-red-400/30 focus:border-red-400'
               : 'border-gray-200 dark:border-gray-700 focus:ring-violet-400/40 focus:border-violet-400'
@@ -56,7 +56,7 @@ export function VerifyStep({ f }: { f: AuthForm }) {
 
       <button
         type="submit" disabled={isLoading || code.length !== CODE_LENGTH} aria-busy={isLoading}
-        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-black text-sm shadow-md shadow-violet-500/25 transition-all active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
+        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm transition-all active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
       >
         {isLoading ? spinner : <>{a.verify}<ChevronRight className="w-4 h-4" /></>}
       </button>
@@ -69,7 +69,7 @@ export function VerifyStep({ f }: { f: AuthForm }) {
           {sentTo.channel === 'email' ? a.changeEmail : a.changePhone}
         </button>
         <button type="button" onClick={handleResend} disabled={isLoading || resendLeft > 0}
-          className="flex items-center gap-1 font-black text-violet-600 dark:text-violet-400 hover:underline disabled:text-gray-400 disabled:no-underline disabled:cursor-default">
+          className="flex items-center gap-1 font-semibold text-violet-600 dark:text-violet-400 hover:underline disabled:text-gray-400 disabled:no-underline disabled:cursor-default">
           <RotateCw className="w-3.5 h-3.5" />
           {resendLeft > 0 ? a.resendIn.replace('{{count}}', String(resendLeft)) : a.resend}
         </button>

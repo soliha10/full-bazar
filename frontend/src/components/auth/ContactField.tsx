@@ -16,7 +16,7 @@ export function ContactField({ f }: { f: AuthForm }) {
         error={errorText(visibleError('phone'))}
         hint={serverErrors.phone === 'phone_taken' && (
           <button type="button" onClick={() => { setEmail(`+998 ${phone}`); switchMode('login'); }}
-            className="mt-1 text-[11px] font-black text-violet-600 dark:text-violet-400 hover:underline">
+            className="mt-1 text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:underline">
             {a.loginInstead} →
           </button>
         )}
@@ -45,7 +45,7 @@ export function ContactField({ f }: { f: AuthForm }) {
       hint={<>
         {serverErrors.email === 'email_taken' && (
           <button type="button" onClick={() => switchMode('login')}
-            className="mt-1 text-[11px] font-black text-violet-600 dark:text-violet-400 hover:underline">
+            className="mt-1 text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:underline">
             {a.loginInstead} →
           </button>
         )}
@@ -53,7 +53,7 @@ export function ContactField({ f }: { f: AuthForm }) {
           <p className="mt-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
             {a.didYouMean.replace('{{email}}', emailSuggestion)}{' '}
             <button type="button" onClick={() => onFieldChange('email', emailSuggestion)}
-              className="font-black text-violet-600 dark:text-violet-400 hover:underline">
+              className="font-semibold text-violet-600 dark:text-violet-400 hover:underline">
               {a.useSuggestion}
             </button>
           </p>

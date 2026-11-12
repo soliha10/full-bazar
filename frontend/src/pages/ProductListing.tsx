@@ -97,7 +97,7 @@ export function ProductListing() {
             {/* Sahifaning yagona h1 i. Mobil ko'rinishda tepadagi qidiruv
                 paneli sarlavha vazifasini bajaradi, shuning uchun u yerda
                 faqat skrin-riderlar uchun qoladi. */}
-            <h1 className="sr-only md:not-sr-only md:mb-3 md:text-2xl md:font-black md:tracking-tight md:text-gray-900 md:dark:text-white">
+            <h1 className="sr-only md:not-sr-only md:mb-3 md:text-2xl md:font-semibold md:tracking-tight md:text-gray-900 md:dark:text-white">
               {pageHeading}
             </h1>
 

@@ -1,6 +1,6 @@
 import type { RefObject } from 'react';
 import { motion } from 'framer-motion';
-import { X, Search, Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { ProductCard, type Product } from '../../components/ProductCard';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -41,45 +41,39 @@ export function ProductResults(props: Props) {
         // So'rov xato bo'lsa "topilmadi" deyish noto'g'ri — mahsulot bor,
         // faqat server javob bermadi. Shuning uchun alohida xabar va
         // qayta urinish tugmasi.
-        <div role="alert" className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-2xl border border-dashed border-red-200 dark:border-red-900/50 bg-white dark:bg-gray-900">
-          <div className="w-16 h-16 rounded-3xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-4">
-            <AlertTriangle className="w-7 h-7 text-red-400" />
-          </div>
-          <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-1">{t.listing.loadErrorTitle}</h3>
-          <p className="text-sm text-gray-400 mb-6 max-w-xs">{t.listing.loadErrorDesc}</p>
+        <div role="alert" className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-xl border border-gray-200 dark:border-gray-800">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">{t.listing.loadErrorTitle}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-xs">{t.listing.loadErrorDesc}</p>
           <button
             onClick={props.refetch}
-            className="inline-flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
+            className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
           >
-            <RotateCcw className="w-3.5 h-3.5" /> {t.listing.retry}
+            {t.listing.retry}
           </button>
         </div>
       ) : filteredProducts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-          <div className="w-16 h-16 rounded-3xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center mb-4">
-            <Search className="w-7 h-7 text-gray-300 dark:text-gray-600" />
-          </div>
-          <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-1">
+        <div className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-xl border border-gray-200 dark:border-gray-800">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
             {searchQuery ? t.listing.noResultsFor.replace('{{query}}', searchQuery) : t.listing.noProductsFound}
           </h3>
-          <p className="text-sm text-gray-400 mb-6 max-w-xs">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-xs">
             {searchQuery ? t.listing.noResultsForDesc : t.listing.noProductsDesc}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2">
             {searchQuery && (
               <button
                 onClick={props.onClearSearch}
-                className="inline-flex items-center gap-1.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-violet-400 text-sm font-semibold px-5 py-2.5 rounded-xl transition"
+                className="border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400 text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
               >
-                <X className="w-3.5 h-3.5" /> {t.listing.clearSearch}
+                {t.listing.clearSearch}
               </button>
             )}
             {activeFilterCount > 0 && (
               <button
                 onClick={props.onResetFilters}
-                className="inline-flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
+                className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
               >
-                <RotateCcw className="w-3.5 h-3.5" /> {t.listing.resetFilters}
+                {t.listing.resetFilters}
               </button>
             )}
           </div>

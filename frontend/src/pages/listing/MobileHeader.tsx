@@ -1,4 +1,4 @@
-import { LayoutGrid, List, X, Search, SlidersHorizontal, ArrowLeft } from 'lucide-react';
+import { LayoutGrid, List, X, Search, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { SORT_OPTIONS } from './constants';
 import type { ListingFilters } from './useListingFilters';
@@ -78,15 +78,10 @@ export function MobileHeader({ f, actions, onBack }: {
         {/* Filter button */}
         <button
           onClick={() => setIsMobileFilterOpen(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white px-3 py-1.5 text-xs font-black shrink-0 active:scale-95 transition-all shadow-sm shadow-violet-500/10"
+          className="flex items-center rounded-full border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white px-3 py-1.5 text-xs font-medium shrink-0 transition-colors"
         >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
           {t.listing.filters}
-          {activeFilterCount > 0 && (
-            <span className="w-4 h-4 flex items-center justify-center rounded-full bg-white text-[9px] font-black text-violet-600">
-              {activeFilterCount}
-            </span>
-          )}
+          {activeFilterCount > 0 && <span className="ml-1 text-violet-600 dark:text-violet-400">{activeFilterCount}</span>}
         </button>
 
         {/* Sort scroll */}

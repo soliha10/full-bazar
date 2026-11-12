@@ -1,4 +1,3 @@
-import { ExternalLink } from "lucide-react";
 import type { Product } from "../../components/ProductCard";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum, formatCheckedAt } from "../../utils/productMapper";
@@ -15,41 +14,30 @@ export function MobileOffers({ product, sortedMarkets, showAllMarkets, onToggleS
   const { t } = useLanguage();
 
   return (
-    <div className="md:hidden space-y-2">
+    <div className="md:hidden">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-black text-gray-900 dark:text-white text-sm">{t.detail.compareStores}</h3>
-        <span className="text-xs font-bold text-violet-600 dark:text-violet-400">
+        <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{t.detail.compareStores}</h3>
+        <span className="text-xs text-gray-500 dark:text-gray-400">
           {product.markets?.length} {t.detail.storesAvailable}
         </span>
       </div>
       {(showAllMarkets ? sortedMarkets : sortedMarkets.slice(0, 4)).map((market, idx) => (
         <div
           key={idx}
-          className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
-            idx === 0
-              ? 'bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800/50'
-              : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700'
-          }`}
+          className="flex items-center justify-between py-3 border-b last:border-b-0 border-gray-100 dark:border-gray-800"
         >
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${
-              idx === 0
-                ? 'bg-violet-600 text-white shadow-sm shadow-violet-500/25'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-            }`}>
-              {market.source.substring(0, 1)}
-            </div>
             <div>
-              <span className={`font-bold text-sm block ${idx === 0 ? 'text-violet-700 dark:text-violet-300' : 'text-gray-900 dark:text-white'}`}>
+              <span className={`text-sm block text-gray-900 dark:text-white ${idx === 0 ? 'font-medium' : ''}`}>
                 {market.source}
               </span>
               {idx === 0 ? (
-                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                  ✓ {t.detailPage.cheapestBadge}
+                <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                  {t.detailPage.cheapestBadge}
                 </span>
               ) : (
                 formatCheckedAt(market.checkedAt, t.checkedAt) && (
-                  <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500">
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
                     {formatCheckedAt(market.checkedAt, t.checkedAt)}
                   </span>
                 )
@@ -57,16 +45,16 @@ export function MobileOffers({ product, sortedMarkets, showAllMarkets, onToggleS
             </div>
           </div>
           <div className="flex flex-col items-end gap-1.5">
-            <span className={`font-black text-sm ${idx === 0 ? 'text-violet-700 dark:text-violet-300' : 'text-gray-900 dark:text-white'}`}>
+            <span className={`font-semibold text-sm tabular-nums text-gray-900 dark:text-white`}>
               {formatSum(market.price)}
             </span>
             <a
               href={market.url}
               target="_blank"
               onClick={() => { if (product) trackStoreClick(product.id, market.source, market.price); }}
-              className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white px-3 py-1.5 rounded-xl text-[11px] font-bold min-h-[36px] active:bg-violet-600 active:text-white active:border-violet-600 transition-colors"
+              className="flex items-center border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white px-3 rounded-lg text-xs font-medium min-h-[36px] active:bg-violet-600 active:text-white active:border-violet-600 transition-colors"
             >
-              {t.detail.shop} <ExternalLink className="w-3 h-3" />
+              {t.detail.shop}
             </a>
           </div>
         </div>
@@ -77,7 +65,7 @@ export function MobileOffers({ product, sortedMarkets, showAllMarkets, onToggleS
       {sortedMarkets.length > 4 && (
         <button
           onClick={onToggleShowAll}
-          className="w-full text-center py-3 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-xs font-black text-violet-600 dark:text-violet-400 active:scale-[0.98] transition-transform"
+          className="w-full text-center py-3 text-sm font-medium text-violet-600 dark:text-violet-400"
         >
           {showAllMarkets
             ? t.detailPage.showFewerStores

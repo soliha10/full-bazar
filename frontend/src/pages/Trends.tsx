@@ -40,7 +40,7 @@ export function Trends() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{t.trends.title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight">{t.trends.title}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           {t.trends.subtitle}
         </p>

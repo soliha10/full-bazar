@@ -1,4 +1,4 @@
-import { Heart, Share2, ChevronLeft, ArrowRight } from "lucide-react";
+import { Heart, Share2, ChevronLeft } from "lucide-react";
 import type { Product } from "../../components/ProductCard";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum } from "../../utils/productMapper";
@@ -51,10 +51,10 @@ export function MobileBuyBar({ product, selectedMarket }: { product: Product; se
       style={{ boxShadow: '0 -4px 20px rgba(0,0,0,0.06)' }}
     >
       <div className="flex flex-col flex-1">
-        <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">
+        <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide leading-none mb-1">
           {t.detail.fromPrice}
         </span>
-        <span className="text-xl font-black text-violet-600 dark:text-violet-400 leading-none">
+        <span className="text-xl font-semibold text-gray-900 dark:text-white leading-none">
           {formatSum(selectedMarket?.price || product.price)}
         </span>
       </div>
@@ -62,10 +62,9 @@ export function MobileBuyBar({ product, selectedMarket }: { product: Product; se
         href={selectedMarket?.url}
         target="_blank"
         onClick={() => { if (selectedMarket) trackStoreClick(product.id, selectedMarket.source, selectedMarket.price); }}
-        className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-7 py-3.5 rounded-2xl font-black text-sm shadow-lg shadow-violet-500/25 active:scale-95 transition-all whitespace-nowrap"
+        className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-7 py-3.5 rounded-xl font-medium text-sm transition-colors whitespace-nowrap"
       >
         {t.detail.goToShop}
-        <ArrowRight className="w-4 h-4" />
       </a>
     </div>
   );

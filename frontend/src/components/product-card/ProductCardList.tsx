@@ -1,87 +1,63 @@
-import { Star, ArrowRight, TrendingDown, Heart, Scale } from 'lucide-react';
+import { Heart, Scale } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatSum } from '../../utils/productMapper';
 import type { Product } from './types';
 import type { ProductCardState } from './useProductCard';
 
+const PLACEHOLDER = 'https://placehold.co/200x200/f9fafb/9ca3af?text=📱';
+
 // ── List view ──────────────────────────────────────────────────────────────
+// Grid kartasi bilan bir xil minimal uslub: nom, narx, bitta izoh qatori.
 export function ProductCardList({ product, card }: { product: Product; card: ProductCardState }) {
-  const { t, href, stop, liked, comparing, compareDisabled, compareTitle, sortedMarkets, bestPrice, savings } = card;
+  const { t, href, stop, liked, comparing, compareDisabled, compareTitle, sortedMarkets, bestPrice, savings, bestMarket } = card;
+  const stores = sortedMarkets.length;
+  const action = (on: boolean) =>
+    `w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
+      on ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+    }`;
+
   return (
     <div
       onClick={card.open}
-      className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-3 flex gap-3 group hover:shadow-lg hover:shadow-violet-500/8 hover:border-violet-200 dark:hover:border-violet-800/50 transition-all duration-200 cursor-pointer active:scale-[0.99]"
+      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 flex items-center gap-4 hover:border-gray-300 dark:hover:border-gray-700 transition-colors cursor-pointer"
     >
-      {/* Image */}
-      <div className="relative w-24 h-24 shrink-0 bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden">
+      <div className="w-20 h-20 shrink-0 bg-gray-50 dark:bg-gray-800/40 rounded-lg overflow-hidden">
         <img
-          src={product.image || 'https://placehold.co/200x200/f5f3ff/7c3aed?text=📱'}
+          src={product.image || PLACEHOLDER}
           alt={product.name}
-          onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/200x200/f5f3ff/7c3aed?text=📱'; }}
-          className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+          onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}
+          className="w-full h-full object-contain p-2 mix-blend-multiply dark:mix-blend-normal"
         />
-        {sortedMarkets.length > 1 && (
-          <div className="absolute bottom-1 left-1 bg-violet-600/90 text-white text-[9px] font-black px-1.5 py-0.5 rounded-lg">
-            {sortedMarkets.length} ta
-          </div>
-        )}
-        <button
-          onClick={(e) => { e.stopPropagation(); card.toggleCompare(); }}
-          title={compareTitle}
-          className={`absolute top-1 left-1 w-6 h-6 flex items-center justify-center rounded-lg shadow-sm transition-all active:scale-90 ${
-            comparing ? 'bg-violet-600 text-white' : 'bg-white/90 dark:bg-gray-900/90 text-gray-400'
-          } ${compareDisabled ? 'opacity-40' : ''}`}
-        >
-          <Scale className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={(e) => { e.stopPropagation(); card.toggleLike(); }}
-          className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-lg bg-white/90 dark:bg-gray-900/90 shadow-sm transition-all active:scale-90"
-        >
-          <Heart className={`w-3.5 h-3.5 transition-colors ${liked ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
-        </button>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col justify-between py-0.5 min-w-0">
-        <div>
-          <div className="flex items-center gap-1.5 mb-1">
-            {product.rating > 0 && (
-              <>
-                <div className="flex items-center gap-0.5 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-lg">
-                  <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
-                  <span className="text-xs font-black text-gray-800 dark:text-gray-200">{product.rating}</span>
-                </div>
-                <span className="text-[10px] text-gray-400 dark:text-gray-500">({product.reviews})</span>
-              </>
-            )}
-            {savings > 0 && (
-              <span className="ml-auto flex items-center gap-0.5 text-[9px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded-lg">
-                <TrendingDown className="w-2.5 h-2.5" />
-                -{formatSum(savings)}
-              </span>
-            )}
-          </div>
-          <h3 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug">
-            <Link to={href} onClick={stop} className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors">
-              {product.name}
-            </Link>
-          </h3>
-        </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-snug">
+          <Link to={href} onClick={stop} className="hover:text-violet-700 dark:hover:text-violet-300 transition-colors">
+            {product.name}
+          </Link>
+        </h3>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
+          {stores > 1 ? t.common.fromStores.replace('{{count}}', String(stores)) : bestMarket?.source}
+          {savings > 0 && <span className="text-emerald-600 dark:text-emerald-400"> · −{formatSum(savings)}</span>}
+        </p>
+      </div>
 
-        <div className="flex items-center justify-between mt-2">
-          <div>
-            <p className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider leading-none mb-0.5">
-              {sortedMarkets.length > 0
-                ? t.common.fromStores.replace('{{count}}', String(sortedMarkets.length))
-                : t.listing.startingFrom}
-            </p>
-            <p className="text-base font-black text-gray-900 dark:text-white tracking-tight">{formatSum(bestPrice)}</p>
-          </div>
-          <div className="w-10 h-10 flex items-center justify-center bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded-xl group-hover:bg-violet-600 group-hover:text-white transition-all">
-            <ArrowRight className="w-4 h-4" />
-          </div>
-        </div>
+      <p className="text-base font-semibold text-gray-900 dark:text-white tracking-tight whitespace-nowrap">
+        {formatSum(bestPrice)}
+      </p>
+
+      <div className="flex flex-col gap-1 shrink-0">
+        <button type="button" title={compareTitle} aria-label={compareTitle} aria-pressed={comparing}
+          onClick={(e) => { e.stopPropagation(); card.toggleCompare(); }}
+          className={`${action(comparing)} ${compareDisabled ? 'opacity-40' : ''}`}>
+          <Scale className="w-4 h-4" />
+        </button>
+        <button type="button" title={t.footer.wishlist} aria-label={t.footer.wishlist} aria-pressed={liked}
+          onClick={(e) => { e.stopPropagation(); card.toggleLike(); }}
+          className={action(liked)}>
+          <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
+        </button>
       </div>
     </div>
   );

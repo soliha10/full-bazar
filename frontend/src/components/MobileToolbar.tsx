@@ -54,40 +54,33 @@ export function MobileToolbar() {
               to={item.path}
               className="relative flex flex-col items-center gap-1 flex-1 min-h-[48px] justify-center"
             >
-              {isActive && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-violet-600" />
-              )}
-
-              <div className={`relative flex items-center justify-center w-10 h-8 rounded-2xl transition-all duration-200 ${
-                isActive ? 'bg-violet-100 dark:bg-violet-900/50 scale-110' : ''
-              }`}>
+              <div className={`relative flex items-center justify-center w-10 h-8`}>
 
                 {/* Profile: show user initial when logged in */}
                 {isProfile && user ? (
-                  <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black bg-linear-to-br from-violet-500 to-violet-700 text-white shadow-sm">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-medium bg-violet-600 text-white">
                     {user.name.charAt(0).toUpperCase()}
                   </div>
                 ) : (
                   <item.icon
                     className={`w-5 h-5 transition-all duration-200 ${
-                      isWatchlist && isActive ? 'fill-violet-200 dark:fill-violet-800 text-violet-600' :
                       isActive ? 'text-violet-600 dark:text-violet-400' : 'text-gray-400 dark:text-gray-500'
                     }`}
-                    strokeWidth={isActive ? 2.5 : 1.8}
+                    strokeWidth={isActive ? 2.2 : 1.8}
                   />
                 )}
 
                 {/* Count badge — red for favorites, violet for watchlist */}
                 {item.count > 0 && (
-                  <span className={`absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 rounded-full text-white text-[9px] font-black flex items-center justify-center leading-none ${
-                    isWishlist ? 'bg-red-500' : isWatchlist ? 'bg-violet-600' : 'bg-gray-500'
+                  <span className={`absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 rounded-full text-white text-[9px] font-semibold flex items-center justify-center leading-none ${
+                    isWishlist || isWatchlist ? 'bg-violet-600' : 'bg-gray-500'
                   }`}>
                     {item.count > 9 ? '9+' : item.count}
                   </span>
                 )}
               </div>
 
-              <span className={`text-[10px] font-bold leading-none transition-all duration-200 ${
+              <span className={`text-[10px] font-medium leading-none transition-colors ${
                 isActive ? 'text-violet-600 dark:text-violet-400' : 'text-gray-400 dark:text-gray-500'
               }`}>
                 {item.label}

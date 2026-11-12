@@ -5,7 +5,7 @@ import type { AuthForm } from './useAuthForm';
 export function AuthHeader({ f }: { f: AuthForm }) {
   const { a, ids, isRegister, step, steps, handleClose } = f;
   return (
-    <div className="relative bg-linear-to-br from-violet-600 to-violet-800 px-6 pt-6 pb-8">
+    <div className="relative bg-violet-600 px-6 pt-6 pb-8">
       <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/5" aria-hidden="true" />
       <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-white/5" aria-hidden="true" />
 
@@ -25,7 +25,7 @@ export function AuthHeader({ f }: { f: AuthForm }) {
           <ShoppingBag className="w-5 h-5 text-white" />
         </div>
         <div className="min-w-0">
-          <h2 id={ids.title} className="text-lg font-black text-white leading-tight">
+          <h2 id={ids.title} className="text-lg font-semibold text-white leading-tight">
             {!isRegister ? a.login : step === 'credentials' ? a.register : step === 'verify' ? a.verifyTitle : a.yourProfile}
           </h2>
           <p className="text-xs font-medium text-white/70 mt-0.5">
@@ -41,7 +41,7 @@ export function AuthHeader({ f }: { f: AuthForm }) {
             const current = steps.indexOf(step);
             return (
               <div key={st} className="flex items-center gap-2">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold transition-all ${
                   i === current ? 'bg-white text-violet-700' : i < current ? 'bg-white/30 text-white' : 'bg-white/15 text-white/50'
                 }`}>
                   {i < current ? <Check className="w-3 h-3" /> : i + 1}

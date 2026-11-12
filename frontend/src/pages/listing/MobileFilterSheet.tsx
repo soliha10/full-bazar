@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { ListingFilters } from './useListingFilters';
 import type { FilterActions } from './useFilterActions';
@@ -48,10 +48,9 @@ export function MobileFilterSheet({ f, actions }: { f: ListingFilters; actions: 
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-violet-500" />
-              <span className="text-sm font-bold text-gray-900 dark:text-white">{t.listing.filters}</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">{t.listing.filters}</span>
               {activeFilterCount > 0 && (
-                <span className="bg-violet-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                <span className="text-sm text-violet-600 dark:text-violet-400">
                   {activeFilterCount}
                 </span>
               )}
@@ -124,13 +123,13 @@ export function MobileFilterSheet({ f, actions }: { f: ListingFilters; actions: 
           >
             <button
               onClick={handleResetFilters}
-              className="flex items-center justify-center gap-1.5 rounded-2xl border border-gray-200 dark:border-gray-700 py-3.5 text-sm font-semibold text-gray-700 dark:text-gray-300 active:scale-95 transition-all"
+              className="rounded-xl border border-gray-200 dark:border-gray-700 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors"
             >
-              <RotateCcw className="w-4 h-4" /> {t.listing.reset}
+              {t.listing.reset}
             </button>
             <button
               onClick={handleApplyMobileFilters}
-              className="rounded-2xl bg-violet-600 hover:bg-violet-700 py-3.5 text-sm font-bold text-white shadow-md shadow-violet-500/20 active:scale-95 transition-all"
+              className="rounded-xl bg-violet-600 hover:bg-violet-700 py-3 text-sm font-medium text-white transition-colors"
             >
               {t.listing.viewResults}
             </button>

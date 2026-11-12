@@ -1,43 +1,40 @@
-import { LayoutGrid, List, SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { LayoutGrid, List } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { SORT_OPTIONS } from './constants';
 import type { ListingFilters } from './useListingFilters';
 import type { FilterActions } from './useFilterActions';
 import { FilterPanel } from './FilterPanel';
 
-/** Desktopdagi chap ustun — filtrlar darhol qo'llanadi. */
+/**
+ * Desktopdagi chap ustun — filtrlar darhol qo'llanadi.
+ *
+ * Navbar `fixed` va 65px baland. Ilgari ustun `top-6` (24px) da yopishardi,
+ * ya'ni sahifa aylantirilganda uning tepasidagi 41px — "Filtrlar" sarlavhasi
+ * va "Tozalash" tugmasi — navbar ostida qolib ketardi. Endi ustun navbar
+ * ostidan boshlanadi va balandligi ekranga sig'adi.
+ */
 export function DesktopSidebar({ f, actions }: { f: ListingFilters; actions: FilterActions }) {
   const { t } = useLanguage();
   const { activeFilterCount, handleResetFilters } = actions;
 
   return (
-    <aside className="hidden w-[220px] shrink-0 lg:block">
-      <div
-        className="sticky top-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-y-auto overflow-x-hidden"
-        style={{ maxHeight: 'calc(100vh - 3rem)' }}
-      >
-        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-4 py-3">
-          <span className="text-[13px] font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400" />
+    <aside className="hidden w-[232px] shrink-0 lg:block">
+      <div className="sticky top-[86px] max-h-[calc(100vh-102px)] overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-thin pr-2">
+        <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-800">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
             {t.listing.filters}
             {activeFilterCount > 0 && (
-              <span className="ml-0.5 rounded-full bg-violet-600 px-1.5 text-[10px] font-black text-white">
-                {activeFilterCount}
-              </span>
+              <span className="ml-1.5 text-violet-600 dark:text-violet-400">{activeFilterCount}</span>
             )}
-          </span>
+          </h2>
           {activeFilterCount > 0 && (
-            <button
-              onClick={handleResetFilters}
-              className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-500 transition-colors"
-            >
-              <RotateCcw className="w-3 h-3" /> {t.listing.reset}
+            <button type="button" onClick={handleResetFilters}
+              className="text-xs text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors">
+              {t.listing.reset}
             </button>
           )}
         </div>
-        <div className="px-3 pb-4">
-          <FilterPanel f={f} isMobile={false} />
-        </div>
+        <FilterPanel f={f} isMobile={false} />
       </div>
     </aside>
   );
@@ -59,8 +56,9 @@ export function DesktopToolbar({ f, total, showCount }: { f: ListingFilters; tot
         <div className="flex items-center gap-0.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5">
           {SORT_OPTIONS.map(({ key, labelKey }) => (
             <button key={key} onClick={() => setSortBy(key)}
-              className={`rounded-md px-2.5 py-1.5 text-xs font-semibold transition ${
-                sortBy === key ? 'bg-violet-600 text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+              aria-pressed={sortBy === key}
+              className={`rounded-md px-2.5 py-1.5 text-xs transition-colors ${
+                sortBy === key ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               {(t.listing as any)[labelKey] ?? labelKey}
@@ -69,11 +67,13 @@ export function DesktopToolbar({ f, total, showCount }: { f: ListingFilters; tot
         </div>
         <div className="flex items-center gap-0.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5">
           <button onClick={() => setViewMode('grid')}
-            className={`rounded-md p-1.5 transition ${viewMode === 'grid' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+            aria-label={t.listing.grid} aria-pressed={viewMode === 'grid'}
+            className={`rounded-md p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-400 hover:text-gray-700'}`}>
             <LayoutGrid className="h-4 w-4" />
           </button>
           <button onClick={() => setViewMode('list')}
-            className={`rounded-md p-1.5 transition ${viewMode === 'list' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+            aria-label={t.listing.list} aria-pressed={viewMode === 'list'}
+            className={`rounded-md p-1.5 transition-colors ${viewMode === 'list' ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-400 hover:text-gray-700'}`}>
             <List className="h-4 w-4" />
           </button>
         </div>

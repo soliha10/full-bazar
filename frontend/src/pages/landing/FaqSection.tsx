@@ -5,8 +5,8 @@ import { reveal } from './shared';
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   return (
-    <details className="group rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-4 open:shadow-sm">
-      <summary className="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-sm md:text-base text-gray-900 dark:text-white [&::-webkit-details-marker]:hidden">
+    <details className="group border-b border-gray-200 dark:border-gray-800 py-4">
+      <summary className="flex items-center justify-between gap-4 cursor-pointer list-none font-medium text-sm md:text-base text-gray-900 dark:text-white [&::-webkit-details-marker]:hidden">
         {q}
         <ChevronDown className="w-4 h-4 text-gray-400 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
       </summary>
@@ -26,10 +26,10 @@ export function FaqSection({ updated, storesCount, storeList }: {
   const h = t.home;
   return (
     <m.section {...reveal} aria-labelledby="faq-title" className="mt-12 md:mt-16 px-4 max-w-3xl mx-auto">
-      <h2 id="faq-title" className="font-black text-gray-900 dark:text-white text-xl md:text-3xl mb-6 text-center tracking-tight">
+      <h2 id="faq-title" className="font-semibold text-gray-900 dark:text-white text-xl md:text-2xl mb-4 tracking-tight">
         {h.faqTitle}
       </h2>
-      <div className="space-y-2.5">
+      <div className="border-t border-gray-200 dark:border-gray-800">
         {h.faq.map(item => (
           <FaqItem key={item.q} q={item.q}
             a={item.a
