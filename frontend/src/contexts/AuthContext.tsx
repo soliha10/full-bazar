@@ -1,7 +1,8 @@
 import {
-  createContext, useContext, useState, useCallback, ReactNode,
+  createContext, useContext, useState, useCallback, useEffect, ReactNode,
 } from 'react';
 import { trackGaEvent } from '../services/tracking';
+import type { AuthErrorCode } from '../utils/authValidation';
 
 export interface UserProfile {
   name: string;
@@ -20,15 +21,20 @@ export interface AuthUser {
   token: string;
 }
 
+/** Modal ochilganda tepada ko'rsatiladigan xabar (masalan, sessiya tugadi) */
+export type AuthNotice = 'session_expired' | null;
+
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthOpen: boolean;
   authMode: 'login' | 'register';
+  notice: AuthNotice;
   openLogin: () => void;
   openRegister: () => void;
   closeAuth: () => void;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
+  checkEmailAvailable: (email: string) => Promise<boolean>;
   logout: () => void;
   updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
 }
@@ -97,15 +103,44 @@ function shapeUser(apiUser: {
   };
 }
 
-async function apiPost(path: string, body: unknown): Promise<{ token: string; user: any }> {
-  const res = await fetch(`${API}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+/**
+ * Auth so'rovi xatosi. `code` — t.auth.errors dagi kalit, `fields` — qaysi
+ * maydon noto'g'ri (server 422 qaytarganda), `retryAfter` — soniyalarda.
+ * Ilgari xato matni to'g'ridan-to'g'ri ko'rsatilardi: 422 da u massiv bo'lib
+ * "[object Object]" chiqardi, qolganlari esa doim o'zbekcha edi.
+ */
+export class AuthError extends Error {
+  constructor(
+    public code: AuthErrorCode,
+    public fields: Partial<Record<'name' | 'email' | 'password', AuthErrorCode>> = {},
+    public retryAfter = 0,
+  ) {
+    super(code);
+  }
+}
+
+async function apiPost<T = { token: string; user: any }>(path: string, body: unknown): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(`${API}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new AuthError('network');
+  }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.detail ?? 'Xatolik yuz berdi');
-  return data;
+  if (res.ok) return data as T;
+
+  const detail = typeof data?.detail === 'object' && data.detail !== null && !Array.isArray(data.detail)
+    ? data.detail : {};
+  const retryAfter = Number(detail.retryAfter ?? res.headers.get('Retry-After') ?? 0) || 0;
+  if (res.status === 422) throw new AuthError('validation', detail.fields ?? {});
+  if (res.status === 429) throw new AuthError(detail.code === 'too_many_attempts' ? 'too_many_attempts' : 'rate_limited', {}, retryAfter);
+  if (detail.code === 'email_taken') throw new AuthError('email_taken', { email: 'email_taken' });
+  if (res.status === 401) throw new AuthError('invalid_credentials');
+  throw new AuthError('server');
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -116,10 +151,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(readUser);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [notice, setNotice] = useState<AuthNotice>(null);
 
   const openLogin    = useCallback(() => { setAuthMode('login');    setIsAuthOpen(true);  }, []);
   const openRegister = useCallback(() => { setAuthMode('register'); setIsAuthOpen(true);  }, []);
-  const closeAuth    = useCallback(() => setIsAuthOpen(false), []);
+  const closeAuth    = useCallback(() => { setIsAuthOpen(false); setNotice(null); }, []);
+
+  // Token muddati sahifa ochiq turganda tugasa ham foydalanuvchi chiqariladi
+  // va kirish oynasi sababi bilan ochiladi. Ilgari muddat faqat sahifa qayta
+  // yuklanganda tekshirilardi — oraliqda so'rovlar jimgina 401 qaytarardi.
+  const expireSession = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY);
+    setUser(null);
+    setNotice('session_expired');
+    setAuthMode('login');
+    setIsAuthOpen(true);
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const ms = getTokenExpiry(user.token) - Date.now();
+    if (ms <= 0) { expireSession(); return; }
+    // setTimeout 2^31 ms dan (~24.8 kun) katta qiymatni darhol bajaradi
+    const id = setTimeout(expireSession, Math.min(ms, 2 ** 31 - 1));
+    return () => clearTimeout(id);
+  }, [user, expireSession]);
+
+  // Saqlangan token hali haqiqiymi (foydalanuvchi o'chirilgan, kalit
+  // almashgan bo'lishi mumkin) — bir marta, sahifa ochilganda tekshiriladi.
+  useEffect(() => {
+    const token = readUser()?.token;
+    if (!token) return;
+    fetch(`${API}/users/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => { if (res.status === 401 || res.status === 404) expireSession(); })
+      .catch(() => undefined);
+  }, [expireSession]);
 
   const save = useCallback((u: AuthUser) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
@@ -133,6 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     save(shapeUser(data.user, data.token));
     setIsAuthOpen(false);
+    setNotice(null);
     trackGaEvent('login', { method: 'email' });
   }, [save]);
 
@@ -148,8 +215,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     save(shapeUser(data.user, data.token));
     setIsAuthOpen(false);
+    setNotice(null);
     trackGaEvent('sign_up', { method: 'email' });
   }, [save]);
+
+  const checkEmailAvailable = useCallback(async (email: string) => {
+    const data = await apiPost<{ available: boolean }>('/auth/check-email', {
+      email: email.trim().toLowerCase(),
+    });
+    return data.available;
+  }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
@@ -188,9 +263,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user, isAuthOpen, authMode,
+      user, isAuthOpen, authMode, notice,
       openLogin, openRegister, closeAuth,
-      login, register, logout, updateProfile,
+      login, register, checkEmailAvailable, logout, updateProfile,
     }}>
       {children}
     </AuthContext.Provider>

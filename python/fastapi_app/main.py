@@ -31,10 +31,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import InvalidTokenError
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from pydantic_core import PydanticCustomError
 from sklearn.metrics.pairwise import paired_cosine_distances
 from starlette.datastructures import Headers, MutableHeaders
 
+import auth_rules
 import brands
 import seo
 from specs_seed import SPEC_SEED
@@ -119,11 +123,23 @@ async def _optional_user(
 
 
 # ── Auth Pydantic models ──────────────────────────────────────────────────────
+# Har bir xato PydanticCustomError(<kod>) bo'lib chiqadi; quyidagi
+# _auth_validation_handler ularni {"fields": {"email": "email_invalid"}}
+# ko'rinishiga keltiradi va frontend kodni tanlangan tilda ko'rsatadi.
+
+def _rule(code: str | None) -> None:
+    if code:
+        raise PydanticCustomError(code, code)
+
+
+def _clean_list(v: list[str]) -> list[str]:
+    return [s.strip()[:40] for s in v[:20] if isinstance(s, str) and s.strip()]
+
 
 class RegisterRequest(BaseModel):
-    name:                 str                                       = Field(..., min_length=2, max_length=100)
-    email:                EmailStr
-    password:             str                                       = Field(..., min_length=8, max_length=128)
+    name:                 str
+    email:                str
+    password:             str
     age_group:            Literal["18-24", "25-34", "35-44", "45+"] = "25-34"
     budget_level:         Literal["budget", "mid", "premium"]       = "mid"
     preferred_brands:     list[str]                                 = []
@@ -131,18 +147,96 @@ class RegisterRequest(BaseModel):
 
     @field_validator("name")
     @classmethod
-    def strip_name(cls, v: str) -> str:
-        return v.strip()
+    def check_name(cls, v: str) -> str:
+        _rule(auth_rules.name_error(v))
+        return auth_rules.normalize_name(v)
+
+    @field_validator("email")
+    @classmethod
+    def check_email(cls, v: str) -> str:
+        _rule(auth_rules.email_error(v))
+        return auth_rules.normalize_email(v)
+
+    @model_validator(mode="after")
+    def check_password(self) -> "RegisterRequest":
+        code = auth_rules.new_password_error(self.password, email=self.email, name=self.name)
+        if code:
+            # model_validator xatosi "password" maydoniga tegishli bo'lishi uchun
+            raise PydanticCustomError("password:" + code, code)
+        return self
 
     @field_validator("preferred_brands", "preferred_categories")
     @classmethod
     def cap_list(cls, v: list[str]) -> list[str]:
-        return [s.strip() for s in v[:20] if s.strip()]
+        return _clean_list(v)
 
 
 class LoginRequest(BaseModel):
-    email:    EmailStr
-    password: str = Field(..., min_length=1)
+    email:    str
+    password: str
+
+    @field_validator("email")
+    @classmethod
+    def check_email(cls, v: str) -> str:
+        _rule(auth_rules.email_error(v))
+        return auth_rules.normalize_email(v)
+
+    @field_validator("password")
+    @classmethod
+    def check_password(cls, v: str) -> str:
+        _rule(auth_rules.login_password_error(v))
+        return v
+
+
+class EmailCheckRequest(BaseModel):
+    email: str
+
+    @field_validator("email")
+    @classmethod
+    def check_email(cls, v: str) -> str:
+        _rule(auth_rules.email_error(v))
+        return auth_rules.normalize_email(v)
+
+
+def _auth_error(status_code: int, code: str, message: str, **extra: Any) -> HTTPException:
+    """Auth xatolari: `code` — frontend tarjimasi uchun, `message` — zaxira matn."""
+    return HTTPException(status_code=status_code, detail={"code": code, "message": message, **extra})
+
+
+# ── Kirishni taxmin qilib buzishdan himoya ────────────────────────────────────
+# IP bo'yicha cheklov (_AUTH_RATE_LIMIT) bitta hisobga ko'p IP dan
+# urinishni to'xtatmaydi. Shuning uchun email bo'yicha ham: 15 daqiqada 5 ta
+# noto'g'ri parol — hisob shu vaqtga yopiladi. API bitta jarayonda ishlaydi
+# (Dockerfile: bitta uvicorn), xotiradagi hisoblagich yetarli.
+_LOGIN_FAIL_LIMIT = 5
+_LOGIN_FAIL_WINDOW = 15 * 60
+_login_failures: dict[str, deque] = {}
+
+
+def _login_retry_after(email: str) -> int:
+    q = _login_failures.get(email)
+    if not q:
+        return 0
+    now = time.monotonic()
+    while q and q[0] <= now - _LOGIN_FAIL_WINDOW:
+        q.popleft()
+    if not q:
+        _login_failures.pop(email, None)
+        return 0
+    if len(q) < _LOGIN_FAIL_LIMIT:
+        return 0
+    return max(1, int(q[0] + _LOGIN_FAIL_WINDOW - now))
+
+
+def _record_login_failure(email: str) -> None:
+    if len(_login_failures) > 50_000:  # xotira cheksiz o'smasin
+        _login_failures.clear()
+    _login_failures.setdefault(email, deque()).append(time.monotonic())
+
+
+# Topilmagan email uchun ham bcrypt tekshiruvi o'tkaziladi: aks holda javob
+# vaqti (≈0 ms va ≈250 ms) qaysi email ro'yxatdan o'tganini sezdirib qo'yardi.
+_DUMMY_PW_HASH = bcrypt.hashpw(b"timing-equalizer", bcrypt.gensalt(rounds=12)).decode()
 
 
 class UpdateProfileRequest(BaseModel):
@@ -150,6 +244,11 @@ class UpdateProfileRequest(BaseModel):
     budget_level:         Literal["budget", "mid", "premium"]
     preferred_brands:     list[str] = []
     preferred_categories: list[str] = []
+
+    @field_validator("preferred_brands", "preferred_categories")
+    @classmethod
+    def cap_list(cls, v: list[str]) -> list[str]:
+        return _clean_list(v)
 
 
 # ── ML matcher (loaded once at startup) ──────────────────────────────────────
@@ -604,7 +703,11 @@ class RateLimitMiddleware:
         if len(q) >= limit:
             response = JSONResponse(
                 status_code=429,
-                content={"detail": "Too many requests"},
+                content={"detail": {
+                    "code": "rate_limited",
+                    "message": "Too many requests",
+                    "retryAfter": _RATE_WINDOW,
+                }},
                 headers={"Retry-After": str(_RATE_WINDOW)},
             )
             return await response(scope, receive, send)
@@ -619,6 +722,33 @@ app = FastAPI(
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def _auth_validation_handler(request: Request, exc: RequestValidationError):
+    """Auth so'rovlarida 422 ni maydon -> kod ko'rinishiga keltiradi.
+
+    Standart javob ({"detail": [{loc, msg, ...}]}) inglizcha va frontend uni
+    "[object Object]" deb ko'rsatardi. Boshqa yo'llarga tegmaymiz.
+    """
+    if not (request.url.path.startswith("/api/auth/") or request.url.path == "/api/users/me/profile"):
+        return await request_validation_exception_handler(request, exc)
+    fields: dict[str, str] = {}
+    for err in exc.errors():
+        loc = [str(p) for p in err.get("loc", ()) if p != "body"]
+        etype = str(err.get("type", "invalid"))
+        if etype.startswith("password:"):
+            field, code = "password", etype.split(":", 1)[1]
+        else:
+            field = loc[0] if loc else "body"
+            code = etype if etype.startswith(("name_", "email_", "password_")) else f"{field}_invalid"
+            if etype == "missing":
+                code = f"{field}_required"
+        fields.setdefault(field, code)
+    return JSONResponse(
+        status_code=422,
+        content={"detail": {"code": "validation", "message": "Invalid input", "fields": fields}},
+    )
 # ── Netlify CDN keshi ─────────────────────────────────────────────────────────
 # Ommaviy o'qish javoblari Netlify chekkasida saqlanadi. stale-while-revalidate
 # tufayli kesh eskirgan bo'lsa ham foydalanuvchi darhol javob oladi, yangilash
@@ -2056,10 +2186,10 @@ async def auth_register(body: RegisterRequest) -> dict:
     pool: asyncpg.Pool = app.state.pool
 
     existing = await pool.fetchval(
-        "SELECT id FROM users WHERE lower(email) = $1", body.email.lower()
+        "SELECT id FROM users WHERE lower(email) = $1", body.email
     )
     if existing:
-        raise HTTPException(status_code=409, detail="Bu email allaqachon ro'yxatdan o'tgan")
+        raise _auth_error(409, "email_taken", "Bu email allaqachon ro'yxatdan o'tgan", field="email")
 
     loop = asyncio.get_running_loop()
     pw_hash = await loop.run_in_executor(None, _hash_pw, body.password)
@@ -2069,7 +2199,7 @@ async def auth_register(body: RegisterRequest) -> dict:
             async with conn.transaction():
                 user_row = await conn.fetchrow(
                     "INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email",
-                    body.name, body.email.lower(), pw_hash,
+                    body.name, body.email, pw_hash,
                 )
                 await conn.execute(
                     """
@@ -2084,7 +2214,7 @@ async def auth_register(body: RegisterRequest) -> dict:
                     body.preferred_categories,
                 )
     except asyncpg.UniqueViolationError:
-        raise HTTPException(status_code=409, detail="Bu email allaqachon ro'yxatdan o'tgan") from None
+        raise _auth_error(409, "email_taken", "Bu email allaqachon ro'yxatdan o'tgan", field="email") from None
 
     token = _make_token(str(user_row["id"]))
     return {
@@ -2098,9 +2228,31 @@ async def auth_register(body: RegisterRequest) -> dict:
     }
 
 
+@app.post("/api/auth/check-email")
+async def auth_check_email(body: EmailCheckRequest) -> dict:
+    """Ro'yxatdan o'tishning 1-qadamida: email bandligini 2-qadamdan OLDIN aytish.
+
+    Ilgari bu faqat oxirgi "Boshlash" bosilganda ma'lum bo'lardi va
+    foydalanuvchi profil tanlovlarini to'ldirib bo'lgach orqaga qaytarilardi.
+    Javob /api/auth/register ning 409 xatosidan ko'p narsa ochmaydi; so'rovlar
+    soni _AUTH_RATE_LIMIT bilan cheklangan.
+    """
+    pool: asyncpg.Pool = app.state.pool
+    existing = await pool.fetchval("SELECT 1 FROM users WHERE lower(email) = $1", body.email)
+    return {"available": existing is None}
+
+
 @app.post("/api/auth/login")
 async def auth_login(body: LoginRequest) -> dict:
     pool: asyncpg.Pool = app.state.pool
+
+    retry_after = _login_retry_after(body.email)
+    if retry_after:
+        raise _auth_error(
+            429, "too_many_attempts",
+            "Juda ko'p noto'g'ri urinish. Birozdan keyin qayta urinib ko'ring",
+            retryAfter=retry_after,
+        )
 
     row = await pool.fetchrow(
         """
@@ -2113,16 +2265,17 @@ async def auth_login(body: LoginRequest) -> dict:
         LEFT JOIN user_profiles p ON p.user_id = u.id
         WHERE lower(u.email) = $1
         """,
-        body.email.lower(),
+        body.email,
     )
 
-    if row is None:
-        raise HTTPException(status_code=401, detail="Email yoki parol noto'g'ri")
-
     loop = asyncio.get_running_loop()
-    ok = await loop.run_in_executor(None, _verify_pw, body.password, row["password_hash"])
-    if not ok:
-        raise HTTPException(status_code=401, detail="Email yoki parol noto'g'ri")
+    pw_hash = row["password_hash"] if row is not None else _DUMMY_PW_HASH
+    ok = await loop.run_in_executor(None, _verify_pw, body.password, pw_hash)
+    if row is None or not ok:
+        _record_login_failure(body.email)
+        raise _auth_error(401, "invalid_credentials", "Email yoki parol noto'g'ri")
+
+    _login_failures.pop(body.email, None)
 
     await pool.execute("UPDATE users SET last_login_at = NOW() WHERE id = $1", row["id"])
 
