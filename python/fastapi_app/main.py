@@ -40,6 +40,7 @@ from starlette.datastructures import Headers, MutableHeaders
 
 import auth_rules
 import brands
+import otp
 import seo
 from specs_seed import SPEC_SEED
 
@@ -94,7 +95,7 @@ async def _require_user(
     pool: asyncpg.Pool = app.state.pool
     row = await pool.fetchrow(
         """
-        SELECT u.id, u.name, u.email,
+        SELECT u.id, u.name, u.email, u.phone,
                COALESCE(p.age_group,            '25-34') AS age_group,
                COALESCE(p.budget_level,          'mid')   AS budget_level,
                COALESCE(p.preferred_brands,      '{}')    AS preferred_brands,
@@ -136,10 +137,26 @@ def _clean_list(v: list[str]) -> list[str]:
     return [s.strip()[:40] for s in v[:20] if isinstance(s, str) and s.strip()]
 
 
+Channel = Literal["email", "phone"]
+
+
+def _check_target(channel: str, value: str) -> str:
+    """Email yoki telefonni tekshirib, normallashtirilgan ko'rinishini qaytaradi."""
+    if channel == "phone":
+        _rule(auth_rules.phone_error(value))
+        return auth_rules.normalize_phone(value)
+    _rule(auth_rules.email_error(value))
+    return auth_rules.normalize_email(value)
+
+
 class RegisterRequest(BaseModel):
     name:                 str
-    email:                str
+    # Email yoki telefondan aynan bittasi. Kanal yoqilgan bo'lsa (otp) —
+    # verification_token ham shart: u /api/auth/verify-code dan keladi.
+    email:                Optional[str] = None
+    phone:                Optional[str] = None
     password:             str
+    verification_token:   Optional[str] = None
     age_group:            Literal["18-24", "25-34", "35-44", "45+"] = "25-34"
     budget_level:         Literal["budget", "mid", "premium"]       = "mid"
     preferred_brands:     list[str]                                 = []
@@ -153,17 +170,31 @@ class RegisterRequest(BaseModel):
 
     @field_validator("email")
     @classmethod
-    def check_email(cls, v: str) -> str:
-        _rule(auth_rules.email_error(v))
-        return auth_rules.normalize_email(v)
+    def check_email(cls, v: Optional[str]) -> Optional[str]:
+        return None if v is None or not v.strip() else _check_target("email", v)
+
+    @field_validator("phone")
+    @classmethod
+    def check_phone(cls, v: Optional[str]) -> Optional[str]:
+        return None if v is None or not v.strip() else _check_target("phone", v)
 
     @model_validator(mode="after")
     def check_password(self) -> "RegisterRequest":
-        code = auth_rules.new_password_error(self.password, email=self.email, name=self.name)
+        if not self.email and not self.phone:
+            raise PydanticCustomError("email:email_required", "email_required")
+        code = auth_rules.new_password_error(self.password, email=self.email or "", name=self.name)
         if code:
             # model_validator xatosi "password" maydoniga tegishli bo'lishi uchun
             raise PydanticCustomError("password:" + code, code)
         return self
+
+    @property
+    def channel(self) -> str:
+        return "email" if self.email else "phone"
+
+    @property
+    def target(self) -> str:
+        return self.email or self.phone or ""
 
     @field_validator("preferred_brands", "preferred_categories")
     @classmethod
@@ -172,20 +203,66 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email:    str
-    password: str
+    # "identifier" — email yoki telefon. Eski mijozlar uchun "email" ham qabul qilinadi.
+    identifier: Optional[str] = None
+    email:      Optional[str] = None
+    password:   str
 
-    @field_validator("email")
-    @classmethod
-    def check_email(cls, v: str) -> str:
-        _rule(auth_rules.email_error(v))
-        return auth_rules.normalize_email(v)
+    @model_validator(mode="after")
+    def check_identifier(self) -> "LoginRequest":
+        raw = (self.identifier or self.email or "").strip()
+        if not raw:
+            raise PydanticCustomError("identifier:identifier_required", "identifier_required")
+        if auth_rules.is_email_like(raw):
+            code = auth_rules.email_error(raw)
+            self.identifier = auth_rules.normalize_email(raw)
+        else:
+            code = auth_rules.phone_error(raw)
+            self.identifier = auth_rules.normalize_phone(raw)
+        if code:
+            raise PydanticCustomError("identifier:" + code, code)
+        return self
+
+    @property
+    def is_phone(self) -> bool:
+        return not auth_rules.is_email_like(self.identifier or "")
 
     @field_validator("password")
     @classmethod
     def check_password(cls, v: str) -> str:
         _rule(auth_rules.login_password_error(v))
         return v
+
+
+class SendCodeRequest(BaseModel):
+    channel: Channel
+    target:  str
+    lang:    Literal["uz", "ru", "en"] = "uz"
+
+    @model_validator(mode="after")
+    def normalize(self) -> "SendCodeRequest":
+        try:
+            self.target = _check_target(self.channel, self.target)
+        except PydanticCustomError as exc:
+            raise PydanticCustomError("target:" + exc.type, exc.type) from None
+        return self
+
+
+class VerifyCodeRequest(BaseModel):
+    channel: Channel
+    target:  str
+    code:    str
+
+    @model_validator(mode="after")
+    def normalize(self) -> "VerifyCodeRequest":
+        try:
+            self.target = _check_target(self.channel, self.target)
+        except PydanticCustomError as exc:
+            raise PydanticCustomError("target:" + exc.type, exc.type) from None
+        self.code = re.sub(r"\s", "", self.code or "")
+        if not re.fullmatch(rf"\d{{{otp.CODE_LENGTH}}}", self.code):
+            raise PydanticCustomError("code:code_invalid", "code_invalid")
+        return self
 
 
 class EmailCheckRequest(BaseModel):
@@ -405,6 +482,35 @@ async def _prepare_db(pool: asyncpg.Pool) -> None:
         """)
         await conn.execute("""
             ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ
+        """)
+        # Telefon bilan ro'yxatdan o'tish: email endi majburiy emas, lekin
+        # email yoki telefondan bittasi bo'lishi shart.
+        await conn.execute("""
+            ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(15);
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verified_at TIMESTAMPTZ;
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone ON users(phone) WHERE phone IS NOT NULL;
+            DO $$ BEGIN
+                ALTER TABLE users ADD CONSTRAINT users_email_or_phone
+                    CHECK (email IS NOT NULL OR phone IS NOT NULL);
+            EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+        """)
+        # Tasdiqlash kodlari: kodning o'zi emas, HMAC i saqlanadi (otp.hash_code)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS verification_codes (
+                id          BIGSERIAL    PRIMARY KEY,
+                channel     VARCHAR(5)   NOT NULL,
+                target      VARCHAR(254) NOT NULL,
+                purpose     VARCHAR(20)  NOT NULL,
+                code_hash   CHAR(64)     NOT NULL,
+                attempts    SMALLINT     NOT NULL DEFAULT 0,
+                created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+                expires_at  TIMESTAMPTZ  NOT NULL,
+                consumed_at TIMESTAMPTZ
+            );
+            CREATE INDEX IF NOT EXISTS idx_verification_codes_target
+                ON verification_codes(target, purpose, created_at DESC);
         """)
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS user_profiles (
@@ -737,11 +843,11 @@ async def _auth_validation_handler(request: Request, exc: RequestValidationError
     for err in exc.errors():
         loc = [str(p) for p in err.get("loc", ()) if p != "body"]
         etype = str(err.get("type", "invalid"))
-        if etype.startswith("password:"):
-            field, code = "password", etype.split(":", 1)[1]
+        if ":" in etype:
+            field, code = etype.split(":", 1)
         else:
             field = loc[0] if loc else "body"
-            code = etype if etype.startswith(("name_", "email_", "password_")) else f"{field}_invalid"
+            code = etype if etype.startswith(("name_", "email_", "phone_", "password_", "code_")) else f"{field}_invalid"
             if etype == "missing":
                 code = f"{field}_required"
         fields.setdefault(field, code)
@@ -2170,6 +2276,7 @@ def _user_payload(row: asyncpg.Record, extra: dict | None = None) -> dict:
         "id":    str(row["id"]),
         "name":  row["name"],
         "email": row["email"],
+        "phone": row.get("phone"),
         "profile": {
             "name":                 row["name"],
             "email":                row["email"],
@@ -2181,15 +2288,175 @@ def _user_payload(row: asyncpg.Record, extra: dict | None = None) -> dict:
     }
 
 
+_TAKEN = {
+    "email": ("email_taken", "Bu email allaqachon ro'yxatdan o'tgan"),
+    "phone": ("phone_taken", "Bu telefon raqam allaqachon ro'yxatdan o'tgan"),
+}
+_VERIFY_TOKEN_MINUTES = 30
+
+
+def _channel_enabled(channel: str) -> bool:
+    return otp.email_enabled() if channel == "email" else otp.sms_enabled()
+
+
+async def _target_taken(pool: asyncpg.Pool, channel: str, target: str) -> bool:
+    sql = ("SELECT 1 FROM users WHERE lower(email) = $1" if channel == "email"
+           else "SELECT 1 FROM users WHERE phone = $1")
+    return await pool.fetchval(sql, target) is not None
+
+
+def _taken_error(channel: str) -> HTTPException:
+    code, msg = _TAKEN[channel]
+    return _auth_error(409, code, msg, field=channel)
+
+
+def _make_verification_token(channel: str, target: str) -> str:
+    exp = datetime.now(tz=timezone.utc) + timedelta(minutes=_VERIFY_TOKEN_MINUTES)
+    return pyjwt.encode(
+        {"typ": "verify", "purpose": "register", "ch": channel, "tgt": target, "exp": exp},
+        _JWT_SECRET, algorithm=_JWT_ALGO,
+    )
+
+
+def _verification_token_ok(token: str | None, channel: str, target: str) -> bool:
+    if not token:
+        return False
+    try:
+        data = pyjwt.decode(token, _JWT_SECRET, algorithms=[_JWT_ALGO])
+    except InvalidTokenError:
+        return False
+    return (data.get("typ") == "verify" and data.get("purpose") == "register"
+            and data.get("ch") == channel and data.get("tgt") == target)
+
+
+@app.get("/api/auth/channels")
+async def auth_channels() -> dict:
+    """Qaysi kanal orqali kod yuborish mumkin — frontend shunga qarab
+    telefon variantini ko'rsatadi va kod bosqichini qo'shadi."""
+    return {"email": otp.email_enabled(), "phone": otp.sms_enabled()}
+
+
+@app.post("/api/auth/send-code")
+async def auth_send_code(body: SendCodeRequest) -> dict:
+    """Ro'yxatdan o'tish uchun 6 xonali kod yuboradi (email yoki SMS).
+
+    Cheklovlar: bitta manzilga 60 soniyada 1 marta va soatiga 5 marta;
+    ustiga IP bo'yicha _AUTH_RATE_LIMIT. Kod 10 daqiqa amal qiladi, yangisi
+    yuborilganda eskisi bekor bo'ladi.
+    """
+    pool: asyncpg.Pool = app.state.pool
+    if not _channel_enabled(body.channel):
+        raise _auth_error(503, "channel_unavailable", "Bu kanal hozircha ishlamaydi")
+    if await _target_taken(pool, body.channel, body.target):
+        raise _taken_error(body.channel)
+
+    stats = await pool.fetchrow(
+        """
+        SELECT MAX(created_at) AS last_at,
+               COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '1 hour') AS last_hour
+        FROM verification_codes WHERE target = $1 AND purpose = 'register'
+        """,
+        body.target,
+    )
+    now = datetime.now(tz=timezone.utc)
+    if stats["last_at"] is not None:
+        wait = otp.RESEND_COOLDOWN_SECONDS - int((now - stats["last_at"]).total_seconds())
+        if wait > 0:
+            raise _auth_error(429, "resend_cooldown", "Kodni qayta yuborishdan oldin kuting", retryAfter=wait)
+    if stats["last_hour"] >= otp.MAX_SENDS_PER_HOUR:
+        raise _auth_error(429, "too_many_codes", "Bu manzilga juda ko'p kod yuborildi", retryAfter=3600)
+
+    code = otp.generate_code()
+    try:
+        if body.channel == "email":
+            await otp.send_email_code(body.target, code, body.lang)
+        else:
+            await otp.send_sms_code(body.target, code)
+    except otp.DeliveryError as exc:
+        print(f"[otp] {body.channel} yuborilmadi: {exc}", flush=True)
+        raise _auth_error(502, "delivery_failed", "Kodni yuborib bo'lmadi") from None
+
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            # Eski, ishlatilmagan kodlar bekor — faqat oxirgisi amal qiladi
+            await conn.execute(
+                "UPDATE verification_codes SET consumed_at = NOW() "
+                "WHERE target = $1 AND purpose = 'register' AND consumed_at IS NULL",
+                body.target,
+            )
+            await conn.execute(
+                """
+                INSERT INTO verification_codes (channel, target, purpose, code_hash, expires_at)
+                VALUES ($1, $2, 'register', $3, NOW() + make_interval(secs => $4))
+                """,
+                body.channel, body.target, otp.hash_code(code, body.target, _JWT_SECRET),
+                otp.CODE_TTL_SECONDS,
+            )
+            # Bir sutkadan eski yozuvlar kerak emas
+            await conn.execute("DELETE FROM verification_codes WHERE created_at < NOW() - INTERVAL '1 day'")
+
+    masked = otp.mask_email(body.target) if body.channel == "email" else otp.mask_phone(body.target)
+    return {
+        "sent": True,
+        "maskedTarget": masked,
+        "expiresIn": otp.CODE_TTL_SECONDS,
+        "resendIn": otp.RESEND_COOLDOWN_SECONDS,
+    }
+
+
+@app.post("/api/auth/verify-code")
+async def auth_verify_code(body: VerifyCodeRequest) -> dict:
+    """Kodni tekshiradi va 30 daqiqalik verification_token qaytaradi.
+
+    Bitta kod uchun 5 ta urinish — undan keyin yangi kod so'rash kerak, aks
+    holda 6 xonali kodni (10^6 variant) tanlab topish mumkin bo'lardi.
+    """
+    pool: asyncpg.Pool = app.state.pool
+    row = await pool.fetchrow(
+        """
+        SELECT id, code_hash, attempts, expires_at FROM verification_codes
+        WHERE target = $1 AND channel = $2 AND purpose = 'register' AND consumed_at IS NULL
+        ORDER BY created_at DESC LIMIT 1
+        """,
+        body.target, body.channel,
+    )
+    if row is None or row["expires_at"] < datetime.now(tz=timezone.utc):
+        raise _auth_error(400, "code_expired", "Kod muddati tugagan. Yangi kod so'rang")
+    if row["attempts"] >= otp.MAX_VERIFY_ATTEMPTS:
+        raise _auth_error(429, "code_attempts_exceeded", "Urinishlar tugadi. Yangi kod so'rang")
+
+    if not otp.codes_match(body.code, body.target, _JWT_SECRET, row["code_hash"]):
+        attempts = await pool.fetchval(
+            "UPDATE verification_codes SET attempts = attempts + 1 WHERE id = $1 RETURNING attempts",
+            row["id"],
+        )
+        left = max(0, otp.MAX_VERIFY_ATTEMPTS - attempts)
+        if left == 0:
+            raise _auth_error(429, "code_attempts_exceeded", "Urinishlar tugadi. Yangi kod so'rang")
+        raise _auth_error(400, "code_invalid", "Kod noto'g'ri", attemptsLeft=left, field="code")
+
+    await pool.execute("UPDATE verification_codes SET consumed_at = NOW() WHERE id = $1", row["id"])
+    return {"verificationToken": _make_verification_token(body.channel, body.target),
+            "expiresIn": _VERIFY_TOKEN_MINUTES * 60}
+
+
 @app.post("/api/auth/register", status_code=201)
 async def auth_register(body: RegisterRequest) -> dict:
     pool: asyncpg.Pool = app.state.pool
+    channel, target = body.channel, body.target
 
-    existing = await pool.fetchval(
-        "SELECT id FROM users WHERE lower(email) = $1", body.email
-    )
-    if existing:
-        raise _auth_error(409, "email_taken", "Bu email allaqachon ro'yxatdan o'tgan", field="email")
+    # Kanal yoqilgan bo'lsa (kalit .env da) — tasdiqlanmagan manzil bilan
+    # ro'yxatdan o'tib bo'lmaydi. Telefon kanali o'chiq bo'lsa, telefon bilan
+    # umuman ro'yxatdan o'tib bo'lmaydi (raqamni tekshirishning boshqa yo'li yo'q).
+    verification_required = _channel_enabled(channel) or channel == "phone"
+    if verification_required and not _channel_enabled(channel):
+        raise _auth_error(503, "channel_unavailable", "Bu kanal hozircha ishlamaydi")
+    verified = _verification_token_ok(body.verification_token, channel, target)
+    if verification_required and not verified:
+        raise _auth_error(403, "verification_required", "Avval kodni tasdiqlang", field=channel)
+
+    if await _target_taken(pool, channel, target):
+        raise _taken_error(channel)
 
     loop = asyncio.get_running_loop()
     pw_hash = await loop.run_in_executor(None, _hash_pw, body.password)
@@ -2198,8 +2465,14 @@ async def auth_register(body: RegisterRequest) -> dict:
         async with pool.acquire() as conn:
             async with conn.transaction():
                 user_row = await conn.fetchrow(
-                    "INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email",
-                    body.name, body.email, pw_hash,
+                    """
+                    INSERT INTO users (name, email, phone, password_hash, email_verified_at, phone_verified_at)
+                    VALUES ($1, $2, $3, $4,
+                            CASE WHEN $5 THEN NOW() END, CASE WHEN $6 THEN NOW() END)
+                    RETURNING id, name, email, phone
+                    """,
+                    body.name, body.email, body.phone, pw_hash,
+                    verified and channel == "email", verified and channel == "phone",
                 )
                 await conn.execute(
                     """
@@ -2214,7 +2487,7 @@ async def auth_register(body: RegisterRequest) -> dict:
                     body.preferred_categories,
                 )
     except asyncpg.UniqueViolationError:
-        raise _auth_error(409, "email_taken", "Bu email allaqachon ro'yxatdan o'tgan", field="email") from None
+        raise _taken_error(channel) from None
 
     token = _make_token(str(user_row["id"]))
     return {
@@ -2232,21 +2505,19 @@ async def auth_register(body: RegisterRequest) -> dict:
 async def auth_check_email(body: EmailCheckRequest) -> dict:
     """Ro'yxatdan o'tishning 1-qadamida: email bandligini 2-qadamdan OLDIN aytish.
 
-    Ilgari bu faqat oxirgi "Boshlash" bosilganda ma'lum bo'lardi va
-    foydalanuvchi profil tanlovlarini to'ldirib bo'lgach orqaga qaytarilardi.
-    Javob /api/auth/register ning 409 xatosidan ko'p narsa ochmaydi; so'rovlar
-    soni _AUTH_RATE_LIMIT bilan cheklangan.
+    Email kanali yoqilgan bo'lsa buni /api/auth/send-code o'zi qiladi; bu
+    yo'l kanal o'chiq paytdagi oqim uchun. So'rovlar _AUTH_RATE_LIMIT bilan cheklangan.
     """
     pool: asyncpg.Pool = app.state.pool
-    existing = await pool.fetchval("SELECT 1 FROM users WHERE lower(email) = $1", body.email)
-    return {"available": existing is None}
+    return {"available": not await _target_taken(pool, "email", body.email)}
 
 
 @app.post("/api/auth/login")
 async def auth_login(body: LoginRequest) -> dict:
     pool: asyncpg.Pool = app.state.pool
+    ident = body.identifier or ""
 
-    retry_after = _login_retry_after(body.email)
+    retry_after = _login_retry_after(ident)
     if retry_after:
         raise _auth_error(
             429, "too_many_attempts",
@@ -2254,28 +2525,29 @@ async def auth_login(body: LoginRequest) -> dict:
             retryAfter=retry_after,
         )
 
+    where = "u.phone = $1" if body.is_phone else "lower(u.email) = $1"
     row = await pool.fetchrow(
-        """
-        SELECT u.id, u.name, u.email, u.password_hash,
+        f"""
+        SELECT u.id, u.name, u.email, u.phone, u.password_hash,
                COALESCE(p.age_group,            '25-34') AS age_group,
                COALESCE(p.budget_level,          'mid')   AS budget_level,
-               COALESCE(p.preferred_brands,      '{}')    AS preferred_brands,
-               COALESCE(p.preferred_categories,  '{}')    AS preferred_categories
+               COALESCE(p.preferred_brands,      '{{}}')  AS preferred_brands,
+               COALESCE(p.preferred_categories,  '{{}}')  AS preferred_categories
         FROM users u
         LEFT JOIN user_profiles p ON p.user_id = u.id
-        WHERE lower(u.email) = $1
+        WHERE {where}
         """,
-        body.email,
+        ident,
     )
 
     loop = asyncio.get_running_loop()
     pw_hash = row["password_hash"] if row is not None else _DUMMY_PW_HASH
     ok = await loop.run_in_executor(None, _verify_pw, body.password, pw_hash)
     if row is None or not ok:
-        _record_login_failure(body.email)
-        raise _auth_error(401, "invalid_credentials", "Email yoki parol noto'g'ri")
+        _record_login_failure(ident)
+        raise _auth_error(401, "invalid_credentials", "Login yoki parol noto'g'ri")
 
-    _login_failures.pop(body.email, None)
+    _login_failures.pop(ident, None)
 
     await pool.execute("UPDATE users SET last_login_at = NOW() WHERE id = $1", row["id"])
 

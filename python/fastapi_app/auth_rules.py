@@ -118,3 +118,33 @@ def login_password_error(password: str) -> str | None:
     if len(password) > LOGIN_PASSWORD_MAX:
         return "password_too_long"
     return None
+
+
+# ── Telefon (faqat O'zbekiston: SMS Eskiz orqali faqat +998 ga boradi) ───────
+# Mobil operator kodlari: Uzmobile 33/95/99/77, Beeline 90/91, Ucell 93/94/50,
+# Mobiuz 88/97, Humans 33, Perfectum 98, UMS 20/55. 71 kabi shahar raqamlari
+# SMS qabul qilmaydi.
+_UZ_MOBILE_RE = re.compile(r"^998(20|33|50|55|77|88|90|91|93|94|95|97|98|99)\d{7}$")
+
+
+def normalize_phone(value: str) -> str:
+    """"+998 (90) 123-45-67", "90 123 45 67", "998901234567" -> "998901234567"."""
+    digits = re.sub(r"\D", "", value or "")
+    if len(digits) == 9:
+        digits = "998" + digits
+    return digits
+
+
+def phone_error(value: str) -> str | None:
+    if not (value or "").strip():
+        return "phone_required"
+    raw = value.strip()
+    if re.search(r"[^\d\s()+-]", raw):
+        return "phone_invalid"
+    if not _UZ_MOBILE_RE.match(normalize_phone(raw)):
+        return "phone_invalid"
+    return None
+
+
+def is_email_like(identifier: str) -> bool:
+    return "@" in (identifier or "")

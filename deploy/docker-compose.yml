@@ -48,6 +48,14 @@ services:
       JWT_SECRET: ${JWT_SECRET:?deploy/.env da JWT_SECRET yo'q}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       FEEDBACK_CHAT_ID: ${FEEDBACK_CHAT_ID:-}
+      # Ro'yxatdan o'tish kodlari (python/fastapi_app/otp.py). Kalit bo'sh bo'lsa
+      # o'sha kanal o'chiq: email kodsiz ishlaydi, telefon varianti ko'rinmaydi.
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-Bazarcom <noreply@bazarcom.online>}
+      ESKIZ_EMAIL: ${ESKIZ_EMAIL:-}
+      ESKIZ_PASSWORD: ${ESKIZ_PASSWORD:-}
+      ESKIZ_FROM: ${ESKIZ_FROM:-4546}
+      ESKIZ_TEMPLATE: ${ESKIZ_TEMPLATE:-}
       # Dagster dagi matcher_oqitish yozadi; fayl yangilansa API o'zi qayta yuklaydi
       MODEL_PATH: /models/best_matcher.pkl
       FRONTEND_INDEX: /srv/site/index.html

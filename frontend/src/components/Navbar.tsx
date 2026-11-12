@@ -13,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePriceWatch } from '../hooks/usePriceWatch';
 import { useCompare } from '../contexts/CompareContext';
 import { brandLabel } from '../hooks/useBrands';
+import { formatPhone } from '../utils/authValidation';
 
 interface NavbarProps {
   onSearchChange?: (value: string) => void;
@@ -369,7 +370,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                                 {user.name}
                               </p>
                               <p className="text-[11px] text-gray-400 truncate leading-tight mt-0.5">
-                                {user.email}
+                                {user.email || formatPhone(user.phone)}
                               </p>
                             </div>
                           </div>
@@ -588,7 +589,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-black text-white leading-none truncate">{user.name}</p>
-                    <p className="text-[11px] text-white/65 font-medium leading-none mt-1 truncate">{user.email}</p>
+                    <p className="text-[11px] text-white/65 font-medium leading-none mt-1 truncate">{user.email || formatPhone(user.phone)}</p>
                   </div>
                   <button onClick={() => { logout(); closeMenu(); }}
                     className="flex items-center gap-1.5 bg-white/15 border border-white/20 text-white text-[11px] font-black px-3 py-1.5 rounded-xl shrink-0 active:scale-95 transition-transform">
@@ -796,7 +797,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                 </div>
                 <div className="min-w-0">
                   <p className="text-base font-black text-gray-900 dark:text-white truncate">{user.name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5 truncate">{user.email}</p>
+                  <p className="text-xs text-gray-400 mt-0.5 truncate">{user.email || formatPhone(user.phone)}</p>
                 </div>
               </div>
             </div>

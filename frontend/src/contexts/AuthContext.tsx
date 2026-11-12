@@ -16,7 +16,9 @@ export interface UserProfile {
 export interface AuthUser {
   id: string;
   name: string;
+  /** Telefon bilan ro'yxatdan o'tganlarda bo'sh */
   email: string;
+  phone: string;
   profile: UserProfile;
   token: string;
 }
@@ -32,16 +34,28 @@ interface AuthContextValue {
   openLogin: () => void;
   openRegister: () => void;
   closeAuth: () => void;
-  login: (email: string, password: string) => Promise<void>;
+  /** Qaysi kanal orqali kod yuboriladi (server .env dagi kalitlarga qarab) */
+  channels: Channels;
+  login: (identifier: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   checkEmailAvailable: (email: string) => Promise<boolean>;
+  sendCode: (channel: Channel, target: string, lang: string) => Promise<SendCodeResult>;
+  verifyCode: (channel: Channel, target: string, code: string) => Promise<string>;
   logout: () => void;
   updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
 }
 
+export type Channel = 'email' | 'phone';
+export interface Channels { email: boolean; phone: boolean }
+export interface SendCodeResult { maskedTarget: string; expiresIn: number; resendIn: number }
+
 export interface RegisterData {
   name: string;
-  email: string;
+  /** Email yoki telefondan bittasi */
+  email?: string;
+  phone?: string;
+  /** /api/auth/verify-code dan; kanal yoqilmagan bo'lsa yo'q */
+  verificationToken?: string;
   password: string;
   ageGroup: UserProfile['ageGroup'];
   budgetLevel: UserProfile['budgetLevel'];
@@ -81,7 +95,7 @@ function readUser(): AuthUser | null {
 }
 
 function shapeUser(apiUser: {
-  id: string; name: string; email: string;
+  id: string; name: string; email: string | null; phone?: string | null;
   profile: {
     ageGroup: string; budgetLevel: string;
     preferredBrands: string[]; preferredCategories: string[];
@@ -90,11 +104,12 @@ function shapeUser(apiUser: {
   return {
     id: apiUser.id,
     name: apiUser.name,
-    email: apiUser.email,
+    email: apiUser.email ?? '',
+    phone: apiUser.phone ?? '',
     token,
     profile: {
       name: apiUser.name,
-      email: apiUser.email,
+      email: apiUser.email ?? '',
       ageGroup: apiUser.profile.ageGroup as UserProfile['ageGroup'],
       budgetLevel: apiUser.profile.budgetLevel as UserProfile['budgetLevel'],
       preferredBrands: apiUser.profile.preferredBrands,
@@ -109,11 +124,14 @@ function shapeUser(apiUser: {
  * Ilgari xato matni to'g'ridan-to'g'ri ko'rsatilardi: 422 da u massiv bo'lib
  * "[object Object]" chiqardi, qolganlari esa doim o'zbekcha edi.
  */
+export type AuthField = 'name' | 'email' | 'phone' | 'identifier' | 'password' | 'code' | 'target';
+
 export class AuthError extends Error {
   constructor(
     public code: AuthErrorCode,
-    public fields: Partial<Record<'name' | 'email' | 'password', AuthErrorCode>> = {},
+    public fields: Partial<Record<AuthField, AuthErrorCode>> = {},
     public retryAfter = 0,
+    public attemptsLeft = 0,
   ) {
     super(code);
   }
@@ -137,8 +155,17 @@ async function apiPost<T = { token: string; user: any }>(path: string, body: unk
     ? data.detail : {};
   const retryAfter = Number(detail.retryAfter ?? res.headers.get('Retry-After') ?? 0) || 0;
   if (res.status === 422) throw new AuthError('validation', detail.fields ?? {});
-  if (res.status === 429) throw new AuthError(detail.code === 'too_many_attempts' ? 'too_many_attempts' : 'rate_limited', {}, retryAfter);
-  if (detail.code === 'email_taken') throw new AuthError('email_taken', { email: 'email_taken' });
+  // Server har xatoga kod beradi (otp.py / main.py) — ro'yxatda bo'lsa o'zi
+  const known: AuthErrorCode[] = [
+    'email_taken', 'phone_taken', 'invalid_credentials', 'too_many_attempts', 'rate_limited',
+    'code_invalid', 'code_expired', 'code_attempts_exceeded', 'resend_cooldown', 'too_many_codes',
+    'delivery_failed', 'channel_unavailable', 'verification_required',
+  ];
+  if (known.includes(detail.code)) {
+    const fields = detail.field ? { [detail.field]: detail.code } : {};
+    throw new AuthError(detail.code, fields, retryAfter, Number(detail.attemptsLeft) || 0);
+  }
+  if (res.status === 429) throw new AuthError('rate_limited', {}, retryAfter);
   if (res.status === 401) throw new AuthError('invalid_credentials');
   throw new AuthError('server');
 }
@@ -152,6 +179,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [notice, setNotice] = useState<AuthNotice>(null);
+  const [channels, setChannels] = useState<Channels>({ email: false, phone: false });
+
+  useEffect(() => {
+    fetch(`${API}/auth/channels`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d) setChannels({ email: Boolean(d.email), phone: Boolean(d.phone) }); })
+      .catch(() => undefined);
+  }, []);
 
   const openLogin    = useCallback(() => { setAuthMode('login');    setIsAuthOpen(true);  }, []);
   const openRegister = useCallback(() => { setAuthMode('register'); setIsAuthOpen(true);  }, []);
@@ -192,11 +227,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u);
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const data = await apiPost('/auth/login', {
-      email: email.trim().toLowerCase(),
-      password,
-    });
+  const login = useCallback(async (identifier: string, password: string) => {
+    const data = await apiPost('/auth/login', { identifier: identifier.trim(), password });
     save(shapeUser(data.user, data.token));
     setIsAuthOpen(false);
     setNotice(null);
@@ -206,7 +238,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(async (form: RegisterData) => {
     const data = await apiPost('/auth/register', {
       name:                 form.name.trim(),
-      email:                form.email.trim().toLowerCase(),
+      email:                form.email?.trim().toLowerCase() || undefined,
+      phone:                form.phone || undefined,
+      verification_token:   form.verificationToken,
       password:             form.password,
       age_group:            form.ageGroup,
       budget_level:         form.budgetLevel,
@@ -224,6 +258,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: email.trim().toLowerCase(),
     });
     return data.available;
+  }, []);
+
+  const sendCode = useCallback(async (channel: Channel, target: string, lang: string) => {
+    return apiPost<SendCodeResult>('/auth/send-code', { channel, target, lang });
+  }, []);
+
+  const verifyCode = useCallback(async (channel: Channel, target: string, code: string) => {
+    const data = await apiPost<{ verificationToken: string }>('/auth/verify-code', { channel, target, code });
+    return data.verificationToken;
   }, []);
 
   const logout = useCallback(() => {
@@ -263,9 +306,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user, isAuthOpen, authMode, notice,
+      user, isAuthOpen, authMode, notice, channels,
       openLogin, openRegister, closeAuth,
-      login, register, checkEmailAvailable, logout, updateProfile,
+      login, register, checkEmailAvailable, sendCode, verifyCode, logout, updateProfile,
     }}>
       {children}
     </AuthContext.Provider>

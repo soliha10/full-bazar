@@ -9,6 +9,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../locales/translations';
 import { SEO, SITE_URL } from '../components/SEO';
+import { formatPhone } from '../utils/authValidation';
 
 export function Profile() {
   const { user, openLogin, openRegister, logout } = useAuth();
@@ -166,7 +167,7 @@ export function Profile() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-lg font-black text-white leading-tight truncate">{user.name}</p>
-              <p className="text-sm text-white/65 truncate mt-0.5">{user.email}</p>
+              <p className="text-sm text-white/65 truncate mt-0.5">{user.email || formatPhone(user.phone)}</p>
               <div className="flex items-center gap-2 mt-2">
                 <span className="text-[10px] font-black bg-white/15 text-white/90 px-2 py-0.5 rounded-full uppercase tracking-wider">
                   {user.profile.ageGroup}

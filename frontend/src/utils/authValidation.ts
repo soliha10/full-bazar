@@ -22,6 +22,9 @@ export type AuthErrorCode =
   | 'password_required' | 'password_too_short' | 'password_too_long'
   | 'password_no_letter' | 'password_no_digit' | 'password_whitespace'
   | 'password_common' | 'password_contains_email' | 'password_contains_name'
+  | 'phone_required' | 'phone_invalid' | 'phone_taken' | 'identifier_required'
+  | 'code_invalid' | 'code_expired' | 'code_attempts_exceeded' | 'resend_cooldown'
+  | 'too_many_codes' | 'delivery_failed' | 'channel_unavailable' | 'verification_required'
   | 'invalid_credentials' | 'too_many_attempts' | 'rate_limited'
   | 'validation' | 'network' | 'server';
 
@@ -126,4 +129,42 @@ export function suggestEmail(value: string): string | null {
   if (at < 1) return null;
   const fix = DOMAIN_TYPOS[email.slice(at + 1)];
   return fix ? `${email.slice(0, at + 1)}${fix}` : null;
+}
+
+// ── Telefon (faqat O'zbekiston; auth_rules.phone_error bilan bir xil) ────────
+const UZ_MOBILE_RE = /^998(20|33|50|55|77|88|90|91|93|94|95|97|98|99)\d{7}$/;
+
+/** "+998 (90) 123-45-67", "90 123 45 67" -> "998901234567" */
+export function normalizePhone(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  return digits.length === 9 ? `998${digits}` : digits;
+}
+
+export function phoneError(value: string): AuthErrorCode | null {
+  const raw = value.trim();
+  if (!raw) return 'phone_required';
+  if (/[^\d\s()+-]/.test(raw) || !UZ_MOBILE_RE.test(normalizePhone(raw))) return 'phone_invalid';
+  return null;
+}
+
+/** Kiritish maydoni uchun: "901234567" -> "90 123 45 67" (+998 alohida turadi) */
+export function formatPhoneLocal(value: string): string {
+  let d = value.replace(/\D/g, '');
+  if (d.startsWith('998') && d.length > 9) d = d.slice(3);
+  d = d.slice(0, 9);
+  return [d.slice(0, 2), d.slice(2, 5), d.slice(5, 7), d.slice(7, 9)].filter(Boolean).join(' ');
+}
+
+/** "998901234567" -> "+998 90 123 45 67" */
+export function formatPhone(value: string | null | undefined): string {
+  if (!value) return '';
+  const d = normalizePhone(value);
+  return d.length === 12 ? `+998 ${formatPhoneLocal(d.slice(3))}` : value;
+}
+
+/** Kirish maydoni: "@" bo'lsa email, aks holda telefon deb tekshiriladi */
+export function identifierError(value: string): AuthErrorCode | null {
+  const v = value.trim();
+  if (!v) return 'identifier_required';
+  return v.includes('@') ? emailError(v) : phoneError(v);
 }

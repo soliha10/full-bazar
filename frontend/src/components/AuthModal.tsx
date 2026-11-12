@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef, useId, ReactNode, KeyboardEvent } from 'react';
 import {
   X, User, Mail, Lock, Eye, EyeOff, ShoppingBag,
-  ChevronRight, Check, Sparkles, AlertCircle, Info, Circle,
+  ChevronRight, Check, Sparkles, AlertCircle, Info, Circle, Phone, ShieldCheck, ArrowLeft, RotateCw,
 } from 'lucide-react';
-import { useAuth, RegisterData, AuthError } from '../contexts/AuthContext';
+import { useAuth, RegisterData, AuthError, Channel } from '../contexts/AuthContext';
 import { useBrands, BRAND_COLORS } from '../hooks/useBrands';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   AuthErrorCode, nameError, emailError, newPasswordError, loginPasswordError,
   passwordChecks, passwordScore, suggestEmail, normalizeEmail, normalizeName,
+  phoneError, normalizePhone, formatPhoneLocal, identifierError,
   NAME_MAX, EMAIL_MAX,
 } from '../utils/authValidation';
 
@@ -28,11 +29,13 @@ const BUDGET_LEVELS: { value: RegisterData['budgetLevel']; desc: string }[] = [
   { value: 'premium', desc: '> 8 mln' },
 ];
 
-type Step = 'credentials' | 'profile';
-type FieldName = 'name' | 'email' | 'password';
+// verify — kod bosqichi; faqat tanlangan kanal serverda yoqilgan bo'lsa
+type Step = 'credentials' | 'verify' | 'profile';
+type FieldName = 'name' | 'email' | 'phone' | 'password' | 'code';
 type FieldErrors = Partial<Record<FieldName, AuthErrorCode>>;
 
-const FIELD_ORDER: FieldName[] = ['name', 'email', 'password'];
+const FIELD_ORDER: FieldName[] = ['name', 'email', 'phone', 'password', 'code'];
+const CODE_LENGTH = 6;
 
 const STRENGTH_BAR = ['bg-gray-200 dark:bg-gray-700', 'bg-red-400', 'bg-yellow-400', 'bg-lime-500', 'bg-green-500'];
 
@@ -80,13 +83,16 @@ const inputClass = (invalid: boolean, padRight = false) =>
 
 export function AuthModal() {
   const {
-    isAuthOpen, authMode, notice, closeAuth, login, register,
-    checkEmailAvailable, openRegister, openLogin,
+    isAuthOpen, authMode, notice, channels, closeAuth, login, register,
+    checkEmailAvailable, sendCode, verifyCode, openRegister, openLogin,
   } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const a = t.auth;
   const uid = useId();
-  const ids = { title: `${uid}-title`, name: `${uid}-name`, email: `${uid}-email`, password: `${uid}-password` };
+  const ids = {
+    title: `${uid}-title`, name: `${uid}-name`, email: `${uid}-email`,
+    phone: `${uid}-phone`, password: `${uid}-password`, code: `${uid}-code`,
+  };
 
   const [step, setStep]           = useState<Step>('credentials');
   const [showPass, setShowPass]   = useState(false);
@@ -94,8 +100,21 @@ export function AuthModal() {
   const [isLoading, setIsLoading] = useState(false);
 
   const [name, setName]         = useState('');
+  // Kirish rejimida bu maydon "email yoki telefon" (identifier) vazifasida
   const [email, setEmail]       = useState('');
+  const [phone, setPhone]       = useState('');
   const [password, setPassword] = useState('');
+  const [method, setMethod]     = useState<Channel>('email');
+
+  // ── Kod bosqichi ──
+  const [code, setCode]               = useState('');
+  const [sentTo, setSentTo]           = useState<{ channel: Channel; target: string; masked: string } | null>(null);
+  const [resendLeft, setResendLeft]   = useState(0);
+  const [attemptsLeft, setAttemptsLeft] = useState(0);
+  const [info, setInfo]               = useState<'codeResent' | null>(null);
+  // Tasdiqlangan manzil: foydalanuvchi profil bosqichidan orqaga qaytsa,
+  // manzilni o'zgartirmagan bo'lsa, kodni qayta so'ramaymiz.
+  const [verified, setVerified] = useState<{ channel: Channel; target: string; token: string } | null>(null);
 
   // Xato maydonni tark etgandan (blur) yoki yuborishga urinishdan keyin
   // ko'rsatiladi — yozish boshlanishi bilan qizil matn chiqib ketmasin.
@@ -116,15 +135,29 @@ export function AuthModal() {
   const inputs = {
     name: useRef<HTMLInputElement>(null),
     email: useRef<HTMLInputElement>(null),
+    phone: useRef<HTMLInputElement>(null),
     password: useRef<HTMLInputElement>(null),
+    code: useRef<HTMLInputElement>(null),
   };
   const isRegister = authMode === 'register';
+  // Telefon varianti faqat SMS kanali serverda yoqilgan bo'lsa ko'rinadi
+  const activeMethod: Channel = isRegister && channels.phone ? method : 'email';
+  const usePhone = isRegister && activeMethod === 'phone';
+  const target = usePhone ? normalizePhone(phone) : normalizeEmail(email);
+  const needsCode = isRegister && channels[activeMethod];
+  const steps: Step[] = needsCode ? ['credentials', 'verify', 'profile'] : ['credentials', 'profile'];
+  const loginByIdentifier = !isRegister && channels.phone;
 
   // ── Tekshiruv ──
   const clientErrors: FieldErrors = {
     name: isRegister ? nameError(name) ?? undefined : undefined,
-    email: emailError(email) ?? undefined,
-    password: (isRegister ? newPasswordError(password, email, name) : loginPasswordError(password)) ?? undefined,
+    email: (!isRegister
+      ? (loginByIdentifier ? identifierError(email) : emailError(email))
+      : usePhone ? null : emailError(email)) ?? undefined,
+    phone: usePhone ? phoneError(phone) ?? undefined : undefined,
+    password: (isRegister
+      ? newPasswordError(password, usePhone ? '' : email, name)
+      : loginPasswordError(password)) ?? undefined,
   };
   // "...ni kiriting" (bo'sh maydon) faqat yuborishga urinilganda chiqadi:
   // Tab bilan bo'sh maydondan o'tib ketish xato emas.
@@ -135,7 +168,7 @@ export function AuthModal() {
     return touched[f] && !code.endsWith('_required') ? code : null;
   };
   const errorText = (code: AuthErrorCode | null) => (code ? a.errors[code] : null);
-  const emailSuggestion = !visibleError('email') && touched.email ? suggestEmail(email) : null;
+  const emailSuggestion = !visibleError('email') && touched.email && email.includes('@') ? suggestEmail(email) : null;
 
   // ── Modal xatti-harakati: fokus, Escape, skroll ──
   useEffect(() => {
@@ -146,7 +179,9 @@ export function AuthModal() {
   }, [isAuthOpen]);
 
   useEffect(() => {
-    if (!isAuthOpen || step !== 'credentials') return;
+    if (!isAuthOpen) return;
+    if (step === 'verify') { inputs.code.current?.focus(); return; }
+    if (step !== 'credentials') return;
     (isRegister ? inputs.name : email ? inputs.password : inputs.email).current?.focus();
     // faqat oyna ochilganda / rejim almashganda
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -160,29 +195,41 @@ export function AuthModal() {
     return () => clearInterval(id);
   }, [retryLeft > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (resendLeft <= 0) return;
+    const id = setInterval(() => setResendLeft(s => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [resendLeft > 0]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!isAuthOpen) return null;
 
   const resetErrors = () => {
-    setTouched({}); setSubmitted(false); setServerErrors({}); setFormError(null); setRetryLeft(0);
+    setTouched({}); setSubmitted(false); setServerErrors({}); setFormError(null); setRetryLeft(0); setInfo(null);
+  };
+  const resetCode = () => {
+    setCode(''); setSentTo(null); setResendLeft(0); setAttemptsLeft(0); setVerified(null);
   };
 
   const handleClose = () => {
-    resetErrors();
-    setStep('credentials'); setName(''); setEmail(''); setPassword(''); setShowPass(false);
-    setPreferredBrands([]); setPreferredCategories([]);
+    resetErrors(); resetCode();
+    setStep('credentials'); setName(''); setEmail(''); setPhone(''); setPassword(''); setShowPass(false);
+    setMethod('email'); setPreferredBrands([]); setPreferredCategories([]);
     closeAuth();
   };
 
   // Rejim almashganda email saqlanadi — "Shu email bilan kirish" shu uchun.
   const switchMode = (mode?: 'login' | 'register') => {
-    resetErrors();
+    resetErrors(); resetCode();
     setStep('credentials'); setPassword(''); setShowPass(false);
     const target = mode ?? (isRegister ? 'login' : 'register');
     target === 'login' ? openLogin() : openRegister();
   };
 
   const onFieldChange = (f: FieldName, value: string) => {
-    ({ name: setName, email: setEmail, password: setPassword })[f](value);
+    if (f === 'phone') value = formatPhoneLocal(value);
+    if (f === 'code') value = value.replace(/\D/g, '').slice(0, CODE_LENGTH);
+    ({ name: setName, email: setEmail, phone: setPhone, password: setPassword, code: setCode })[f](value);
+    if (info) setInfo(null);
     if (serverErrors[f]) setServerErrors(prev => ({ ...prev, [f]: undefined }));
     if (formError && formError !== 'too_many_attempts' && formError !== 'rate_limited') setFormError(null);
   };
@@ -194,7 +241,20 @@ export function AuthModal() {
 
   const applyError = (err: unknown) => {
     if (!(err instanceof AuthError)) { setFormError('server'); return; }
-    const fields = err.fields as FieldErrors;
+    // Server "target"/"identifier" deb qaytaradigan maydonni ekrandagisiga moslash
+    const raw = err.fields as Partial<Record<string, AuthErrorCode>>;
+    const fields: FieldErrors = {};
+    for (const [k, v] of Object.entries(raw)) {
+      const key = k === 'target' ? activeMethod : k === 'identifier' ? 'email' : k;
+      if (FIELD_ORDER.includes(key as FieldName)) fields[key as FieldName] = v;
+    }
+    if (fields.code) {
+      setServerErrors({ code: fields.code });
+      setAttemptsLeft(err.attemptsLeft);
+      setCode('');
+      setTimeout(() => inputs.code.current?.focus());
+      return;
+    }
     if (Object.keys(fields).length > 0) {
       setServerErrors(fields);
       setStep('credentials');
@@ -227,12 +287,19 @@ export function AuthModal() {
     setIsLoading(true);
     try {
       if (!isRegister) {
-        await login(normalizeEmail(email), password);
+        await login(email.includes('@') ? normalizeEmail(email) : normalizePhone(email), password);
         handleClose();
         return;
       }
-      // Email bandligini 2-qadamdan OLDIN bilamiz — aks holda profil
-      // tanlovlari to'ldirilgandan keyin orqaga qaytarilardi.
+      if (verified && verified.channel === activeMethod && verified.target === target) {
+        setStep('profile');
+        return;
+      }
+      if (needsCode) {
+        await requestCode(false);
+        return;
+      }
+      // Kanal o'chiq (kalit yo'q): email bandligini 2-qadamdan OLDIN bilamiz
       const available = await checkEmailAvailable(normalizeEmail(email));
       if (!available) {
         setServerErrors({ email: 'email_taken' });
@@ -247,17 +314,81 @@ export function AuthModal() {
     }
   };
 
+  /** Kod yuborish (1-marta ham, "qayta yuborish" ham). Xato chaqiruvchiga qaytadi. */
+  const requestCode = async (isResend: boolean) => {
+    try {
+      const res = await sendCode(activeMethod, target, language);
+      setSentTo({ channel: activeMethod, target, masked: res.maskedTarget });
+      setResendLeft(res.resendIn);
+      setCode(''); setAttemptsLeft(0);
+      setServerErrors(p => ({ ...p, code: undefined }));
+      setFormError(null);
+      setInfo(isResend ? 'codeResent' : null);
+      setStep('verify');
+      if (isResend) inputs.code.current?.focus();
+    } catch (err) {
+      // Kod hozirgina shu manzilga yuborilgan (masalan, "Orqaga" bosib qaytdi) —
+      // yangisini kutmasdan o'sha kodni kiritish bosqichiga qaytamiz.
+      if (err instanceof AuthError && err.code === 'resend_cooldown'
+          && sentTo?.channel === activeMethod && sentTo.target === target) {
+        setResendLeft(err.retryAfter);
+        setStep('verify');
+        return;
+      }
+      throw err;
+    }
+  };
+
+  const handleResend = async () => {
+    if (isLoading || resendLeft > 0) return;
+    setIsLoading(true);
+    try { await requestCode(true); } catch (err) { applyError(err); } finally { setIsLoading(false); }
+  };
+
+  const handleVerify = async (value = code) => {
+    if (isLoading) return;
+    setSubmitted(true);
+    if (value.length !== CODE_LENGTH) {
+      setServerErrors({ code: 'code_invalid' });
+      inputs.code.current?.focus();
+      return;
+    }
+    setIsLoading(true);
+    setFormError(null); setInfo(null);
+    try {
+      const token = await verifyCode(activeMethod, target, value);
+      setVerified({ channel: activeMethod, target, token });
+      setServerErrors({});
+      setSubmitted(false);
+      setStep('profile');
+    } catch (err) {
+      applyError(err);
+      if (err instanceof AuthError && (err.code === 'code_expired' || err.code === 'code_attempts_exceeded')) {
+        setCode(''); setResendLeft(0);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleRegister = async () => {
     if (isLoading) return;
     setIsLoading(true);
     setFormError(null);
     try {
       await register({
-        name: normalizeName(name), email: normalizeEmail(email), password,
-        ageGroup, budgetLevel, preferredBrands, preferredCategories,
+        name: normalizeName(name),
+        ...(usePhone ? { phone: target } : { email: target }),
+        verificationToken: verified?.token,
+        password, ageGroup, budgetLevel, preferredBrands, preferredCategories,
       });
       handleClose();
     } catch (err) {
+      // Tasdiqlash tokeni 30 daqiqada eskiradi — kodni qaytadan so'raymiz
+      if (err instanceof AuthError && err.code === 'verification_required') {
+        setVerified(null); resetCode();
+        setStep('credentials');
+      }
       applyError(err);
     } finally {
       setIsLoading(false);
@@ -335,10 +466,10 @@ export function AuthModal() {
             </div>
             <div className="min-w-0">
               <h2 id={ids.title} className="text-lg font-black text-white leading-tight">
-                {!isRegister ? a.login : step === 'credentials' ? a.register : a.yourProfile}
+                {!isRegister ? a.login : step === 'credentials' ? a.register : step === 'verify' ? a.verifyTitle : a.yourProfile}
               </h2>
               <p className="text-xs font-medium text-white/70 mt-0.5">
-                {!isRegister ? a.loginSubtitle : step === 'credentials' ? a.registerSubtitle : a.profileSubtitle}
+                {!isRegister ? a.loginSubtitle : step === 'credentials' ? a.registerSubtitle : step === 'verify' ? a.verifySubtitle : a.profileSubtitle}
               </p>
             </div>
           </div>
@@ -346,26 +477,25 @@ export function AuthModal() {
           {/* Step indicator for register */}
           {isRegister && (
             <div className="relative flex items-center gap-2 mt-4" aria-hidden="true">
-              {(['credentials', 'profile'] as Step[]).map((s, i) => (
-                <div key={s} className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
-                    step === s
-                      ? 'bg-white text-violet-700'
-                      : i === 0 && step === 'profile'
-                        ? 'bg-white/30 text-white'
-                        : 'bg-white/15 text-white/50'
-                  }`}>
-                    {i === 0 && step === 'profile' ? <Check className="w-3 h-3" /> : i + 1}
-                  </div>
-                  {i === 0 && (
-                    <div className="flex-1 h-0.5 w-8 bg-white/20 rounded-full">
-                      <div className={`h-full bg-white rounded-full transition-all ${step === 'profile' ? 'w-full' : 'w-0'}`} />
+              {steps.map((st, i) => {
+                const current = steps.indexOf(step);
+                return (
+                  <div key={st} className="flex items-center gap-2">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
+                      i === current ? 'bg-white text-violet-700' : i < current ? 'bg-white/30 text-white' : 'bg-white/15 text-white/50'
+                    }`}>
+                      {i < current ? <Check className="w-3 h-3" /> : i + 1}
                     </div>
-                  )}
-                </div>
-              ))}
+                    {i < steps.length - 1 && (
+                      <div className="flex-1 h-0.5 w-8 bg-white/20 rounded-full">
+                        <div className={`h-full bg-white rounded-full transition-all ${i < current ? 'w-full' : 'w-0'}`} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               <span className="ml-auto text-[10px] text-white/60 font-semibold">
-                {step === 'credentials' ? '1/2' : '2/2'}
+                {steps.indexOf(step) + 1}/{steps.length}
               </span>
             </div>
           )}
@@ -384,6 +514,12 @@ export function AuthModal() {
             <div role="alert" className="mb-4 flex items-start gap-2 px-3 py-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-xs font-semibold text-red-600 dark:text-red-400">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{a.errors[formError]}{retryText && <> {retryText}</>}</span>
+            </div>
+          )}
+
+          {info && !formError && (
+            <div role="status" className="mb-4 flex items-start gap-2 px-3 py-2.5 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-xs font-semibold text-green-700 dark:text-green-300">
+              <Check className="w-4 h-4 shrink-0" /> {a.codeResent}
             </div>
           )}
 
@@ -411,8 +547,54 @@ export function AuthModal() {
                 </FormField>
               )}
 
+              {isRegister && channels.phone && (
+                <div role="radiogroup" aria-label={`${a.methodEmail} / ${a.methodPhone}`}
+                  className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-gray-100 dark:bg-gray-900">
+                  {(['email', 'phone'] as Channel[]).map(m => (
+                    <button key={m} type="button" role="radio" aria-checked={activeMethod === m}
+                      onClick={() => { setMethod(m); setServerErrors({}); setFormError(null); }}
+                      disabled={isLoading}
+                      className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-black transition-all ${
+                        activeMethod === m
+                          ? 'bg-white dark:bg-gray-800 text-violet-700 dark:text-violet-300 shadow-sm'
+                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                      }`}>
+                      {m === 'email' ? <Mail className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
+                      {m === 'email' ? a.methodEmail : a.methodPhone}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {usePhone ? (
+                <FormField
+                  id={ids.phone} label={a.phone} icon={<Phone className="w-4 h-4" />}
+                  error={errorText(visibleError('phone'))}
+                  hint={serverErrors.phone === 'phone_taken' && (
+                    <button type="button" onClick={() => { setEmail(`+998 ${phone}`); switchMode('login'); }}
+                      className="mt-1 text-[11px] font-black text-violet-600 dark:text-violet-400 hover:underline">
+                      {a.loginInstead} →
+                    </button>
+                  )}
+                >
+                  <span className="pointer-events-none absolute left-10 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-500 dark:text-gray-400">+998</span>
+                  <input
+                    ref={inputs.phone}
+                    id={ids.phone} name="tel" type="tel" inputMode="tel"
+                    autoComplete="tel-national" enterKeyHint="next"
+                    value={phone} maxLength={20}
+                    onChange={e => onFieldChange('phone', e.target.value)}
+                    onBlur={() => setTouched(p => ({ ...p, phone: true }))}
+                    placeholder={a.phonePlaceholder}
+                    aria-invalid={Boolean(visibleError('phone'))}
+                    aria-describedby={describedBy('phone')}
+                    disabled={isLoading}
+                    className={`${inputClass(Boolean(visibleError('phone')))} !pl-[5.25rem] tracking-wide`}
+                  />
+                </FormField>
+              ) : (
               <FormField
-                id={ids.email} label={a.email} icon={<Mail className="w-4 h-4" />}
+                id={ids.email} label={loginByIdentifier ? a.identifier : a.email} icon={<Mail className="w-4 h-4" />}
                 error={errorText(visibleError('email'))}
                 hint={<>
                   {serverErrors.email === 'email_taken' && (
@@ -434,19 +616,21 @@ export function AuthModal() {
               >
                 <input
                   ref={inputs.email}
-                  id={ids.email} name="email" type="email" inputMode="email"
+                  id={ids.email} name={loginByIdentifier ? 'username' : 'email'}
+                  type={loginByIdentifier ? 'text' : 'email'} inputMode={loginByIdentifier ? 'text' : 'email'}
                   autoComplete={isRegister ? 'email' : 'username'}
                   autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="next"
                   value={email} maxLength={EMAIL_MAX}
                   onChange={e => onFieldChange('email', e.target.value)}
                   onBlur={() => { setTouched(p => ({ ...p, email: true })); setEmail(v => v.trim()); }}
-                  placeholder="email@example.com"
+                  placeholder={loginByIdentifier ? a.identifierPlaceholder : 'email@example.com'}
                   aria-invalid={Boolean(visibleError('email'))}
                   aria-describedby={describedBy('email')}
                   disabled={isLoading}
                   className={inputClass(Boolean(visibleError('email')))}
                 />
               </FormField>
+              )}
 
               <FormField
                 id={ids.password} label={a.password} icon={<Lock className="w-4 h-4" />}
@@ -515,6 +699,74 @@ export function AuthModal() {
                   ? <>{spinner}<span>{isRegister ? a.checking : t.common.loading}</span></>
                   : <>{isRegister ? a.continue : a.login}<ChevronRight className="w-4 h-4" /></>}
               </button>
+            </form>
+          )}
+
+          {/* ── Kod bosqichi ── */}
+          {step === 'verify' && sentTo && (
+            <form onSubmit={e => { e.preventDefault(); handleVerify(); }} noValidate className="space-y-4">
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800">
+                <ShieldCheck className="w-4 h-4 text-violet-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-violet-700 dark:text-violet-300 font-medium leading-snug">
+                  {a.codeSentTo.replace('{{target}}', sentTo.masked)} {a.codeExpires}
+                  {sentTo.channel === 'email' && <> {a.checkSpam}</>}
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor={ids.code} className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  {a.codeLabel}
+                </label>
+                <input
+                  ref={inputs.code}
+                  id={ids.code} name="one-time-code" type="text" inputMode="numeric"
+                  autoComplete="one-time-code" pattern="[0-9]*" enterKeyHint="go"
+                  value={code} maxLength={CODE_LENGTH}
+                  onChange={e => {
+                    onFieldChange('code', e.target.value);
+                    const v = e.target.value.replace(/\D/g, '').slice(0, CODE_LENGTH);
+                    // 6 ta raqam yig'ilishi bilan (SMS dan avtomatik to'ldirilganda ham) yuboriladi
+                    if (v.length === CODE_LENGTH && v !== code) handleVerify(v);
+                  }}
+                  placeholder="••••••"
+                  aria-invalid={Boolean(serverErrors.code)}
+                  aria-describedby={serverErrors.code ? `${ids.code}-error` : undefined}
+                  disabled={isLoading}
+                  className={`mt-1 w-full py-3.5 rounded-xl border bg-gray-50 dark:bg-gray-900 text-center text-2xl font-black tracking-[0.5em] text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700 focus:outline-none focus:ring-2 transition disabled:opacity-60 ${
+                    serverErrors.code
+                      ? 'border-red-300 dark:border-red-700 focus:ring-red-400/30 focus:border-red-400'
+                      : 'border-gray-200 dark:border-gray-700 focus:ring-violet-400/40 focus:border-violet-400'
+                  }`}
+                />
+                {serverErrors.code && (
+                  <p id={`${ids.code}-error`} className="mt-1.5 flex items-start gap-1 text-[11px] leading-snug text-red-500 font-semibold">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" />
+                    {a.errors[serverErrors.code]}
+                    {attemptsLeft > 0 && <> {a.attemptsLeft.replace('{{count}}', String(attemptsLeft))}</>}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit" disabled={isLoading || code.length !== CODE_LENGTH} aria-busy={isLoading}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-black text-sm shadow-md shadow-violet-500/25 transition-all active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
+              >
+                {isLoading ? spinner : <>{a.verify}<ChevronRight className="w-4 h-4" /></>}
+              </button>
+
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <button type="button" onClick={() => { setStep('credentials'); setServerErrors({}); setFormError(null); setInfo(null); }}
+                  disabled={isLoading}
+                  className="flex items-center gap-1 font-bold text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-60">
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  {sentTo.channel === 'email' ? a.changeEmail : a.changePhone}
+                </button>
+                <button type="button" onClick={handleResend} disabled={isLoading || resendLeft > 0}
+                  className="flex items-center gap-1 font-black text-violet-600 dark:text-violet-400 hover:underline disabled:text-gray-400 disabled:no-underline disabled:cursor-default">
+                  <RotateCw className="w-3.5 h-3.5" />
+                  {resendLeft > 0 ? a.resendIn.replace('{{count}}', String(resendLeft)) : a.resend}
+                </button>
+              </div>
             </form>
           )}
 

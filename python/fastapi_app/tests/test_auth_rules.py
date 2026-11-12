@@ -57,3 +57,12 @@ def test_login_password():
     assert r.login_password_error("x") is None
     assert r.login_password_error("") == "password_required"
     assert r.login_password_error("x" * 129) == "password_too_long"
+
+
+def test_phone():
+    for ok in ["+998 90 123 45 67", "998901234567", "90 123-45-67", "(93) 1234567", "+998331234567"]:
+        assert r.phone_error(ok) is None, ok
+        assert r.normalize_phone(ok).startswith("998") and len(r.normalize_phone(ok)) == 12
+    assert r.phone_error("") == "phone_required"
+    for bad in ["+998 71 123 45 67", "+7 900 123 45 67", "90123", "90 abc 45 67", "+998 90 123 45 678"]:
+        assert r.phone_error(bad) == "phone_invalid", bad
