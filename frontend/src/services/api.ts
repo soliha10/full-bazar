@@ -119,6 +119,16 @@ export const fetchProductSpecs = async (ref: string | number) => {
   }
 };
 
+/**
+ * O'xshash modellar: shu brend va narxi ±35%, yetmasa boshqa brendlar ±25%.
+ * Qoida backendda (main.py → get_similar_products).
+ */
+export const fetchSimilarProducts = async (ref: string | number, limit = 8) => {
+  const response = await fetch(`${API_BASE_URL}/products/${ref}/similar?limit=${limit}`);
+  if (!response.ok) throw new ApiError(response.status);
+  return await response.json() as { basePrice: number | null; brand: string | null; products: any[] };
+};
+
 export const fetchPersonalizedRecommendations = async (limit = 8) => {
   try {
     const response = await fetch(

@@ -21,7 +21,7 @@ import {
   ResponsiveContainer, Legend,
 } from "recharts";
 import { Button } from "../components/Button";
-import { ApiError, fetchProductById, fetchPersonalizedRecommendations, fetchPriceHistory, fetchProductSpecs } from "../services/api";
+import { ApiError, fetchProductById, fetchSimilarProducts, fetchPriceHistory, fetchProductSpecs } from "../services/api";
 import { mapProduct, formatSum, formatCheckedAt } from "../utils/productMapper";
 import { Product } from "../components/ProductCard";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -104,6 +104,7 @@ export function ProductDetail() {
   const { favorites, toggle, isLiked } = useFavorites();
   const { compareIds, toggleCompare } = useCompare();
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
+  const [similarLoading, setSimilarLoading] = useState(true);
   const [specs, setSpecs] = useState<Specs | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -165,10 +166,17 @@ export function ProductDetail() {
     return () => { cancelled = true; };
   }, [ref]);
 
+  // Ilgari bu yerda shaxsiy tavsiyalar ko'rsatilardi (Samsung tagida iPhone).
+  // Endi — shu brend va yaqin narxdagi modellar; xato bo'lsa bo'lim yashiriladi.
   useEffect(() => {
-    fetchPersonalizedRecommendations(6)
-      .then((data) => setSimilarProducts((data.products ?? []).map(mapProduct)))
-      .catch(() => {});
+    if (!ref) return;
+    let cancelled = false;
+    setSimilarLoading(true);
+    fetchSimilarProducts(ref, 8)
+      .then((data) => { if (!cancelled) setSimilarProducts((data.products ?? []).map(mapProduct)); })
+      .catch(() => { if (!cancelled) setSimilarProducts([]); })
+      .finally(() => { if (!cancelled) setSimilarLoading(false); });
+    return () => { cancelled = true; };
   }, [ref]);
 
   useEffect(() => {
@@ -980,31 +988,51 @@ export function ProductDetail() {
       )}
 
       {/* ── Similar products ── */}
-      {similarProducts.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 mt-8">
-          <h2 className="text-base font-black text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+      {(similarLoading || similarProducts.length > 0) && (
+        <section aria-labelledby="similar-title" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 mt-8">
+          <h2 id="similar-title" className="text-base md:text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-violet-600 dark:text-violet-400" aria-hidden="true" />
             {t.detailPage.similarProducts}
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {similarProducts.slice(0, 10).map((p) => (
-              <Link
-                key={p.id}
-                to={productPath(p)}
-                className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-3 hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95"
-              >
-                <img
-                  src={p.image}
-                  alt={p.name}
-                  className="w-full aspect-square object-contain rounded-xl bg-gray-50 dark:bg-gray-800 p-2 mb-2"
-                  onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/200x200?text=No+image'; }}
-                />
-                <p className="text-xs font-bold text-gray-800 dark:text-white line-clamp-2 mb-1 leading-snug">{p.name}</p>
-                <p className="text-xs font-black text-violet-600 dark:text-violet-400">{formatSum(p.price)}</p>
-              </Link>
-            ))}
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-4">{t.detailPage.similarSubtitle}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {similarLoading
+              ? Array.from({ length: 4 }, (_, i) => (
+                  <div key={i} className="rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse h-56" aria-hidden="true" />
+                ))
+              : similarProducts.map((p) => {
+                  const diff = p.price - bestPrice;
+                  const stores = p.markets?.length ?? 0;
+                  return (
+                    <Link
+                      key={p.id}
+                      to={productPath(p)}
+                      className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-3 hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col"
+                    >
+                      <img
+                        src={p.image}
+                        alt={p.name}
+                        loading="lazy"
+                        className="w-full aspect-square object-contain rounded-xl bg-gray-50 dark:bg-gray-800 p-2 mb-2"
+                        onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                      />
+                      <p className="text-xs font-bold text-gray-800 dark:text-white line-clamp-2 mb-1.5 leading-snug flex-1">{p.name}</p>
+                      <p className="text-sm font-black text-violet-600 dark:text-violet-400">{formatSum(p.price)}</p>
+                      <div className="mt-1 flex items-center justify-between gap-2 text-[11px] font-semibold">
+                        {bestPrice > 0 && Math.abs(diff) >= 1000 ? (
+                          <span className={diff < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}>
+                            {(diff < 0 ? t.detailPage.similarCheaper : t.detailPage.similarPricier).replace('{{amount}}', formatSum(Math.abs(diff)))}
+                          </span>
+                        ) : <span />}
+                        {stores > 1 && (
+                          <span className="text-gray-400">{t.home.storesTag.replace('{{count}}', String(stores))}</span>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
           </div>
-        </div>
+        </section>
       )}
 
       {/* ── Sticky bottom bar (mobile) ── */}
