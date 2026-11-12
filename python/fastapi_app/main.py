@@ -1127,10 +1127,27 @@ async def _find_product(pool: asyncpg.Pool, ref: str) -> asyncpg.Record | None:
 
     legacy = _LEGACY_ID_RE.search(ref)
     if legacy:
-        return await pool.fetchrow(
+        row = await pool.fetchrow(
             "SELECT * FROM products WHERE id = $1", legacy.group(1).lower()
         )
-    return None
+        if row is not None:
+            return row
+
+    # Guruhlash o'zgargach eski mahsulot yangisiga qo'shilgan bo'lishi mumkin
+    # (sync_csv._migrate_ids). Eski havola yangi mahsulotni ochadi, frontend esa
+    # manzilni kanonik slugga almashtiradi.
+    try:
+        return await pool.fetchrow(
+            """
+            SELECT p.* FROM product_aliases a JOIN products p ON p.id = a.new_id
+            WHERE a.old_id = $1 OR a.old_slug = $1 OR a.old_id = $2
+            LIMIT 1
+            """,
+            ref, (legacy.group(1).lower() if legacy else ref),
+        )
+    except asyncpg.UndefinedTableError:
+        # Jadval birinchi yangi sinxronizatsiyadan keyin paydo bo'ladi
+        return None
 
 
 async def _fetch_markets(pool: asyncpg.Pool, product_ids: list[str]) -> dict[str, list[dict]]:
@@ -1735,18 +1752,25 @@ async def compare_products(ids: str = Query(..., min_length=1)) -> dict:
         raise HTTPException(status_code=400, detail="No product ids given")
 
     # Solishtirishga slug bilan ham, ID bilan ham murojaat qilinadi.
-    rows = await pool.fetch(
+    rows = list(await pool.fetch(
         "SELECT * FROM products WHERE id = ANY($1::text[]) OR slug = ANY($1::text[])",
         refs,
-    )
-    if not rows:
-        raise HTTPException(status_code=404, detail="Not Found")
-
+    ))
     by_ref: dict[str, asyncpg.Record] = {}
     for r in rows:
         by_ref[r["id"]] = r
         if r["slug"]:
             by_ref[r["slug"]] = r
+    # Brauzerda saqlangan solishtirish ro'yxatida eski ID lar bo'lishi mumkin —
+    # guruhlash o'zgargach ular product_aliases orqali yangisiga ochiladi
+    for ref in refs:
+        if ref not in by_ref:
+            row = await _find_product(pool, ref)
+            if row is not None:
+                by_ref[ref] = row
+                rows.append(row)
+    if not rows:
+        raise HTTPException(status_code=404, detail="Not Found")
 
     markets_map = await _fetch_markets(pool, [r["id"] for r in rows])
     _, spec_index = await _get_specs(pool)

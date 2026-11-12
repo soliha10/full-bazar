@@ -7,6 +7,8 @@ from urllib.parse import urlsplit
 
 import psycopg2, psycopg2.extras
 
+import matching
+
 DATA_DIR = os.getenv("DATA_DIR", "./data")
 
 # Docker compose dagi mahalliy baza — faqat zaxira qiymat.
@@ -88,71 +90,6 @@ def _too_old(meta_path: str) -> int | None:
         return age if age > MAX_CSV_AGE_DAYS else None
     except (OSError, ValueError):
         return None  # o'qib bo'lmadi — to'sib qo'ymaymiz
-_DIFF_WORDS = re.compile(r"\b(max|plus|ultra|pro|lite|mini|fe|note|edge|fold|\d+gb|\d+tb|\d+\/\d+)\b")
-
-# ── Variantni ajratish ────────────────────────────────────────────────────────
-# _DIFF_WORDS dagi xotira naqshlari amalda hech qachon ishlamaydi: _norm "/" ni
-# bo'sh joyga aylantiradi ("8/256 GB" -> "8 256 gb"), shuning uchun `\d+\/\d+`
-# mos kelmaydi, do'konlar esa "256 GB" deb bo'sh joy bilan yozadi, ya'ni `\d+gb`
-# ham mos kelmaydi. Natijada 128GB va 256GB variantlari bitta mahsulotga
-# qo'shilib ketardi va narx solishtirish noto'g'ri bo'lardi.
-# Birlik ixtiyoriy: ko'p do'kon "8/128 Midnight Black" deb GB siz yozadi.
-_PAIR_RE  = re.compile(r"\b(\d{1,2})\s+(\d{2,4})\s*(gb|tb|гб|тб)?\b")  # "8 256 gb" / "8 128"
-_SOLO_RE  = re.compile(r"\b(\d{2,4})\s*(gb|tb|гб|тб)\b")               # "256 gb"
-_KNOWN_STORAGE = {32, 64, 128, 256, 512, 1024, 2048}
-# "iphone 15 128 gb" da birinchi son model raqami, RAM emas. Shuning uchun
-# faqat haqiqatda uchraydigan RAM hajmlarini qabul qilamiz.
-_PLAUSIBLE_RAM = {2, 3, 4, 6, 8, 12, 16, 18, 24}
-# Ham harf, ham raqamdan iborat token — telefon modelining nomi:
-# "s25", "s25+", "x8c", "a36". Shu bilan S25 va S25+, X8c va X7c ajraladi.
-_MODEL_TOKEN_RE = re.compile(r"\b(?=\w*\d)(?=\w*[a-z])\w+\+?")
-
-
-def _variant_parts(n: str):
-    """Normallashtirilgan sarlavhadan (xotira_gb, ram_gb, belgilar) ni ajratadi."""
-    ram = storage = None
-    for m in _PAIR_RE.finditer(n):
-        unit = m.group(3)
-        cand = int(m.group(2)) * (1024 if unit in ("tb", "тб") else 1)
-        # Birlik yozilmagan bo'lsa, son haqiqiy xotira hajmi bo'lishi shart —
-        # aks holda "galaxy a17 6 128" dagi tasodifiy juftliklar ham tushardi.
-        if unit is None and cand not in _KNOWN_STORAGE:
-            continue
-        storage = cand
-        first = int(m.group(1))
-        ram = first if first in _PLAUSIBLE_RAM else None
-        break
-    if storage is None:
-        for num, unit in _SOLO_RE.findall(n):
-            v = int(num) * (1024 if unit in ("tb", "тб") else 1)
-            if v in _KNOWN_STORAGE:
-                storage = v
-                break
-    marks = frozenset(_DIFF_WORDS.findall(n)) | frozenset(_MODEL_TOKEN_RE.findall(n))
-    return storage, ram, marks
-
-
-def _same_variant(a: str, b: str) -> bool:
-    """Ikki sarlavha bitta variantni bildiradimi?
-
-    Ataylab ehtiyotkor: xotira yoki RAM faqat IKKALASIDA ham ko'rsatilgan va
-    farq qilgandagina ajratamiz. Bir do'kon hajmni umuman yozmagan bo'lsa,
-    uni alohida mahsulotga ajratib yuborish takliflarni yo'qotardi.
-    """
-    sa, ra, ma = _variant_parts(a)
-    sb, rb, mb = _variant_parts(b)
-    if ma != mb:
-        return False
-    if sa is not None and sb is not None and sa != sb:
-        return False
-    if ra is not None and rb is not None and ra != rb:
-        return False
-    return True
-
-
-BRANDS = ["apple","samsung","redmi","xiaomi","oppo","vivo","realme","honor","huawei","tecno","infinix","itel","poco"]
-
-
 def _norm(title):
     n = title.lower()
     n = re.sub(r"^[\/\s\-]*(смартфон|smartfon|smarton|telefon|cmartfon|phone|[сc]\s*мартфон|smartfoni|телефон)\s+", "", n, flags=re.IGNORECASE)
@@ -227,7 +164,9 @@ def assign_slugs(groups, existing: dict | None = None):
         g = groups[pid]
         if g.get("slug"):
             continue
-        base = _slugify(g["title"]) or _slugify(g["name"]) or pid
+        # Nom rangsiz ("samsung-galaxy-a55-5g-8-128-gb"), sarlavha esa bir
+        # do'konning rangli yozuvi — slug nomdan olinadi
+        base = _slugify(g["name"]) or _slugify(g["title"]) or pid
         slug = base
         if slug in used:
             suffix = pid.replace("prod-", "")[:6]
@@ -240,14 +179,6 @@ def assign_slugs(groups, existing: dict | None = None):
         used.add(slug)
         g["slug"] = slug
     return groups
-
-
-def _cosim(a, b):
-    v1, v2 = Counter(re.findall(r"\w+", a)), Counter(re.findall(r"\w+", b))
-    inter = set(v1) & set(v2)
-    num = sum(v1[x] * v2[x] for x in inter)
-    den = math.sqrt(sum(v**2 for v in v1.values())) * math.sqrt(sum(v**2 for v in v2.values()))
-    return num / den if den else 0.0
 
 
 # ── Soxta (nusxa) telefonlar ──────────────────────────────────────────────────
@@ -351,63 +282,67 @@ def load_rows():
 
 
 def build_groups(rows):
-    groups, brand_g, norm_pid = {}, {}, {}
-    # Natija qatorlar tartibiga bog'liq: guruh ID si birinchi kelgan sarlavhadan
-    # olinadi, rasm/reyting/sarlavha ham birinchisidan. Scraperlar sahifalarni
-    # har safar boshqa tartibda beradi — 2026-10-23 da shu sabab har sinxronizatsiya
-    # ~900 mahsulot ID sini va ~500 ta qatorni "o'zgargan" deb qayta yozardi.
-    # GIN indeksli products ga bunday yozuv bepul Supabase ning disk IO sini
-    # tugatib, bazani (va u bilan birga API ni) osiltirib qo'ydi.
+    """
+    E'lonlarni mahsulotlarga guruhlaydi: brend + model + xotira, rang — variant
+    (qoidalar python/matching.py da, sinovlari tests/test_matching.py da).
+
+    Ilgari butun sarlavha kosinus o'xshashligi bilan solishtirilar va har bir
+    rang alohida mahsulot edi: 2026-11-12 da e'lonlarning atigi 13% i bir
+    nechta do'konda bor mahsulotga tushardi, yangi qoidalar bilan ~72%.
+    """
+    # Natija qatorlar tartibiga bog'liq bo'lmasin (rasm/sarlavha birinchidan
+    # olinadi) — aks holda har sinxronizatsiya mahsulotlarni "o'zgargan" deb
+    # qayta yozardi.
     rows = sorted(rows, key=lambda r: (_norm(r["title"]), r["src"], r["price"],
                                        r["url"], r["image"], r["title"]))
-    for row in rows:
-        n = _norm(row["title"])
-        brand = next((b for b in BRANDS if b in n), "other")
-        pid = norm_pid.get(n)
-        if not pid:
-            for p in brand_g.get(brand, []):
-                if (_cosim(n, _norm(groups[p]["title"])) >= 0.85 and
-                        _same_variant(n, _norm(groups[p]["title"]))):
-                    pid = p
-                    norm_pid[n] = p
-                    break
-        if not pid:
-            pid = "prod-" + hashlib.md5(n.encode()).hexdigest()[:20]
-            norm_pid[n] = pid
-            brand_g.setdefault(brand, []).append(pid)
-            rating = None
-            if row["rating"]:
-                try:
-                    r = float(row["rating"])
-                    if 1 <= r <= 5:
-                        rating = round(r, 2)
-                except (ValueError, TypeError):
-                    pass
-            reviews = None
-            if row["reviews"]:
-                try:
-                    reviews = int(row["reviews"])
-                except (ValueError, TypeError):
-                    pass
-            groups[pid] = {
-                "id": pid, "name": _display(row["title"]), "title": row["title"],
-                "rating": rating, "reviews": reviews,
-                "image": row["image"], "images": [row["image"]] if row["image"] else [],
-                "keywords": set(), "markets": {},
-            }
-        g = groups[pid]
-        if len(row["title"]) > len(g["title"]):
-            g["title"] = row["title"]
-        # Takroriy sarlavhalar keywords ni 5 KB gacha shishirardi
-        g["keywords"].add(row["title"].lower())
-        if row["image"] and row["image"] not in g["images"]:
-            g["images"].append(row["image"])
-        if row["image"] and not g["image"]:
-            g["image"] = row["image"]
-        src, price = row["src"], row["price"]
-        if src not in g["markets"] or price < g["markets"][src]["price"]:
-            g["markets"][src] = {"source": src.capitalize(), "price": price, "url": row["url"]}
+    clustered, dropped = matching.drop_price_outliers(matching.group_rows(rows))
+    if dropped:
+        print(f"[sync] narxi g'ayritabiiy {dropped} ta taklif chiqarildi "
+              f"(guruh medianasidan {matching.OUTLIER_FACTOR:g} barobar farq)", flush=True)
+
+    groups = {}
+    for cl in clustered:
+        if not cl.rows:
+            continue
+        pid = cl.pid
+        first = cl.rows[0]
+        rating = None
+        if first["rating"]:
+            try:
+                r = float(first["rating"])
+                if 1 <= r <= 5:
+                    rating = round(r, 2)
+            except (ValueError, TypeError):
+                pass
+        reviews = None
+        if first["reviews"]:
+            try:
+                reviews = int(first["reviews"])
+            except (ValueError, TypeError):
+                pass
+        g = groups[pid] = {
+            "id": pid,
+            # Rangsiz, toza nom: "Samsung Galaxy A55 5G 8/128 GB"
+            "name": matching.display_name(cl.best_listing()) or _display(first["title"]),
+            "title": first["title"], "rating": rating, "reviews": reviews,
+            "image": first["image"], "images": [], "keywords": set(), "markets": {},
+            # Har bir do'kon sahifasi — eski mahsulot ID sini topish uchun (aliaslar)
+            "members": set(),
+        }
+        for row in cl.rows:
+            if len(row["title"]) > len(g["title"]):
+                g["title"] = row["title"]
+            g["keywords"].add(row["title"].lower())
+            if row["image"] and row["image"] not in g["images"]:
+                g["images"].append(row["image"])
+            if row["image"] and not g["image"]:
+                g["image"] = row["image"]
+            g["members"].add((row["src"].lower(), row["url"]))
+            src, price = row["src"], row["price"]
+            if src not in g["markets"] or price < g["markets"][src]["price"]:
+                g["markets"][src] = {"source": src.capitalize(), "price": price, "url": row["url"]}
     for g in groups.values():
+        # Takroriy sarlavhalar keywords ni 5 KB gacha shishirardi
         g["keywords"] = " ".join(sorted(g["keywords"]))
     return groups
 
@@ -597,23 +532,125 @@ _PRODUCT_COLS = ("slug", "name", "title", "category", "rating", "reviews",
                  "url")
 
 
-def _protected_sources(cur, mkt_rows) -> list[str]:
-    """Bu safar odatdagidan keskin kam mahsulot bergan do'konlar (kichik harfda)."""
-    new_counts = Counter(m[1].lower() for m in mkt_rows)
+def _protected_sources(cur, groups) -> list[str]:
+    """Bu safar odatdagidan keskin kam e'lon bergan do'konlar (kichik harfda).
+
+    Do'kon bo'yicha scraper YIG'GAN e'lonlar soni (CSV qatorlari) solishtiriladi,
+    product_markets qatorlari emas: guruhlash qoidasi o'zgarganda (masalan,
+    ranglar bitta mahsulotga birlashganda) narx qatorlari qonuniy ravishda
+    kamayadi va har bir do'kon "scraper yiqilgan" deb noto'g'ri himoyalanardi.
+    """
+    new_counts = Counter(src for g in groups.values() for src, _ in g.get("members", ()))
+    # Oldingi sinxronizatsiyadagi e'lonlar soni (shu funksiya yozadi, pastga
+    # qarang). Yozuvi yo'q do'kon uchun — product_markets qatorlari: eski
+    # guruhlashda ular e'lonlar soniga deyarli teng edi.
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS source_listings (
+            source     VARCHAR(100) PRIMARY KEY,
+            listings   INTEGER      NOT NULL,
+            updated_at TIMESTAMPTZ  DEFAULT NOW()
+        )
+    """)
+    cur.execute("SELECT source, listings FROM source_listings "
+                f"WHERE updated_at > NOW() - INTERVAL '{PROTECT_MAX_AGE}'")
+    baseline = dict(cur.fetchall())
     cur.execute(
         "SELECT lower(source), count(*) FROM product_markets "
         f"WHERE created_at > NOW() - INTERVAL '{PROTECT_MAX_AGE}' GROUP BY 1"
     )
+    for src, n in cur.fetchall():
+        baseline.setdefault(src, n)
     protected = []
-    for src, old in cur.fetchall():
+    for src, old in sorted(baseline.items()):
         if src in STALE_SOURCES or old < DROP_MIN_ROWS:
             continue
         if new_counts.get(src, 0) < old * DROP_RATIO:
             protected.append(src)
             _annotate("warning",
-                      f"{src}: {new_counts.get(src, 0)} ta narx (avval {old}) — "
+                      f"{src}: {new_counts.get(src, 0)} ta e'lon (avval {old}) — "
                       f"scraper yiqilgan ko'rinadi, eski narxlar saqlab qolindi.")
+    # Keyingi safar shu bilan solishtiriladi. Himoyalangan do'konning eski
+    # (sog'lom) soni saqlanadi — aks holda yiqilgan natija "me'yor" bo'lib qolardi.
+    healthy = [(src, n) for src, n in new_counts.items() if src not in protected]
+    if healthy:
+        psycopg2.extras.execute_values(
+            cur,
+            "INSERT INTO source_listings (source, listings, updated_at) VALUES %s "
+            "ON CONFLICT (source) DO UPDATE SET listings = EXCLUDED.listings, updated_at = NOW()",
+            [(src, n, datetime.now(timezone.utc)) for src, n in healthy],
+        )
     return protected
+
+
+def _migrate_ids(cur, groups) -> None:
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS product_aliases (
+            old_id     VARCHAR(60)  PRIMARY KEY,
+            new_id     VARCHAR(60)  NOT NULL,
+            old_slug   VARCHAR(200),
+            created_at TIMESTAMPTZ  DEFAULT NOW()
+        )
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_product_aliases_slug ON product_aliases(old_slug)")
+
+    cur.execute("SELECT product_id, lower(source), url FROM product_markets")
+    owner = {(src, url): pid for pid, src, url in cur.fetchall()}
+    votes: dict[str, Counter] = {}
+    for pid, g in groups.items():
+        for member in g.get("members", ()):
+            old = owner.get(member)
+            if old and old != pid:
+                votes.setdefault(old, Counter())[pid] += 1
+    new_ids = set(groups)
+    # Eski mahsulot e'lonlarining ko'pi qaysi yangisiga o'tgan bo'lsa — o'sha
+    pairs = {old: c.most_common(1)[0][0] for old, c in votes.items() if old not in new_ids}
+
+    # Avval tirik mahsulot bo'lib qaytgan ID lar alias bo'lib qolmasin
+    cur.execute("DELETE FROM product_aliases WHERE old_id = ANY(%s)", (list(new_ids),))
+    if not pairs:
+        return
+    olds, news = list(pairs), [pairs[o] for o in pairs]
+    cur.execute("SELECT id, slug FROM products WHERE id = ANY(%s)", (olds,))
+    slugs = dict(cur.fetchall())
+
+    cur.execute("CREATE TEMP TABLE _alias_map (old VARCHAR(60) PRIMARY KEY, new VARCHAR(60) NOT NULL) ON COMMIT DROP")
+    psycopg2.extras.execute_values(cur, "INSERT INTO _alias_map (old, new) VALUES %s", list(zip(olds, news)))
+    psycopg2.extras.execute_values(
+        cur,
+        "INSERT INTO product_aliases (old_id, new_id, old_slug) VALUES %s "
+        "ON CONFLICT (old_id) DO UPDATE SET new_id = EXCLUDED.new_id, "
+        "old_slug = COALESCE(EXCLUDED.old_slug, product_aliases.old_slug)",
+        [(o, n, slugs.get(o)) for o, n in zip(olds, news)],
+    )
+    # Zanjir: oldingi sinxronizatsiyadagi aliaslar endi alias bo'lgan ID ga
+    # ko'rsatayotgan bo'lsa — to'g'ridan-to'g'ri yangisiga
+    cur.execute("UPDATE product_aliases a SET new_id = m.new FROM _alias_map m WHERE a.new_id = m.old")
+
+    moved = {}
+    cur.execute("UPDATE price_history h SET product_id = m.new FROM _alias_map m WHERE h.product_id = m.old")
+    moved["price_history"] = cur.rowcount
+    for table in ("user_events",):
+        cur.execute("SELECT to_regclass(%s)", (table,))
+        if cur.fetchone()[0]:
+            cur.execute(f"UPDATE {table} t SET product_id = m.new FROM _alias_map m WHERE t.product_id = m.old")
+            moved[table] = cur.rowcount
+    # Sevimlilar / kuzatuv: (user_id, product_id) kalit. Foydalanuvchi bitta
+    # modelning ikki rangini saqlagan bo'lsa, ular bitta yozuvga aylanadi.
+    for table in ("user_favorites", "user_watchlist"):
+        cur.execute("SELECT to_regclass(%s)", (table,))
+        if not cur.fetchone()[0]:
+            continue
+        cur.execute(f"""
+            INSERT INTO {table} (user_id, product_id, product_data, created_at)
+            SELECT DISTINCT ON (t.user_id, m.new) t.user_id, m.new, t.product_data, t.created_at
+            FROM {table} t JOIN _alias_map m ON t.product_id = m.old
+            ORDER BY t.user_id, m.new, t.created_at
+            ON CONFLICT (user_id, product_id) DO NOTHING
+        """)
+        cur.execute(f"DELETE FROM {table} t USING _alias_map m WHERE t.product_id = m.old")
+        moved[table] = cur.rowcount
+    print(f"[alias] {len(pairs)} ta eski mahsulot yangisiga bog'landi; ko'chirildi: "
+          + ", ".join(f"{k} {v}" for k, v in moved.items()), flush=True)
 
 
 def _write_rows(conn, groups):
@@ -683,6 +720,16 @@ def _write_rows(conn, groups):
             print(f"[history] {snapshots} ta narx o'zgarishi yozildi, "
                   f"{cur.rowcount} ta eski yozuv o'chirildi", flush=True)
 
+            # ── Eski ID -> yangi ID (aliaslar) ──────────────────────────────
+            # Guruhlash qoidasi o'zgarsa (yoki do'kon yangi ma'lumot qo'shib,
+            # model kaliti o'zgarsa) mahsulot ID si o'zgaradi. Eski ID li
+            # mahsulot pastda o'chiriladi va unga bog'langan hamma narsa —
+            # Google dagi havolalar, sevimlilar, narx kuzatuvi, narx tarixi —
+            # osilib qolardi. Shuning uchun har bir eski mahsulot uning
+            # e'lonlari (do'kon + URL) qaysi yangi mahsulotga o'tganiga qarab
+            # yangisiga bog'lanadi va bog'liq jadvallar ko'chiriladi.
+            _migrate_ids(cur, groups)
+
             # ── Faqat O'ZGARGANINI yozamiz ──────────────────────────────────
             # Ilgari har safar ikkala jadval to'liq o'chirilib, 5500 mahsulot
             # qaytadan yozilardi. products da to'rtta GIN indeks bor (nom va
@@ -700,7 +747,7 @@ def _write_rows(conn, groups):
             #      o'chirish. created_at har safar yangilanadi — sahifadagi
             #      "tekshirilgan" vaqti shundan olinadi.
             ids = [r[0] for r in prod_rows]
-            protected = _protected_sources(cur, mkt_rows)
+            protected = _protected_sources(cur, groups)
             # Yangi ro'yxatda yo'q narxlar — himoyalangan do'konnikidan tashqari
             cur.execute(
                 "DELETE FROM product_markets pm WHERE NOT EXISTS ("
