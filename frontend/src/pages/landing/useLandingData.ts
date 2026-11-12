@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { mapProduct } from '../../utils/productMapper';
-import { fetchPersonalizedRecommendations } from '../../services/api';
 import type { Product } from '../../components/ProductCard';
-import { fmt, uniqueModels, type Stats } from './shared';
+import { fmt, type Stats } from './shared';
 
 /** Bosh sahifaning serverdan keladigan ma'lumotlari (statistika, eng katta
- *  narx farqlari, shaxsiy tavsiyalar) va ulardan yasaladigan matnlar. */
+ *  narx farqlari) va ulardan yasaladigan matnlar. */
 export function useLandingData() {
   const { t } = useLanguage();
   const h = t.home;
@@ -15,8 +14,6 @@ export function useLandingData() {
   const [statsFailed, setStatsFailed] = useState(false);
   const [deals, setDeals] = useState<Product[]>([]);
   const [dealsStatus, setDealsStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [personalizedRecs, setPersonalizedRecs] = useState<Product[]>([]);
-  const [personalizedType, setPersonalizedType] = useState('');
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -29,26 +26,19 @@ export function useLandingData() {
       .catch(() => { if (alive) setStatsFailed(true); });
 
     setDealsStatus('loading');
-    // 24 ta so'raladi: bir modelning variantlari tashlangach ~8–12 tasi qoladi
-    fetch('/api/recommendations?limit=24')
+    // diverse=1: server har modelni bir marta, har brenddan ko'pi bilan 3 tasini
+    // qaytaradi (python/fastapi_app/recs_diverse.py) — 4 tasi hero dastasiga,
+    // 8 tasi panjaraga
+    fetch('/api/recommendations?limit=12&diverse=1')
       .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
       .then(d => {
         if (!alive) return;
-        setDeals(uniqueModels((d.products ?? []).map(mapProduct), 12));
+        setDeals((d.products ?? []).map(mapProduct));
         setDealsStatus('ready');
       })
       .catch(() => { if (alive) setDealsStatus('error'); });
     return () => { alive = false; };
   }, [attempt]);
-
-  useEffect(() => {
-    fetchPersonalizedRecommendations(8)
-      .then(data => {
-        setPersonalizedRecs((data.products ?? []).map(mapProduct));
-        setPersonalizedType(data.type ?? '');
-      })
-      .catch(() => {});
-  }, []);
 
   const relativeUpdated = (iso: string | null | undefined) => {
     if (!iso) return null;
@@ -68,7 +58,6 @@ export function useLandingData() {
   const retry = () => setAttempt(a => a + 1);
 
   return {
-    stats, statsFailed, deals, dealsStatus, personalizedRecs, personalizedType,
-    updated, fill, retry,
+    stats, statsFailed, deals, dealsStatus, updated, fill, retry,
   };
 }

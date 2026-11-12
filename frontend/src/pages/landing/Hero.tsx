@@ -1,12 +1,11 @@
-import { useState, useRef, FormEvent } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, FormEvent } from 'react';
 import { m } from 'framer-motion';
 import { Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { Product } from '../../components/ProductCard';
 import type { BrandFacet } from '../../hooks/useBrands';
-import type { MarketFacet } from '../../hooks/useMarkets';
-import { StoreLogo } from '../../components/StoreLogo';
+import { setHeroSearchVisible } from '../../utils/heroSearch';
 import { DealDeck } from './DealDeck';
 
 const rise = (delay: number) => ({
@@ -19,9 +18,8 @@ const rise = (delay: number) => ({
  * Toza hero: bitta sarlavha, bitta qidiruv, ommabop brendlar va o'ng tomonda
  * haqiqiy takliflar dastasi. Raqamlar (mahsulot, do'kon) — /api/stats dan.
  */
-export function Hero({ hasStats, fill, deck, dealsLoading, topBrands, markets, updated }: {
+export function Hero({ hasStats, fill, deck, dealsLoading, topBrands, updated }: {
   hasStats: boolean;
-  markets: MarketFacet[];
   updated: string | null;
   fill: (s: string) => string;
   deck: Product[];
@@ -33,6 +31,19 @@ export function Hero({ hasStats, fill, deck, dealsLoading, topBrands, markets, u
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Hero qidiruvi ko'rinib turganda navbardagi qidiruv yashirin (utils/heroSearch).
+  // Birinchi chizilishdan oldin "ko'rinadi" deb belgilanadi — navbar qidiruvi
+  // bir lahzaga paydo bo'lib, yo'qolib qolmasin.
+  useLayoutEffect(() => { setHeroSearchVisible(true); return () => setHeroSearchVisible(false); }, []);
+  useEffect(() => {
+    const el = formRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([e]) => setHeroSearchVisible(e.isIntersecting), { rootMargin: '-64px 0px 0px 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -54,7 +65,7 @@ export function Hero({ hasStats, fill, deck, dealsLoading, topBrands, markets, u
             {hasStats ? fill(h.subtitle) : <span className="inline-block w-64 h-4 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />}
           </m.p>
 
-          <m.form {...rise(0.15)} role="search" onSubmit={onSearch}
+          <m.form ref={formRef} {...rise(0.15)} role="search" onSubmit={onSearch}
             className="glass flex items-center gap-2 rounded-2xl p-1.5 max-w-xl focus-within:ring-2 focus-within:ring-violet-500/40 transition-shadow">
             <label htmlFor="hero-search" className="sr-only">{h.searchButton}</label>
             <Search className="w-5 h-5 text-gray-400 ml-2.5 shrink-0" aria-hidden="true" />
@@ -81,22 +92,11 @@ export function Hero({ hasStats, fill, deck, dealsLoading, topBrands, markets, u
             </m.div>
           )}
 
-          {/* Ishonch qatori: haqiqiy do'konlar logotiplari va oxirgi yangilanish */}
-          {markets.length > 0 && (
-            <m.div {...rise(0.25)} className="mt-8 flex items-center gap-3">
-              <span className="flex -space-x-2">
-                {markets.slice(0, 5).map(mk => (
-                  <StoreLogo key={mk.key} name={mk.key} size="md" className="!rounded-full ring-2 ring-white dark:ring-gray-950" />
-                ))}
-              </span>
-              <span className="text-xs leading-snug text-gray-600 dark:text-gray-400">
-                <span className="block font-medium text-gray-900 dark:text-white">
-                  {hasStats ? fill(h.eyebrow) : <span className="inline-block w-36 h-3 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />}
-                </span>
-                {updated && h.trustUpdated.replace('{{updated}}', updated)}
-              </span>
-            </m.div>
-          )}
+          {/* Bitta ixcham qator: katalog hajmi va narxlar qachon yangilangani */}
+          <m.p {...rise(0.25)} className="mt-7 text-xs text-gray-500 dark:text-gray-400">
+            {hasStats ? fill(h.eyebrow) : <span className="inline-block w-36 h-3 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />}
+            {updated && <> · {h.trustUpdated.replace('{{updated}}', updated)}</>}
+          </m.p>
         </div>
 
         <m.div className="md:shrink-0" initial={{ opacity: 0, y: 40, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}

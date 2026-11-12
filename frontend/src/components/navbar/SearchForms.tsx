@@ -3,11 +3,13 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import type { NavbarSearch } from './useNavbarSearch';
 
 /* Desktop qidiruv satri (md+) */
-export function DesktopSearch({ search }: { search: NavbarSearch }) {
+export function DesktopSearch({ search, concealed = false }: { search: NavbarSearch; concealed?: boolean }) {
   const { t } = useLanguage();
   const { searchValue, setSearchValue, isListening, handleSubmit, startVoice, clearSearch } = search;
   return (
-    <div className="hidden md:flex flex-1 max-w-2xl">
+    // Yashirilganda ham joyini saqlaydi — navbar elementlari sakrab ketmasin
+    <div aria-hidden={concealed || undefined}
+      className={`hidden md:flex flex-1 max-w-2xl transition-all duration-300 ${concealed ? 'opacity-0 -translate-y-1 pointer-events-none invisible' : 'opacity-100'}`}>
       <form onSubmit={handleSubmit} className="relative w-full group">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-violet-500 transition-colors pointer-events-none" />
         <input
@@ -56,11 +58,13 @@ export function DesktopSearch({ search }: { search: NavbarSearch }) {
 }
 
 /* Mobil qidiruv qatori (< md) */
-export function MobileSearch({ search }: { search: NavbarSearch }) {
+export function MobileSearch({ search, concealed = false }: { search: NavbarSearch; concealed?: boolean }) {
   const { t } = useLanguage();
   const { searchValue, setSearchValue, isListening, handleSubmit, startVoice, clearSearch } = search;
   return (
-    <div className="md:hidden pb-2.5">
+    <div aria-hidden={concealed || undefined}
+      className={`md:hidden grid transition-all duration-300 ${concealed ? 'grid-rows-[0fr] opacity-0 invisible' : 'grid-rows-[1fr] opacity-100 pb-2.5'}`}>
+    <div className="overflow-hidden">
       <form onSubmit={handleSubmit} className="relative">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         <input
@@ -100,6 +104,7 @@ export function MobileSearch({ search }: { search: NavbarSearch }) {
           </button>
         </div>
       </form>
+    </div>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import asyncpg
 from fastapi import APIRouter, Query, Request, Response
 
 from catalog import _fetch_markets, _row_to_product
+from recs_diverse import diverse_pick
 from resp_cache import _cache_get, _cache_put
 
 router = APIRouter()
@@ -17,9 +18,14 @@ router = APIRouter()
 # ── Recommendations ───────────────────────────────────────────────────────────
 
 @router.get("/api/recommendations")
-async def get_recommendations(request: Request, response: Response, limit: int = Query(4, ge=1, le=24)) -> dict:
+async def get_recommendations(
+    request: Request, response: Response,
+    limit: int = Query(4, ge=1, le=24),
+    diverse: bool = Query(False, description="Har model bir marta, har brenddan ko'pi bilan 3 ta"),
+) -> dict:
     response.headers["Cache-Control"] = "public, max-age=300"
-    cached = _cache_get(f"recs:{limit}", 300)
+    cache_key = f"recs:{limit}:{int(diverse)}"
+    cached = _cache_get(cache_key, 300)
     if cached is not None:
         return cached
 
@@ -41,11 +47,14 @@ async def get_recommendations(request: Request, response: Response, limit: int =
         ORDER BY savings DESC
         LIMIT $1
         """,
-        limit,
+        # Xilma-xil ro'yxat uchun ko'proq qator olinib, keyin saralanadi
+        limit * 6 if diverse else limit,
     )
+    if diverse:
+        rows = diverse_pick(rows, limit)
     product_ids = [r["id"] for r in rows]
     markets_map = await _fetch_markets(pool, product_ids)
-    return _cache_put(f"recs:{limit}", {
+    return _cache_put(cache_key, {
         "products": [_row_to_product(r, markets_map.get(r["id"], [])) for r in rows]
     })
 

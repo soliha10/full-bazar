@@ -8,8 +8,6 @@ export interface Stats {
   markets: number;
   offers: number;
   comparableProducts: number;
-  /** Bir model do'konlar orasidagi narx farqining medianasi (0.22 = 22%) */
-  medianPriceGap?: number | null;
   lastUpdated: string | null;
 }
 
@@ -24,29 +22,6 @@ export const reveal = {
 
 // Raqam kelmagan bo'lsa (masalan, API eski versiyada) — "—", hech qachon taxmin emas
 export const fmt = (n: number | null | undefined) => (typeof n === 'number' ? n.toLocaleString('ru-RU').replace(/,/g, ' ') : '—');
-
-/**
- * Bitta modelning xotira variantlari (iPhone Duo 256/512/1 TB) ro'yxatni
- * to'ldirib yubormasin — har model bir marta, eng katta farqlisi qoladi
- * (API ro'yxatni farq bo'yicha kamayish tartibida beradi).
- */
-export function uniqueModels<T extends { name: string }>(items: T[], limit: number): T[] {
-  const seen = new Set<string>();
-  const out: T[] = [];
-  for (const it of items) {
-    const family = it.name.toLowerCase()
-      .replace(/\s+\d+\s*\/\s*\d+\s*(gb|tb)\b.*$/, '')
-      .replace(/\s+\d+\s*(gb|tb)\b.*$/, '')
-      // "Apple iPhone 18 Pro Max" va "Apple 18 Pro Max" — bitta model
-      .replace(/\b(apple|iphone|samsung|galaxy|xiaomi)\b/g, '')
-      .replace(/\s+/g, ' ').trim();
-    if (seen.has(family)) continue;
-    seen.add(family);
-    out.push(it);
-    if (out.length >= limit) break;
-  }
-  return out;
-}
 
 /** Eng arzon va eng qimmat taklif hamda farq foizi */
 export function priceSpread(markets: { source: string; price: number }[] = []) {

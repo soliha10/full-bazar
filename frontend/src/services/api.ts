@@ -1,5 +1,3 @@
-import { sessionId } from './tracking';
-
 const API_BASE_URL = '/api';
 
 export type ServerSort = 'relevance' | 'price_asc' | 'price_desc' | 'rating';
@@ -127,19 +125,6 @@ export const fetchSimilarProducts = async (ref: string | number, limit = 8) => {
   const response = await fetch(`${API_BASE_URL}/products/${ref}/similar?limit=${limit}`);
   if (!response.ok) throw new ApiError(response.status);
   return await response.json() as { basePrice: number | null; brand: string | null; products: any[] };
-};
-
-export const fetchPersonalizedRecommendations = async (limit = 8) => {
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/recommendations/personalized?session_id=${sessionId}&limit=${limit}`,
-    );
-    if (!response.ok) throw new Error('Network response was not ok');
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching personalized recommendations:', error);
-    throw error;
-  }
 };
 
 export const fetchPriceHistory = async (productId: string, days = 30) => {

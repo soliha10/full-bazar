@@ -95,7 +95,7 @@ function AppContent() {
         <Navbar onSearchChange={handleSearch} />
       </div>
 
-      <main id="main" tabIndex={-1} className={`flex-1 outline-none md:mt-[70px] ${!hideNavbarOnMobile ? 'mt-[108px]' : ''}`}>
+      <main id="main" tabIndex={-1} className={`flex-1 outline-none md:mt-[70px] ${hideNavbarOnMobile ? '' : location.pathname === '/' ? 'mt-14' : 'mt-[108px]'}`}>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/"            element={<Landing />} />

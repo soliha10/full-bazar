@@ -11,6 +11,7 @@ import { useNavbarSearch } from './navbar/useNavbarSearch';
 import { NavLogo } from './navbar/NavLogo';
 import { DesktopNavLinks } from './navbar/DesktopNavLinks';
 import { DesktopSearch, MobileSearch } from './navbar/SearchForms';
+import { useHeroSearchVisible } from '../utils/heroSearch';
 import { LanguageMenu } from './navbar/LanguageMenu';
 import { NavIconLinks } from './navbar/NavIconLinks';
 import { DesktopAuth, MobileAuth } from './navbar/AuthButtons';
@@ -30,6 +31,9 @@ export function Navbar({ onSearchChange }: NavbarProps) {
   const { watched } = usePriceWatch();
   const { compareIds } = useCompare();
   const search = useNavbarSearch(onSearchChange, language);
+  // Bosh sahifada hero qidiruvi ko'rinib turganda navbardagisi yashirin
+  const heroSearchVisible = useHeroSearchVisible();
+  const concealSearch = location.pathname === '/' && heroSearchVisible;
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileSheetOpen, setIsProfileSheetOpen] = useState(false);
@@ -82,7 +86,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
 
             <NavLogo />
             <DesktopNavLinks />
-            <DesktopSearch search={search} />
+            <DesktopSearch search={search} concealed={concealSearch} />
 
             {/* Spacer (mobile) */}
             <div className="flex-1 md:hidden" />
@@ -101,7 +105,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             </div>
           </div>
 
-          <MobileSearch search={search} />
+          <MobileSearch search={search} concealed={concealSearch} />
 
         </div>
       </nav>
