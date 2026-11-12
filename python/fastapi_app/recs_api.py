@@ -17,7 +17,7 @@ router = APIRouter()
 # ── Recommendations ───────────────────────────────────────────────────────────
 
 @router.get("/api/recommendations")
-async def get_recommendations(request: Request, response: Response, limit: int = Query(4, ge=1, le=10)) -> dict:
+async def get_recommendations(request: Request, response: Response, limit: int = Query(4, ge=1, le=24)) -> dict:
     response.headers["Cache-Control"] = "public, max-age=300"
     cached = _cache_get(f"recs:{limit}", 300)
     if cached is not None:

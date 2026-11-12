@@ -89,16 +89,3 @@ export function MiniProductCard({ product, badge, storesLabel }: {
     </Link>
   );
 }
-
-export function SkeletonCard() {
-  return (
-    <div className="shrink-0 w-[160px] md:w-[220px] rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse overflow-hidden" aria-hidden="true">
-      <div className="h-36 md:h-44 bg-gray-200 dark:bg-gray-700" />
-      <div className="p-3 space-y-2">
-        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full w-4/5" />
-        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full w-3/5" />
-        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-full w-2/5 mt-3" />
-      </div>
-    </div>
-  );
-}

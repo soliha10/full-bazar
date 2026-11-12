@@ -3,7 +3,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { mapProduct } from '../../utils/productMapper';
 import { fetchPersonalizedRecommendations } from '../../services/api';
 import type { Product } from '../../components/ProductCard';
-import { fmt, type Stats } from './shared';
+import { fmt, uniqueModels, type Stats } from './shared';
 
 /** Bosh sahifaning serverdan keladigan ma'lumotlari (statistika, eng katta
  *  narx farqlari, shaxsiy tavsiyalar) va ulardan yasaladigan matnlar. */
@@ -29,9 +29,14 @@ export function useLandingData() {
       .catch(() => { if (alive) setStatsFailed(true); });
 
     setDealsStatus('loading');
-    fetch('/api/recommendations?limit=10')
+    // 24 ta so'raladi: bir modelning variantlari tashlangach ~8–12 tasi qoladi
+    fetch('/api/recommendations?limit=24')
       .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then(d => { if (alive) { setDeals((d.products ?? []).map(mapProduct)); setDealsStatus('ready'); } })
+      .then(d => {
+        if (!alive) return;
+        setDeals(uniqueModels((d.products ?? []).map(mapProduct), 12));
+        setDealsStatus('ready');
+      })
       .catch(() => { if (alive) setDealsStatus('error'); });
     return () => { alive = false; };
   }, [attempt]);

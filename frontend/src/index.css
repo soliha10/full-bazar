@@ -121,6 +121,11 @@ body {
   animation-delay: calc(min(var(--i, 0), 12) * 45ms);
 }
 
+/* ── Do'konlar lentasi: ro'yxat ikki marta chiziladi, -50% siljish uzluksiz ── */
+@keyframes marquee { to { transform: translateX(-50%); } }
+.marquee-track { animation: marquee 40s linear infinite; }
+.marquee:hover .marquee-track, .marquee:focus-within .marquee-track { animation-play-state: paused; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .01ms !important;
@@ -128,6 +133,7 @@ body {
     transition-duration: .01ms !important;
     scroll-behavior: auto !important;
   }
+  .marquee-track { animation: none !important; }
 }
 
 /* ── Custom Scrollbar ── */

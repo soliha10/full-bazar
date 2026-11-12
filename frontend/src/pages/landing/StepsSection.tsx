@@ -1,31 +1,28 @@
 import { m } from 'framer-motion';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { reveal } from './shared';
+import { reveal, SectionHeader } from './shared';
 
-/* ══ HOW IT WORKS ══ */
+/* ══ HOW IT WORKS ══ — uch qadam, desktopda bir chiziq bilan bog'langan */
 export function StepsSection() {
   const { t } = useLanguage();
   const h = t.home;
   return (
-    <m.section {...reveal} aria-labelledby="steps-title" className="mt-12 md:mt-20 py-10 md:py-14">
-      <div className="px-4 max-w-7xl mx-auto">
-        <h2 id="steps-title" className="font-semibold text-gray-900 dark:text-white text-xl md:text-2xl mb-6 md:mb-10 tracking-tight">
-          {h.stepsTitle}
-        </h2>
-        <ol className="grid md:grid-cols-3 gap-5 md:gap-10">
-          {h.steps.map((step, idx) => (
-            <li key={step.title} className="glass glass-hover rounded-2xl p-5 md:p-6 flex md:flex-col items-start gap-3">
-              <span className="text-sm font-medium text-violet-600 dark:text-violet-400 tabular-nums shrink-0">
-                {String(idx + 1).padStart(2, '0')}
-              </span>
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white text-base mb-1">{step.title}</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{step.desc}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
+    <m.section {...reveal} aria-labelledby="steps-title" className="mt-14 md:mt-24 px-4 max-w-7xl mx-auto">
+      <SectionHeader id="steps-title" title={h.stepsTitle} />
+      <ol className="relative grid md:grid-cols-3 gap-3 md:gap-4">
+        <span aria-hidden="true"
+          className="hidden md:block absolute top-[2.6rem] left-[16%] right-[16%] h-px bg-linear-to-r from-transparent via-violet-400/50 to-transparent" />
+        {h.steps.map((step, idx) => (
+          <li key={step.title} className="relative glass glass-hover card-rise rounded-3xl p-5 md:p-6 flex gap-4 md:block"
+            style={{ '--i': idx } as React.CSSProperties}>
+            <span className="relative z-10 flex shrink-0 w-10 h-10 md:w-11 md:h-11 items-center justify-center rounded-2xl bg-violet-600 text-white text-sm font-semibold tabular-nums">
+              {idx + 1}
+            </span>
+            <div><h3 className="md:mt-5 font-semibold text-gray-900 dark:text-white text-base">{step.title}</h3>
+            <p className="mt-1.5 text-gray-600 dark:text-gray-400 text-sm leading-relaxed">{step.desc}</p></div>
+          </li>
+        ))}
+      </ol>
     </m.section>
   );
 }

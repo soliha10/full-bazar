@@ -5,6 +5,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { Product } from '../../components/ProductCard';
 import type { BrandFacet } from '../../hooks/useBrands';
+import type { MarketFacet } from '../../hooks/useMarkets';
+import { StoreLogo } from '../../components/StoreLogo';
 import { DealDeck } from './DealDeck';
 
 const rise = (delay: number) => ({
@@ -17,8 +19,10 @@ const rise = (delay: number) => ({
  * Toza hero: bitta sarlavha, bitta qidiruv, ommabop brendlar va o'ng tomonda
  * haqiqiy takliflar dastasi. Raqamlar (mahsulot, do'kon) — /api/stats dan.
  */
-export function Hero({ hasStats, fill, deck, dealsLoading, topBrands }: {
+export function Hero({ hasStats, fill, deck, dealsLoading, topBrands, markets, updated }: {
   hasStats: boolean;
+  markets: MarketFacet[];
+  updated: string | null;
   fill: (s: string) => string;
   deck: Product[];
   dealsLoading: boolean;
@@ -38,13 +42,10 @@ export function Hero({ hasStats, fill, deck, dealsLoading, topBrands }: {
   };
 
   return (
-    <section aria-labelledby="hero-title" className="px-4 pt-8 pb-4 md:pt-16 md:pb-10 max-w-7xl mx-auto">
+    <section aria-labelledby="hero-title" className="px-4 pt-10 pb-4 md:pt-20 md:pb-8 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center gap-10 md:gap-14">
         <div className="flex-1 min-w-0">
-          <m.p {...rise(0)} className="glass-soft inline-flex rounded-full px-3 py-1 mb-5 text-xs text-gray-600 dark:text-gray-300">
-            {hasStats ? fill(h.eyebrow) : <span className="inline-block w-36 h-3 my-0.5 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />}
-          </m.p>
-          <m.h1 {...rise(0.05)} id="hero-title"
+          <m.h1 {...rise(0)} id="hero-title"
             className="text-gray-900 dark:text-white font-semibold leading-[1.08] tracking-tight mb-4 max-w-2xl"
             style={{ fontSize: 'clamp(2rem, 5.2vw, 3.4rem)' }}>
             {h.title}
@@ -77,6 +78,23 @@ export function Hero({ hasStats, fill, deck, dealsLoading, topBrands }: {
                   {b.name}
                 </Link>
               ))}
+            </m.div>
+          )}
+
+          {/* Ishonch qatori: haqiqiy do'konlar logotiplari va oxirgi yangilanish */}
+          {markets.length > 0 && (
+            <m.div {...rise(0.25)} className="mt-8 flex items-center gap-3">
+              <span className="flex -space-x-2">
+                {markets.slice(0, 5).map(mk => (
+                  <StoreLogo key={mk.key} name={mk.key} size="md" className="!rounded-full ring-2 ring-white dark:ring-gray-950" />
+                ))}
+              </span>
+              <span className="text-xs leading-snug text-gray-600 dark:text-gray-400">
+                <span className="block font-medium text-gray-900 dark:text-white">
+                  {hasStats ? fill(h.eyebrow) : <span className="inline-block w-36 h-3 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />}
+                </span>
+                {updated && h.trustUpdated.replace('{{updated}}', updated)}
+              </span>
             </m.div>
           )}
         </div>

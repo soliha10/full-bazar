@@ -10,9 +10,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { SEO, SITE_URL } from '../components/SEO';
 import { useLandingData } from './landing/useLandingData';
 import { Hero } from './landing/Hero';
-import { StatsRow } from './landing/StatsRow';
-import { DealsSection, PersonalSection } from './landing/ProductRows';
-import { StoresSection } from './landing/StoresSection';
+import { StoreMarquee } from './landing/StoreMarquee';
+import { WhySection } from './landing/WhySection';
+import { DealsGrid } from './landing/DealsGrid';
+import { PersonalSection } from './landing/ProductRows';
+import { AlertSection } from './landing/AlertSection';
 import { BrandsSection } from './landing/BrandsSection';
 import { StepsSection } from './landing/StepsSection';
 import { FaqSection } from './landing/FaqSection';
@@ -37,7 +39,7 @@ export function Landing() {
   const { favorites } = useFavorites();
   const { user } = useAuth();
   const brands = useBrands();
-  const { markets, status: marketsStatus, retry: retryMarkets } = useMarkets();
+  const { markets } = useMarkets();
   const clientRecs = useRecommendations(allProducts, 8);
   const showClientRecs = clientRecs.length > 0 && (favorites.length > 0 || !!user?.profile.preferredBrands.length);
 
@@ -62,26 +64,26 @@ export function Landing() {
         canonicalUrl={`${SITE_URL}/`}
       />
 
-      {/* ══ HERO ══ */}
-      <Hero hasStats={!!stats} fill={fill} deck={deck}
+      {/* Tartib: qidiruv → ishonch (do'konlar, raqamlar) → foyda (eng katta
+          farqlar) → tanlash (brendlar) → qanday ishlaydi → kuzatuv → savollar */}
+      <Hero hasStats={!!stats} fill={fill} deck={deck} markets={markets} updated={updated}
         dealsLoading={dealsStatus === 'loading'} topBrands={topBrands} />
 
-      {/* ══ STATS ══ */}
-      <StatsRow stats={stats} failed={statsFailed} updated={updated} onRetry={retry} />
+      <StoreMarquee markets={markets} />
 
-      <DealsSection deals={deals} status={dealsStatus} onRetry={retry} />
+      <WhySection stats={stats} failed={statsFailed} updated={updated} onRetry={retry} />
+
+      <DealsGrid deals={deals} status={dealsStatus} onRetry={retry} />
 
       <PersonalSection clientRecs={clientRecs} showClientRecs={showClientRecs}
         fromFavorites={favorites.length > 0}
         personalizedRecs={personalizedRecs} personalizedType={personalizedType} />
 
-      {/* ══ STORES ══ */}
-      <StoresSection markets={markets} status={marketsStatus} onRetry={retryMarkets} />
-
-      {/* ══ BRANDS ══ */}
       <BrandsSection brands={brands} />
 
       <StepsSection />
+
+      <AlertSection sample={deals[0]} />
 
       <FaqSection updated={updated} storeList={storeList}
         storesCount={stats ? String(stats.markets) : String(markets.length || '—')} />

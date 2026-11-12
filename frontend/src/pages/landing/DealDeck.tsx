@@ -12,11 +12,13 @@ export interface DeckLabels { label: string; cheapest: string; gap: string; cta:
 const ROTATE_MS = 4500;
 
 /** Bitta karta: haqiqiy mahsulot, uning eng arzon 3 ta do'kon narxi va farq. */
-function DealCard({ product, labels }: { product: Product; labels: DeckLabels }) {
+function DealCard({ product, labels, back }: { product: Product; labels: DeckLabels; back: boolean }) {
   const offers = [...(product.markets ?? [])].sort((a, b) => a.price - b.price);
   const gap = offers.length > 1 ? offers[offers.length - 1].price - offers[0].price : 0;
   return (
-    <div className="glass glass-solid rounded-3xl p-4 md:p-5 h-full flex flex-col">
+    <div className="glass glass-solid rounded-3xl p-4 md:p-5 h-full">
+      {/* Orqadagi kartalar — bo'sh "qog'oz": ularning matni tepadagisi ostidan ko'rinib qolmasin */}
+      <div className={`h-full flex flex-col transition-opacity duration-300 ${back ? 'opacity-0' : 'opacity-100'}`}>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{labels.label}</p>
       <Link to={productPath(product)} className="flex items-center gap-3 mb-3 group">
         <span className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center shrink-0 overflow-hidden">
@@ -46,6 +48,7 @@ function DealCard({ product, labels }: { product: Product; labels: DeckLabels })
         <Link to={productPath(product)} className="text-xs font-medium text-violet-600 dark:text-violet-400 hover:underline">
           {labels.cta}
         </Link>
+      </div>
       </div>
     </div>
   );
@@ -88,7 +91,7 @@ export function DealDeck({ deals, labels }: { deals: Product[]; labels: DeckLabe
               animate={{ y: depth * 20, scale: 1 - depth * 0.06, opacity: depth > 2 ? 0 : 1 - depth * 0.3 }}
               transition={{ type: 'spring', stiffness: 260, damping: 26 }}
               aria-hidden={depth !== 0}>
-              <DealCard product={deal} labels={labels} />
+              <DealCard product={deal} labels={labels} back={depth !== 0} />
             </m.div>
           );
         })}
