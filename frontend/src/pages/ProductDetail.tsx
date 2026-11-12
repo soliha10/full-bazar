@@ -14,6 +14,7 @@ import {
   Store,
   TrendingDown,
   Scale,
+  BarChart3,
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -97,7 +98,7 @@ export function ProductDetail() {
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedMarketIndex, setSelectedMarketIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState<'overview' | 'specs' | 'reviews' | 'priceHistory'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'specs' | 'priceHistory'>('overview');
   const [showAllMarkets, setShowAllMarkets] = useState(false);
   const [priceHistory, setPriceHistory] = useState<{ date: string; source: string; price: number }[]>([]);
   const { favorites, toggle, isLiked } = useFavorites();
@@ -219,6 +220,14 @@ export function ProductDetail() {
   const bestPrice = sortedMarkets[0]?.price ?? product?.price ?? 0;
   const worstPrice = sortedMarkets[sortedMarkets.length - 1]?.price;
   const savings = worstPrice && worstPrice > bestPrice ? worstPrice - bestPrice : 0;
+  // 30 kun ichidagi o'zgarish: tarixdagi eng birinchi kunning eng arzon narxi
+  // va hozirgi eng arzon narx. Tarix bo'lmasa — null (ko'rsatilmaydi).
+  const priceChange30 = (() => {
+    if (priceHistory.length === 0 || !bestPrice) return null;
+    const firstDay = [...priceHistory].sort((a, b) => a.date.localeCompare(b.date))[0].date.slice(0, 10);
+    const startMin = Math.min(...priceHistory.filter(h => h.date.slice(0, 10) === firstDay).map(h => h.price));
+    return startMin > 0 ? ((bestPrice - startMin) / startMin) * 100 : null;
+  })();
   const liked = product ? isLiked(product.id) : false;
   const inCompare = product ? compareIds.includes(String(product.id)) : false;
 
@@ -367,13 +376,6 @@ export function ProductDetail() {
           >
             <div className="md:flex md:flex-row-reverse md:items-start gap-3">
             <div className="relative flex-1 bg-white dark:bg-gray-900 rounded-2xl md:rounded-[2.5rem] border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
-              {/* Best seller badge */}
-              <div className="absolute top-4 left-4 z-10">
-                <span className="bg-amber-400 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
-                  {t.detail.bestSeller}
-                </span>
-              </div>
-
               {/* Savings badge */}
               {savings > 0 && (
                 <div className="absolute top-4 right-14 md:right-4 z-10">
@@ -517,9 +519,11 @@ export function ProductDetail() {
                 <span className="text-violet-600 dark:text-violet-400 font-black text-xs uppercase tracking-widest bg-violet-50 dark:bg-violet-900/20 px-2.5 py-1 rounded-full">
                   {(t.detail.categories as any)[(product.category ?? '').toLowerCase()] ?? product.category}
                 </span>
-                <span className="text-emerald-600 font-bold text-xs flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-full">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> {t.detail.inStockReady}
-                </span>
+                {product.inStock && (
+                  <span className="text-emerald-600 font-bold text-xs flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-full">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {t.detail.inStock}
+                  </span>
+                )}
               </div>
 
               <div className="flex items-start gap-3">
@@ -695,7 +699,7 @@ export function ProductDetail() {
                         </span>
                         {idx === 0 ? (
                           <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                            ✓ {t.landing.hero.cheapest}
+                            ✓ {t.detailPage.cheapestBadge}
                           </span>
                         ) : (
                           formatCheckedAt(market.checkedAt, t.checkedAt) && (
@@ -737,52 +741,34 @@ export function ProductDetail() {
               </div>
             </div>
 
-            {/* AI Smart Summary */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl p-5 md:p-7 border border-gray-100 dark:border-gray-800 shadow-sm space-y-5">
-              <div className="flex items-center justify-between">
+            {/* Narx tahlili — faqat shu mahsulotning haqiqiy narxlaridan.
+                Ilgari bu yerda "AI xulosa" bor edi: 4.8 / 4.9 / 4.7 kabi
+                baholar va matn har bir mahsulot uchun bir xil, qo'lda yozilgan edi. */}
+            {sortedMarkets.length > 0 && (
+              <div className="bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl p-5 md:p-7 border border-gray-100 dark:border-gray-800 shadow-sm space-y-4">
                 <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
-                  <Sparkles className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400" />
-                  {t.detail.aiSmartSummary}
+                  <BarChart3 className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400" />
+                  {t.detailPage.priceInsight.title}
                 </h3>
-                <div className="bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-3 py-1 rounded-xl font-black text-sm">
-                  4.8 / 5.0
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: t.detail.aiLabels.performance, value: "4.9", color: "bg-emerald-500" },
-                  { label: t.detail.aiLabels.camera,      value: "4.7", color: "bg-violet-500" },
-                  { label: t.detail.aiLabels.battery,     value: "4.8", color: "bg-amber-400" },
-                  { label: t.detail.aiLabels.display,     value: "4.6", color: "bg-purple-500" },
-                ].map((item, i) => (
-                  <div key={i} className="flex flex-col gap-1.5">
-                    <div className="flex justify-between items-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                      <span>{item.label}</span>
-                      <span className="text-gray-900 dark:text-white">{item.value}</span>
+                <dl className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: t.detailPage.priceInsight.cheapest, value: formatSum(bestPrice), sub: sortedMarkets[0]?.source },
+                    { label: t.detailPage.priceInsight.priciest, value: formatSum(worstPrice ?? bestPrice), sub: sortedMarkets[sortedMarkets.length - 1]?.source },
+                    { label: t.detailPage.priceInsight.gap, value: savings > 0 ? formatSum(savings) : '—', sub: savings > 0 ? `${Math.round((savings / (worstPrice || 1)) * 100)}%` : t.detailPage.priceInsight.singleStore },
+                    { label: t.detailPage.priceInsight.change30, value: priceChange30 == null ? '—' : `${priceChange30 > 0 ? '+' : ''}${priceChange30.toFixed(1)}%`, sub: priceChange30 == null ? t.detailPage.priceInsight.noHistory : priceChange30 < 0 ? t.detailPage.priceInsight.cheaper : priceChange30 > 0 ? t.detailPage.priceInsight.pricier : t.detailPage.priceInsight.same, tone: priceChange30 == null ? '' : priceChange30 < 0 ? 'text-emerald-600 dark:text-emerald-400' : priceChange30 > 0 ? 'text-red-500' : '' },
+                  ].map(item => (
+                    <div key={item.label} className="rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700 px-3.5 py-3">
+                      <dt className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{item.label}</dt>
+                      <dd className={`mt-1 text-base font-black text-gray-900 dark:text-white ${(item as { tone?: string }).tone ?? ''}`}>{item.value}</dd>
+                      {item.sub && <dd className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 truncate">{item.sub}</dd>}
                     </div>
-                    <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <motion.div
-                        className={`h-full ${item.color} rounded-full`}
-                        initial={{ width: 0 }}
-                        whileInView={{ width: `${parseFloat(item.value) * 20}%` }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.9, delay: i * 0.1, ease: 'easeOut' }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
-                <h4 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">
-                  {t.detail.quickSpecifications}
-                </h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium leading-relaxed">
-                  "{t.detailPage.aiSummaryText}"
+                  ))}
+                </dl>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {t.detailPage.priceInsight.storesCount.replace('{{count}}', String(sortedMarkets.length))}
                 </p>
               </div>
-            </div>
+            )}
           </motion.div>
         </div>
 
@@ -790,7 +776,7 @@ export function ProductDetail() {
         <div className="mt-10 md:mt-16">
           {/* Mobile tabs */}
           <div className="md:hidden bg-white dark:bg-gray-900 rounded-2xl p-1 border border-gray-100 dark:border-gray-800 shadow-sm mb-6 flex">
-            {(['overview', 'specs', 'reviews', 'priceHistory'] as const).map(tab => (
+            {(['overview', 'specs', 'priceHistory'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -802,7 +788,6 @@ export function ProductDetail() {
               >
                 {tab === 'overview' ? t.detail.overview
                   : tab === 'specs' ? t.detail.specs
-                  : tab === 'reviews' ? t.detail.reviewsTab
                   : t.detailPage.priceHistoryTab}
               </button>
             ))}
@@ -810,16 +795,18 @@ export function ProductDetail() {
 
           <div className="grid lg:grid-cols-3 gap-8 lg:gap-16">
             {/* Main content */}
-            <div className={`lg:col-span-2 space-y-8 ${activeTab !== 'overview' && 'hidden md:block'}`}>
+            <div className={`lg:col-span-3 space-y-8 ${activeTab !== 'overview' && 'hidden md:block'}`}>
+              {product.description && (
               <section id="overview" className="space-y-4">
                 <h2 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-3">
                   <div className="w-1 h-6 bg-violet-600 rounded-full" />
                   {t.detail.productStory}
                 </h2>
                 <p className="text-base text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
-                  {product.description || t.detail.productStoryFallback}
+                  {product.description}
                 </p>
               </section>
+              )}
 
               <section
                 id="specs"
@@ -885,48 +872,6 @@ export function ProductDetail() {
               </section>
             </div>
 
-            {/* Reviews sidebar */}
-            <div className={`space-y-6 ${activeTab !== 'reviews' && 'hidden lg:block'}`}>
-              <div className="bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
-                <h2 className="text-base font-black text-gray-900 dark:text-white mb-6 border-b border-gray-100 dark:border-gray-800 pb-4">
-                  {t.detail.mostHelpfulReviews}
-                </h2>
-                <div className="space-y-6">
-                  {[
-                    { user: "Akbar T.",  rating: 5, days: 2,   comment: "Narxni bir nechta do'kon bilan solishtirib, eng arzonidan oldim. Telefon sifati a'lo!" },
-                    { user: "Malika R.", rating: 4, weeks: 1,  comment: "Kamera sifati zo'r, batareya ham yaxshi ishlayapti. Narx/sifat nisbati yaxshi." },
-                    { user: "Jasur K.",  rating: 5, weeks: 2,  comment: "Bu yil eng yaxshi xaridim. Tez va ishonchli, narxini bu yerda topdim!" },
-                  ].map((review, i) => (
-                    <div key={i} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${
-                            ['bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300',
-                             'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-300',
-                             'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300'][i]
-                          }`}>
-                            {review.user[0]}
-                          </div>
-                          <span className="font-bold text-sm text-gray-900 dark:text-white">{review.user}</span>
-                        </div>
-                        <div className="flex gap-0.5">
-                          {[...Array(5)].map((_, s) => (
-                            <Star key={s} className={`w-3 h-3 ${s < review.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-200 dark:text-gray-700'}`} />
-                          ))}
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed">"{review.comment}"</p>
-                      <p className="text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase">
-                        {review.days ? `${review.days} ${t.detail.timeAgo.daysAgo}` : `${(review as any).weeks} ${t.detail.timeAgo.weeksAgo}`}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                <button className="w-full mt-6 py-3.5 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
-                  {t.detail.viewMoreReviews}
-                </button>
-              </div>
-            </div>
           </div>
         </div>
 

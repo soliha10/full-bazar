@@ -12,29 +12,8 @@ import { useSearchParams, useNavigate, Link, useLocation, useNavigationType } fr
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatSum } from '../utils/productMapper';
 import { SEO, SITE_URL } from '../components/SEO';
+import { useMarkets } from '../hooks/useMarkets';
 
-
-const MARKETPLACES = [
-  { name: 'Asaxiy',     key: 'asaxiy',     color: '#7C3AED' },
-  { name: 'Texnomart',  key: 'texnomart',  color: '#E31E24' },
-  { name: 'Olcha',      key: 'olcha',      color: '#F97316' },
-  { name: 'Mediapark',  key: 'mediapark',  color: '#10B981' },
-  { name: 'Chakana',    key: 'chakana',    color: '#0EA5E9' },
-  { name: 'Glotr',      key: 'glotr',      color: '#8B5CF6' },
-  { name: 'Openshop',   key: 'openshop',   color: '#6366F1' },
-  { name: 'Idea',       key: 'idea',       color: '#F59E0B' },
-  { name: 'Beemarket',    key: 'beemarket',    color: '#EC4899' },
-  { name: 'Castore',      key: 'castore',      color: '#14B8A6' },
-  { name: 'Joybox',       key: 'joybox',       color: '#F43F5E' },
-  { name: 'Alif',         key: 'alif',         color: '#0891B2' },
-  { name: 'Discont',      key: 'discont',      color: '#EF4444' },
-  { name: 'Macbro',       key: 'macbro',       color: '#1D4ED8' },
-  { name: 'Radius',       key: 'radius',       color: '#84CC16' },
-  { name: 'Mi',           key: 'mi',           color: '#FF6900' },
-  { name: 'Ucell',        key: 'ucell',        color: '#65A30D' },
-  { name: 'Ozon',         key: 'ozon',         color: '#005BFF' },
-];
-const MARKET_COLOR: Record<string, string> = Object.fromEntries(MARKETPLACES.map(m => [m.key, m.color]));
 
 const MARKETS_VISIBLE = 8;
 
@@ -79,11 +58,8 @@ function getSavedFilters(): SavedFilters | null {
   try { saved = JSON.parse(sessionStorage.getItem(FILTER_KEY) || 'null'); } catch { return null; }
   if (!saved) return null;
 
-  const known = new Set(MARKETPLACES.map(m => m.key));
-  const markets = Array.isArray(saved.selectedMarketplaces)
-    ? saved.selectedMarketplaces.filter(k => known.has(k))
-    : [];
-
+  // Endi mavjud bo'lmagan do'konlar /api/markets kelgach tashlanadi (pastda)
+  const markets = Array.isArray(saved.selectedMarketplaces) ? saved.selectedMarketplaces : [];
   return { ...saved, selectedMarketplaces: markets };
 }
 
@@ -125,11 +101,20 @@ export function ProductListing() {
   const categoryParam = useMemo(() => new URLSearchParams(location.search).get('category') || 'All', [location.search]);
 
   const saved = useRef(getSavedFilters());
+  // ?market=texnomart / ?brand=samsung — bosh sahifadagi havolalar shu bilan
+  // katalogni darhol filtrlangan holda ochadi (sessiyadagi filtrdan ustun).
+  const urlInit = useRef(() => {
+    const p = new URLSearchParams(location.search);
+    return { market: p.get('market'), brand: p.get('brand') };
+  });
+  const initial = useRef(urlInit.current());
 
   const [selectedCategory,     setSelectedCategory]     = useState(categoryParam);
-  const [selectedMarketplaces, setSelectedMarketplaces] = useState<string[]>(saved.current?.selectedMarketplaces ?? []);
+  const [selectedMarketplaces, setSelectedMarketplaces] = useState<string[]>(
+    initial.current.market ? [initial.current.market.toLowerCase()] : saved.current?.selectedMarketplaces ?? []);
   const [minRating,     setMinRating]     = useState<number>(saved.current?.minRating ?? 0);
-  const [selectedBrand, setSelectedBrand] = useState<string | null>(saved.current?.selectedBrand ?? null);
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(
+    initial.current.brand ? initial.current.brand.toLowerCase() : saved.current?.selectedBrand ?? null);
   const [minPrice,  setMinPrice]  = useState<string>(saved.current?.minPrice ?? '');
   const [maxPrice,  setMaxPrice]  = useState<string>(saved.current?.maxPrice ?? '');
   const [sortBy,    setSortBy]    = useState<SortKey>(saved.current?.sortBy ?? 'relevance');
@@ -145,7 +130,11 @@ export function ProductListing() {
     storage: { value: string; count: number }[];
     battery: { min: number; count: number }[];
   }>({ ram: [], storage: [], battery: [] });
-  const [marketCounts,   setMarketCounts]   = useState<Record<string, number>>({});
+  const { markets: marketFacets } = useMarkets();
+  const marketCounts = useMemo(
+    () => Object.fromEntries(marketFacets.map(m => [m.key, m.count])) as Record<string, number>,
+    [marketFacets],
+  );
   // Brendlar bazadan keladi; API javob bermasa zaxira ro'yxat ishlatiladi,
   // ya'ni filtr hech qachon bo'sh qolmaydi.
   const brandFacets = useBrands();
@@ -330,14 +319,20 @@ export function ProductListing() {
     }
   });
 
+  // Sessiyada qolgan, lekin endi bazada yo'q do'kon kaliti so'rovga ketib,
+  // katalogni bo'sh qilib qo'ymasin
   useEffect(() => {
-    fetch('/api/markets').then(r => r.json())
-      .then((d: { markets: { key: string; count: number }[] }) => {
-        const c: Record<string, number> = {};
-        for (const m of d.markets) c[m.key] = m.count;
-        setMarketCounts(c);
-      }).catch(() => {});
-  }, []);
+    if (marketFacets.length === 0) return;
+    const known = new Set(marketFacets.map(m => m.key));
+    setSelectedMarketplaces(prev => (prev.every(k => known.has(k)) ? prev : prev.filter(k => known.has(k))));
+  }, [marketFacets]);
+
+  // URL dagi ?market= / ?brand= bir marta o'qilgach olib tashlanadi —
+  // aks holda filtr tozalansa ham manzil satrida eskisi qolardi
+  useEffect(() => {
+    if (!initial.current.market && !initial.current.brand) return;
+    setSearchParams(p => { const n = new URLSearchParams(p); n.delete('market'); n.delete('brand'); return n; }, { replace: true });
+  }, [setSearchParams]);
 
   // Filtr kaliti kichik harfda ("poco"), ekranda esa chiroyli nomi kerak.
   const brandLabel = useCallback(
@@ -433,21 +428,9 @@ export function ProductListing() {
     setSelectedMarketplaces(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   }, []);
 
-  // Do'konlar ro'yxati /api/markets dan: yangi do'kon qo'shilsa (Ozon shunday
-  // ro'yxatdan tushib qolgan edi) yoki biri yopilsa, filtr o'zi moslashadi.
-  // Eng ko'p mahsulotli do'konlar tepada. API javob bermasa — statik ro'yxat.
-  const markets = useMemo(() => {
-    const keys = Object.keys(marketCounts);
-    if (keys.length === 0) return MARKETPLACES;
-    const names = Object.fromEntries(MARKETPLACES.map(m => [m.key, m.name]));
-    return keys
-      .sort((a, b) => marketCounts[b] - marketCounts[a])
-      .map(key => ({
-        key,
-        name: names[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
-        color: MARKET_COLOR[key] ?? '#9ca3af',
-      }));
-  }, [marketCounts]);
+  // Do'konlar ro'yxati faqat /api/markets dan (hooks/useMarkets) — eng ko'p
+  // mahsulotli do'konlar tepada. Statik zaxira ro'yxat yo'q.
+  const markets = marketFacets;
   const visibleMarkets = (showAllMarkets || isMobileFilterOpen) ? markets : markets.slice(0, MARKETS_VISIBLE);
 
   // ── filter panel ──
@@ -922,7 +905,7 @@ export function ProductListing() {
               </span>
             ))}
             {selectedMarketplaces.map(mk => {
-              const mp = MARKETPLACES.find(m => m.key === mk);
+              const mp = marketFacets.find(m => m.key === mk);
               return (
                 <span key={mk} className="flex items-center gap-1 shrink-0 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-2 py-0.5 text-[10px] font-bold text-gray-700 dark:text-gray-300">
                   {mp && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: mp.color }} />}
@@ -1057,7 +1040,7 @@ export function ProductListing() {
                   </span>
                 ))}
                 {selectedMarketplaces.map(mk => {
-                  const mp = MARKETPLACES.find(m => m.key === mk);
+                  const mp = marketFacets.find(m => m.key === mk);
                   return (
                     <span key={mk} className="flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2.5 py-1 text-[11px] font-semibold text-gray-700 dark:text-gray-300">
                       {mp && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: mp.color }} />}

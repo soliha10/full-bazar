@@ -1912,16 +1912,35 @@ async def get_stats(response: Response) -> dict:
 
     pool: asyncpg.Pool = app.state.pool
     # Uchta COUNT bitta so'rovda — uchta alohida borish o'rniga bitta.
+    # Bosh sahifadagi barcha raqamlar shu yerdan: ilgari ular frontendda
+    # qo'lda yozilgan edi ("19 ta do'kon", "500+") va bazaga mos kelmasdi.
     row = await pool.fetchrow(
         """
+        WITH per_product AS (
+            SELECT product_id, COUNT(*) AS n, MIN(price) AS lo, MAX(price) AS hi
+            FROM product_markets GROUP BY product_id
+        )
         SELECT (SELECT COUNT(*) FROM products)                        AS products,
                (SELECT COUNT(DISTINCT source) FROM product_markets)   AS markets,
-               (SELECT COUNT(*) FROM price_history)                   AS snapshots
+               (SELECT COUNT(*) FROM product_markets)                 AS offers,
+               (SELECT COUNT(*) FROM per_product WHERE n > 1)         AS comparable,
+               (SELECT MAX(created_at) FROM product_markets)          AS last_updated,
+               (SELECT COUNT(*) FROM price_history)                   AS snapshots,
+               (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY (hi - lo) / hi)
+                  FROM per_product WHERE n > 1 AND hi > 0)            AS median_gap
         """
     )
     return _cache_put("stats", {
         "products": row["products"],
         "markets": row["markets"],
+        "offers": row["offers"],
+        # Kamida ikki do'konda sotiladigan, ya'ni haqiqatan solishtirsa
+        # bo'ladigan mahsulotlar
+        "comparableProducts": row["comparable"],
+        # Shu mahsulotlarda eng arzon va eng qimmat narx orasidagi farqning
+        # medianasi (0..1) — "solishtirish qancha tejaydi" degan savolga javob
+        "medianPriceGap": round(float(row["median_gap"] or 0), 4),
+        "lastUpdated": row["last_updated"].isoformat() if row["last_updated"] else None,
         "priceSnapshots": row["snapshots"],
     })
 

@@ -1,91 +1,88 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, FormEvent } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 // m + LazyMotion: to'liq `motion` bosh sahifa bundle'iga ~30 KB (gzip) qo'shardi
 import { m, LazyMotion } from 'framer-motion';
-
-const loadMotionFeatures = () => import('../utils/motionFeatures').then(r => r.default);
 import {
-  ArrowRight, TrendingUp, ShieldCheck, RefreshCw,
-  Zap, Sparkles, ChevronRight, ChevronLeft,
+  ArrowRight, TrendingDown, Search, Store, Smartphone, Clock, Layers,
+  ChevronRight, ChevronLeft, ChevronDown, Sparkles, RotateCcw, Check,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
 import { useLanguage } from '../contexts/LanguageContext';
-import { formatSum } from '../utils/productMapper';
+import { formatSum, mapProduct } from '../utils/productMapper';
 import { fetchPersonalizedRecommendations } from '../services/api';
-import { mapProduct } from '../utils/productMapper';
 import { useRecommendations } from '../hooks/useRecommendations';
 import { useFavorites } from '../hooks/useFavorites';
+import { useBrands, BRAND_COLORS } from '../hooks/useBrands';
+import { useMarkets } from '../hooks/useMarkets';
 import { useAuth } from '../contexts/AuthContext';
 import { SEO, SITE_URL } from '../components/SEO';
 import { productPath } from '../utils/slug';
+import type { Product } from '../components/ProductCard';
 
-const MARKET_LOGOS: { name: string; color: string }[] = [
-  { name: 'Asaxiy',     color: '#7C3AED' },
-  { name: 'Texnomart',  color: '#E31E24' },
-  { name: 'Olcha',      color: '#F97316' },
-  { name: 'Mediapark',  color: '#10B981' },
-  { name: 'Glotr',      color: '#8B5CF6' },
-  { name: 'Idea',       color: '#F59E0B' },
-  { name: 'Ozon',       color: '#005BFF' },
-  { name: 'Discont',    color: '#EF4444' },
-  { name: 'Premier',    color: '#6D28D9' },
-  { name: 'Beemarket',  color: '#EC4899' },
-  { name: 'Castore',    color: '#14B8A6' },
-  { name: 'Macbro',     color: '#374151' },
-  { name: 'Radius',     color: '#DC2626' },
-  { name: 'Joybox',     color: '#7C3AED' },
-  { name: 'Openshop',   color: '#059669' },
-  { name: 'Mi Store',   color: '#FF6900' },
-  { name: 'Prom',       color: '#2563EB' },
-  { name: 'Alif',       color: '#0F766E' },
-  { name: 'Ucell Shop', color: '#16A34A' },
-  { name: 'Brandstore', color: '#9333EA' },
-  { name: 'OLX',        color: '#3D9B35' },
-];
+const loadMotionFeatures = () => import('../utils/motionFeatures').then(r => r.default);
 
-const TRUST_ICONS = [RefreshCw, ShieldCheck, TrendingUp];
+/*
+ * Bosh sahifadagi HAR BIR raqam va ro'yxat API dan keladi:
+ *   /api/stats            — mahsulot, do'kon, solishtirsa bo'ladigan modellar, oxirgi yangilanish
+ *   /api/markets          — do'konlar va takliflar soni (hooks/useMarkets)
+ *   /api/brands           — brendlar va modellar soni (hooks/useBrands)
+ *   /api/recommendations  — do'konlar orasidagi eng katta narx farqi (haqiqiy narxlar)
+ * Ilgari "19 ta do'kon", "500+", "Glotr +8%" kabi qiymatlar qo'lda yozilgan edi.
+ * Ma'lumot kelmasa — o'ylab topilgan qiymat emas, skelet yoki xato ko'rsatiladi.
+ */
 
-const QUICK_CATEGORIES = [
-  { emoji: '📱', labelKey: 'smartphones', value: 'smartphones' },
-];
+interface Stats {
+  products: number;
+  markets: number;
+  offers: number;
+  comparableProducts: number;
+  lastUpdated: string | null;
+}
 
 const fadeUp = {
-  hidden:  { opacity: 0, y: 28 },
+  hidden:  { opacity: 0, y: 24 },
   visible: { opacity: 1, y: 0 },
 };
+const reveal = {
+  variants: fadeUp, initial: 'hidden', whileInView: 'visible',
+  transition: { duration: 0.5, ease: 'easeOut' }, viewport: { once: true, margin: '-60px' },
+} as const;
+
+// Raqam kelmagan bo'lsa (masalan, API eski versiyada) — "—", hech qachon taxmin emas
+const fmt = (n: number | null | undefined) => (typeof n === 'number' ? n.toLocaleString('ru-RU').replace(/,/g, ' ') : '—');
 
 /* ── Section header ── */
 function SectionHeader({
-  title, subtitle, icon: Icon, linkTo, linkLabel,
+  title, subtitle, icon: Icon, linkTo, linkLabel, id,
 }: {
   title: string; subtitle?: string; icon?: React.ElementType;
-  linkTo: string; linkLabel: string;
+  linkTo?: string; linkLabel?: string; id?: string;
 }) {
   return (
-    <div className="flex items-center justify-between mb-4 md:mb-5">
-      <div className="flex items-center gap-2.5 min-w-0">
+    <div className="flex items-end justify-between gap-3 mb-4 md:mb-6">
+      <div className="flex items-start gap-3 min-w-0">
         {Icon && (
-          <div className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
-            <Icon className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400" />
+          <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
+            <Icon className="w-5 h-5 text-violet-600 dark:text-violet-400" aria-hidden="true" />
           </div>
         )}
         <div className="min-w-0">
-          <h2 className="text-[17px] md:text-[22px] font-black text-gray-900 dark:text-white tracking-tight leading-tight truncate">
+          <h2 id={id} className="text-lg md:text-2xl font-black text-gray-900 dark:text-white tracking-tight leading-tight">
             {title}
           </h2>
           {subtitle && (
-            <p className="text-gray-500 dark:text-gray-400 text-xs md:text-[13px] mt-0.5 hidden md:block">{subtitle}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm mt-1 max-w-2xl">{subtitle}</p>
           )}
         </div>
       </div>
-      <Link
-        to={linkTo}
-        className="flex items-center gap-1 text-xs md:text-[13px] font-bold text-violet-600 dark:text-violet-400 shrink-0 ml-3 whitespace-nowrap hover:underline"
-      >
-        {linkLabel}
-        <ChevronRight className="w-3.5 h-3.5" />
-      </Link>
+      {linkTo && linkLabel && (
+        <Link to={linkTo}
+          className="flex items-center gap-1 text-xs md:text-sm font-bold text-violet-600 dark:text-violet-400 shrink-0 whitespace-nowrap hover:underline">
+          {linkLabel}
+          <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+        </Link>
+      )}
     </div>
   );
 }
@@ -94,7 +91,6 @@ function Carousel({ children }: { children: React.ReactNode[] }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'start', dragFree: true });
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(true);
-  const lastWheel = useRef(0);
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
@@ -105,43 +101,23 @@ function Carousel({ children }: { children: React.ReactNode[] }) {
   useEffect(() => {
     if (!emblaApi) return;
     emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
     onSelect();
   }, [emblaApi, onSelect]);
 
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (!emblaApi) return;
-    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-    e.preventDefault();
-    const now = Date.now();
-    if (now - lastWheel.current < 250) return;
-    lastWheel.current = now;
-    if (e.deltaY > 0) emblaApi.scrollNext();
-    else emblaApi.scrollPrev();
-  }, [emblaApi]);
-
+  const arrow = 'hidden md:flex absolute top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full shadow-md hover:border-violet-300 dark:hover:border-violet-700 transition-all z-10';
   return (
-    <div className="relative" onWheel={handleWheel}>
+    <div className="relative">
       <div className="overflow-hidden -mx-4 px-4 md:mx-0 md:px-0" ref={emblaRef}>
-        <div className="flex gap-3 md:gap-4">
-          {children}
-        </div>
+        <div className="flex gap-3 md:gap-4">{children}</div>
       </div>
-
       {canPrev && (
-        <button
-          onClick={() => emblaApi?.scrollPrev()}
-          className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-5 w-9 h-9 items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full shadow-md hover:bg-violet-50 dark:hover:bg-violet-900/40 hover:border-violet-300 dark:hover:border-violet-700 transition-all z-10"
-          aria-label="Previous"
-        >
+        <button type="button" onClick={() => emblaApi?.scrollPrev()} className={`${arrow} left-0 -translate-x-5`} aria-label="Previous">
           <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" />
         </button>
       )}
       {canNext && (
-        <button
-          onClick={() => emblaApi?.scrollNext()}
-          className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-5 w-9 h-9 items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full shadow-md hover:bg-violet-50 dark:hover:bg-violet-900/40 hover:border-violet-300 dark:hover:border-violet-700 transition-all z-10"
-          aria-label="Next"
-        >
+        <button type="button" onClick={() => emblaApi?.scrollNext()} className={`${arrow} right-0 translate-x-5`} aria-label="Next">
           <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-300" />
         </button>
       )}
@@ -149,60 +125,51 @@ function Carousel({ children }: { children: React.ReactNode[] }) {
   );
 }
 
-/* ── Product card inside carousel ── */
-function MiniProductCard({
-  id, slug, image, name, price, badge, storeCount,
-}: {
-  id: string | number; slug?: string | null; image: string; name: string;
-  price: number; badge?: string; storeCount?: number;
+const PLACEHOLDER = 'https://placehold.co/320x320/f5f3ff/7c3aed?text=📱';
+
+/* ── Carousel card ── */
+function MiniProductCard({ product, badge, storesLabel }: {
+  product: Pick<Product, 'id' | 'slug' | 'image' | 'name' | 'price'>;
+  badge?: string;
+  storesLabel?: string;
 }) {
   return (
     <Link
-      to={productPath({ id, slug, name })}
-      className="shrink-0 w-[152px] md:w-[210px] group flex flex-col bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-violet-500/12 hover:-translate-y-1 hover:border-violet-200 dark:hover:border-violet-700/60 active:scale-[0.97] transition-all duration-200"
+      to={productPath(product)}
+      className="shrink-0 w-[160px] md:w-[220px] group flex flex-col bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-violet-500/10 hover:-translate-y-1 hover:border-violet-200 dark:hover:border-violet-700/60 transition-all duration-200"
     >
-      {/* Image — fixed height so text gets real estate */}
       <div className="relative h-36 md:h-44 bg-gray-50 dark:bg-gray-800/50 overflow-hidden">
         <img
-          src={image}
-          alt={name}
-          onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/320x320/f5f3ff/7c3aed?text=📱'; }}
+          src={product.image || PLACEHOLDER} alt={product.name} loading="lazy"
+          onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}
           className="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-500 mix-blend-multiply dark:mix-blend-normal"
         />
         {badge && (
-          <span className="absolute top-2 left-2 bg-violet-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
+          <span className="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
             {badge}
           </span>
         )}
-        {storeCount && storeCount > 1 && (
-          <span className="absolute top-2 right-2 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border border-gray-100 dark:border-gray-700 text-[9px] font-black text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded-lg">
-            {storeCount} ta
+        {storesLabel && (
+          <span className="absolute top-2 right-2 bg-white/90 dark:bg-gray-900/90 border border-gray-100 dark:border-gray-700 text-[10px] font-black text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded-lg">
+            {storesLabel}
           </span>
         )}
       </div>
-
-      {/* Info */}
-      <div className="p-2.5 md:p-3.5 flex flex-col flex-1 gap-2">
-        <p className="text-[12px] md:text-[14px] font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug flex-1 min-h-[34px] md:min-h-[40px]">
-          {name}
+      <div className="p-3 md:p-3.5 flex flex-col flex-1 gap-2">
+        <p className="text-[13px] md:text-sm font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug flex-1 min-h-[36px] md:min-h-[40px]">
+          {product.name}
         </p>
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[14px] md:text-[16px] font-black text-violet-600 dark:text-violet-400 leading-none">
-            {formatSum(price)}
-          </p>
-          <div className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center group-hover:bg-violet-600 transition-colors shrink-0">
-            <ArrowRight className="w-3 h-3 text-violet-600 dark:text-violet-400 group-hover:text-white transition-colors" />
-          </div>
-        </div>
+        <p className="text-sm md:text-base font-black text-violet-600 dark:text-violet-400 leading-none">
+          {formatSum(product.price)}
+        </p>
       </div>
     </Link>
   );
 }
 
-/* ── Skeleton card for loading state ── */
 function SkeletonCard() {
   return (
-    <div className="shrink-0 w-[152px] md:w-[210px] rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse overflow-hidden">
+    <div className="shrink-0 w-[160px] md:w-[220px] rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse overflow-hidden" aria-hidden="true">
       <div className="h-36 md:h-44 bg-gray-200 dark:bg-gray-700" />
       <div className="p-3 space-y-2">
         <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full w-4/5" />
@@ -213,26 +180,116 @@ function SkeletonCard() {
   );
 }
 
+function LoadError({ text, retry, onRetry }: { text: string; retry: string; onRetry: () => void }) {
+  return (
+    <div role="alert" className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 px-4 py-5 text-sm text-gray-500 dark:text-gray-400">
+      {text}
+      <button type="button" onClick={onRetry}
+        className="inline-flex items-center gap-1.5 font-bold text-violet-600 dark:text-violet-400 hover:underline">
+        <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" /> {retry}
+      </button>
+    </div>
+  );
+}
+
+/* ── Hero: haqiqiy mahsulotning haqiqiy narxlari ── */
+function ShowcaseCard({ product, labels, compact = false }: {
+  product: Product;
+  labels: { label: string; cheapest: string; gap: string; cta: string };
+  compact?: boolean;
+}) {
+  const offers = [...(product.markets ?? [])].sort((a, b) => a.price - b.price).slice(0, compact ? 3 : 4);
+  if (offers.length < 2) return null;
+  const all = (product.markets ?? []).map(m => m.price);
+  const gap = Math.max(...all) - Math.min(...all);
+  return (
+    <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-4 md:p-5 w-full md:w-[340px] text-left">
+      <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-3 flex items-center gap-1.5">
+        <span className="relative flex w-2 h-2">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+          <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-400" />
+        </span>
+        {labels.label}
+      </p>
+      <Link to={productPath(product)} className="flex items-center gap-3 mb-3 group">
+        <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shrink-0 overflow-hidden">
+          <img src={product.image || PLACEHOLDER} alt="" className="w-full h-full object-contain p-1.5"
+            onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }} />
+        </div>
+        <p className="text-white text-sm font-bold leading-snug line-clamp-2 group-hover:underline">{product.name}</p>
+      </Link>
+      <ul className="space-y-1.5">
+        {offers.map((o, i) => (
+          <li key={o.source} className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2 ${i === 0 ? 'bg-emerald-400/20 border border-emerald-300/30' : 'bg-white/5'}`}>
+            <span className="text-sm font-semibold text-white/90 truncate flex items-center gap-1.5">
+              {i === 0 && <Check className="w-3.5 h-3.5 text-emerald-300 shrink-0" aria-hidden="true" />}
+              {o.source}
+              {i === 0 && <span className="sr-only"> — {labels.cheapest}</span>}
+            </span>
+            <span className={`text-sm font-black shrink-0 ${i === 0 ? 'text-emerald-200' : 'text-white/70'}`}>{formatSum(o.price)}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-white/10">
+        <span className="text-xs font-bold text-emerald-200">{labels.gap.replace('{{amount}}', formatSum(gap))}</span>
+        <Link to={productPath(product)} className="text-xs font-black text-white hover:underline flex items-center gap-1">
+          {labels.cta} <ArrowRight className="w-3 h-3" aria-hidden="true" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function FaqItem({ q, a }: { q: string; a: string }) {
+  return (
+    <details className="group rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-4 open:shadow-sm">
+      <summary className="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-sm md:text-base text-gray-900 dark:text-white [&::-webkit-details-marker]:hidden">
+        {q}
+        <ChevronDown className="w-4 h-4 text-gray-400 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
+      </summary>
+      <p className="mt-3 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{a}</p>
+    </details>
+  );
+}
+
 export function Landing() {
-  const { total, products: allProducts } = useProducts(1, 20);
-  const [recommendations, setRecommendations] = useState<any[]>([]);
-  const [loadingRecs, setLoadingRecs]           = useState(true);
-  const [personalizedRecs, setPersonalizedRecs] = useState<any[]>([]);
-  const [personalizedType, setPersonalizedType] = useState<string>('');
   const { t, language } = useLanguage();
+  const h = t.home;
+  const navigate = useNavigate();
+  const { products: allProducts } = useProducts(1, 20);
   const { favorites } = useFavorites();
   const { user } = useAuth();
+  const brands = useBrands();
+  const { markets, status: marketsStatus, retry: retryMarkets } = useMarkets();
   const clientRecs = useRecommendations(allProducts, 8);
   const showClientRecs = clientRecs.length > 0 && (favorites.length > 0 || !!user?.profile.preferredBrands.length);
 
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [statsFailed, setStatsFailed] = useState(false);
+  const [deals, setDeals] = useState<Product[]>([]);
+  const [dealsStatus, setDealsStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [personalizedRecs, setPersonalizedRecs] = useState<Product[]>([]);
+  const [personalizedType, setPersonalizedType] = useState('');
+  const [query, setQuery] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  const searchRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
+    let alive = true;
+    setStatsFailed(false);
     // axios emas, fetch: bosh sahifa bundle'idan ~13 KB (gzip) tushadi
-    fetch('/api/recommendations')
-      .then(res => (res.ok ? res.json() : Promise.reject(res.status)))
-      .then(data => setRecommendations(data.products || []))
-      .catch(() => {})
-      .finally(() => setLoadingRecs(false));
-  }, []);
+    fetch('/api/stats')
+      .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((d: Stats) => { if (alive) setStats(d); })
+      .catch(() => { if (alive) setStatsFailed(true); });
+
+    setDealsStatus('loading');
+    fetch('/api/recommendations?limit=10')
+      .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then(d => { if (alive) { setDeals((d.products ?? []).map(mapProduct)); setDealsStatus('ready'); } })
+      .catch(() => { if (alive) setDealsStatus('error'); });
+    return () => { alive = false; };
+  }, [attempt]);
 
   useEffect(() => {
     fetchPersonalizedRecommendations(8)
@@ -243,402 +300,279 @@ export function Landing() {
       .catch(() => {});
   }, []);
 
-  const seoTitle = t.landing.seoTitle;
-  const seoDesc = t.landing.seoDesc;
+  const onSearch = (e: FormEvent) => {
+    e.preventDefault();
+    const q = query.trim();
+    if (!q) { searchRef.current?.focus(); return; }
+    navigate(`/products?search=${encodeURIComponent(q)}`);
+  };
+
+  const relativeUpdated = (iso: string | null | undefined) => {
+    if (!iso) return null;
+    const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
+    if (Number.isNaN(mins)) return null;
+    if (mins < 2) return h.updatedJustNow;
+    if (mins < 60) return h.updatedMinutes.replace('{{count}}', String(mins));
+    if (mins < 48 * 60) return h.updatedHours.replace('{{count}}', String(Math.floor(mins / 60)));
+    return h.updatedDays.replace('{{count}}', String(Math.floor(mins / 1440)));
+  };
+  const updated = relativeUpdated(stats?.lastUpdated);
+  const fill = (s: string) => s
+    .replace('{{products}}', stats ? fmt(stats.products) : '…')
+    .replace('{{stores}}', stats ? fmt(stats.markets) : '…')
+    .replace('{{comparable}}', stats ? fmt(stats.comparableProducts) : '…');
+
+  const dealGap = (p: Product) => {
+    const prices = (p.markets ?? []).map(x => x.price);
+    return prices.length > 1 ? Math.max(...prices) - Math.min(...prices) : 0;
+  };
+  const showcase = deals.find(p => (p.markets?.length ?? 0) >= 3) ?? deals[0];
+  const topBrands = brands.slice(0, 6);
+  const storeList = markets.map(x => x.name).join(', ');
+
+  const statTiles = [
+    { icon: Smartphone, label: h.statProducts, value: stats ? fmt(stats.products) : null },
+    { icon: Store,      label: h.statStores,   value: stats ? fmt(stats.markets) : null },
+    { icon: Layers,     label: h.statComparable, value: stats ? fmt(stats.comparableProducts) : null },
+    { icon: Clock,      label: h.statUpdated,  value: stats ? (updated ?? '—') : null },
+  ];
 
   return (
     <LazyMotion features={loadMotionFeatures}>
     <div className="min-h-screen bg-white dark:bg-gray-950 pb-24 md:pb-0 transition-colors">
       <SEO
-        title={seoTitle}
-        description={seoDesc}
-        keywords="smartfonlar, telefonlar, telefon narxi, asaxiy, texnomart, olcha, mediapark, chakana, compare phones, uzbekistan"
+        title={t.landing.seoTitle}
+        description={t.landing.seoDesc}
+        keywords={['smartfonlar', 'telefon narxi', 'narx solishtirish', 'bazarcom', ...markets.slice(0, 6).map(x => x.name.toLowerCase())].join(', ')}
         locale={language}
         canonicalUrl={`${SITE_URL}/`}
       />
 
       {/* ══ HERO ══ */}
-      <section className="md:px-4 md:pt-8 md:max-w-7xl md:mx-auto">
-        <m.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="relative md:rounded-3xl overflow-hidden bg-linear-to-br from-violet-600 via-violet-700 to-violet-900 shadow-2xl shadow-violet-500/30 flex flex-col"
-          style={{ minHeight: 'clamp(340px, 62vh, 520px)' }}
-        >
-          {/* Decorative blobs */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <m.div
-              animate={{ scale: [1, 1.08, 1], opacity: [0.05, 0.08, 0.05] }}
-              transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white"
-            />
-            <div className="absolute top-10 right-1/3 w-36 h-36 rounded-full bg-white/5" />
-            <div className="absolute -bottom-16 -left-10 w-60 h-60 rounded-full bg-purple-400/10" />
-            <div className="absolute bottom-0 right-0 w-40 h-40 rounded-full bg-white/5" />
+      <section aria-labelledby="hero-title" className="md:px-4 md:pt-6 md:max-w-7xl md:mx-auto">
+        <div className="relative md:rounded-[2rem] overflow-hidden bg-linear-to-br from-violet-600 via-violet-700 to-indigo-900 shadow-2xl shadow-violet-500/25">
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+            <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/[0.06]" />
+            <div className="absolute -bottom-32 -left-16 w-80 h-80 rounded-full bg-fuchsia-400/10" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_45%)]" />
           </div>
 
-          {/* Content */}
-          <div className="flex-1 flex flex-col justify-center relative z-10 px-5 pt-6 pb-4 md:px-14 md:py-14">
-            <div className="w-full flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
+          <div className="relative z-10 px-5 pt-7 pb-6 md:px-12 md:py-14 flex flex-col md:flex-row md:items-center gap-8 md:gap-12">
+            <div className="flex-1 min-w-0">
+              <p className="inline-flex items-center gap-2 bg-white/15 border border-white/20 rounded-full px-3 py-1 mb-4 text-white/90 text-[11px] font-bold uppercase tracking-widest">
+                <Sparkles className="w-3 h-3 text-yellow-300" aria-hidden="true" />
+                {stats ? fill(h.eyebrow) : <span className="inline-block w-40 h-3 rounded-full bg-white/20 animate-pulse" />}
+              </p>
+              <h1 id="hero-title" className="text-white font-black leading-[1.08] tracking-tight mb-3" style={{ fontSize: 'clamp(1.9rem, 6vw, 3.4rem)' }}>
+                {h.title}
+              </h1>
+              <p className="text-white/75 text-sm md:text-lg leading-relaxed mb-6 max-w-xl">
+                {stats ? fill(h.subtitle) : <span className="inline-block w-64 h-4 rounded-full bg-white/15 animate-pulse" />}
+              </p>
 
-              {/* Left */}
-              <div className="flex-1">
-                <m.div
-                  initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15, duration: 0.5 }}
-                  className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1 mb-4"
-                >
-                  <Zap className="w-3 h-3 text-yellow-300 shrink-0" />
-                  <span className="text-white/90 text-[11px] font-bold uppercase tracking-widest">
-                    {total > 0
-                      ? t.landing.hero.productCount.replace('{{count}}', total.toLocaleString())
-                      : t.landing.hero.livePrices}
-                  </span>
-                </m.div>
+              <form role="search" onSubmit={onSearch} className="flex items-center gap-2 bg-white rounded-2xl p-1.5 shadow-xl shadow-black/20 max-w-xl">
+                <label htmlFor="hero-search" className="sr-only">{h.searchButton}</label>
+                <Search className="w-5 h-5 text-gray-400 ml-2 shrink-0" aria-hidden="true" />
+                <input
+                  ref={searchRef} id="hero-search" type="search" value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder={h.searchPlaceholder} enterKeyHint="search" autoComplete="off"
+                  className="flex-1 min-w-0 bg-transparent px-1 py-2.5 text-sm md:text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
+                />
+                <button type="submit" className="shrink-0 bg-violet-600 hover:bg-violet-700 text-white font-black text-sm rounded-xl px-4 md:px-6 py-2.5 transition-colors">
+                  {h.searchButton}
+                </button>
+              </form>
 
-                <m.h1
-                  initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25, duration: 0.55 }}
-                  className="text-white font-black leading-[1.12] tracking-tight mb-2.5"
-                  style={{ fontSize: 'clamp(1.75rem, 7vw, 3.25rem)' }}
-                >
-                  {t.landing.hero.title}
-                </m.h1>
-
-                <m.p
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  transition={{ delay: 0.38, duration: 0.5 }}
-                  className="text-white/70 text-sm md:text-lg leading-relaxed mb-5 max-w-xs md:max-w-sm"
-                >
-                  {t.landing.hero.subtitle}
-                </m.p>
-
-                <m.div
-                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.48, duration: 0.45 }}
-                >
-                  <Link
-                    to="/products"
-                    className="inline-flex items-center gap-2 bg-white text-violet-700 font-black rounded-2xl px-6 py-3 text-sm shadow-xl shadow-black/20 hover:scale-105 hover:shadow-2xl active:scale-95 transition-all"
-                  >
-                    {t.landing.hero.cta}
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </m.div>
-              </div>
-
-              {/* Desktop right card */}
-              <m.div
-                initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3, duration: 0.6, ease: 'easeOut' }}
-                className="hidden md:flex flex-col gap-3 shrink-0"
-              >
-                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-6 min-w-[260px]">
-                  <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-4">
-                    {t.landing.hero.liveLabel}
-                  </p>
-                  {['Texnomart', 'Glotr', 'Olcha'].map((store, i) => (
-                    <div key={store} className="flex items-center justify-between mb-3 last:mb-0">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-green-400' : 'bg-white/30'}`} />
-                        <span className="text-white/80 text-sm font-medium">{store}</span>
-                      </div>
-                      <span className={`text-sm font-black ${i === 0 ? 'text-green-300' : 'text-white/50'}`}>
-                        {i === 0 ? t.landing.hero.cheapest : `+${i * 8}%`}
-                      </span>
-                    </div>
+              {topBrands.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 mt-4">
+                  <span className="text-white/60 text-xs font-semibold">{h.popular}</span>
+                  {topBrands.map(b => (
+                    <Link key={b.key} to={`/products?brand=${encodeURIComponent(b.key)}`}
+                      className="text-xs font-bold text-white bg-white/10 hover:bg-white/20 border border-white/15 rounded-full px-3 py-1 transition-colors">
+                      {b.name}
+                    </Link>
                   ))}
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { value: total > 0 ? total : '500+', label: t.landing.hero.statsProducts },
-                    { value: '19',                       label: t.landing.hero.statsStores },
-                  ].map((stat, i) => (
-                    <div key={i} className="bg-white/10 border border-white/15 rounded-2xl p-4 text-center">
-                      <p className="text-2xl font-black text-white">{stat.value}</p>
-                      <p className="text-white/60 text-xs font-medium mt-1">{stat.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </m.div>
+              )}
+            </div>
+
+            <div className="md:shrink-0">
+              {showcase ? (
+                <ShowcaseCard product={showcase}
+                  labels={{ label: h.showcaseLabel, cheapest: h.showcaseCheapest, gap: h.showcaseGap, cta: h.showcaseCta }} />
+              ) : dealsStatus === 'loading' ? (
+                <div className="w-full md:w-[340px] h-64 rounded-3xl bg-white/10 animate-pulse" aria-hidden="true" />
+              ) : null}
             </div>
           </div>
-
-          {/* Mobile stats */}
-          <div className="md:hidden relative z-10 px-4 pb-5">
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { value: total > 0 ? total : '500+', label: t.landing.hero.statsProducts },
-                { value: '19',                       label: t.landing.hero.statsStores },
-                { value: '24/7',                     label: t.landing.hero.livePrices },
-              ].map((stat, i) => (
-                <div key={i} className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl p-3 text-center">
-                  <p className="text-lg font-black text-white leading-none">{stat.value}</p>
-                  <p className="text-white/60 text-[10px] font-semibold mt-1 leading-tight">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </m.div>
-      </section>
-
-      {/* ══ CATEGORY CHIPS — mobile ══ */}
-      <section className="md:hidden px-4 mt-4">
-        <div className="flex flex-wrap gap-2">
-          <Link to="/products"
-            className="flex items-center gap-2 px-4 h-10 rounded-2xl bg-violet-600 text-white text-xs font-black shadow-sm shadow-violet-500/25 active:scale-95 transition-all">
-            🔥 Barchasi
-          </Link>
-          {QUICK_CATEGORIES.map(({ emoji, labelKey, value }) => (
-            <Link
-              key={value}
-              to={value ? `/products?category=${value}` : '/products'}
-              className="flex items-center gap-1.5 px-4 h-10 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-bold text-gray-700 dark:text-gray-200 active:scale-95 transition-all"
-            >
-              <span>{emoji}</span>
-              <span>{t.landing[labelKey as 'smartphones']}</span>
-            </Link>
-          ))}
         </div>
       </section>
 
-      {/* ══ TRUST PILLS — mobile ══ */}
-      <section className="md:hidden px-4 mt-3">
-        <div className="flex flex-wrap gap-2">
-          {t.landing.trustBar.map(({ title }, idx) => {
-            const Icon = TRUST_ICONS[idx];
-            return (
-              <div key={idx}
-                className="flex items-center gap-1.5 bg-violet-50 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-900/40 rounded-full px-3.5 h-8">
-                <Icon className="w-3 h-3 text-violet-600 dark:text-violet-400 shrink-0" />
-                <span className="text-[11px] font-bold text-violet-700 dark:text-violet-300 whitespace-nowrap">{title}</span>
+      {/* ══ STATS ══ */}
+      <section aria-label={h.statProducts} className="px-4 max-w-7xl mx-auto -mt-px md:mt-5">
+        {statsFailed ? (
+          <div className="mt-4"><LoadError text={h.loadError} retry={h.retry} onRetry={() => setAttempt(a => a + 1)} /></div>
+        ) : (
+          <dl className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-4 mt-4 md:mt-0">
+            {statTiles.map(({ icon: Icon, label, value }) => (
+              <div key={label} className="flex items-center gap-3 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3.5 shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-950/50 flex items-center justify-center shrink-0">
+                  <Icon className="w-5 h-5 text-violet-600 dark:text-violet-400" aria-hidden="true" />
+                </div>
+                <div className="min-w-0">
+                  <dd className="text-lg md:text-xl font-black text-gray-900 dark:text-white leading-tight truncate">
+                    {value ?? <span className="inline-block w-14 h-5 rounded bg-gray-100 dark:bg-gray-800 animate-pulse align-middle" />}
+                  </dd>
+                  <dt className="text-[11px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">{label}</dt>
+                </div>
               </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ══ TRUST BAR — desktop ══ */}
-      <m.section
-        variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true }}
-        className="hidden md:block mt-6 px-4 max-w-7xl mx-auto"
-      >
-        <div className="grid grid-cols-3 gap-4">
-          {t.landing.trustBar.map(({ title, desc }, idx) => {
-            const Icon = TRUST_ICONS[idx];
-            return (
-              <m.div
-                key={idx}
-                whileHover={{ y: -2, boxShadow: '0 8px 24px -4px rgba(139,92,246,0.15)' }}
-                className="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl px-4 py-4 shadow-sm border border-violet-100/60 dark:border-violet-900/30 cursor-default transition-shadow"
-              >
-                <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-950/60 flex items-center justify-center shrink-0">
-                  <Icon className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-                </div>
-                <div>
-                  <p className="text-[14px] font-black text-gray-900 dark:text-white">{title}</p>
-                  <p className="text-[12px] text-gray-500 dark:text-gray-400 font-medium">{desc}</p>
-                </div>
-              </m.div>
-            );
-          })}
-        </div>
-      </m.section>
-
-      {/* ══ PARTNER MARKETS — infinite marquee ══ */}
-      <section className="mt-5 md:mt-8 bg-gray-50 dark:bg-gray-900/60 border-y border-gray-100 dark:border-gray-800/60 py-4 md:py-6 overflow-hidden">
-        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 text-center mb-3 px-4">
-          {t.landing.markets.label}
-        </p>
-        <div className="relative overflow-hidden">
-          {/* Fade edges */}
-          <div className="absolute left-0 top-0 bottom-0 w-12 bg-linear-to-r from-gray-50 dark:from-gray-900/60 to-transparent z-10 pointer-events-none" />
-          <div className="absolute right-0 top-0 bottom-0 w-12 bg-linear-to-l from-gray-50 dark:from-gray-900/60 to-transparent z-10 pointer-events-none" />
-
-          <m.div
-            animate={{ x: ['0%', '-50%'] }}
-            transition={{ duration: 35, repeat: Infinity, ease: 'linear' }}
-            className="flex gap-2 w-max"
-            style={{ willChange: 'transform' }}
-          >
-            {[...MARKET_LOGOS, ...MARKET_LOGOS].map(({ name, color }, i) => (
-              <Link
-                key={`${name}-${i}`}
-                to={`/products?source=${encodeURIComponent(name.toLowerCase())}`}
-                className="flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-violet-300 dark:hover:border-violet-600 rounded-xl px-3 h-9 shadow-sm hover:shadow-md active:scale-95 transition-all duration-150 shrink-0"
-              >
-                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                <span className="text-[13px] font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">{name}</span>
-              </Link>
             ))}
-          </m.div>
-        </div>
+          </dl>
+        )}
       </section>
 
-      {/* ══ AI BEST DEALS — carousel ══ */}
-      <m.section
-        variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true, margin: '-60px' }}
-        className="mt-6 md:mt-10 px-4 max-w-7xl mx-auto"
-      >
-        <SectionHeader
-          title={t.landing.aiRecs.title}
-          subtitle={t.landing.aiRecs.subtitle}
-          icon={TrendingUp}
-          linkTo="/products"
-          linkLabel={t.landing.trending.viewAll}
-        />
-
-        <Carousel>
-          {loadingRecs
-            ? Array(10).fill(0).map((_, i) => <SkeletonCard key={i} />)
-            : recommendations.length > 0
-              ? recommendations.slice(0, 6).map(p => (
-                  <MiniProductCard
-                    key={p.id} id={p.id} slug={p.slug} image={p.image}
-                    name={p.name} price={p.price}
-                    badge={t.landing.aiRecs.badge}
-                  />
-                ))
-              : [
-                  <p key="empty" className="py-10 text-center text-sm text-gray-400 dark:text-gray-500 w-full">
-                    {t.landing.aiRecs.empty}
-                  </p>,
-                ]
-          }
-        </Carousel>
+      {/* ══ BIGGEST GAPS ══ */}
+      <m.section {...reveal} aria-labelledby="deals-title" className="mt-10 md:mt-14 px-4 max-w-7xl mx-auto">
+        <SectionHeader id="deals-title" title={h.savingsTitle} subtitle={h.savingsSubtitle}
+          icon={TrendingDown} linkTo="/products" linkLabel={t.landing.trending.viewAll} />
+        {dealsStatus === 'error' ? (
+          <LoadError text={h.loadError} retry={h.retry} onRetry={() => setAttempt(a => a + 1)} />
+        ) : (
+          <Carousel>
+            {dealsStatus === 'loading'
+              ? Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} />)
+              : deals.map(p => (
+                  <MiniProductCard key={p.id} product={p}
+                    badge={dealGap(p) > 0 ? h.savingsBadge.replace('{{amount}}', formatSum(dealGap(p))) : undefined}
+                    storesLabel={h.storesTag.replace('{{count}}', String(p.markets?.length ?? 0))} />
+                ))}
+          </Carousel>
+        )}
       </m.section>
 
-      {/* ══ CLIENT RECS — carousel ══ */}
+      {/* ══ PERSONAL ══ */}
       {showClientRecs && (
-        <m.section
-          variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true, margin: '-60px' }}
-          className="mt-6 md:mt-12 px-4 max-w-7xl mx-auto"
-        >
-          <SectionHeader
-            title={t.landing.forYouTitle}
+        <m.section {...reveal} aria-labelledby="foryou-title" className="mt-10 md:mt-14 px-4 max-w-7xl mx-auto">
+          <SectionHeader id="foryou-title" title={t.landing.forYouTitle}
             subtitle={favorites.length > 0 ? t.landing.forYouFromFavorites : t.landing.forYouFromProfile}
-            icon={Sparkles}
-            linkTo="/products"
-            linkLabel={t.landing.trending.viewAll}
-          />
+            icon={Sparkles} linkTo="/products" linkLabel={t.landing.trending.viewAll} />
           <Carousel>
             {clientRecs.map(p => (
-              <MiniProductCard
-                key={p.id} id={p.id} slug={p.slug} image={p.image}
-                name={p.name} price={p.price}
-                storeCount={p.markets?.length}
-              />
+              <MiniProductCard key={p.id} product={p}
+                storesLabel={(p.markets?.length ?? 0) > 1 ? h.storesTag.replace('{{count}}', String(p.markets?.length)) : undefined} />
             ))}
           </Carousel>
         </m.section>
       )}
-
-      {/* ══ SERVER PERSONALIZED — carousel ══ */}
-      {!showClientRecs && personalizedRecs.length > 0 && personalizedType === 'personalized' && (
-        <m.section
-          variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true, margin: '-60px' }}
-          className="mt-6 md:mt-12 px-4 max-w-7xl mx-auto"
-        >
-          <SectionHeader
-            title={t.landing.specialTitle}
-            subtitle={t.landing.specialSubtitle}
-            icon={Sparkles}
-            linkTo="/products"
-            linkLabel={t.landing.trending.viewAll}
-          />
+      {!showClientRecs && personalizedType === 'personalized' && personalizedRecs.length > 0 && (
+        <m.section {...reveal} aria-labelledby="special-title" className="mt-10 md:mt-14 px-4 max-w-7xl mx-auto">
+          <SectionHeader id="special-title" title={t.landing.specialTitle} subtitle={t.landing.specialSubtitle}
+            icon={Sparkles} linkTo="/products" linkLabel={t.landing.trending.viewAll} />
           <Carousel>
-            {personalizedRecs.map(p => (
-              <MiniProductCard key={p.id} id={p.id} slug={p.slug} image={p.image} name={p.name} price={p.price} />
-            ))}
+            {personalizedRecs.map(p => <MiniProductCard key={p.id} product={p} />)}
           </Carousel>
+        </m.section>
+      )}
+
+      {/* ══ STORES ══ */}
+      <m.section {...reveal} aria-labelledby="stores-title" className="mt-10 md:mt-14 px-4 max-w-7xl mx-auto">
+        <SectionHeader id="stores-title" title={h.storesTitle} subtitle={h.storesSubtitle} icon={Store} />
+        {marketsStatus === 'error' ? (
+          <LoadError text={h.loadError} retry={h.retry} onRetry={retryMarkets} />
+        ) : (
+          <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+            {marketsStatus === 'loading'
+              ? Array.from({ length: 12 }, (_, i) => <li key={i} className="h-[62px] rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse" />)
+              : markets.map(mk => (
+                  <li key={mk.key}>
+                    <Link to={`/products?market=${encodeURIComponent(mk.key)}`}
+                      className="flex items-center gap-2.5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 px-3.5 py-3 hover:border-violet-300 dark:hover:border-violet-700 hover:shadow-md transition-all">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: mk.color }} aria-hidden="true" />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-black text-gray-900 dark:text-white truncate">{mk.name}</span>
+                        <span className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                          {h.storeOffers.replace('{{count}}', fmt(mk.count))}
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+          </ul>
+        )}
+      </m.section>
+
+      {/* ══ BRANDS ══ */}
+      {brands.length > 0 && (
+        <m.section {...reveal} aria-labelledby="brands-title" className="mt-10 md:mt-14 px-4 max-w-7xl mx-auto">
+          <SectionHeader id="brands-title" title={h.brandsTitle} subtitle={h.brandsSubtitle} icon={Smartphone}
+            linkTo="/products" linkLabel={t.landing.trending.viewAll} />
+          <ul className="flex flex-wrap gap-2">
+            {brands.map(b => (
+              <li key={b.key}>
+                <Link to={`/products?brand=${encodeURIComponent(b.key)}`}
+                  className="flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-bold text-gray-800 dark:text-gray-100 hover:border-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: BRAND_COLORS[b.key] ?? '#9ca3af' }} aria-hidden="true" />
+                  {b.name}
+                  {b.count > 0 && <span className="text-xs font-semibold text-gray-400">{fmt(b.count)}</span>}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </m.section>
       )}
 
       {/* ══ HOW IT WORKS ══ */}
-      <m.section
-        variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true, margin: '-60px' }}
-        className="mt-8 md:mt-20 bg-gray-50 dark:bg-gray-900/60 border-y border-gray-100 dark:border-gray-800/60 py-7 md:py-16"
-      >
+      <m.section {...reveal} aria-labelledby="steps-title" className="mt-12 md:mt-20 bg-gray-50 dark:bg-gray-900/60 border-y border-gray-100 dark:border-gray-800/60 py-10 md:py-16">
         <div className="px-4 max-w-7xl mx-auto">
-          <h2 className="font-black text-gray-900 dark:text-white text-[17px] md:text-[26px] mb-5 md:mb-10 text-center tracking-tight">
-            {t.landing.howItWorks.title}
+          <h2 id="steps-title" className="font-black text-gray-900 dark:text-white text-xl md:text-3xl mb-6 md:mb-10 text-center tracking-tight">
+            {h.stepsTitle}
           </h2>
-
-          {/* Mobile */}
-          <div className="flex flex-col gap-3 md:hidden">
-            {t.landing.howItWorks.steps.map((item, idx) => (
-              <div key={idx} className="flex items-start gap-3 bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
-                <div className="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center font-black text-base shrink-0 shadow-md shadow-violet-500/25 mt-0.5">
+          <ol className="grid md:grid-cols-3 gap-3 md:gap-6">
+            {h.steps.map((step, idx) => (
+              <li key={step.title} className="relative flex md:flex-col items-start gap-4 bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl p-5 md:p-7 border border-gray-100 dark:border-gray-700 shadow-sm">
+                <span className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-violet-600 text-white flex items-center justify-center font-black text-lg shrink-0 shadow-lg shadow-violet-500/30">
                   {idx + 1}
+                </span>
+                <div>
+                  <h3 className="font-black text-gray-900 dark:text-white text-base mb-1">{step.title}</h3>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{step.desc}</p>
                 </div>
-                <div className="pt-0.5">
-                  <h3 className="font-black text-gray-900 dark:text-white text-sm mb-0.5">{item.title}</h3>
-                  <p className="text-gray-500 dark:text-gray-400 text-xs leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
+              </li>
             ))}
-          </div>
-
-          {/* Desktop */}
-          <div className="hidden md:grid grid-cols-3 gap-6">
-            {t.landing.howItWorks.steps.map((item, idx) => (
-              <m.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.12, duration: 0.5 }}
-                whileHover={{ y: -4, boxShadow: '0 16px 32px -8px rgba(139,92,246,0.18)' }}
-                className="relative bg-white dark:bg-gray-800 rounded-3xl p-7 border border-gray-100 dark:border-gray-700 shadow-sm transition-shadow cursor-default"
-              >
-                <div className="w-12 h-12 rounded-2xl bg-violet-600 text-white flex items-center justify-center font-black text-xl mb-5 shadow-lg shadow-violet-500/30">
-                  {idx + 1}
-                </div>
-                <h3 className="font-black text-gray-900 dark:text-white text-[16px] mb-2">{item.title}</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-[13px] leading-relaxed">{item.desc}</p>
-                {idx < 2 && (
-                  <div className="absolute top-10 -right-4 z-10 text-violet-300 dark:text-violet-700">
-                    <ArrowRight className="w-5 h-5" />
-                  </div>
-                )}
-              </m.div>
-            ))}
-          </div>
+          </ol>
         </div>
       </m.section>
 
-      {/* ══ BOTTOM CTA ══ */}
-      <m.section
-        variants={fadeUp} initial="hidden" whileInView="visible" transition={{ duration: 0.55, ease: "easeOut" }} viewport={{ once: true, margin: '-40px' }}
-        className="px-4 py-7 md:py-12 max-w-7xl mx-auto"
-      >
-        <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-linear-to-br from-violet-600 via-violet-700 to-violet-900 p-6 md:p-14 shadow-xl shadow-violet-500/20">
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <m.div
-              animate={{ scale: [1, 1.1, 1], opacity: [0.06, 0.1, 0.06] }}
-              transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute -top-10 -left-10 w-56 h-56 rounded-full bg-white"
-            />
-            <div className="absolute -bottom-10 -right-10 w-60 h-60 rounded-full bg-white/5" />
-          </div>
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+      {/* ══ FAQ ══ */}
+      <m.section {...reveal} aria-labelledby="faq-title" className="mt-12 md:mt-16 px-4 max-w-3xl mx-auto">
+        <h2 id="faq-title" className="font-black text-gray-900 dark:text-white text-xl md:text-3xl mb-6 text-center tracking-tight">
+          {h.faqTitle}
+        </h2>
+        <div className="space-y-2.5">
+          {h.faq.map(item => (
+            <FaqItem key={item.q} q={item.q}
+              a={item.a
+                .replace('{{updated}}', updated ?? '—')
+                .replace('{{stores}}', stats ? String(stats.markets) : String(markets.length || '—'))
+                .replace('{{list}}', storeList || '—')} />
+          ))}
+        </div>
+      </m.section>
+
+      {/* ══ CTA ══ */}
+      <m.section {...reveal} className="px-4 py-10 md:py-16 max-w-7xl mx-auto">
+        <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-violet-600 via-violet-700 to-indigo-900 p-7 md:p-14 shadow-xl shadow-violet-500/20">
+          <div className="absolute -bottom-16 -right-16 w-72 h-72 rounded-full bg-white/[0.06] pointer-events-none" aria-hidden="true" />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
-              <h2 className="text-white font-black text-xl md:text-[32px] tracking-tight mb-1.5 md:mb-2">
-                {t.landing.cta.title}
-              </h2>
-              <p className="text-white/70 text-sm md:text-[15px] max-w-md">
-                {t.landing.cta.subtitle
-                  .replace('{{count}}', total > 0 ? total.toLocaleString() : '500+')
-                  .replace('{{stores}}', '21')}
-              </p>
+              <h2 className="text-white font-black text-2xl md:text-4xl tracking-tight mb-2">{h.ctaTitle}</h2>
+              {typeof stats?.comparableProducts === 'number' && <p className="text-white/75 text-sm md:text-base max-w-xl">{fill(h.ctaSubtitle)}</p>}
             </div>
-            <Link
-              to="/products"
-              className="flex items-center justify-center gap-2 bg-white text-violet-700 font-black rounded-2xl px-8 py-3.5 text-sm md:text-base shadow-lg hover:scale-105 hover:shadow-2xl active:scale-95 transition-all shrink-0 w-full md:w-auto"
-            >
-              {t.landing.cta.button}
-              <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+            <Link to="/products"
+              className="inline-flex items-center justify-center gap-2 bg-white text-violet-700 font-black rounded-2xl px-8 py-4 text-sm md:text-base shadow-lg hover:shadow-2xl hover:-translate-y-0.5 transition-all shrink-0">
+              {h.ctaButton}
+              <ArrowRight className="w-5 h-5" aria-hidden="true" />
             </Link>
           </div>
         </div>

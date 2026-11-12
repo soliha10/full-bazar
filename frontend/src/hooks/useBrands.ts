@@ -9,10 +9,8 @@ import { useEffect, useState } from 'react';
  * olinmasdi. Endi ro'yxat `/api/brands` dan keladi — ya'ni bazada haqiqatda
  * mahsuloti bor brendlar, soni bilan.
  *
- * ZAXIRA RO'YXAT muhim: API eski versiyada bo'lsa (`/api/brands` hali deploy
- * qilinmagan), tarmoq uzilsa yoki javob bo'sh kelsa, filtr BO'SH qolib
- * ketmasligi kerak. Shunday hollarda quyidagi ro'yxat ishlatiladi — u
- * bazadagi haqiqiy brendlar bo'yicha tuzilgan.
+ * Zaxira (qo'lda yozilgan) ro'yxat ataylab YO'Q: u bazaga mos kelmay qolardi.
+ * API javob bermasa ro'yxat bo'sh qaytadi va keyingi chaqiruvda qayta so'raladi.
  */
 
 export interface BrandFacet {
@@ -20,18 +18,9 @@ export interface BrandFacet {
   key: string;
   /** Ekranda ko'rinadigan nom: "Poco" */
   name: string;
-  /** Bazadagi mahsulotlar soni. Zaxira ro'yxatda 0 — son ko'rsatilmaydi. */
+  /** Bazadagi mahsulotlar soni */
   count: number;
 }
-
-const FALLBACK: BrandFacet[] = [
-  ['samsung', 'Samsung'], ['apple', 'Apple'], ['honor', 'Honor'],
-  ['redmi', 'Redmi'], ['xiaomi', 'Xiaomi'], ['poco', 'Poco'],
-  ['infinix', 'Infinix'], ['vivo', 'Vivo'], ['tecno', 'Tecno'],
-  ['oppo', 'Oppo'], ['huawei', 'Huawei'], ['realme', 'Realme'],
-  ['google', 'Google'], ['motorola', 'Motorola'], ['nokia', 'Nokia'],
-  ['zte', 'ZTE'], ['itel', 'Itel'],
-].map(([key, name]) => ({ key, name, count: 0 }));
 
 /** Brend rangi — nuqtachalar uchun. Ro'yxatda yo'q brend kulrang bo'ladi. */
 export const BRAND_COLORS: Record<string, string> = {
@@ -67,22 +56,22 @@ function load(): Promise<BrandFacet[]> {
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
     .then((d: { brands?: BrandFacet[] }) => {
       const list = d.brands ?? [];
-      // Bo'sh javob ham nosozlik: zaxira ro'yxat bilan davom etamiz.
-      cache = list.length > 0 ? list : FALLBACK;
-      return cache;
+      // Bo'sh javob keshlanmaydi — keyingi chaqiruvda qayta so'raladi
+      if (list.length > 0) cache = list;
+      inflight = null;
+      return list;
     })
     .catch(() => {
-      // Keshlamaymiz — keyingi urinishda API tiklangan bo'lishi mumkin.
       inflight = null;
-      return FALLBACK;
+      return [] as BrandFacet[];
     });
 
   return inflight;
 }
 
-/** Brendlar ro'yxati. Yuklanguncha ham bo'sh emas — zaxira ro'yxat qaytadi. */
+/** Brendlar ro'yxati (yuklanguncha yoki API ishlamasa — bo'sh). */
 export function useBrands(): BrandFacet[] {
-  const [brands, setBrands] = useState<BrandFacet[]>(cache ?? FALLBACK);
+  const [brands, setBrands] = useState<BrandFacet[]>(cache ?? []);
 
   useEffect(() => {
     let cancelled = false;
@@ -139,6 +128,8 @@ export function brandKeyOf(text: string): string | null {
 export function brandLabel(value: string): string {
   const key = (value || '').trim().toLowerCase();
   if (!key) return value;
-  const found = (cache ?? []).concat(FALLBACK).find((b) => b.key === key);
-  return found ? found.name : value;
+  const found = (cache ?? []).find((b) => b.key === key);
+  if (found) return found.name;
+  // Ro'yxat hali yuklanmagan: "poco" -> "Poco", "Apple" o'zgarishsiz
+  return value === key ? key.charAt(0).toUpperCase() + key.slice(1) : value;
 }
