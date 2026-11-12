@@ -27,7 +27,7 @@ const CYRILLIC: Record<string, string> = {
 
 /**
  * Matnni URL ga yaroqli slugga aylantiradi.
- * python/sync_csv.py dagi `_slugify` bilan bir xil natija berishi SHART —
+ * python/sync/slugs.py dagi `_slugify` bilan bir xil natija berishi SHART —
  * slug bazada saqlanadi, bu yerdagi nusxa faqat ko'rsatish uchun.
  */
 export function slugify(input: string): string {

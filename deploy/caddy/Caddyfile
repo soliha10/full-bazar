@@ -2,7 +2,7 @@
 # netlify.toml / public/_redirects / scripts/cloudflare-postbuild.mjs dagi
 # qoidalarning VPS dagi nusxasi.
 
-# API rate limiter mijoz IP sini shu sarlavhadan oladi (main.py: _client_ip).
+# API rate limiter mijoz IP sini shu sarlavhadan oladi (middleware.py: _client_ip).
 # Mijoz yuborgan qiymatlar ustidan yoziladi — aks holda limitni chetlab o'tardi.
 (api) {
 	reverse_proxy api:10000 {
@@ -27,7 +27,7 @@
 		import api
 	}
 
-	# Mahsulot sahifasi: meta teglar API da yoziladi (main.py: product_page)
+	# Mahsulot sahifasi: meta teglar API da yoziladi (pages.py: product_page)
 	handle /product/* {
 		import api
 	}

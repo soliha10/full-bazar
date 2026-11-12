@@ -47,11 +47,11 @@ if changed deploy/dagster/ python/; then
 fi
 
 # ── Ma'lumotlar ─────────────────────────────────────────────────────────────
-if changed data/ python/sync_csv.py; then
-  echo "[deploy] data/ o'zgardi — narxlar bazaga yozilmoqda"
+if changed data/ python/sync_csv.py python/sync/ python/matching.py python/matching_parse.py python/fastapi_app/brands.py; then
+  echo "[deploy] data/ yoki sinxronizatsiya kodi o'zgardi — narxlar bazaga yozilmoqda"
   ./scrape.sh --sync-only
 fi
-if changed data/gsmarena_specs.csv python/sync_specs.py; then
+if changed data/gsmarena_specs.csv python/sync_specs.py python/sync/specs_sql.py python/sync/specs_report.py; then
   docker compose --profile jobs run --rm -T jobs python python/sync_specs.py
 fi
 

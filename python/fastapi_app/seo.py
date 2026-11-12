@@ -2,7 +2,7 @@
 
 frontend/functions/_lib/product-meta.ts ning Python nusxasi — VPS da
 Cloudflare/Netlify funksiyasi yo'q, /product/* ni Caddy shu API ga uzatadi
-(main.py: product_page). Sayt — SPA, Telegram/Facebook/WhatsApp botlari esa
+(pages.py: product_page). Sayt — SPA, Telegram/Facebook/WhatsApp botlari esa
 JavaScript ishlatmaydi, shuning uchun meta teglar server tomonda qo'yiladi.
 Ikkala nusxa bir xil natija berishi kerak.
 """

@@ -5,8 +5,8 @@
 # deploy "failed to read dockerfile" bilan to'xtardi).
 #
 # Build konteksti — python/fastapi_app (render.yaml dagi rootDir). Ilova shu
-# katalogdan tashqariga chiqmaydi: main.py faqat `brands` va `specs_seed` ni
-# import qiladi, ikkalasi ham shu yerda.
+# katalogdan tashqariga chiqmaydi: main.py va uning modullari (routerlar,
+# brands, specs_seed, ...) hammasi shu yerda.
 
 FROM python:3.11-slim
 

@@ -27,58 +27,20 @@ import sys
 
 import psycopg2
 import psycopg2.extras
-from urllib.parse import urlsplit
 
-# Brend jadvali API bilan bitta manbadan — takrorlanmasin.
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "fastapi_app"))
-import brands as brand_table  # noqa: E402
+# Umumiy yordamchilar va jadval sxemasi python/sync/ paketida (sync_csv.py
+# bilan bitta manba). Qamrov hisoboti va eksport — sync/specs_report.py.
+from sync import specs_report
+from sync.common import _annotate, _dsn_problem
+from sync.specs_sql import DDL, UPSERT
 
 DATA_DIR = os.getenv("DATA_DIR", "./data")
 
 # Zaxira — docker compose dagi mahalliy baza. Bo'sh muhit o'zgaruvchisi
-# BERILMAGAN deb qaraladi; sababi sync_csv.py dagi izohda.
+# BERILMAGAN deb qaraladi; sababi sync/conn.py dagi izohda.
 LOCAL_DB_URL = "postgresql://postgres:postgres@postgres:5432/fullbazar"
 DB_URL = os.getenv("PRODUCTS_DB_URL", "").strip() or LOCAL_DB_URL
 CSV_PATH = os.path.join(DATA_DIR, "gsmarena_specs.csv")
-
-
-def _annotate(level: str, message: str) -> None:
-    """GitHub Actions ogohlantirishi (mahalliy ishda oddiy satr)."""
-    if os.getenv("GITHUB_ACTIONS") == "true":
-        print(f"::{level}::{message}", flush=True)
-    else:
-        print(f"[{level}] {message}", flush=True)
-
-
-def _dsn_problem(dsn: str) -> str | None:
-    """DSN da psycopg2 tushunmaydigan ko'rinadigan xato bormi.
-
-    Eng ko'p uchraydigani — parolda kodlanmagan `@`. libpq userinfo ni
-    BIRINCHI `@` da ajratadi, shuning uchun parolning qolgan qismi host
-    nomiga qo'shilib ketadi va xato `could not translate host name
-    "...@aws-0-....pooler.supabase.com"` bo'lib chiqadi — parolga umuman
-    ishora qilmaydi. Shuning uchun o'zimiz aytamiz.
-    """
-    netloc = urlsplit(dsn).netloc
-    if netloc.count("@") > 1:
-        return ("DSN da bittadan ko'p `@` bor — parolingizdagi maxsus "
-                "belgilar kodlanmagan. URI da parolni percent-encoding "
-                "bilan yozing: @ → %40, : → %3A, / → %2F, # → %23, "
-                "? → %3F, & → %26, % → %25")
-    if not urlsplit(dsn).hostname:
-        return "DSN da host yo'q — connection string to'liq ko'chirilmaganga o'xshaydi"
-    host = urlsplit(dsn).hostname or ""
-    user = urlsplit(dsn).username or ""
-    # Supabase pooler foydalanuvchi nomidan qaysi loyihaga ulanishni biladi:
-    # u `postgres.<project-ref>` bo'lishi SHART. Oddiy `postgres` berilsa
-    # pooler marshrutni topa olmaydi va buni "password authentication
-    # failed" deb aytadi — ya'ni parolni qayta-qayta tekshirishga undaydi,
-    # holbuki parol to'g'ri.
-    if host.endswith(".pooler.supabase.com") and "." not in user:
-        return (f"pooler uchun foydalanuvchi nomi `postgres.<project-ref>` "
-                f"bo'lishi kerak, hozir `{user}`. Supabase → Connect dagi "
-                f"satrni to'liq ko'chiring (parolgina almashtiriladi).")
-    return None
 
 
 def check_db_url() -> None:
@@ -96,67 +58,6 @@ def check_db_url() -> None:
         sys.exit(1)
     print(f"[db] PRODUCTS_DB_URL berilmadi — mahalliy baza ({LOCAL_DB_URL})",
           flush=True)
-
-
-# API ham shu jadvalni yaratadi; bu skript undan oldin ishlashi mumkin,
-# shuning uchun sxema shu yerda ham ta'minlanadi.
-DDL = """
-CREATE TABLE IF NOT EXISTS product_specs (
-    id              SERIAL PRIMARY KEY,
-    brand           VARCHAR(50)  NOT NULL,
-    model_key       VARCHAR(100) NOT NULL,
-    display_name    VARCHAR(150) NOT NULL,
-    display         VARCHAR(200),
-    chipset         VARCHAR(150),
-    ram_options     TEXT[]       NOT NULL DEFAULT '{}',
-    storage_options TEXT[]       NOT NULL DEFAULT '{}',
-    main_camera     VARCHAR(200),
-    selfie_camera   VARCHAR(150),
-    battery_mah     INTEGER,
-    charging        VARCHAR(100),
-    os              VARCHAR(100),
-    body            VARCHAR(200),
-    release_year    SMALLINT
-);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_product_specs_model
-    ON product_specs(brand, model_key);
-ALTER TABLE product_specs
-    ADD COLUMN IF NOT EXISTS source VARCHAR(20) NOT NULL DEFAULT 'seed';
-ALTER TABLE product_specs
-    ADD COLUMN IF NOT EXISTS source_url TEXT;
-"""
-
-# CSV — yagona manba, LEKIN u har doim ham to'liq emas: ro'yxat sahifasidan
-# olingan qator kamera/zaryadlash/OS siz keladi. Bunday bo'sh qiymat bazadagi
-# model sahifasidan olingan tayyor ma'lumotni O'CHIRIB yubormasligi kerak —
-# shuning uchun har maydon COALESCE bilan yangilanadi: yangi qiymat bo'sh
-# bo'lsa eskisi qoladi. (Ilgari CI har ishdan oldin bazani CSV ga eksport
-# qilib shu himoyani ta'minlardi; endi yig'ish mahalliy bo'lgani uchun
-# himoya shu yerda turadi.)
-UPSERT = """
-INSERT INTO product_specs
-    (brand, model_key, display_name, display, chipset, ram_options,
-     storage_options, main_camera, selfie_camera, battery_mah,
-     charging, os, body, release_year, source, source_url)
-VALUES %s
-ON CONFLICT (brand, model_key) DO UPDATE SET
-    display_name    = COALESCE(NULLIF(EXCLUDED.display_name, ''), product_specs.display_name),
-    display         = COALESCE(EXCLUDED.display,         product_specs.display),
-    chipset         = COALESCE(EXCLUDED.chipset,         product_specs.chipset),
-    ram_options     = CASE WHEN EXCLUDED.ram_options = '{}'
-                           THEN product_specs.ram_options ELSE EXCLUDED.ram_options END,
-    storage_options = CASE WHEN EXCLUDED.storage_options = '{}'
-                           THEN product_specs.storage_options ELSE EXCLUDED.storage_options END,
-    main_camera     = COALESCE(EXCLUDED.main_camera,     product_specs.main_camera),
-    selfie_camera   = COALESCE(EXCLUDED.selfie_camera,   product_specs.selfie_camera),
-    battery_mah     = COALESCE(EXCLUDED.battery_mah,     product_specs.battery_mah),
-    charging        = COALESCE(EXCLUDED.charging,        product_specs.charging),
-    os              = COALESCE(EXCLUDED.os,              product_specs.os),
-    body            = COALESCE(EXCLUDED.body,            product_specs.body),
-    release_year    = COALESCE(EXCLUDED.release_year,    product_specs.release_year),
-    source          = EXCLUDED.source,
-    source_url      = COALESCE(EXCLUDED.source_url,      product_specs.source_url)
-"""
 
 
 def _int_or_none(value: str) -> int | None:
@@ -227,7 +128,7 @@ def write_db(rows: list[tuple]) -> int:
                 # Supabase sukuti 7000 qatorlik UPSERT ga yetmaydi
                 # ("canceling statement due to statement timeout"). 6543-port
                 # TRANSACTION rejimida ulanishdagi SET saqlanmaydi, shuning
-                # uchun SET LOCAL — sync_csv._apply_timeouts dagidek.
+                # uchun SET LOCAL — sync/conn.py dagi _apply_timeouts dagidek.
                 cur.execute("SET LOCAL statement_timeout = 600000")
                 cur.execute("SET LOCAL lock_timeout = 60000")
                 cur.execute(DDL)
@@ -238,92 +139,14 @@ def write_db(rows: list[tuple]) -> int:
         conn.close()
 
 
-
-
 def coverage_report() -> None:
-    """
-    Nechta mahsulot xususiyatlarga ega bo'ldi — API dagi bilan AYNAN bir xil
-    mantiq (brands.match_spec_row). "Yana manba kerakmi?" degan savolni
-    o'lchovli qiladi.
-    """
-    conn = psycopg2.connect(DB_URL)
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT brand, model_key FROM product_specs")
-            spec_index = brand_table.build_spec_index(
-                [{"brand": b, "model_key": k} for b, k in cur.fetchall()]
-            )
-            cur.execute("SELECT name, keywords FROM products")
-            products = cur.fetchall()
-    finally:
-        conn.close()
-
-    if not products:
-        print("[qamrov] products jadvali bo'sh", flush=True)
-        return
-
-    matched = 0
-    unmatched_brands: dict[str, int] = {}
-    for name, keywords in products:
-        if brand_table.match_spec_row(name or "", keywords or "", spec_index):
-            matched += 1
-        else:
-            brand = brand_table.extract_brand(f"{name or ''} {keywords or ''}")
-            key = brand or "(brend aniqlanmadi)"
-            unmatched_brands[key] = unmatched_brands.get(key, 0) + 1
-
-    pct = matched * 100 // len(products)
-    print(f"[qamrov] {matched}/{len(products)} mahsulot ({pct}%) xususiyatlarga ega",
-          flush=True)
-    if unmatched_brands:
-        top = sorted(unmatched_brands.items(), key=lambda kv: -kv[1])[:8]
-        print("[qamrov] eng ko'p yetishmayotgan brendlar: "
-              + ", ".join(f"{b}={n}" for b, n in top), flush=True)
-
-
-EXPORT_COLUMNS = [
-    "brand", "model_key", "display_name", "display", "chipset", "ram_options",
-    "storage_options", "main_camera", "selfie_camera", "battery_mah",
-    "charging", "os", "body", "release_year", "source_url",
-]
+    """Qamrov hisoboti (mantiq sync/specs_report.py da)."""
+    specs_report.coverage_report(DB_URL)
 
 
 def export_csv() -> int:
-    """
-    Bazadagi gsmarena yozuvlarini CSV ga qaytaradi.
-
-    Scraper shu fayldan boshlaydi va `source_url` bo'yicha allaqachon o'qilgan
-    model sahifalarini qayta yuklamaydi — ya'ni tafsilot qamrovi har haftada
-    o'sib boradi, nolga qaytmaydi.
-    """
-    conn = psycopg2.connect(DB_URL)
-    try:
-        with conn.cursor() as cur:
-            cur.execute(DDL)
-            cur.execute(
-                "SELECT brand, model_key, display_name, display, chipset,"
-                "       ram_options, storage_options, main_camera, selfie_camera,"
-                "       battery_mah, charging, os, body, release_year, source_url"
-                "  FROM product_specs WHERE source = 'gsmarena' AND source_url IS NOT NULL"
-            )
-            rows = cur.fetchall()
-        conn.commit()
-    finally:
-        conn.close()
-
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(CSV_PATH, "w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=EXPORT_COLUMNS)
-        writer.writeheader()
-        for r in rows:
-            record = dict(zip(EXPORT_COLUMNS, r))
-            record["ram_options"] = json.dumps(list(record["ram_options"] or []))
-            record["storage_options"] = json.dumps(list(record["storage_options"] or []))
-            record["battery_mah"] = record["battery_mah"] or ""
-            record["release_year"] = record["release_year"] or ""
-            writer.writerow({k: (v if v is not None else "") for k, v in record.items()})
-    print(f"[eksport] {len(rows)} ta yozuv {CSV_PATH} ga chiqarildi", flush=True)
-    return len(rows)
+    """Bazadagi gsmarena yozuvlarini CSV ga qaytaradi (sync/specs_report.py)."""
+    return specs_report.export_csv(DB_URL, DATA_DIR, CSV_PATH)
 
 
 if __name__ == "__main__":
