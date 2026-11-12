@@ -200,3 +200,11 @@ async def send_sms_code(phone: str, code: str) -> None:
     if res.status_code >= 300:
         log.error("eskiz send %s: %s", res.status_code, res.text[:300])
         raise DeliveryError(f"eskiz returned {res.status_code}")
+    # Hujjat bo'yicha muvaffaqiyatli javob: {"id": ..., "status": "waiting"}
+    try:
+        status = res.json().get("status")
+    except ValueError:
+        status = None
+    if status not in ("waiting", "accepted", "sent", None):
+        log.error("eskiz send unexpected status: %s", res.text[:300])
+        raise DeliveryError(f"eskiz status {status}")
