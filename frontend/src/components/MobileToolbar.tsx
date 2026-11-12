@@ -24,7 +24,7 @@ export function MobileToolbar() {
     { key: 'home',      icon: Home,   label: t.nav.home,       path: '/',          count: 0               },
     { key: 'search',    icon: Search, label: t.nav.search,     path: '/products',  count: 0               },
     { key: 'wishlist',  icon: Heart,  label: t.footer.wishlist, path: '/wishlist', count: favorites.length },
-    { key: 'watchlist', icon: Bell,   label: 'Kuzatuv',         path: '/watchlist', count: watched.length  },
+    { key: 'watchlist', icon: Bell,   label: t.common.watchShort, path: '/watchlist', count: watched.length  },
     { key: 'profile',   icon: User,   label: t.nav.account,    path: '/profile',   count: 0               },
   ];
 

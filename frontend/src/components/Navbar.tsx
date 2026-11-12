@@ -32,7 +32,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isProfileSheetOpen, setIsProfileSheetOpen] = useState(false);
 
-  const BUDGET_LABELS: Record<string, string> = { budget: 'Tejamkor', mid: "O'rta", premium: 'Premium' };
+  const BUDGET_LABELS: Record<string, string> = t.nav.budgetLevels;
   const [scrolled, setScrolled] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [searchValue, setSearchValue] = useState(() => {
@@ -126,7 +126,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             {/* Hamburger — mobile only */}
             <button
               onClick={() => setIsMenuOpen(true)}
-              aria-label="Menyuni ochish"
+              aria-label={t.nav.openMenu}
               aria-expanded={isMenuOpen}
               className="md:hidden w-9 h-9 shrink-0 flex items-center justify-center rounded-xl
                 text-gray-600 dark:text-gray-300
@@ -307,7 +307,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                     hover:bg-violet-50 dark:hover:bg-violet-900/30
                     text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400
                     transition-all active:scale-90"
-                  title="Narx kuzatuv"
+                  title={t.nav.priceWatch}
                 >
                   <Bell className={`w-4 h-4 transition-colors ${watched.length > 0 ? 'text-violet-600 dark:text-violet-400' : ''}`} />
                   {watched.length > 0 && (
@@ -319,7 +319,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
               )}
 
               {/* Theme toggle — desktop */}
-              <button onClick={toggleTheme} aria-label="Mavzuni o'zgartirish"
+              <button onClick={toggleTheme} aria-label={t.nav.toggleTheme}
                 className="hidden md:flex w-8 h-8 items-center justify-center rounded-xl
                   bg-gray-50 dark:bg-gray-800
                   hover:bg-violet-50 dark:hover:bg-violet-900/30
@@ -377,20 +377,20 @@ export function Navbar({ onSearchChange }: NavbarProps) {
 
                         {/* Profile details */}
                         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Profil</p>
+                          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">{t.nav.profile}</p>
                           <div className="grid grid-cols-2 gap-2 mb-2.5">
                             <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
-                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Yosh</p>
+                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{t.nav.age}</p>
                               <p className="text-xs font-black text-gray-900 dark:text-white">{user.profile.ageGroup}</p>
                             </div>
                             <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
-                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Byudjet</p>
+                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{t.nav.budget}</p>
                               <p className="text-xs font-black text-gray-900 dark:text-white">{BUDGET_LABELS[user.profile.budgetLevel]}</p>
                             </div>
                           </div>
                           {user.profile.preferredBrands.length > 0 && (
                             <div>
-                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">Brendlar</p>
+                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">{t.nav.brands}</p>
                               <div className="flex flex-wrap gap-1">
                                 {user.profile.preferredBrands.slice(0, 4).map(b => (
                                   <span key={b} className="text-[10px] font-bold bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full">
@@ -431,7 +431,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                               transition-colors active:scale-[0.98]"
                           >
                             <LogOut className="w-4 h-4 shrink-0" />
-                            Chiqish
+                            {t.nav.logout}
                           </button>
                         </div>
                       </div>
@@ -528,7 +528,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Navigatsiya menyusi"
+        aria-label={t.nav.menu}
         className={`fixed inset-0 z-200 md:hidden transition-opacity duration-300 ${
           isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
@@ -565,7 +565,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             </Link>
             <button
               onClick={closeMenu}
-              aria-label="Menyuni yopish"
+              aria-label={t.nav.closeMenu}
               className="w-8 h-8 flex items-center justify-center rounded-xl
                 bg-gray-100 dark:bg-gray-800
                 text-gray-500 dark:text-gray-400
@@ -593,7 +593,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                   <button onClick={() => { logout(); closeMenu(); }}
                     className="flex items-center gap-1.5 bg-white/15 border border-white/20 text-white text-[11px] font-black px-3 py-1.5 rounded-xl shrink-0 active:scale-95 transition-transform">
                     <LogOut className="w-3 h-3" />
-                    Chiqish
+                    {t.nav.logout}
                   </button>
                 </div>
               ) : (
@@ -613,7 +613,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                     </button>
                     <button onClick={() => { openRegister(); closeMenu(); }}
                       className="flex items-center gap-1.5 bg-white/15 border border-white/20 text-white text-[11px] font-black px-3 py-1.5 rounded-xl active:scale-95 transition-transform">
-                      Ro'yxat
+                      {t.auth.register}
                     </button>
                   </div>
                 </div>
@@ -627,7 +627,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             {/* Nav links */}
             <div className="px-3 pt-3">
               <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.15em] px-2 mb-2">
-                Menyu
+                {t.common.menu}
               </p>
               <div className="space-y-0.5">
                 {navLinks.map(({ icon: Icon, label, path, count }) => {
@@ -682,7 +682,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             {/* Settings */}
             <div className="px-3 pb-3">
               <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.15em] px-2 mb-2">
-                Sozlamalar
+                {t.common.settings}
               </p>
 
               {/* Theme */}
@@ -805,17 +805,17 @@ export function Navbar({ onSearchChange }: NavbarProps) {
             <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
               <div className="grid grid-cols-2 gap-2.5 mb-3">
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl px-4 py-3">
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Yosh guruh</p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{t.nav.ageGroup}</p>
                   <p className="text-sm font-black text-gray-900 dark:text-white mt-1">{user.profile.ageGroup}</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl px-4 py-3">
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Byudjet</p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{t.nav.budget}</p>
                   <p className="text-sm font-black text-gray-900 dark:text-white mt-1">{BUDGET_LABELS[user.profile.budgetLevel]}</p>
                 </div>
               </div>
               {user.profile.preferredBrands.length > 0 && (
                 <div>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-2">Sevimli brendlar</p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-2">{t.nav.favoriteBrands}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {user.profile.preferredBrands.map(b => (
                       <span key={b} className="text-xs font-bold bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-3 py-1 rounded-full">
@@ -838,7 +838,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
                   transition-all active:scale-[0.98]"
               >
                 <LogOut className="w-4 h-4" />
-                Chiqish
+                {t.nav.logout}
               </button>
             </div>
           </div>

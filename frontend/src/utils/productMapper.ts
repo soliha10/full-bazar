@@ -12,22 +12,25 @@ export function formatSum(amount: number): string {
  * `null` qaytsa, hech narsa ko'rsatilmaydi: noma'lum vaqtni "hozir" deb
  * ko'rsatish yolg'on ishonch beradi.
  */
-export function formatCheckedAt(iso: string | null | undefined): string | null {
+export function formatCheckedAt(
+  iso: string | null | undefined,
+  l: { justNow: string; hoursAgo: string; yesterday: string; daysAgo: string; overMonth: string },
+): string | null {
   if (!iso) return null;
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return null;
 
   const minutes = Math.floor((Date.now() - then) / 60000);
   if (minutes < 0)  return null;          // kelajakdagi sana — soat noto'g'ri
-  if (minutes < 60) return 'hozirgina tekshirildi';
+  if (minutes < 60) return l.justNow;
 
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} soat oldin tekshirildi`;
+  if (hours < 24) return l.hoursAgo.replace('{{count}}', String(hours));
 
   const days = Math.floor(hours / 24);
-  if (days === 1) return 'kecha tekshirildi';
-  if (days < 30)  return `${days} kun oldin tekshirildi`;
-  return 'bir oydan ko\'proq vaqt oldin tekshirildi';
+  if (days === 1) return l.yesterday;
+  if (days < 30)  return l.daysAgo.replace('{{count}}', String(days));
+  return l.overMonth;
 }
 
 export function resolveImageUrl(url: string | undefined | null): string {

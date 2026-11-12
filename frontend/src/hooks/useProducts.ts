@@ -64,6 +64,9 @@ export function useProducts(
     gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    // Server qayta ishga tushayotgan paytda (deploy) bitta so'rov yiqilishi
+    // mumkin — darhol xato ko'rsatishdan oldin yana ikki marta urinamiz.
+    retry: 2,
   });
 
   const products: Product[] =

@@ -9,8 +9,10 @@ import { formatSum } from '../utils/productMapper';
 import { trackStoreClick } from '../services/tracking';
 import { SEO, SITE_URL } from '../components/SEO';
 import { productPath } from '../utils/slug';
+import { useLanguage } from '../contexts/LanguageContext';
 
 function TelegramPanel({ token }: { token: string }) {
+  const { t } = useLanguage();
   const [linked, setLinked]     = useState<boolean | null>(null);
   const [chatId, setChatId]     = useState('');
   const [input, setInput]       = useState('');
@@ -29,7 +31,7 @@ function TelegramPanel({ token }: { token: string }) {
 
   const handleSave = async () => {
     const parsed = parseInt(input.trim(), 10);
-    if (!parsed || isNaN(parsed)) { setError("Noto'g'ri chat ID"); return; }
+    if (!parsed || isNaN(parsed)) { setError(t.watchlist.telegram.invalidChatId); return; }
     setSaving(true); setError('');
     try {
       await axios.post(`/api/users/me/telegram`, { chat_id: parsed }, {
@@ -38,7 +40,7 @@ function TelegramPanel({ token }: { token: string }) {
       setLinked(true);
       setChatId(String(parsed));
       setStep('idle');
-    } catch { setError('Saqlashda xatolik'); }
+    } catch { setError(t.watchlist.telegram.saveError); }
     finally { setSaving(false); }
   };
 
@@ -58,13 +60,13 @@ function TelegramPanel({ token }: { token: string }) {
           <CheckCircle className="w-4 h-4 text-white" />
         </div>
         <div>
-          <p className="text-sm font-black text-emerald-700 dark:text-emerald-400">Telegram ulangan</p>
-          <p className="text-[11px] text-emerald-600/70 dark:text-emerald-500">Chat ID: {chatId} — narx tushsa xabar keladi</p>
+          <p className="text-sm font-black text-emerald-700 dark:text-emerald-400">{t.watchlist.telegram.linked}</p>
+          <p className="text-[11px] text-emerald-600/70 dark:text-emerald-500">{t.watchlist.telegram.linkedInfo.replace('{{chatId}}', chatId)}</p>
         </div>
       </div>
       <button onClick={handleUnlink} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
         <Link2Off className="w-3.5 h-3.5" />
-        Uzish
+        {t.watchlist.telegram.unlink}
       </button>
     </div>
   );
@@ -78,13 +80,13 @@ function TelegramPanel({ token }: { token: string }) {
               <Send className="w-4 h-4 text-white" />
             </div>
             <div>
-              <p className="text-sm font-black text-blue-700 dark:text-blue-300">Telegram orqali ogohlantirish</p>
-              <p className="text-[11px] text-blue-600/70 dark:text-blue-400">Narx tushganda Telegram xabar olasiz</p>
+              <p className="text-sm font-black text-blue-700 dark:text-blue-300">{t.watchlist.telegram.title}</p>
+              <p className="text-[11px] text-blue-600/70 dark:text-blue-400">{t.watchlist.telegram.subtitle}</p>
             </div>
           </div>
           <button onClick={() => setStep('instructions')}
             className="px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-black hover:bg-blue-700 transition-all shrink-0">
-            Ulash
+            {t.watchlist.telegram.connect}
           </button>
         </div>
       )}
@@ -92,19 +94,19 @@ function TelegramPanel({ token }: { token: string }) {
       {step === 'instructions' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-black text-blue-700 dark:text-blue-300">Telegram ulash</p>
+            <p className="text-sm font-black text-blue-700 dark:text-blue-300">{t.watchlist.telegram.connectTitle}</p>
             <button onClick={() => setStep('idle')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
               <X className="w-4 h-4" />
             </button>
           </div>
           <ol className="space-y-2 text-xs text-blue-700 dark:text-blue-300">
-            <li className="flex gap-2"><span className="font-black shrink-0">1.</span><span>Telegramda <strong>@BazarcomPriceBot</strong> ni oching</span></li>
-            <li className="flex gap-2"><span className="font-black shrink-0">2.</span><span><strong>/start</strong> buyrug'ini yuboring</span></li>
-            <li className="flex gap-2"><span className="font-black shrink-0">3.</span><span>Bot sizga <strong>Chat ID</strong> raqamini beradi — uni pastga kiriting</span></li>
+            <li className="flex gap-2"><span className="font-black shrink-0">1.</span><span>{t.watchlist.telegram.step1Before}<strong>@BazarcomPriceBot</strong>{t.watchlist.telegram.step1After}</span></li>
+            <li className="flex gap-2"><span className="font-black shrink-0">2.</span><span>{t.watchlist.telegram.step2Before}<strong>/start</strong>{t.watchlist.telegram.step2After}</span></li>
+            <li className="flex gap-2"><span className="font-black shrink-0">3.</span><span>{t.watchlist.telegram.step3Before}<strong>Chat ID</strong>{t.watchlist.telegram.step3After}</span></li>
           </ol>
           <button onClick={() => setStep('input')}
             className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-xs font-black hover:bg-blue-700 transition-all">
-            Chat ID kiriting
+            {t.watchlist.telegram.enterChatId}
           </button>
         </div>
       )}
@@ -112,7 +114,7 @@ function TelegramPanel({ token }: { token: string }) {
       {step === 'input' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-black text-blue-700 dark:text-blue-300">Chat ID kiriting</p>
+            <p className="text-sm font-black text-blue-700 dark:text-blue-300">{t.watchlist.telegram.enterChatId}</p>
             <button onClick={() => setStep('instructions')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
               <X className="w-4 h-4" />
             </button>
@@ -121,7 +123,7 @@ function TelegramPanel({ token }: { token: string }) {
             type="number"
             value={input}
             onChange={e => { setInput(e.target.value); setError(''); }}
-            placeholder="Masalan: 123456789"
+            placeholder={t.watchlist.telegram.placeholder}
             className="w-full px-3 py-2.5 rounded-xl border border-blue-200 dark:border-blue-700
               bg-white dark:bg-gray-900 text-sm font-bold
               text-gray-900 dark:text-white placeholder:text-gray-400
@@ -130,7 +132,7 @@ function TelegramPanel({ token }: { token: string }) {
           {error && <p className="text-xs text-red-500 font-bold">{error}</p>}
           <button onClick={handleSave} disabled={saving}
             className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-xs font-black hover:bg-blue-700 disabled:opacity-60 transition-all">
-            {saving ? 'Saqlanmoqda...' : 'Tasdiqlash'}
+            {saving ? t.watchlist.telegram.saving : t.watchlist.telegram.confirm}
           </button>
         </div>
       )}
@@ -142,16 +144,23 @@ export function Watchlist() {
   const { watched, toggle } = usePriceWatch();
   const { user, openLogin } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   // ── Not logged in ──────────────────────────────────────────────────────────
   if (!user) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-950 pb-28 flex flex-col">
+        <SEO
+          title={t.watchlist.title}
+          description={t.watchlist.seoDescription}
+          noindex
+          canonicalUrl={`${SITE_URL}/watchlist`}
+        />
         <div className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 md:hidden">
           <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-90 transition-all">
             <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           </button>
-          <span className="text-base font-black text-gray-900 dark:text-white">Narx kuzatuvi</span>
+          <span className="text-base font-black text-gray-900 dark:text-white">{t.watchlist.title}</span>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-5">
           <motion.div
@@ -162,9 +171,9 @@ export function Watchlist() {
             <Bell className="w-10 h-10 text-violet-400" />
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <h2 className="text-lg font-black text-gray-900 dark:text-white mb-1">Narx kuzatuviga kiring</h2>
+            <h2 className="text-lg font-black text-gray-900 dark:text-white mb-1">{t.watchlist.loginTitle}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
-              Mahsulotlarni kuzating va narx o'zgarishlarini kuzatib boring
+              {t.watchlist.loginSubtitle}
             </p>
           </motion.div>
           <motion.button
@@ -172,7 +181,7 @@ export function Watchlist() {
             onClick={openLogin}
             className="px-8 py-3 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-black text-sm shadow-md shadow-violet-500/25 active:scale-95 transition-all"
           >
-            Kirish
+            {t.auth.login}
           </motion.button>
         </div>
       </div>
@@ -183,8 +192,8 @@ export function Watchlist() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-28">
       <SEO
-        title="Narx kuzatuvi"
-        description="Narxi tushishini kuzatayotgan smartfonlaringiz va Telegram bildirishnomalari."
+        title={t.watchlist.title}
+        description={t.watchlist.seoDescription}
         noindex
         canonicalUrl={`${SITE_URL}/watchlist`}
       />
@@ -197,7 +206,7 @@ export function Watchlist() {
           </button>
           <div className="flex items-center gap-2 flex-1">
             <Bell className="w-4 h-4 text-violet-600" />
-            <span className="text-base font-black text-gray-900 dark:text-white">Narx kuzatuvi</span>
+            <span className="text-base font-black text-gray-900 dark:text-white">{t.watchlist.title}</span>
             {watched.length > 0 && (
               <span className="bg-violet-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
                 {watched.length}
@@ -224,8 +233,8 @@ export function Watchlist() {
               <Bell className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">Narx kuzatuvi</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{watched.length} ta mahsulot kuzatilmoqda</p>
+              <h1 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">{t.watchlist.title}</h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t.watchlist.trackingCount.replace('{{count}}', String(watched.length))}</p>
             </div>
           </div>
           {watched.length > 0 && (
@@ -234,7 +243,7 @@ export function Watchlist() {
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              Barchasini o'chirish
+              {t.watchlist.clearAll}
             </button>
           )}
         </div>
@@ -246,8 +255,7 @@ export function Watchlist() {
         <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800/40 rounded-2xl px-4 py-3 mb-4 flex items-start gap-3">
           <Bell className="w-4 h-4 text-violet-500 mt-0.5 shrink-0" />
           <p className="text-xs text-violet-700 dark:text-violet-300 leading-relaxed">
-            Mahsulot kartasidagi <strong>qo'ng'iroq tugmasi</strong> orqali qo'shiladi.
-            Qo'shilgan narxingiz bilan hozirgi narxni avtomatik taqqoslaydi.
+            {t.watchlist.infoBefore}<strong>{t.watchlist.infoBell}</strong>{t.watchlist.infoAfter}
           </p>
         </div>
 
@@ -266,15 +274,15 @@ export function Watchlist() {
               >
                 <Bell className="w-10 h-10 text-gray-200 dark:text-gray-700" />
               </motion.div>
-              <h2 className="text-lg font-black text-gray-900 dark:text-white mb-2">Kuzatuv ro'yxati bo'sh</h2>
+              <h2 className="text-lg font-black text-gray-900 dark:text-white mb-2">{t.watchlist.emptyTitle}</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-xs">
-                Mahsulot kartasidagi 🔔 tugmasini bosib kuzatuvga qo'shing
+                {t.watchlist.emptySubtitle}
               </p>
               <Link
                 to="/products"
                 className="bg-violet-600 hover:bg-violet-700 text-white font-black text-sm px-6 py-3 rounded-2xl active:scale-95 transition-all"
               >
-                Mahsulotlarni ko'rish
+                {t.watchlist.browseProducts}
               </Link>
             </motion.div>
           )}
@@ -315,8 +323,8 @@ export function Watchlist() {
                       }`}>
                         {dropped ? <TrendingDown className="w-3.5 h-3.5" /> : <TrendingUp className="w-3.5 h-3.5" />}
                         {dropped
-                          ? `Narx tushdi! ${Math.abs(pricePct).toFixed(0)}% arzonladi — ${formatSum(Math.abs(priceDiff))} tejaysiz`
-                          : `Narx oshdi — ${pricePct.toFixed(0)}% qimmatlashdi`
+                          ? t.watchlist.priceDropped.replace('{{pct}}', Math.abs(pricePct).toFixed(0)).replace('{{amount}}', formatSum(Math.abs(priceDiff)))
+                          : t.watchlist.priceRose.replace('{{pct}}', pricePct.toFixed(0))
                         }
                       </div>
                     )}
@@ -358,18 +366,18 @@ export function Watchlist() {
                         <div className="flex items-center gap-1">
                           {dropped && (
                             <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded-full">
-                              -{formatSum(Math.abs(priceDiff))} arzon
+                              {t.watchlist.cheaperBy.replace('{{amount}}', formatSum(Math.abs(priceDiff)))}
                             </span>
                           )}
                           {rose && (
                             <span className="text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded-full">
-                              +{formatSum(priceDiff)} qimmat
+                              {t.watchlist.pricierBy.replace('{{amount}}', formatSum(priceDiff))}
                             </span>
                           )}
                           {!dropped && !rose && (
                             <span className="flex items-center gap-0.5 text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 rounded-full">
                               <Minus className="w-2.5 h-2.5" />
-                              Narx o'zgarmagan
+                              {t.watchlist.priceUnchanged}
                             </span>
                           )}
                         </div>
@@ -395,7 +403,7 @@ export function Watchlist() {
                                   </a>
                                 )}
                                 {sortedCurrentMarkets.length > 1 && (
-                                  <span className="text-[10px] text-gray-400">+{sortedCurrentMarkets.length - 1} ta do'kon</span>
+                                  <span className="text-[10px] text-gray-400">{t.watchlist.moreStores.replace('{{count}}', String(sortedCurrentMarkets.length - 1))}</span>
                                 )}
                               </>
                             )}
@@ -405,7 +413,7 @@ export function Watchlist() {
                             className="flex items-center gap-1 text-[11px] font-bold text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 px-2 py-1 rounded-lg transition-all active:scale-90"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
-                            Olib tashlash
+                            {t.watchlist.remove}
                           </button>
                         </div>
                       </div>

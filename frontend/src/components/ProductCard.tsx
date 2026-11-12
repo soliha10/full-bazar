@@ -49,15 +49,9 @@ interface ProductCardProps {
   activeMarkets?: string[];
 }
 
-const storeLabels: Record<string, string> = {
-  uz: "Do'kon",
-  ru: 'Магазин',
-  en: 'Store',
-};
-
 export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: ProductCardProps) {
   const navigate = useNavigate();
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { toggle, isLiked } = useFavorites();
   const { user } = useAuth();
   const { toggle: toggleWatch, isWatched } = usePriceWatch();
@@ -109,7 +103,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
           )}
           <button
             onClick={(e) => { e.stopPropagation(); if (!compareDisabled) toggleCompare(product.id); }}
-            title={compareDisabled ? `Ko'pi bilan ${MAX_COMPARE} tagacha solishtirish mumkin` : "Solishtirish"}
+            title={compareDisabled ? t.common.compareLimit.replace('{{max}}', String(MAX_COMPARE)) : t.common.compare}
             className={`absolute top-1 left-1 w-6 h-6 flex items-center justify-center rounded-lg shadow-sm transition-all active:scale-90 ${
               comparing ? 'bg-violet-600 text-white' : 'bg-white/90 dark:bg-gray-900/90 text-gray-400'
             } ${compareDisabled ? 'opacity-40' : ''}`}
@@ -155,7 +149,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
             <div>
               <p className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider leading-none mb-0.5">
                 {sortedMarkets.length > 0
-                  ? `${sortedMarkets.length} ${storeLabels[language] ?? 'Store'}dan`
+                  ? t.common.fromStores.replace('{{count}}', String(sortedMarkets.length))
                   : t.listing.startingFrom}
               </p>
               <p className="text-base font-black text-gray-900 dark:text-white tracking-tight">{formatSum(bestPrice)}</p>
@@ -196,7 +190,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
         <div className="absolute top-2 right-2 flex flex-col items-end gap-1.5">
           <button
             onClick={(e) => { e.stopPropagation(); if (!compareDisabled) toggleCompare(product.id); }}
-            title={compareDisabled ? `Ko'pi bilan ${MAX_COMPARE} tagacha solishtirish mumkin` : "Solishtirish"}
+            title={compareDisabled ? t.common.compareLimit.replace('{{max}}', String(MAX_COMPARE)) : t.common.compare}
             className={`w-7 h-7 flex items-center justify-center rounded-xl shadow-sm transition-all active:scale-90 ${
               comparing ? 'bg-violet-600 text-white' : 'bg-white/90 dark:bg-gray-900/90 text-gray-400'
             } ${compareDisabled ? 'opacity-40' : ''}`}
@@ -225,7 +219,7 @@ export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: 
         {user && (
           <button
             onClick={(e) => { e.stopPropagation(); toggleWatch(product); }}
-            title={watching ? "Narx kuzatuvdan olib tashlash" : "Narxni kuzatish"}
+            title={watching ? t.common.watchRemove : t.common.watchAdd}
             className={`absolute bottom-2 left-2 w-8 h-8 flex items-center justify-center rounded-xl shadow-md transition-all active:scale-90 ${
               watching
                 ? 'bg-violet-600 text-white shadow-violet-500/40 scale-105'

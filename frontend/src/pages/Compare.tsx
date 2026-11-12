@@ -7,6 +7,7 @@ import { trackStoreClick } from '../services/tracking';
 import { useCompare, MAX_COMPARE } from '../contexts/CompareContext';
 import { SEO, SITE_URL } from '../components/SEO';
 import { productPath } from '../utils/slug';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface Specs {
   displayName: string;
@@ -65,37 +66,42 @@ const WINNER_ROW: Record<string, keyof Specs> = {
   releaseYear: 'releaseYear',
 };
 
-interface SpecRowDef { key: keyof Specs; label: string }
-interface SpecGroup { label: string; rows: SpecRowDef[] }
+/** Yorliqlar t.compare.specs / t.compare.groups dan olinadi */
+type SpecLabelKey = 'chipset' | 'ram' | 'storage' | 'display' | 'mainCamera' | 'selfieCamera'
+  | 'capacity' | 'charging' | 'body' | 'os' | 'releaseYear';
+type GroupLabelKey = 'performance' | 'display' | 'camera' | 'battery' | 'design';
+
+interface SpecRowDef { key: keyof Specs; label: SpecLabelKey }
+interface SpecGroup { label: GroupLabelKey; rows: SpecRowDef[] }
 
 const SPEC_GROUPS: SpecGroup[] = [
-  { label: 'Ishlash va xotira', rows: [
-    { key: 'chipset', label: 'Protsessor' },
-    { key: 'ramOptions', label: 'RAM' },
-    { key: 'storageOptions', label: 'Xotira' },
+  { label: 'performance', rows: [
+    { key: 'chipset', label: 'chipset' },
+    { key: 'ramOptions', label: 'ram' },
+    { key: 'storageOptions', label: 'storage' },
   ]},
-  { label: 'Ekran', rows: [
-    { key: 'display', label: 'Ekran' },
+  { label: 'display', rows: [
+    { key: 'display', label: 'display' },
   ]},
-  { label: 'Kamera', rows: [
-    { key: 'mainCamera', label: 'Asosiy kamera' },
-    { key: 'selfieCamera', label: 'Old kamera' },
+  { label: 'camera', rows: [
+    { key: 'mainCamera', label: 'mainCamera' },
+    { key: 'selfieCamera', label: 'selfieCamera' },
   ]},
-  { label: 'Batareya', rows: [
-    { key: 'batteryMah', label: 'Sig\'im' },
-    { key: 'charging', label: 'Zaryadlash' },
+  { label: 'battery', rows: [
+    { key: 'batteryMah', label: 'capacity' },
+    { key: 'charging', label: 'charging' },
   ]},
-  { label: "Dizayn va boshqa", rows: [
-    { key: 'body', label: 'Korpus' },
-    { key: 'os', label: 'OS' },
-    { key: 'releaseYear', label: 'Chiqarilgan yili' },
+  { label: 'design', rows: [
+    { key: 'body', label: 'body' },
+    { key: 'os', label: 'os' },
+    { key: 'releaseYear', label: 'releaseYear' },
   ]},
 ];
 
-function specValue(specs: Specs | null, key: keyof Specs): string {
-  if (!specs) return "Ma'lumot yo'q";
+function specValue(specs: Specs | null, key: keyof Specs, noData: string): string {
+  if (!specs) return noData;
   const v = specs[key];
-  if (v == null || (Array.isArray(v) && v.length === 0)) return "Ma'lumot yo'q";
+  if (v == null || (Array.isArray(v) && v.length === 0)) return noData;
   if (key === 'batteryMah') return `${v} mAh`;
   if (Array.isArray(v)) return v.join(' / ');
   return String(v);
@@ -115,18 +121,37 @@ function VerdictPanel({ verdict, items, onOpen }: {
   items: CompareItem[];
   onOpen: (item: CompareItem) => void;
 }) {
+  const { t } = useLanguage();
   const byId = new Map(items.map((it) => [it.product.id, it]));
   const recommended = byId.get(verdict.recommended.productId);
   const score = verdict.scores.find((s) => s.productId === verdict.recommended.productId);
   const cheapest = verdict.cheapest;
   if (!recommended) return null;
 
+  // Sabablar server qaytargan tuzilgan ma'lumotdan shu yerda yig'iladi:
+  // verdict.recommended.reasons serverda o'zbekcha matn, tanlangan tilga mos
+  // kelmaydi. Mantiq backenddagi _compare_verdict bilan bir xil.
+  const metricLabels = t.compare.metrics as Record<string, string>;
+  const reasons: string[] = [];
+  const won = Object.entries(verdict.winners)
+    .filter(([, w]) => w.productId === recommended.product.id)
+    .map(([metric, w]) => metricLabels[metric] ?? w.label);
+  if (won.length) reasons.push(t.compare.reasonBestAt.replace('{{metrics}}', won.slice(0, 3).join(', ')));
+  const validPrices = items.map((it) => it.product.price).filter((p) => p > 0);
+  const loPrice = validPrices.length ? Math.min(...validPrices) : 0;
+  if (cheapest && cheapest.productId === recommended.product.id) {
+    reasons.push(t.compare.reasonCheapest);
+  } else if (loPrice > 0 && recommended.product.price > loPrice) {
+    reasons.push(t.compare.reasonPricier.replace('{{amount}}', formatSum(recommended.product.price - loPrice)));
+  }
+  if (!reasons.length) reasons.push(t.compare.reasonBalance);
+
   return (
     <div className="grid md:grid-cols-2 gap-4 mb-6">
       {/* ── Tavsiya ── */}
       <div className="bg-violet-50/70 dark:bg-violet-950/25 border border-violet-100 dark:border-violet-900/40 rounded-2xl p-4">
         <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-violet-600 dark:text-violet-400 mb-3">
-          <Award className="w-3.5 h-3.5" /> Tavsiya etamiz
+          <Award className="w-3.5 h-3.5" /> {t.compare.recommend}
         </p>
         <button
           onClick={() => onOpen(recommended)}
@@ -147,7 +172,7 @@ function VerdictPanel({ verdict, items, onOpen }: {
         </button>
 
         <ul className="mt-3 space-y-1">
-          {verdict.recommended.reasons.map((reason) => (
+          {reasons.map((reason) => (
             <li key={reason} className="flex items-start gap-1.5 text-xs font-bold text-gray-600 dark:text-gray-300">
               <span className="text-violet-500 leading-4">•</span> {reason}
             </li>
@@ -156,8 +181,8 @@ function VerdictPanel({ verdict, items, onOpen }: {
 
         {score && (
           <div className="mt-3 space-y-1.5">
-            <ScoreBar label="Xususiyatlar" value={score.specScore} />
-            <ScoreBar label="Narx" value={score.priceScore} />
+            <ScoreBar label={t.compare.scoreSpecs} value={score.specScore} />
+            <ScoreBar label={t.compare.scorePrice} value={score.priceScore} />
           </div>
         )}
       </div>
@@ -166,19 +191,19 @@ function VerdictPanel({ verdict, items, onOpen }: {
       {cheapest && (
         <div className="bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 rounded-2xl p-4">
           <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400 mb-3">
-            <Trophy className="w-3.5 h-3.5" /> Eng arzon variant
+            <Trophy className="w-3.5 h-3.5" /> {t.compare.cheapestOption}
           </p>
           <p className="text-sm font-black text-gray-900 dark:text-white line-clamp-2">{cheapest.name}</p>
           <p className="text-lg font-black text-emerald-700 dark:text-emerald-400">{formatSum(cheapest.price)}</p>
 
           {cheapest.vsMostExpensive > 0 && (
             <p className="text-xs font-bold text-gray-500 dark:text-gray-400 mt-0.5">
-              Solishtirilganlar ichida eng qimmatidan {formatSum(cheapest.vsMostExpensive)} arzon
+              {t.compare.cheaperThanPriciest.replace('{{amount}}', formatSum(cheapest.vsMostExpensive))}
             </p>
           )}
 
           <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 mt-3 mb-1.5">
-            {cheapest.marketCount} ta do'konda bor
+            {t.compare.availableInStores.replace('{{count}}', String(cheapest.marketCount))}
           </p>
           <div className="flex flex-col gap-1">
             {cheapest.markets.slice(0, 4).map((market, i) => (
@@ -206,7 +231,7 @@ function VerdictPanel({ verdict, items, onOpen }: {
 
           {cheapest.maxSaving > 0 && (
             <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 mt-2">
-              Eng qimmat do'konga nisbatan {formatSum(cheapest.maxSaving)} tejaysiz
+              {t.compare.saveVsPriciestStore.replace('{{amount}}', formatSum(cheapest.maxSaving))}
             </p>
           )}
         </div>
@@ -229,12 +254,13 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
 
 export function Compare() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { compareIds, removeFromCompare, toggleCompare } = useCompare();
   const [items, setItems] = useState<CompareItem[]>([]);
   const [diffFields, setDiffFields] = useState<Set<string>>(new Set());
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
   const [showPicker, setShowPicker] = useState(false);
   const [query, setQuery] = useState('');
@@ -258,9 +284,9 @@ export function Compare() {
         setItems(data.items ?? []);
         setDiffFields(new Set(data.diffFields ?? []));
         setVerdict(data.verdict ?? null);
-        setError(null);
+        setError(false);
       })
-      .catch(() => { if (!cancelled) setError("Ma'lumotlarni yuklab bo'lmadi"); })
+      .catch(() => { if (!cancelled) setError(true); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [compareIds]);
@@ -295,8 +321,8 @@ export function Compare() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
       <SEO
-        title="Smartfonlarni solishtirish"
-        description="Ikki yoki uchta smartfonni texnik xususiyatlari va do'konlardagi narxlari bo'yicha yonma-yon solishtiring."
+        title={t.compare.seoTitle}
+        description={t.compare.seoDescription}
         noindex
         canonicalUrl={`${SITE_URL}/compare`}
       />
@@ -305,17 +331,17 @@ export function Compare() {
         onClick={() => navigate(-1)}
         className="flex items-center gap-1.5 text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-violet-600 mb-4 transition-colors"
       >
-        <ChevronLeft className="w-4 h-4" /> Orqaga
+        <ChevronLeft className="w-4 h-4" /> {t.common.back}
       </button>
 
       <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
-        <h1 className="text-2xl font-black text-gray-900 dark:text-white">Mahsulotlarni solishtirish</h1>
+        <h1 className="text-2xl font-black text-gray-900 dark:text-white">{t.compare.title}</h1>
         {items.length < MAX_COMPARE && (
           <button
             onClick={() => setShowPicker((v) => !v)}
             className="flex items-center gap-1.5 text-sm font-bold text-violet-600 bg-violet-50 dark:bg-violet-900/30 hover:bg-violet-100 dark:hover:bg-violet-900/50 px-3 py-2 rounded-xl transition-colors"
           >
-            <Plus className="w-4 h-4" /> Mahsulot qo'shish
+            <Plus className="w-4 h-4" /> {t.compare.addProduct}
           </button>
         )}
       </div>
@@ -328,13 +354,13 @@ export function Compare() {
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Mahsulot nomini kiriting..."
+              placeholder={t.compare.searchPlaceholder}
               className="flex-1 bg-transparent outline-none text-sm font-medium text-gray-900 dark:text-white placeholder:text-gray-400"
             />
           </div>
-          {searching && <p className="text-xs text-gray-400 font-bold px-1">Qidirilmoqda...</p>}
+          {searching && <p className="text-xs text-gray-400 font-bold px-1">{t.compare.searching}</p>}
           {!searching && query.trim().length >= 2 && results.length === 0 && (
-            <p className="text-xs text-gray-400 font-bold px-1">Hech narsa topilmadi</p>
+            <p className="text-xs text-gray-400 font-bold px-1">{t.compare.noResults}</p>
           )}
           <div className="flex flex-col gap-1 max-h-72 overflow-y-auto">
             {results.map((p) => (
@@ -357,8 +383,8 @@ export function Compare() {
         </div>
       )}
 
-      {loading && <div className="text-center py-16 text-gray-400 font-bold">Yuklanmoqda...</div>}
-      {error && <div className="text-center py-16 text-red-500 font-bold">{error}</div>}
+      {loading && <div className="text-center py-16 text-gray-400 font-bold">{t.common.loading}</div>}
+      {error && <div className="text-center py-16 text-red-500 font-bold">{t.compare.loadError}</div>}
 
       {/* Bo'sh holat. Taqqoslash endi headerdan ochiladi, ya'ni bu yerga hech
           narsa tanlamagan foydalanuvchi ham tushadi — shuning uchun bu ekran
@@ -369,24 +395,23 @@ export function Compare() {
             <Scale className="w-6 h-6 text-violet-500" />
           </div>
           <p className="text-lg font-black text-gray-900 dark:text-white mb-1.5">
-            Hali hech narsa tanlanmagan
+            {t.compare.emptyTitle}
           </p>
           <p className="text-sm font-semibold text-gray-400 max-w-md mx-auto mb-6">
-            Bir vaqtda {MAX_COMPARE} tagacha mahsulotni yonma-yon qo'yib, narxi va
-            xususiyatlarini solishtirishingiz mumkin.
+            {t.compare.emptyDescription.replace('{{max}}', String(MAX_COMPARE))}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2">
             <button
               onClick={() => setShowPicker(true)}
               className="flex items-center gap-1.5 text-sm font-black text-white bg-violet-600 hover:bg-violet-700 px-4 py-2.5 rounded-xl transition-colors"
             >
-              <Plus className="w-4 h-4" /> Mahsulot qo'shish
+              <Plus className="w-4 h-4" /> {t.compare.addProduct}
             </button>
             <button
               onClick={() => navigate('/products')}
               className="flex items-center gap-1.5 text-sm font-black text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-4 py-2.5 rounded-xl transition-colors"
             >
-              <Store className="w-4 h-4" /> Katalogni ko'rish
+              <Store className="w-4 h-4" /> {t.compare.browseCatalog}
             </button>
           </div>
         </div>
@@ -428,13 +453,13 @@ export function Compare() {
                         <p className="text-base font-black text-violet-600">{formatSum(item.product.price)}</p>
                         {priceVaries && item.product.price === bestPrice && (
                           <span className="flex items-center gap-0.5 text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded-full">
-                            <Trophy className="w-2.5 h-2.5" /> Eng arzon
+                            <Trophy className="w-2.5 h-2.5" /> {t.compare.cheapestBadge}
                           </span>
                         )}
                       </div>
                       {!item.specs && (
                         <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold mt-1">
-                          Texnik xususiyatlar topilmadi
+                          {t.compare.specsNotFound}
                         </p>
                       )}
                     </div>
@@ -450,13 +475,13 @@ export function Compare() {
                       colSpan={items.length + 1}
                       className="sticky left-0 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-violet-600 dark:text-violet-400 bg-violet-50/60 dark:bg-violet-900/10 border-t border-gray-100 dark:border-gray-800"
                     >
-                      {group.label}
+                      {t.compare.groups[group.label]}
                     </td>
                   </tr>
                   {group.rows.map((row) => (
                     <tr key={row.key}>
                       <td className="p-3 text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wide align-top sticky left-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
-                        {row.label}
+                        {t.compare.specs[row.label]}
                       </td>
                       {items.map((item) => {
                         const isBest = rowWinners.get(row.key) === item.product.id;
@@ -468,9 +493,9 @@ export function Compare() {
                             }`}
                           >
                             <span className="flex items-center gap-1.5">
-                              {specValue(item.specs, row.key)}
+                              {specValue(item.specs, row.key, t.compare.noData)}
                               {isBest && (
-                                <span title="Shu ko'rsatkich bo'yicha eng yaxshisi" className="text-emerald-600 shrink-0">
+                                <span title={t.compare.bestInRow} className="text-emerald-600 shrink-0">
                                   <Trophy className="w-3.5 h-3.5" />
                                 </span>
                               )}
@@ -488,12 +513,12 @@ export function Compare() {
                   colSpan={items.length + 1}
                   className="sticky left-0 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-violet-600 dark:text-violet-400 bg-violet-50/60 dark:bg-violet-900/10 border-t border-gray-100 dark:border-gray-800"
                 >
-                  Do'konlardagi narxlar
+                  {t.compare.storePricesGroup}
                 </td>
               </tr>
               <tr>
                 <td className="p-3 text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wide align-top sticky left-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
-                  Narxlar
+                  {t.compare.prices}
                 </td>
                 {items.map((item) => (
                   <td key={item.product.id} className="p-3 align-top border-t border-gray-100 dark:border-gray-800">

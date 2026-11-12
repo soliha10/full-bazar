@@ -114,10 +114,8 @@ export function Trends() {
 
   const maxMarketCount = Math.max(...markets.map(m => m.productCount), 1);
 
-  const seoTitle = language === 'uz' ? 'Trendlar va tahlil' : 'Тренды и аналитика';
-  const seoDesc = language === 'uz'
-    ? "O'zbekiston smartfon bozoridagi trendlar, eng ko'p qidirilgan telefonlar, narxi tushgan mahsulotlar va do'konlar tahlili."
-    : "Тренды и аналитика рынка смартфонов в Узбекистане, популярные запросы и динамика цен.";
+  const seoTitle = t.trends.seoTitle;
+  const seoDesc = t.trends.seoDesc;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-10">
@@ -128,8 +126,8 @@ export function Trends() {
         locale={language}
         canonicalUrl={`${SITE_URL}/trends`}
         breadcrumbs={[
-          { name: language === 'uz' ? 'Bosh sahifa' : 'Главная', url: '/' },
-          { name: language === 'uz' ? 'Trendlar' : 'Тренды', url: '/trends' },
+          { name: t.nav.home, url: '/' },
+          { name: t.trends.breadcrumb, url: '/trends' },
         ]}
       />
 
@@ -145,9 +143,7 @@ export function Trends() {
       {failedSections.length > 0 && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-900/20">
           <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
-            {language === 'uz'
-              ? "Ba'zi ma'lumotlar yuklanmadi — sahifaning qolgan qismi ishlayapti."
-              : 'Часть данных не загрузилась — остальная страница работает.'}
+            {t.trends.partialError}
           </p>
           <p className="mt-0.5 text-xs text-amber-700/80 dark:text-amber-400/80">
             {failedSections.join(', ')}

@@ -47,25 +47,30 @@ interface Specs {
   releaseYear: number | null;
 }
 
-const SPEC_GROUPS: { label: string; rows: { key: keyof Specs; label: string }[] }[] = [
-  { label: 'Ekran',    rows: [{ key: 'display', label: 'Ekran' }] },
-  { label: 'Ishlash',  rows: [
-    { key: 'chipset', label: 'Protsessor' },
-    { key: 'ramOptions', label: 'RAM' },
-    { key: 'storageOptions', label: 'Xotira' },
+// Yorliqlar t.detailPage.specGroups / t.detailPage.specRows dan olinadi.
+type SpecGroupKey = 'display' | 'performance' | 'camera' | 'battery' | 'other';
+type SpecRowKey = 'display' | 'chipset' | 'ram' | 'storage' | 'mainCamera' | 'selfieCamera'
+  | 'capacity' | 'charging' | 'body' | 'os' | 'releaseYear';
+
+const SPEC_GROUPS: { group: SpecGroupKey; rows: { key: keyof Specs; label: SpecRowKey }[] }[] = [
+  { group: 'display',     rows: [{ key: 'display', label: 'display' }] },
+  { group: 'performance', rows: [
+    { key: 'chipset', label: 'chipset' },
+    { key: 'ramOptions', label: 'ram' },
+    { key: 'storageOptions', label: 'storage' },
   ]},
-  { label: 'Kamera',   rows: [
-    { key: 'mainCamera', label: 'Asosiy' },
-    { key: 'selfieCamera', label: 'Old kamera' },
+  { group: 'camera',      rows: [
+    { key: 'mainCamera', label: 'mainCamera' },
+    { key: 'selfieCamera', label: 'selfieCamera' },
   ]},
-  { label: 'Batareya', rows: [
-    { key: 'batteryMah', label: "Sig'im" },
-    { key: 'charging', label: 'Zaryadlash' },
+  { group: 'battery',     rows: [
+    { key: 'batteryMah', label: 'capacity' },
+    { key: 'charging', label: 'charging' },
   ]},
-  { label: 'Boshqa',   rows: [
-    { key: 'body', label: 'Korpus' },
-    { key: 'os', label: 'OS' },
-    { key: 'releaseYear', label: 'Chiqarilgan yili' },
+  { group: 'other',       rows: [
+    { key: 'body', label: 'body' },
+    { key: 'os', label: 'os' },
+    { key: 'releaseYear', label: 'releaseYear' },
   ]},
 ];
 
@@ -262,13 +267,11 @@ export function ProductDetail() {
     );
   }
   const seoTitle = product 
-    ? `${product.name} narxlari va solishtiruvi`
-    : (language === 'uz' ? 'Mahsulot tafsilotlari' : 'Детали продукта');
+    ? t.detailPage.seoTitle.replace('{{name}}', product.name)
+    : t.detailPage.seoFallbackTitle;
 
   const seoDesc = product 
-    ? (language === 'uz' 
-        ? `${product.name} telefonining eng arzon narxi, xususiyatlari, do'konlardagi narxlari solishtiruvi va sotib olish bo'yicha Bazarcom tahlili.`
-        : `Характеристики, цены и сравнение для смартфона ${product.name} во всех интернет-магазинах Узбекистана на Bazarcom.`)
+    ? t.detailPage.seoDescription.replace('{{name}}', product.name)
     : '';
 
   // Bir mahsulot bir necha do'konda sotiladi — Google'ga narx oralig'ini
@@ -295,8 +298,8 @@ export function ProductDetail() {
   } : undefined;
 
   const breadcrumbs = product ? [
-    { name: language === 'uz' ? 'Bosh sahifa' : 'Главная', url: '/' },
-    { name: language === 'uz' ? 'Smartfonlar' : 'Смартфоны', url: '/products' },
+    { name: t.nav.home, url: '/' },
+    { name: t.listing.seoSmartphones, url: '/products' },
     { name: product.name, url: productPath(product) },
   ] : undefined;
 
@@ -305,7 +308,7 @@ export function ProductDetail() {
       <SEO
         title={seoTitle}
         description={seoDesc}
-        keywords={`smartfonlar, ${product?.name || ''}, telefon narxlari, bazarcom, uzbekistan`}
+        keywords={t.detailPage.seoKeywords.replace('{{name}}', product?.name || '')}
         ogType="product"
         ogImage={product?.image}
         locale={language}
@@ -487,7 +490,7 @@ export function ProductDetail() {
               </h3>
               <div className="grid grid-cols-2 gap-y-5 gap-x-8">
                 {[
-                  { label: t.detail.specLabels.marketsCount, value: `${product.markets?.length || 1} ta` },
+                  { label: t.detail.specLabels.marketsCount, value: t.detailPage.itemsCount.replace('{{count}}', String(product.markets?.length || 1)) },
                   { label: t.detail.specLabels.lowestPrice,  value: formatSum(bestPrice) },
                   { label: t.detail.specLabels.highestPrice, value: formatSum(sortedMarkets[sortedMarkets.length - 1]?.price ?? bestPrice) },
                   { label: t.detail.specLabels.bestStore,    value: product.source || '—' },
@@ -529,7 +532,7 @@ export function ProductDetail() {
                     ya'ni mahsulot sahifasiga kirgan odam oqimdan chiqib qolardi. */}
                 <button
                   onClick={() => product && toggleCompare(String(product.id))}
-                  title={inCompare ? "Solishtirishdan olib tashlash" : "Solishtirishga qo'shish"}
+                  title={inCompare ? t.detailPage.removeFromCompare : t.detailPage.addToCompare}
                   className={`mt-1 w-11 h-11 shrink-0 flex items-center justify-center rounded-2xl border active:scale-90 transition-all shadow-sm ${
                     inCompare
                       ? 'border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-900/30'
@@ -620,13 +623,13 @@ export function ProductDetail() {
                             {/* sortedMarkets narx bo'yicha o'sish tartibida — birinchisi eng arzoni */}
                             {idx === 0 && sortedMarkets.length > 1 && (
                               <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[9px] font-black uppercase tracking-wide">
-                                Eng arzon
+                                {t.detailPage.cheapestBadge}
                               </span>
                             )}
                           </div>
-                          {formatCheckedAt(market.checkedAt) && (
+                          {formatCheckedAt(market.checkedAt, t.checkedAt) && (
                             <div className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 mt-0.5">
-                              {formatCheckedAt(market.checkedAt)}
+                              {formatCheckedAt(market.checkedAt, t.checkedAt)}
                             </div>
                           )}
                         </td>
@@ -695,9 +698,9 @@ export function ProductDetail() {
                             ✓ {t.landing.hero.cheapest}
                           </span>
                         ) : (
-                          formatCheckedAt(market.checkedAt) && (
+                          formatCheckedAt(market.checkedAt, t.checkedAt) && (
                             <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500">
-                              {formatCheckedAt(market.checkedAt)}
+                              {formatCheckedAt(market.checkedAt, t.checkedAt)}
                             </span>
                           )
                         )}
@@ -727,8 +730,8 @@ export function ProductDetail() {
                     className="w-full text-center py-3 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-xs font-black text-violet-600 dark:text-violet-400 active:scale-[0.98] transition-transform"
                   >
                     {showAllMarkets
-                      ? 'Kamroq ko\'rsatish'
-                      : `Yana ${sortedMarkets.length - 4} ta do'konni ko'rsatish`}
+                      ? t.detailPage.showFewerStores
+                      : t.detailPage.showMoreStores.replace('{{count}}', String(sortedMarkets.length - 4))}
                   </button>
                 )}
               </div>
@@ -776,7 +779,7 @@ export function ProductDetail() {
                   {t.detail.quickSpecifications}
                 </h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400 font-medium leading-relaxed">
-                  "Foydalanuvchilar tez ishlash tezligi va kamera sifatini yuqori baholaydi. Batareya bir kun davomida yetarli, ekran esa yorqin va aniq."
+                  "{t.detailPage.aiSummaryText}"
                 </p>
               </div>
             </div>
@@ -800,7 +803,7 @@ export function ProductDetail() {
                 {tab === 'overview' ? t.detail.overview
                   : tab === 'specs' ? t.detail.specs
                   : tab === 'reviews' ? t.detail.reviewsTab
-                  : 'Narx tarixi'}
+                  : t.detailPage.priceHistoryTab}
               </button>
             ))}
           </div>
@@ -831,13 +834,13 @@ export function ProductDetail() {
                   <div className="grid sm:grid-cols-2 gap-x-10 gap-y-6">
                     {SPEC_GROUPS.map(group => {
                       const rows = group.rows
-                        .map(row => ({ label: row.label, value: specValue(specs, row.key) }))
+                        .map(row => ({ label: t.detailPage.specRows[row.label], value: specValue(specs, row.key) }))
                         .filter(row => row.value !== null);
                       if (rows.length === 0) return null;
                       return (
-                        <div key={group.label} className="space-y-3">
+                        <div key={group.group} className="space-y-3">
                           <h3 className="text-xs font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest border-b border-violet-100 dark:border-violet-900/30 pb-2">
-                            {group.label}
+                            {t.detailPage.specGroups[group.group]}
                           </h3>
                           <dl className="space-y-2.5">
                             {rows.map(row => (
@@ -853,7 +856,7 @@ export function ProductDetail() {
                   </div>
                 ) : (
                   <p className="text-sm font-bold text-gray-400 dark:text-gray-500">
-                    Bu model uchun texnik xususiyatlar hali yig'ilmagan.
+                    {t.detailPage.specsUnavailable}
                   </p>
                 )}
 
@@ -869,8 +872,8 @@ export function ProductDetail() {
                         <span className="font-bold text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
                           {market.source}
                           {i === 0 && sortedMarkets.length > 1 && (
-                            <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded-full">
-                              ENG ARZON
+                            <span className="text-[9px] font-black uppercase text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded-full">
+                              {t.detailPage.cheapestBadge}
                             </span>
                           )}
                         </span>
@@ -933,11 +936,11 @@ export function ProductDetail() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-3">
                 <div className="w-1 h-6 bg-violet-600 rounded-full" />
-                Narx tarixi (so'nggi 30 kun)
+                {t.detailPage.priceHistoryTitle}
               </h2>
               {priceHistory.length === 0 && (
                 <span className="text-xs font-bold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
-                  Ma'lumot to'planmoqda...
+                  {t.detailPage.collectingData}
                 </span>
               )}
             </div>
@@ -948,7 +951,7 @@ export function ProductDetail() {
                   <TrendingDown className="w-7 h-7 text-violet-400" />
                 </div>
                 <p className="text-sm font-bold text-gray-400 dark:text-gray-500 text-center max-w-xs">
-                  Hali narx tarixi yo'q. Har kungi sinxronizatsiyadan keyin narxlar saqlanib boradi.
+                  {t.detailPage.noPriceHistory}
                 </p>
               </div>
             ) : (
@@ -967,7 +970,7 @@ export function ProductDetail() {
                   />
                   <Tooltip
                     formatter={(v, name) => [formatSum(Number(v)), String(name)]}
-                    labelFormatter={l => `Sana: ${l}`}
+                    labelFormatter={l => t.detailPage.chartDate.replace('{{date}}', String(l))}
                     contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.12)', fontWeight: 700, fontSize: 12 }}
                   />
                   <Legend wrapperStyle={{ fontSize: 12, fontWeight: 700 }} />
@@ -996,10 +999,10 @@ export function ProductDetail() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
               <Heart className="w-4 h-4 fill-red-500 text-red-500" />
-              Saqlangan mahsulotlar
+              {t.detailPage.savedProducts}
             </h2>
             <span className="text-xs font-bold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-full">
-              {favorites.length} ta
+              {t.detailPage.itemsCount.replace('{{count}}', String(favorites.length))}
             </span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -1036,7 +1039,7 @@ export function ProductDetail() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 mt-8">
           <h2 className="text-base font-black text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-            O'xshash mahsulotlar
+            {t.detailPage.similarProducts}
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {similarProducts.slice(0, 10).map((p) => (

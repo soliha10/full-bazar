@@ -5,8 +5,10 @@ import {
 } from 'lucide-react';
 import { useAuth, RegisterData } from '../contexts/AuthContext';
 import { useBrands, BRAND_COLORS } from '../hooks/useBrands';
+import { useLanguage } from '../contexts/LanguageContext';
 
-const CATEGORIES = ['Telefonlar', 'Noutbuklar', 'Planshetlar', 'Aksessuarlar', 'Audio', 'TV'];
+// Qiymatlar profilga shu ko'rinishda saqlanadi — ekranda esa tarjimasi chiqadi.
+const CATEGORIES = ['Telefonlar', 'Noutbuklar', 'Planshetlar', 'Aksessuarlar', 'Audio', 'TV'] as const;
 
 const AGE_GROUPS: { value: RegisterData['ageGroup']; label: string }[] = [
   { value: '18-24', label: '18–24' },
@@ -15,23 +17,25 @@ const AGE_GROUPS: { value: RegisterData['ageGroup']; label: string }[] = [
   { value: '45+',   label: '45+' },
 ];
 
-const BUDGET_LEVELS: { value: RegisterData['budgetLevel']; label: string; desc: string }[] = [
-  { value: 'budget',  label: 'Tejamkor', desc: '< 3 mln' },
-  { value: 'mid',     label: "O'rta",    desc: '3–8 mln' },
-  { value: 'premium', label: 'Premium',  desc: '> 8 mln' },
+const BUDGET_LEVELS: { value: RegisterData['budgetLevel']; desc: string }[] = [
+  { value: 'budget',  desc: '< 3 mln' },
+  { value: 'mid',     desc: '3–8 mln' },
+  { value: 'premium', desc: '> 8 mln' },
 ];
 
 type Step = 'credentials' | 'profile';
 
 // ── Password strength ─────────────────────────────────────────────────────────
 
-function passwordStrength(pw: string): { bars: 0 | 1 | 2 | 3; label: string; color: string } {
+type StrengthLabels = { pwTooShort: string; pwStrong: string; pwMedium: string; pwWeak: string };
+
+function passwordStrength(pw: string, l: StrengthLabels): { bars: 0 | 1 | 2 | 3; label: string; color: string } {
   if (!pw) return { bars: 0, label: '', color: '' };
-  if (pw.length < 8) return { bars: 1, label: 'Juda qisqa', color: 'bg-red-400' };
+  if (pw.length < 8) return { bars: 1, label: l.pwTooShort, color: 'bg-red-400' };
   const extras = [/[A-Z]/.test(pw), /\d/.test(pw), /[^A-Za-z0-9]/.test(pw)].filter(Boolean).length;
-  if (extras >= 2) return { bars: 3, label: 'Kuchli', color: 'bg-green-400' };
-  if (extras >= 1) return { bars: 2, label: "O'rta",  color: 'bg-yellow-400' };
-  return { bars: 1, label: 'Zaif', color: 'bg-red-400' };
+  if (extras >= 2) return { bars: 3, label: l.pwStrong, color: 'bg-green-400' };
+  if (extras >= 1) return { bars: 2, label: l.pwMedium, color: 'bg-yellow-400' };
+  return { bars: 1, label: l.pwWeak, color: 'bg-red-400' };
 }
 
 // ── Email format check ────────────────────────────────────────────────────────
@@ -44,6 +48,8 @@ function isValidEmail(email: string): boolean {
 
 export function AuthModal() {
   const { isAuthOpen, authMode, closeAuth, login, register, openRegister, openLogin } = useAuth();
+  const { t } = useLanguage();
+  const a = t.auth;
 
   const [step, setStep]         = useState<Step>('credentials');
   const [showPass, setShowPass] = useState(false);
@@ -68,7 +74,7 @@ export function AuthModal() {
 
   if (!isAuthOpen) return null;
 
-  const pwStrength    = passwordStrength(password);
+  const pwStrength    = passwordStrength(password, a);
   const emailInvalid  = emailTouched && email.length > 0 && !isValidEmail(email);
   const toggle = <T extends string>(arr: T[], val: T): T[] =>
     arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
@@ -77,19 +83,19 @@ export function AuthModal() {
     e.preventDefault();
     setError('');
 
-    if (!isValidEmail(email)) { setError("To'g'ri email kiriting"); return; }
+    if (!isValidEmail(email)) { setError(a.invalidEmail); return; }
 
     if (authMode === 'login') {
       setIsLoading(true);
       try {
         await login(email, password);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Email yoki parol noto'g'ri");
+        setError(err instanceof Error ? err.message : a.wrongCredentials);
       }
       setIsLoading(false);
     } else {
-      if (!name.trim()) { setError('Ismingizni kiriting'); return; }
-      if (password.length < 8) { setError('Parol kamida 8 ta belgi bo\'lishi kerak'); return; }
+      if (!name.trim()) { setError(a.nameRequired); return; }
+      if (password.length < 8) { setError(a.passwordTooShort); return; }
       setStep('profile');
     }
   };
@@ -100,7 +106,7 @@ export function AuthModal() {
     try {
       await register({ name, email, password, ageGroup, budgetLevel, preferredBrands, preferredCategories });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ro\'yxatdan o\'tishda xatolik');
+      setError(err instanceof Error ? err.message : a.registerError);
       setStep('credentials');
     }
     setIsLoading(false);
@@ -129,9 +135,13 @@ export function AuthModal() {
           <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/5" />
           <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-white/5" />
 
+          {/* z-10: pastdagi sarlavha qatori (relative, DOM da keyinroq) butun
+              kenglikni egallaydi va tugmani yopib qo'yardi — X bosilmasdi. */}
           <button
+            type="button"
             onClick={handleClose}
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-xl bg-white/15 text-white hover:bg-white/25 transition-colors"
+            aria-label={a.close}
+            className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-xl bg-white/15 text-white hover:bg-white/25 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -144,8 +154,8 @@ export function AuthModal() {
               <p className="text-xs font-bold text-white/70 uppercase tracking-widest">BAZARCOM</p>
               <h2 className="text-lg font-black text-white leading-tight">
                 {authMode === 'login'
-                  ? 'Kirish'
-                  : step === 'credentials' ? "Ro'yxatdan o'tish" : 'Profilingiz'}
+                  ? a.login
+                  : step === 'credentials' ? a.register : a.yourProfile}
               </h2>
             </div>
           </div>
@@ -193,12 +203,12 @@ export function AuthModal() {
 
               {authMode === 'register' && (
                 <div>
-                  <label className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ism</label>
+                  <label className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">{a.name}</label>
                   <div className="relative mt-1">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="text" value={name} onChange={e => setName(e.target.value)}
-                      placeholder="Ismingiz" required minLength={2} maxLength={100}
+                      placeholder={a.namePlaceholder} required minLength={2} maxLength={100}
                       className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-medium text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-400 transition"
                     />
                   </div>
@@ -206,7 +216,7 @@ export function AuthModal() {
               )}
 
               <div>
-                <label className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</label>
+                <label className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">{a.email}</label>
                 <div className="relative mt-1">
                   <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${emailInvalid ? 'text-red-400' : 'text-gray-400'}`} />
                   <input
@@ -222,12 +232,12 @@ export function AuthModal() {
                   />
                 </div>
                 {emailInvalid && (
-                  <p className="mt-1 text-[10px] text-red-500 font-semibold">To'g'ri email formatini kiriting</p>
+                  <p className="mt-1 text-[10px] text-red-500 font-semibold">{a.invalidEmailFormat}</p>
                 )}
               </div>
 
               <div>
-                <label className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">Parol</label>
+                <label className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">{a.password}</label>
                 <div className="relative mt-1">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -271,7 +281,7 @@ export function AuthModal() {
               >
                 {isLoading
                   ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  : <>{authMode === 'login' ? 'Kirish' : 'Davom etish'}<ChevronRight className="w-4 h-4" /></>
+                  : <>{authMode === 'login' ? a.login : a.continue}<ChevronRight className="w-4 h-4" /></>
                 }
               </button>
             </form>
@@ -284,13 +294,13 @@ export function AuthModal() {
               <div className="flex items-start gap-2.5 p-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800">
                 <Sparkles className="w-4 h-4 text-violet-500 mt-0.5 shrink-0" />
                 <p className="text-xs text-violet-700 dark:text-violet-300 font-medium leading-snug">
-                  Bu ma'lumotlar asosida AI sizga <b>shaxsiy mahsulot tavsiyalari</b> beradi
+                  {a.profileHintBefore}<b>{a.profileHintBold}</b>{a.profileHintAfter}
                 </p>
               </div>
 
               {/* Yosh */}
               <div>
-                <p className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Yosh guruhingiz</p>
+                <p className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{a.ageGroup}</p>
                 <div className="grid grid-cols-4 gap-1.5">
                   {AGE_GROUPS.map(({ value, label }) => (
                     <button key={value} type="button" onClick={() => setAgeGroup(value)}
@@ -307,16 +317,16 @@ export function AuthModal() {
 
               {/* Byudjet */}
               <div>
-                <p className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Byudjet darajasi</p>
+                <p className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{a.budgetLevel}</p>
                 <div className="grid grid-cols-3 gap-2">
-                  {BUDGET_LEVELS.map(({ value, label, desc }) => (
+                  {BUDGET_LEVELS.map(({ value, desc }) => (
                     <button key={value} type="button" onClick={() => setBudgetLevel(value)}
                       className={`flex flex-col items-center py-3 px-2 rounded-xl text-center transition-all active:scale-95 border ${
                         budgetLevel === value
                           ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20'
                           : 'border-gray-200 dark:border-gray-700 hover:border-violet-300'
                       }`}>
-                      <span className={`text-xs font-black ${budgetLevel === value ? 'text-violet-700 dark:text-violet-300' : 'text-gray-700 dark:text-gray-300'}`}>{label}</span>
+                      <span className={`text-xs font-black ${budgetLevel === value ? 'text-violet-700 dark:text-violet-300' : 'text-gray-700 dark:text-gray-300'}`}>{a.budgetLevels[value]}</span>
                       <span className="text-[10px] text-gray-400 mt-0.5">{desc}</span>
                     </button>
                   ))}
@@ -326,7 +336,7 @@ export function AuthModal() {
               {/* Brendlar */}
               <div>
                 <p className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                  Sevimli brendlar <span className="text-gray-300 font-medium normal-case">(ixtiyoriy)</span>
+                  {a.favoriteBrands} <span className="text-gray-300 font-medium normal-case">{a.optional}</span>
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {brands.map(({ key, name }) => {
@@ -349,7 +359,7 @@ export function AuthModal() {
               {/* Kategoriyalar */}
               <div>
                 <p className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                  Qiziqishlar <span className="text-gray-300 font-medium normal-case">(ixtiyoriy)</span>
+                  {a.interests} <span className="text-gray-300 font-medium normal-case">{a.optional}</span>
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {CATEGORIES.map(c => {
@@ -359,7 +369,7 @@ export function AuthModal() {
                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 ${
                           on ? 'bg-violet-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                         }`}>
-                        {on && <Check className="w-3 h-3 inline mr-1" />}{c}
+                        {on && <Check className="w-3 h-3 inline mr-1" />}{a.categories[c]}
                       </button>
                     );
                   })}
@@ -369,13 +379,13 @@ export function AuthModal() {
               <div className="flex gap-2 pt-1">
                 <button type="button" onClick={() => setStep('credentials')}
                   className="flex-1 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 transition active:scale-[0.98]">
-                  Orqaga
+                  {a.back}
                 </button>
                 <button type="button" onClick={handleRegister} disabled={isLoading}
                   className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-black text-sm shadow-md shadow-violet-500/25 transition-all active:scale-[0.98] disabled:opacity-60">
                   {isLoading
                     ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    : <><Sparkles className="w-4 h-4" /> Boshlash</>
+                    : <><Sparkles className="w-4 h-4" /> {a.start}</>
                   }
                 </button>
               </div>
@@ -385,9 +395,9 @@ export function AuthModal() {
           {/* Switch mode */}
           {step === 'credentials' && (
             <p className="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
-              {authMode === 'login' ? "Hisobingiz yo'qmi?" : 'Allaqachon hisobingiz bormi?'}{' '}
+              {authMode === 'login' ? a.noAccount : a.haveAccount}{' '}
               <button onClick={switchMode} className="font-black text-violet-600 dark:text-violet-400 hover:underline">
-                {authMode === 'login' ? "Ro'yxatdan o'tish" : 'Kirish'}
+                {authMode === 'login' ? a.register : a.login}
               </button>
             </p>
           )}

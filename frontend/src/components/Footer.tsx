@@ -1,4 +1,4 @@
-import { Globe, Camera, MessageCircle, Mail, ShoppingBag } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -13,7 +13,7 @@ export function Footer() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-40 bg-violet-600/5 blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-8">
 
           {/* Brand */}
           <div className="space-y-5 text-center md:text-left">
@@ -33,27 +33,19 @@ export function Footer() {
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs mx-auto md:mx-0">
               {t.footer.tagline}
             </p>
-            <div className="flex gap-3 justify-center md:justify-start">
-              {[Globe, Camera, MessageCircle, Mail].map((Icon, i) => (
-                <a
-                  key={i}
-                  href="#"
-                  className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-violet-600 hover:border-violet-600 text-gray-400 hover:text-white transition-all duration-200 hover:-translate-y-0.5"
-                >
-                  <Icon className="w-4 h-4" />
-                </a>
-              ))}
-            </div>
           </div>
 
+          {/* Har bir havola mavjud sahifaga olib boradi. Ilgari ko'pchiligi
+              href="#" edi va bosilganda shunchaki sahifa tepasiga qaytardi;
+              hali sahifasi yo'q bo'limlar (kompaniya, huquqiy, ijtimoiy
+              tarmoqlar) sahifalari tayyor bo'lgunicha ko'rsatilmaydi. */}
           {/* Shop */}
           <div className="text-center md:text-left">
             <h3 className="font-black text-sm text-white uppercase tracking-widest mb-5">{t.footer.shop}</h3>
             <ul className="space-y-3 text-sm text-gray-400">
               <li><Link to="/products" className="hover:text-violet-400 transition-colors">{t.footer.allProducts}</Link></li>
-              <li><a href="#" className="hover:text-violet-400 transition-colors">{t.footer.categories}</a></li>
-              <li><a href="#" className="hover:text-violet-400 transition-colors">{t.footer.deals}</a></li>
-              <li><a href="#" className="hover:text-violet-400 transition-colors">{t.footer.newArrivals}</a></li>
+              <li><Link to="/trends" className="hover:text-violet-400 transition-colors">{t.footer.priceTrends}</Link></li>
+              <li><Link to="/compare" className="hover:text-violet-400 transition-colors">{t.footer.compare}</Link></li>
             </ul>
           </div>
 
@@ -61,21 +53,10 @@ export function Footer() {
           <div className="text-center md:text-left">
             <h3 className="font-black text-sm text-white uppercase tracking-widest mb-5">{t.footer.customer}</h3>
             <ul className="space-y-3 text-sm text-gray-400">
-              <li><a href="#" className="hover:text-violet-400 transition-colors">{t.footer.account}</a></li>
-              <li><a href="#" className="hover:text-violet-400 transition-colors">{t.footer.orders}</a></li>
-              <li><a href="#" className="hover:text-violet-400 transition-colors">{t.footer.wishlist}</a></li>
+              <li><Link to="/profile" className="hover:text-violet-400 transition-colors">{t.footer.account}</Link></li>
+              <li><Link to="/wishlist" className="hover:text-violet-400 transition-colors">{t.footer.wishlist}</Link></li>
+              <li><Link to="/watchlist" className="hover:text-violet-400 transition-colors">{t.footer.priceAlerts}</Link></li>
               <li><Link to="/feedback" className="hover:text-violet-400 transition-colors">{t.footer.help}</Link></li>
-            </ul>
-          </div>
-
-          {/* Company */}
-          <div className="text-center md:text-left">
-            <h3 className="font-black text-sm text-white uppercase tracking-widest mb-5">{t.footer.company}</h3>
-            <ul className="space-y-3 text-sm text-gray-400">
-              <li><a href="#" className="hover:text-violet-400 transition-colors">{t.footer.about}</a></li>
-              <li><a href="#" className="hover:text-violet-400 transition-colors">{t.footer.careers}</a></li>
-              <li><a href="#" className="hover:text-violet-400 transition-colors">{t.footer.press}</a></li>
-              <li><a href="#" className="hover:text-violet-400 transition-colors">{t.footer.blog}</a></li>
             </ul>
           </div>
         </div>
@@ -86,11 +67,6 @@ export function Footer() {
             <p className="text-gray-500 text-xs font-medium">
               &copy; 2026 Bazarcom. {t.footer.rights}
             </p>
-            <div className="flex gap-6 text-xs font-medium text-gray-500">
-              <a href="#" className="hover:text-violet-400 transition-colors">{t.footer.privacy}</a>
-              <a href="#" className="hover:text-violet-400 transition-colors">{t.footer.terms}</a>
-              <a href="#" className="hover:text-violet-400 transition-colors">{t.footer.cookies}</a>
-            </div>
           </div>
         </div>
       </div>

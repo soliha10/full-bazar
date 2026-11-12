@@ -10,12 +10,6 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../locales/translations';
 import { SEO, SITE_URL } from '../components/SEO';
 
-const BUDGET_LABELS: Record<string, string> = {
-  budget: 'Tejamkor',
-  mid: "O'rta",
-  premium: 'Premium',
-};
-
 export function Profile() {
   const { user, openLogin, openRegister, logout } = useAuth();
   const { favorites } = useFavorites();
@@ -35,13 +29,19 @@ export function Profile() {
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-28 flex flex-col">
+        <SEO
+          title={t.nav.profile}
+          description={t.profile.seoDescription}
+          noindex
+          canonicalUrl={`${SITE_URL}/profile`}
+        />
 
         {/* Mobile header */}
         <div className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 md:hidden">
           <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-90 transition-all">
             <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           </button>
-          <span className="text-base font-black text-gray-900 dark:text-white">Profil</span>
+          <span className="text-base font-black text-gray-900 dark:text-white">{t.nav.profile}</span>
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-6">
@@ -55,9 +55,9 @@ export function Profile() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <h1 className="text-xl font-black text-gray-900 dark:text-white mb-2">Hisobga kiring</h1>
+            <h1 className="text-xl font-black text-gray-900 dark:text-white mb-2">{t.profile.loginTitle}</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
-              Sevimlilar va narx kuzatuvingizni barcha qurilmalarda saqlang
+              {t.profile.loginSubtitle}
             </p>
           </motion.div>
 
@@ -66,13 +66,13 @@ export function Profile() {
               onClick={openLogin}
               className="w-full py-3.5 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-black text-sm shadow-md shadow-violet-500/25 active:scale-95 transition-all"
             >
-              Kirish
+              {t.auth.login}
             </button>
             <button
               onClick={openRegister}
               className="w-full py-3.5 rounded-2xl border-2 border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 font-black text-sm active:scale-95 transition-all"
             >
-              Ro'yxatdan o'tish
+              {t.auth.register}
             </button>
           </motion.div>
 
@@ -128,8 +128,8 @@ export function Profile() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-28">
       <SEO
-        title="Profil"
-        description="Bazarcom hisobingiz, sozlamalaringiz va shaxsiy tavsiyalar."
+        title={t.nav.profile}
+        description={t.profile.seoDescription}
         noindex
         canonicalUrl={`${SITE_URL}/profile`}
       />
@@ -139,13 +139,13 @@ export function Profile() {
         <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-90 transition-all">
           <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
         </button>
-        <span className="text-base font-black text-gray-900 dark:text-white flex-1">Profil</span>
+        <span className="text-base font-black text-gray-900 dark:text-white flex-1">{t.nav.profile}</span>
         <button
           onClick={() => { logout(); navigate('/'); }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black text-red-500 bg-red-50 dark:bg-red-900/20 active:scale-95 transition-all"
         >
           <LogOut className="w-3.5 h-3.5" />
-          Chiqish
+          {t.nav.logout}
         </button>
       </div>
 
@@ -172,7 +172,7 @@ export function Profile() {
                   {user.profile.ageGroup}
                 </span>
                 <span className="text-[10px] font-black bg-white/15 text-white/90 px-2 py-0.5 rounded-full">
-                  {BUDGET_LABELS[user.profile.budgetLevel]}
+                  {t.auth.budgetLevels[user.profile.budgetLevel as keyof typeof t.auth.budgetLevels] ?? user.profile.budgetLevel}
                 </span>
               </div>
             </div>
@@ -200,7 +200,7 @@ export function Profile() {
                 </span>
               )}
             </div>
-            <span className="text-xs font-black text-gray-700 dark:text-gray-300">Sevimlilar</span>
+            <span className="text-xs font-black text-gray-700 dark:text-gray-300">{t.profile.favorites}</span>
           </Link>
 
           <Link
@@ -217,7 +217,7 @@ export function Profile() {
                 </span>
               )}
             </div>
-            <span className="text-xs font-black text-gray-700 dark:text-gray-300">Narx kuzatuv</span>
+            <span className="text-xs font-black text-gray-700 dark:text-gray-300">{t.profile.priceWatch}</span>
           </Link>
         </motion.div>
 
@@ -229,7 +229,7 @@ export function Profile() {
             transition={{ delay: 0.14, duration: 0.4 }}
             className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-4"
           >
-            <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Sevimli brendlar</p>
+            <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">{t.nav.favoriteBrands}</p>
             <div className="flex flex-wrap gap-2">
               {user.profile.preferredBrands.map(b => (
                 <span key={b} className="text-xs font-bold bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-3 py-1.5 rounded-full">
@@ -247,7 +247,7 @@ export function Profile() {
           transition={{ delay: 0.21, duration: 0.4 }}
           className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800"
         >
-          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest px-4 pt-4 pb-2">Sozlamalar</p>
+          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest px-4 pt-4 pb-2">{t.profile.settings}</p>
 
           {/* Dark mode */}
           <button
@@ -320,7 +320,7 @@ export function Profile() {
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-red-200 dark:border-red-900/40 text-red-500 font-black text-sm hover:bg-red-50 dark:hover:bg-red-900/20 active:scale-[0.98] transition-all"
           >
             <LogOut className="w-4 h-4" />
-            Hisobdan chiqish
+            {t.profile.logoutAccount}
           </button>
         </motion.div>
 

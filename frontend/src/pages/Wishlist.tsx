@@ -13,8 +13,8 @@ export function Wishlist() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 pb-24 md:pb-10">
       <SEO
-        title="Saqlangan smartfonlar"
-        description="Siz saqlagan smartfonlar ro'yxati va ularning joriy narxlari."
+        title={t.wishlistPage.seoTitle}
+        description={t.wishlistPage.seoDesc}
         noindex
         canonicalUrl={`${SITE_URL}/wishlist`}
       />
@@ -31,7 +31,7 @@ export function Wishlist() {
                 {t.footer.wishlist}
               </h1>
               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                {favorites.length} ta mahsulot
+                {t.wishlistPage.count.replace('{{count}}', String(favorites.length))}
               </p>
             </div>
           </div>
@@ -41,7 +41,7 @@ export function Wishlist() {
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              Barchasini o'chirish
+              {t.common.clearAll}
             </button>
           )}
         </div>
@@ -65,16 +65,16 @@ export function Wishlist() {
                 <Heart className="w-10 h-10 text-gray-200 dark:text-gray-700" />
               </motion.div>
               <h2 className="text-lg font-black text-gray-900 dark:text-white mb-2">
-                Sevimlilar bo'sh
+                {t.wishlistPage.emptyTitle}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-xs">
-                Mahsulot kartasidagi yurak tugmasini bosib sevimlilar ro'yxatiga qo'shing
+                {t.wishlistPage.emptyDesc}
               </p>
               <Link
                 to="/products"
                 className="bg-violet-600 hover:bg-violet-700 text-white font-black text-sm px-6 py-3 rounded-2xl transition-all active:scale-95"
               >
-                Mahsulotlarni ko'rish
+                {t.common.browseProducts}
               </Link>
             </motion.div>
           )}

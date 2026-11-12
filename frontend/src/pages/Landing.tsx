@@ -47,7 +47,7 @@ const MARKET_LOGOS: { name: string; color: string }[] = [
 const TRUST_ICONS = [RefreshCw, ShieldCheck, TrendingUp];
 
 const QUICK_CATEGORIES = [
-  { emoji: '📱', label: 'Smartfonlar', value: 'smartphones' },
+  { emoji: '📱', labelKey: 'smartphones', value: 'smartphones' },
 ];
 
 const fadeUp = {
@@ -243,12 +243,8 @@ export function Landing() {
       .catch(() => {});
   }, []);
 
-  const seoTitle = language === 'uz' 
-    ? "Bosh sahifa - Smartfonlar narxlarini solishtirish" 
-    : "Главная - Сравнение цен на смартфоны";
-  const seoDesc = language === 'uz'
-    ? "Bazarcom - O'zbekistondagi barcha internet do'konlardagi smartfonlar narxlarini tahlil qilish va solishtirish platformasi."
-    : "Bazarcom - Платформа для анализа и сравнения цен на смартфоны во всех интернет-магазинах Узбекистана.";
+  const seoTitle = t.landing.seoTitle;
+  const seoDesc = t.landing.seoDesc;
 
   return (
     <LazyMotion features={loadMotionFeatures}>
@@ -394,14 +390,14 @@ export function Landing() {
             className="flex items-center gap-2 px-4 h-10 rounded-2xl bg-violet-600 text-white text-xs font-black shadow-sm shadow-violet-500/25 active:scale-95 transition-all">
             🔥 Barchasi
           </Link>
-          {QUICK_CATEGORIES.map(({ emoji, label, value }) => (
+          {QUICK_CATEGORIES.map(({ emoji, labelKey, value }) => (
             <Link
               key={value}
               to={value ? `/products?category=${value}` : '/products'}
               className="flex items-center gap-1.5 px-4 h-10 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-bold text-gray-700 dark:text-gray-200 active:scale-95 transition-all"
             >
               <span>{emoji}</span>
-              <span>{label}</span>
+              <span>{t.landing[labelKey as 'smartphones']}</span>
             </Link>
           ))}
         </div>
@@ -520,8 +516,8 @@ export function Landing() {
           className="mt-6 md:mt-12 px-4 max-w-7xl mx-auto"
         >
           <SectionHeader
-            title="Siz uchun tavsiyalar"
-            subtitle={favorites.length > 0 ? 'Sevimlilaringizga asoslanib tanlandi' : 'Profilingizga mos mahsulotlar'}
+            title={t.landing.forYouTitle}
+            subtitle={favorites.length > 0 ? t.landing.forYouFromFavorites : t.landing.forYouFromProfile}
             icon={Sparkles}
             linkTo="/products"
             linkLabel={t.landing.trending.viewAll}
@@ -545,8 +541,8 @@ export function Landing() {
           className="mt-6 md:mt-12 px-4 max-w-7xl mx-auto"
         >
           <SectionHeader
-            title="Sizga maxsus"
-            subtitle="Ko'rgan mahsulotlaringizga asoslanib"
+            title={t.landing.specialTitle}
+            subtitle={t.landing.specialSubtitle}
             icon={Sparkles}
             linkTo="/products"
             linkLabel={t.landing.trending.viewAll}

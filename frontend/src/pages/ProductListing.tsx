@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutGrid, List, X, ChevronRight,
-  Search, Loader2, SlidersHorizontal, RotateCcw, ArrowLeft,
+  Search, Loader2, SlidersHorizontal, RotateCcw, ArrowLeft, AlertTriangle,
 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { useProducts } from '../hooks/useProducts';
@@ -237,11 +237,21 @@ export function ProductListing() {
   const loadMoreRef       = useRef<() => void>(() => {});
   const isIntersectingRef = useRef(false);
 
+  /**
+   * Teskari oraliq ("dan" > "gacha") qo'llanayotganda qiymatlar o'rni
+   * almashtiriladi. Aks holda server bo'sh ro'yxat qaytarar, foydalanuvchi esa
+   * nega hech narsa topilmaganini tushunmasdi. Kiritish paytida ogohlantirish
+   * ko'rsatiladi (priceRangeSwapped), shuning uchun almashtirish kutilmagan emas.
+   */
+  const normalizePriceRange = (lo: string, hi: string): [string, string] => {
+    const a = priceNum(lo), b = priceNum(hi);
+    return a !== undefined && b !== undefined && a > b ? [hi, lo] : [lo, hi];
+  };
   const priceNum = (v: string) => {
     const n = parseInt(v.replace(/\s/g, ''), 10);
     return Number.isFinite(n) && n > 0 ? n : undefined;
   };
-  const { products: filteredProducts, isLoading, isFetchingNextPage, hasMore, loadMore, total } =
+  const { products: filteredProducts, isLoading, isFetchingNextPage, hasMore, loadMore, total, status, refetch } =
     useProducts(1, 20, searchQuery, selectedMarketplaces, selectedBrand ?? '', selectedCategory === 'All' ? '' : selectedCategory,
       { ram: selectedRam, storage: selectedStorage, batteryMin: minBattery },
       { minPrice: priceNum(minPrice), maxPrice: priceNum(maxPrice), minRating: minRating || undefined, sort: SERVER_SORT[sortBy] });
@@ -410,8 +420,9 @@ export function ProductListing() {
     setSelectedMarketplaces(draftMarketplaces);
     setMinRating(draftRating);
     setSelectedBrand(draftBrand);
-    setMinPrice(draftMinPrice);
-    setMaxPrice(draftMaxPrice);
+    const [lo, hi] = normalizePriceRange(draftMinPrice, draftMaxPrice);
+    setMinPrice(lo);
+    setMaxPrice(hi);
     setSelectedRam(draftRam);
     setSelectedStorage(draftStorage);
     setMinBattery(draftBattery);
@@ -481,9 +492,14 @@ export function ProductListing() {
     const maxPr = draftMaxPrice;
 
     const handleApplyPriceDesktop = () => {
-      setMinPrice(draftMinPrice);
-      setMaxPrice(draftMaxPrice);
+      const [lo, hi] = normalizePriceRange(draftMinPrice, draftMaxPrice);
+      setMinPrice(lo);
+      setMaxPrice(hi);
+      setDraftMinPrice(lo);
+      setDraftMaxPrice(hi);
     };
+    const minN = priceNum(minPr), maxN = priceNum(maxPr);
+    const priceReversed = minN !== undefined && maxN !== undefined && minN > maxN;
 
 
     return (
@@ -521,6 +537,11 @@ export function ProductListing() {
               />
             </div>
             <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-2 font-semibold uppercase tracking-wider">{t.listing.currency}</p>
+            {priceReversed && (
+              <p role="alert" className="mt-1.5 text-[11px] leading-snug font-semibold text-amber-600 dark:text-amber-400">
+                {t.listing.priceRangeSwapped}
+              </p>
+            )}
             
             {!isMobile && (
               <button
@@ -542,7 +563,7 @@ export function ProductListing() {
         {(!isMobile || mobileTab === 'specs') && (specFacets.ram.length > 0 || specFacets.storage.length > 0) && (
           <div className={isMobile ? "py-1" : "py-3"}>
             <div className="flex items-center justify-between mb-2">
-              <SLabel>Xususiyatlar</SLabel>
+              <SLabel>{t.listing.specs}</SLabel>
               {(ramSel.length > 0 || storageSel.length > 0 || batterySel > 0) && (
                 <button
                   onClick={() => { setRam([]); setStorage([]); setBattery(0); }}
@@ -577,7 +598,7 @@ export function ProductListing() {
 
             {specFacets.storage.length > 0 && (
               <>
-                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-1.5">Xotira</p>
+                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-1.5">{t.listing.storage}</p>
                 <div className="flex flex-wrap gap-1.5 mb-3">
                   {specFacets.storage.map(({ value, count }) => {
                     const on = storageSel.includes(value);
@@ -599,7 +620,7 @@ export function ProductListing() {
 
             {specFacets.battery.length > 0 && (
               <>
-                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-1.5">Batareya</p>
+                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-1.5">{t.listing.battery}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {[0, ...specFacets.battery.map(b => b.min)].map(v => (
                     <button key={v} type="button"
@@ -609,7 +630,7 @@ export function ProductListing() {
                         batterySel === v ? 'bg-violet-600 border-violet-600 text-white'
                                          : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-violet-400'
                       }`}>
-                      {v === 0 ? 'Barchasi' : `${v}+ mAh`}
+                      {v === 0 ? t.listing.allOption : `${v}+ mAh`}
                     </button>
                   ))}
                 </div>
@@ -731,43 +752,37 @@ export function ProductListing() {
     );
   };
 
+  // Matnlar lokal fayllardan: ilgari bu yerda faqat uz/ru tanlovi bor edi,
+  // shuning uchun ingliz tilida sarlavha ruscha chiqardi.
   const seoTitle = useMemo(() => {
-    let part = language === 'uz' ? 'Katalog' : 'Каталог';
+    let part = t.listing.seoCatalog;
     if (selectedBrand) {
       part = selectedBrand;
     } else if (selectedCategory && selectedCategory !== 'All') {
-      part = selectedCategory === 'smartphones' 
-        ? (language === 'uz' ? 'Smartfonlar' : 'Смартфоны')
-        : selectedCategory;
+      part = selectedCategory === 'smartphones' ? t.listing.seoSmartphones : selectedCategory;
     }
     if (searchQuery) {
-      part = `${searchQuery} ${language === 'uz' ? 'qidiruv natijalari' : 'результаты поиска'}`;
+      part = t.listing.seoSearch.replace('{{query}}', searchQuery);
     }
-    return `${part} - Smartfonlar narxlari solishtiruvi`;
-  }, [selectedBrand, selectedCategory, searchQuery, language]);
+    return `${part} - ${t.listing.seoSuffix}`;
+  }, [selectedBrand, selectedCategory, searchQuery, t]);
 
-  const seoDesc = useMemo(() => {
-    return language === 'uz'
-      ? `Bazarcom - O'zbekistondagi barcha do'konlardagi ${selectedBrand || 'smartfonlar'} narxlarini solishtirish, tahlil qilish va eng yaxshisini tanlash.`
-      : `Bazarcom - Сравнение цен на ${selectedBrand || 'смартфоны'} во всех магазинах Узбекистана.`;
-  }, [selectedBrand, language]);
+  const seoDesc = useMemo(
+    () => t.listing.seoDesc.replace('{{brand}}', selectedBrand || t.listing.seoDescDefaultBrand),
+    [selectedBrand, t],
+  );
 
   // Sahifadagi ko'rinadigan h1 — SEO sarlavhasidan qisqaroq va tabiiyroq
   const pageHeading = useMemo(() => {
-    if (searchQuery) {
-      return language === 'uz'
-        ? `"${searchQuery}" bo'yicha natijalar`
-        : `Результаты по запросу "${searchQuery}"`;
-    }
-    if (selectedBrand) {
-      return language === 'uz'
-        ? `${selectedBrand} smartfonlari narxlari`
-        : `Цены на смартфоны ${selectedBrand}`;
-    }
-    return language === 'uz'
-      ? "Smartfonlar narxlari — O'zbekiston do'konlari"
-      : 'Цены на смартфоны — магазины Узбекистана';
-  }, [searchQuery, selectedBrand, language]);
+    if (searchQuery) return t.listing.headingSearch.replace('{{query}}', searchQuery);
+    if (selectedBrand) return t.listing.headingBrand.replace('{{brand}}', brandLabel(selectedBrand));
+    return t.listing.headingDefault;
+  }, [searchQuery, selectedBrand, brandLabel, t]);
+
+  const clearSearch = () => {
+    setLocalSearch('');
+    handleSearch('');
+  };
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950">
@@ -781,8 +796,8 @@ export function ProductListing() {
         noindex={Boolean(searchQuery) || activeFilterCount > 0}
         canonicalUrl={`${SITE_URL}/products`}
         breadcrumbs={[
-          { name: language === 'uz' ? 'Bosh sahifa' : 'Главная', url: '/' },
-          { name: language === 'uz' ? 'Smartfonlar' : 'Смартфоны', url: '/products' },
+          { name: t.nav.home, url: '/' },
+          { name: t.listing.seoSmartphones, url: '/products' },
         ]}
       />
 
@@ -984,7 +999,7 @@ export function ProductListing() {
             {/* Desktop toolbar */}
             <div className="hidden md:flex items-center justify-between mb-4">
               <p className="text-[13px] text-gray-500 dark:text-gray-400">
-                {isLoading ? '...' : (
+                {isLoading || status === 'error' ? '...' : (
                   <span>{t.listing.totalProductsCount.replace('{{count}}', total.toLocaleString())}</span>
                 )}
               </p>
@@ -1055,7 +1070,7 @@ export function ProductListing() {
                   onClick={handleResetFilters}
                   className="flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2.5 py-1 text-[11px] font-semibold text-gray-500 hover:text-red-500 transition-colors"
                 >
-                  <RotateCcw className="w-3 h-3" /> {t.listing.allRating}
+                  <RotateCcw className="w-3 h-3" /> {t.listing.reset}
                 </button>
               </div>
             )}
@@ -1069,21 +1084,52 @@ export function ProductListing() {
                 </div>
                 <p className="text-sm text-gray-400">{t.common.loading}</p>
               </div>
+            ) : status === 'error' && filteredProducts.length === 0 ? (
+              // So'rov xato bo'lsa "topilmadi" deyish noto'g'ri — mahsulot bor,
+              // faqat server javob bermadi. Shuning uchun alohida xabar va
+              // qayta urinish tugmasi.
+              <div role="alert" className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-2xl border border-dashed border-red-200 dark:border-red-900/50 bg-white dark:bg-gray-900">
+                <div className="w-16 h-16 rounded-3xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-4">
+                  <AlertTriangle className="w-7 h-7 text-red-400" />
+                </div>
+                <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-1">{t.listing.loadErrorTitle}</h3>
+                <p className="text-sm text-gray-400 mb-6 max-w-xs">{t.listing.loadErrorDesc}</p>
+                <button
+                  onClick={refetch}
+                  className="inline-flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> {t.listing.retry}
+                </button>
+              </div>
             ) : filteredProducts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+              <div className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                 <div className="w-16 h-16 rounded-3xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center mb-4">
                   <Search className="w-7 h-7 text-gray-300 dark:text-gray-600" />
                 </div>
-                <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-1">{t.listing.noProductsFound}</h3>
-                <p className="text-sm text-gray-400 mb-6 max-w-xs">{t.listing.noProductsDesc}</p>
-                {activeFilterCount > 0 && (
-                  <button
-                    onClick={handleResetFilters}
-                    className="inline-flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" /> {t.listing.resetFilters}
-                  </button>
-                )}
+                <h3 className="text-base font-bold text-gray-800 dark:text-gray-200 mb-1">
+                  {searchQuery ? t.listing.noResultsFor.replace('{{query}}', searchQuery) : t.listing.noProductsFound}
+                </h3>
+                <p className="text-sm text-gray-400 mb-6 max-w-xs">
+                  {searchQuery ? t.listing.noResultsForDesc : t.listing.noProductsDesc}
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {searchQuery && (
+                    <button
+                      onClick={clearSearch}
+                      className="inline-flex items-center gap-1.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-violet-400 text-sm font-semibold px-5 py-2.5 rounded-xl transition"
+                    >
+                      <X className="w-3.5 h-3.5" /> {t.listing.clearSearch}
+                    </button>
+                  )}
+                  {activeFilterCount > 0 && (
+                    <button
+                      onClick={handleResetFilters}
+                      className="inline-flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" /> {t.listing.resetFilters}
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               <>
@@ -1197,13 +1243,13 @@ export function ProductListing() {
                 ] as const).map(tab => {
                   const active = activeFilterTab === tab.key;
                   // Compute subtitle
-                  const allLabel = language === 'uz' ? 'Barchasi' : 'Все';
+                  const allLabel = t.listing.allOption;
                   let sub = allLabel;
                   if (tab.key === 'price') {
                     if (draftMinPrice || draftMaxPrice) sub = `${draftMinPrice || '0'}-${draftMaxPrice || '∞'}`;
                   }
                   else if (tab.key === 'brand') sub = draftBrand ? brandLabel(draftBrand) : allLabel;
-                  else if (tab.key === 'store') sub = draftMarketplaces.length > 0 ? `${draftMarketplaces.length} ta` : allLabel;
+                  else if (tab.key === 'store') sub = draftMarketplaces.length > 0 ? t.listing.storesSelected.replace('{{count}}', String(draftMarketplaces.length)) : allLabel;
                   else if (tab.key === 'rating') sub = draftRating > 0 ? `★ ${draftRating}+` : allLabel;
                   else if (tab.key === 'specs') {
                     const n = draftRam.length + draftStorage.length + (draftBattery > 0 ? 1 : 0);

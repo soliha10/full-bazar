@@ -82,12 +82,12 @@ export function Feedback() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-28">
       <SEO
-        title="Fikr-mulohaza"
-        description="Bazarcom haqidagi fikringizni bildiring, xatolik haqida xabar bering yoki yangi imkoniyat taklif qiling."
+        title={t.feedback.title}
+        description={t.feedback.seoDesc}
         canonicalUrl={`${SITE_URL}/feedback`}
         breadcrumbs={[
-          { name: 'Bosh sahifa', url: '/' },
-          { name: 'Fikr-mulohaza', url: '/feedback' },
+          { name: t.nav.home, url: '/' },
+          { name: t.feedback.title, url: '/feedback' },
         ]}
       />
 
