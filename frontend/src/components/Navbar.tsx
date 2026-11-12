@@ -24,13 +24,13 @@ interface NavbarProps {
 
 export function Navbar({ onSearchChange }: NavbarProps) {
   const { resolvedTheme, toggleTheme } = useTheme();
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
   const location = useLocation();
   const { favorites } = useFavorites();
   const { user, openLogin, openRegister, logout } = useAuth();
   const { watched } = usePriceWatch();
   const { compareIds } = useCompare();
-  const search = useNavbarSearch(onSearchChange, language);
+  const search = useNavbarSearch(onSearchChange);
   // Bosh sahifada hero qidiruvi ko'rinib turganda navbardagisi yashirin
   const heroSearchVisible = useHeroSearchVisible();
   const concealSearch = location.pathname === '/' && heroSearchVisible;

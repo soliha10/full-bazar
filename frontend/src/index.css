@@ -160,3 +160,6 @@ input[type="range"] {
   outline-offset: 2px;
   border-radius: 6px;
 }
+/* Qidiruv maydonida fokus butun qutiga (focus-within ring) chiziladi —
+   ichidagi input ning o'z ramkasi ikkinchi chiziq bo'lib qolardi */
+form[role="search"] input:focus-visible { outline: none; }

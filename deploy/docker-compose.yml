@@ -37,6 +37,30 @@ services:
       timeout: 5s
       retries: 5
 
+  # Qidiruv (python/fastapi_app/search_es.py). Faqat ichki tarmoqda — port
+  # ochilmagan, shuning uchun xavfsizlik (parol) o'chiq. Indeksni API o'zi
+  # bazadan quradi; ES ishlamasa qidiruv Postgres ga o'tadi, sayt to'xtamaydi.
+  # 512 MB heap bilan konteyner ~1 GB ishlatadi (mahalliy o'lchov, 2026-11-12).
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      # Katalog kichik (~2 ming hujjat) — mmap shart emas, vm.max_map_count ni
+      # serverda o'zgartirmaslik uchun o'chiq
+      node.store.allow_mmap: "false"
+      ingest.geoip.downloader.enabled: "false"
+    mem_limit: 1280m
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://127.0.0.1:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   api:
     build: ../python/fastapi_app
     restart: unless-stopped
@@ -58,6 +82,7 @@ services:
       ESKIZ_TEMPLATE: ${ESKIZ_TEMPLATE:-}
       # Dagster dagi matcher_oqitish yozadi; fayl yangilansa API o'zi qayta yuklaydi
       MODEL_PATH: /models/best_matcher.pkl
+      ELASTICSEARCH_URL: http://elasticsearch:9200
       FRONTEND_INDEX: /srv/site/index.html
       PORT: "10000"
     volumes:
@@ -168,6 +193,7 @@ services:
 
 volumes:
   pgdata:
+  esdata:
   caddy_data:
   caddy_config:
   mlartifacts:

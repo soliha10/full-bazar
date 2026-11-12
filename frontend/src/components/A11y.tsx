@@ -23,7 +23,8 @@ export function useSearchShortcut() {
       const el = e.target as HTMLElement | null;
       if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
       const input = Array.from(document.querySelectorAll<HTMLInputElement>('[data-global-search]'))
-        .find(i => i.offsetParent !== null);
+        // Ko'rinib turgani: bosh sahifada navbar qidiruvi yashirin (visibility: hidden)
+        .find(i => i.offsetParent !== null && getComputedStyle(i).visibility !== 'hidden');
       if (!input) return;
       e.preventDefault();
       input.focus();

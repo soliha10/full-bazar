@@ -1,4 +1,5 @@
-import { LayoutGrid, List, X, Search, ArrowLeft } from 'lucide-react';
+import { LayoutGrid, List, ArrowLeft } from 'lucide-react';
+import { SearchBox } from '../../components/search/SearchBox';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { SORT_OPTIONS } from './constants';
 import type { ListingFilters } from './useListingFilters';
@@ -26,35 +27,11 @@ export function MobileHeader({ f, actions, onBack }: {
           <ArrowLeft className="h-4 w-4" />
         </button>
 
-        {/* Search Input bar */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSearch(localSearch);
-          }}
-          className="flex-1 relative group min-w-0"
-        >
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-violet-500 transition-colors pointer-events-none" />
-          <input
-            type="text"
-            value={localSearch}
-            placeholder={t.nav.searchPlaceholder || "Qidirish..."}
-            onChange={(e) => setLocalSearch(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200/60 dark:border-gray-800 rounded-xl text-xs font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400/20 focus:border-violet-400 focus:bg-white dark:focus:bg-gray-800 transition-all"
-          />
-          {localSearch && (
-            <button
-              type="button"
-              onClick={() => {
-                setLocalSearch('');
-                handleSearch('');
-              }}
-              className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </form>
+        {/* Umumiy qidiruv maydoni: takliflar va ovozli qidiruv bilan */}
+        <div className="flex-1 min-w-0">
+          <SearchBox variant="mobile" value={localSearch} placeholder={t.nav.searchPlaceholder}
+            onSubmit={(q) => { setLocalSearch(q); handleSearch(q); }} globalShortcut />
+        </div>
 
         {/* View toggle */}
         <div className="flex items-center gap-0.5 rounded-xl border border-gray-200/60 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-0.5 shrink-0">

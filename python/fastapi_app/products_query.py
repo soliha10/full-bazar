@@ -10,7 +10,7 @@ from catalog import _get_spec_index, _norm_mem, _row_to_product
 async def _query_products(
     pool: asyncpg.Pool, page: int, limit: int, search: str, market: str, brand: str, category: str,
     ram: str, storage: str, battery_min: int, min_price: int, max_price: int,
-    min_rating: float, sort: str,
+    min_rating: float, sort: str, search_ids: list[str] | None = None,
 ) -> dict:
     offset = (page - 1) * limit
 
@@ -21,7 +21,15 @@ async def _query_products(
         params.append(category)
         where_parts.append(f"p.category = ${len(params)}")
 
-    if search:
+    relevance_param = None
+    if search and search_ids is not None:
+        # Elasticsearch topgan mahsulotlar; "muvofiqlik" tartibi ham undan
+        if not search_ids:
+            return {"products": [], "total": 0, "page": page, "limit": limit, "hasMore": False}
+        params.append(search_ids)
+        relevance_param = len(params)
+        where_parts.append(f"p.id = ANY(${relevance_param}::text[])")
+    elif search:
         for token in search.lower().split():
             params.append(f"%{token}%")
             i = len(params)
@@ -98,6 +106,8 @@ async def _query_products(
         "price_desc": "price DESC, id",
         "rating":     "rating DESC NULLS LAST, reviews DESC NULLS LAST, price ASC, id",
     }.get(sort, "price ASC, id")
+    if relevance_param and sort == "relevance":
+        order_sql = f"array_position(${relevance_param}::text[], id), id"
 
     # Bitta so'rov: sahifa, umumiy son va marketlar birga keladi.
     # Ilgari uchta alohida so'rov ketardi (COUNT, sahifa, marketlar) — bazaga

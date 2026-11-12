@@ -22,6 +22,7 @@ import ml_matcher
 import pages
 import products_api
 import recs_api
+import search_api
 import specs_api
 import tracking
 import trends_api
@@ -79,3 +80,4 @@ app.include_router(auth_api.router)
 app.include_router(users_api.router)
 app.include_router(feedback_api.router)
 app.include_router(image_proxy.router)
+app.include_router(search_api.router)

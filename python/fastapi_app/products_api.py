@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response
 import brands
 from catalog import _fetch_markets, _find_product, _row_to_product
 from products_query import _query_products
+import search_es
 from resp_cache import _cached_json
 
 router = APIRouter()
@@ -45,10 +46,16 @@ async def get_products(
     )))
     # Netlify CDN 5 daqiqa saqlaydi; bu yerda 1 daqiqa — sinxronizatsiyadan
     # keyin yangi narxlar tezroq ko'rinsin.
-    return await _cached_json(key, 60, lambda: _query_products(
-        request.app.state.pool, page, limit, search, market, brand, category, ram, storage,
-        battery_min, min_price, max_price, min_rating, sort,
-    ))
+
+    async def produce() -> dict:
+        # Qidiruv Elasticsearch da (imlo xatosi, kirill, chala so'z); ES ishlamasa
+        # None — _query_products eski LIKE qidiruviga o'tadi
+        ids = await search_es.search_ids(request.app.state.http, search) if search else None
+        return await _query_products(
+            request.app.state.pool, page, limit, search, market, brand, category, ram, storage,
+            battery_min, min_price, max_price, min_rating, sort, search_ids=ids,
+        )
+    return await _cached_json(key, 60, produce)
 
 
 @router.get("/api/products/{product_ref}")

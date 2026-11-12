@@ -1,4 +1,21 @@
 export const general = {
+  searchBox: {
+    voiceStart: "Ovoz bilan qidirish",
+    voiceStop: "To'xtatish",
+    listening: "Gapiring… masalan, “Samsung A55”",
+    voiceDenied: "Mikrofonga ruxsat berilmagan. Brauzer sozlamalarida ruxsat bering.",
+    voiceMic: "Mikrofon topilmadi.",
+    voiceNoSpeech: "Ovoz eshitilmadi — yana bir bor urinib ko'ring.",
+    voiceNetwork: "Ovozni aniqlash uchun internet kerak.",
+    voiceError: "Ovozni aniqlab bo'lmadi.",
+    clear: "Tozalash",
+    suggestBrands: "Brendlar",
+    suggestProducts: "Mahsulotlar",
+    allResults: "“{{q}}” bo'yicha barcha natijalar",
+    stores: "{{count}} do'konda",
+    noResults: "Mos mahsulot topilmadi — boshqacha yozib ko'ring",
+    searching: "Qidirilmoqda…",
+  },
   nav: {
     skipToContent: "Asosiy qismga o'tish",
     profile: "Profil",

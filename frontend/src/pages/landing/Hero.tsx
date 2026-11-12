@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect, useLayoutEffect, FormEvent } from 'react';
+import { useRef, useEffect, useLayoutEffect } from 'react';
 import { m } from 'framer-motion';
-import { Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { Product } from '../../components/ProductCard';
 import type { BrandFacet } from '../../hooks/useBrands';
 import { setHeroSearchVisible } from '../../utils/heroSearch';
+import { SearchBox } from '../../components/search/SearchBox';
 import { DealDeck } from './DealDeck';
 
 const rise = (delay: number) => ({
@@ -29,8 +29,6 @@ export function Hero({ hasStats, fill, deck, dealsLoading, topBrands, updated }:
   const { t } = useLanguage();
   const h = t.home;
   const navigate = useNavigate();
-  const [query, setQuery] = useState('');
-  const searchRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   // Hero qidiruvi ko'rinib turganda navbardagi qidiruv yashirin (utils/heroSearch).
@@ -45,12 +43,6 @@ export function Hero({ hasStats, fill, deck, dealsLoading, topBrands, updated }:
     return () => io.disconnect();
   }, []);
 
-  const onSearch = (e: FormEvent) => {
-    e.preventDefault();
-    const q = query.trim();
-    if (!q) { searchRef.current?.focus(); return; }
-    navigate(`/products?search=${encodeURIComponent(q)}`);
-  };
 
   return (
     <section aria-labelledby="hero-title" className="px-4 pt-10 pb-4 md:pt-20 md:pb-8 max-w-7xl mx-auto">
@@ -65,20 +57,10 @@ export function Hero({ hasStats, fill, deck, dealsLoading, topBrands, updated }:
             {hasStats ? fill(h.subtitle) : <span className="inline-block w-64 h-4 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />}
           </m.p>
 
-          <m.form ref={formRef} {...rise(0.15)} role="search" onSubmit={onSearch}
-            className="glass flex items-center gap-2 rounded-2xl p-1.5 max-w-xl focus-within:ring-2 focus-within:ring-violet-500/40 transition-shadow">
-            <label htmlFor="hero-search" className="sr-only">{h.searchButton}</label>
-            <Search className="w-5 h-5 text-gray-400 ml-2.5 shrink-0" aria-hidden="true" />
-            <input
-              ref={searchRef} id="hero-search" type="search" value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder={h.searchPlaceholder} enterKeyHint="search" autoComplete="off"
-              className="flex-1 min-w-0 bg-transparent px-1 py-3 text-sm md:text-base text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus-visible:outline-none"
-            />
-            <button type="submit" className="shrink-0 bg-violet-600 hover:bg-violet-700 text-white font-medium text-sm rounded-xl px-5 md:px-6 py-3 transition-colors">
-              {h.searchButton}
-            </button>
-          </m.form>
+          <m.div {...rise(0.15)} className="max-w-xl">
+            <SearchBox variant="hero" formRef={formRef} placeholder={h.searchPlaceholder} globalShortcut
+              onSubmit={(q) => navigate(q ? `/products?search=${encodeURIComponent(q)}` : '/products')} />
+          </m.div>
 
           {topBrands.length > 0 && (
             <m.div {...rise(0.2)} className="flex flex-wrap items-center gap-2 mt-5">

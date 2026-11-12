@@ -1,6 +1,23 @@
 import type { general as uzGeneral } from '../uz/general';
 
 export const general: typeof uzGeneral = {
+  searchBox: {
+    voiceStart: "Search by voice",
+    voiceStop: "Stop",
+    listening: "Speak… e.g. “Samsung A55”",
+    voiceDenied: "Microphone access is blocked. Allow it in your browser settings.",
+    voiceMic: "No microphone found.",
+    voiceNoSpeech: "Didn't catch that — please try again.",
+    voiceNetwork: "Voice recognition needs an internet connection.",
+    voiceError: "Couldn't recognise your voice.",
+    clear: "Clear",
+    suggestBrands: "Brands",
+    suggestProducts: "Products",
+    allResults: "All results for “{{q}}”",
+    stores: "in {{count}} stores",
+    noResults: "No matching products — try different words",
+    searching: "Searching…",
+  },
   nav: {
     skipToContent: "Skip to content",
     profile: "Profile",

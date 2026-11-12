@@ -110,7 +110,7 @@ class RateLimitMiddleware:
 _CDN_CACHEABLE = (
     "/api/products", "/api/compare", "/api/recommendations", "/api/trends",
     "/api/stats", "/api/markets", "/api/brands", "/api/spec-facets",
-    "/api/search-trends", "/api/market-analytics", "/sitemap.xml",
+    "/api/search-trends", "/api/market-analytics", "/api/search/suggest", "/sitemap.xml",
 )
 _CDN_DEFAULT = "public, durable, s-maxage=300, stale-while-revalidate=604800"
 # Rasmlar o'zgarmaydi — bir kun saqlaymiz, olx ga har safar bormaymiz

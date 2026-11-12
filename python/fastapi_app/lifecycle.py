@@ -13,6 +13,7 @@ from fastapi import FastAPI
 
 from app_config import DATABASE_URL
 from db_schema import _prepare_db
+import search_es
 from ml_matcher import _load_matcher
 from tracking import _flush_track, _track_flusher
 
@@ -81,6 +82,8 @@ async def _connect_db(app: FastAPI) -> None:
         print("[db] ulanish tayyor", flush=True)
         await _schedule_keep_warm(pool)
         app.state.flusher = asyncio.create_task(_track_flusher(pool))
+        # Qidiruv indeksi (Elasticsearch): yo'q bo'lsa quriladi, katalog o'zgarsa yangilanadi
+        app.state.search_indexer = asyncio.create_task(search_es.keep_index_fresh(app))
         return
 
 
@@ -88,6 +91,7 @@ async def _connect_db(app: FastAPI) -> None:
 async def lifespan(app: FastAPI):
     app.state.pool = None
     app.state.flusher = None
+    app.state.search_indexer = None
     _load_matcher()  # warm up model at startup
     # Rasm proksisi uchun bitta umumiy klient: har so'rovda yangi klient ochish
     # olxcdn bilan TCP+TLS ni har safar qaytadan o'rnatardi (~100-200 ms).
@@ -105,6 +109,8 @@ async def lifespan(app: FastAPI):
     connector.cancel()
     if app.state.flusher:
         app.state.flusher.cancel()
+    if app.state.search_indexer:
+        app.state.search_indexer.cancel()
     await app.state.http.aclose()
     if app.state.pool is not None:
         await _flush_track(app.state.pool)
