@@ -40,7 +40,7 @@ export function AddProductPanel({ search, onPick }: {
   const { t } = useLanguage();
   const { query, setQuery, results, setResults, searching } = search;
   return (
-    <div className="mb-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-4 shadow-sm">
+    <div className="mb-6 glass rounded-2xl p-4">
       <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2 mb-3">
         <Search className="w-4 h-4 text-gray-400 shrink-0" />
         <input

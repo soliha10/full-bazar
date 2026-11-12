@@ -85,9 +85,11 @@ export function ProductResults(props: Props) {
               {filteredProducts.map((p, i) => (
                 <motion.div
                   key={p.id}
-                  initial={{ opacity: 0, y: 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.32, delay: Math.min(i, 15) * 0.045 }}
+                  // Kartalar dastadan tarqatilgandek: pastdan, biroz kichik
+                  // holda ustma-ust ko'tarilib joyiga tushadi
+                  initial={{ opacity: 0, y: 36, scale: 0.92 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 24, delay: Math.min(i, 12) * 0.05 }}
                 >
                   <ProductCard product={p} activeMarkets={selectedMarketplaces} />
                 </motion.div>
@@ -98,9 +100,9 @@ export function ProductResults(props: Props) {
               {filteredProducts.map((p, i) => (
                 <motion.div
                   key={p.id}
-                  initial={{ opacity: 0, x: -16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.28, delay: Math.min(i, 15) * 0.04 }}
+                  initial={{ opacity: 0, y: 20, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 26, delay: Math.min(i, 12) * 0.04 }}
                 >
                   <ProductCard product={p} viewMode="list" activeMarkets={selectedMarketplaces} />
                 </motion.div>

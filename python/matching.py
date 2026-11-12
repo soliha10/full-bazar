@@ -123,6 +123,31 @@ def group_rows(rows: list[dict]) -> list[Group]:
     return sorted(merged.values(), key=lambda g: g.key)
 
 
+# ── "Tayyorlov" narxlari ─────────────────────────────────────────────────────
+# Ba'zi do'konlar yangi modelning HAMMA xotira variantiga bitta narx qo'yadi
+# (sotuv boshlanmagan, narx hali yo'q): Olcha dagi "iPhone Duo" 256 GB, 512 GB
+# va 1 TB — uchalasi 24.1 mln. Ular 1 TB li guruhda "eng arzon" bo'lib,
+# farqni 64 mln deb ko'rsatardi. Bir do'kon, bir model, kamida 3 xil hajm
+# AYNAN bir narxda — bu haqiqiy narx emas. (Ikki hajm bir narxda bo'lishi
+# Alif kabi marketplace'larda tez-tez uchraydi va haqiqiy — tegilmaydi.)
+PLACEHOLDER_MIN_SIZES = 3
+
+
+def drop_placeholder_prices(rows: list[dict]) -> tuple[list[dict], int]:
+    """(qolgan qatorlar, tashlangan qatorlar soni)"""
+    sizes: dict = defaultdict(set)
+    parsed = []
+    for r in rows:
+        l = parse(r["title"])
+        key = (r["src"], l.brand, l.model, r["price"]) if l.brand and l.model else None
+        if key and l.storage:
+            sizes[key].add(l.storage)
+        parsed.append((r, key))
+    bad = {k for k, s in sizes.items() if len(s) >= PLACEHOLDER_MIN_SIZES}
+    kept = [r for r, k in parsed if k not in bad]
+    return kept, len(rows) - len(kept)
+
+
 # ── Narxi g'ayritabiiy takliflar ─────────────────────────────────────────────
 # Moslashtirish yaxshilangach, avval "yolg'iz" qolgan noto'g'ri narxlar
 # haqiqiy model bilan bir guruhga tushadi va "eng arzon" bo'lib ko'rinadi:

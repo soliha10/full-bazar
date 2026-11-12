@@ -5,6 +5,7 @@ import {
 import { formatSum } from '../../utils/productMapper';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { MARKET_COLORS, type MarketStat } from './types';
+import { StoreLogo } from '../../components/StoreLogo';
 
 /* Marketplace chart */
 export function MarketChart({ markets }: { markets: MarketStat[] }) {
@@ -14,7 +15,7 @@ export function MarketChart({ markets }: { markets: MarketStat[] }) {
       <div className="flex items-center gap-2 mb-4">
         <h2 className="text-base font-semibold text-gray-900 dark:text-white">{t.trends.marketRanking}</h2>
       </div>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5">
+      <div className="glass rounded-2xl p-5">
         <ResponsiveContainer width="100%" height={Math.min(markets.length * 36, 400)}>
           <BarChart data={markets.slice(0, 12)} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
             <XAxis type="number" hide />
@@ -42,9 +43,9 @@ export function MarketChart({ markets }: { markets: MarketStat[] }) {
         <div className="mt-5 border-t border-gray-100 dark:border-gray-800 pt-4">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-3">{t.trends.avgPriceUzs}</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {markets.slice(0, 8).map((m, i) => (
+            {markets.slice(0, 8).map((m) => (
               <div key={m.source} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
-                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: MARKET_COLORS[i % MARKET_COLORS.length] }} />
+                <StoreLogo name={m.source} size="md" />
                 <div className="min-w-0">
                   <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 truncate">{m.source}</p>
                   <p className="text-xs font-semibold text-gray-900 dark:text-white">{formatSum(m.avgPrice)}</p>
@@ -67,10 +68,12 @@ export function MarketShare({ markets }: { markets: MarketStat[] }) {
       <div className="flex items-center gap-2 mb-4">
         <h2 className="text-base font-semibold text-gray-900 dark:text-white">{t.trends.marketShare}</h2>
       </div>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 space-y-3">
+      <div className="glass rounded-2xl p-5 space-y-3">
         {markets.slice(0, 10).map((m, i) => (
           <div key={m.source} className="flex items-center gap-3">
-            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 w-24 shrink-0 truncate">{m.source}</span>
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 w-28 shrink-0 truncate">
+              <StoreLogo name={m.source} size="xs" />{m.source}
+            </span>
             <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-700"

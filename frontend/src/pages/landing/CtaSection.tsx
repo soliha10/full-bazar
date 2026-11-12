@@ -10,7 +10,7 @@ export function CtaSection({ subtitle }: { subtitle: string | null }) {
   const h = t.home;
   return (
     <m.section {...reveal} className="px-4 py-10 md:py-16 max-w-7xl mx-auto">
-      <div className="rounded-2xl border border-gray-200 dark:border-gray-800 p-7 md:p-12">
+      <div className="glass rounded-3xl p-7 md:p-12">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
             <h2 className="text-gray-900 dark:text-white font-semibold text-xl md:text-3xl tracking-tight mb-2">{h.ctaTitle}</h2>

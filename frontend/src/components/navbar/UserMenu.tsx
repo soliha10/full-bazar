@@ -33,8 +33,8 @@ export function UserMenu({ user, logout }: { user: AuthUser; logout: () => void 
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
           <div className="absolute right-0 top-full mt-2 w-64
-            bg-white dark:bg-gray-900
-            border border-gray-100 dark:border-gray-700
+            glass
+           
             rounded-2xl shadow-xl shadow-black/10
             overflow-hidden z-50">
 

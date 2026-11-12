@@ -36,6 +36,8 @@ BRAND_KEYWORDS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("itel",     ("itel",)),
     ("zte",      ("zte", "nubia")),
     ("nokia",    ("nokia",)),
+    # Arzon tugmali telefonlar: brendsiz bo'lsa har rangi alohida mahsulot edi
+    ("novey",    ("novey",)),
     ("motorola", ("motorola", "moto ", "moto g", "moto e")),
     ("google",   ("google pixel", "pixel ")),
     ("oneplus",  ("oneplus", "one plus")),

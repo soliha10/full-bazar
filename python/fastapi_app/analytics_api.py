@@ -6,9 +6,10 @@ import asyncio
 from collections import Counter
 
 import asyncpg
-from fastapi import APIRouter, Query, Request, Response
+from fastapi import APIRouter, HTTPException, Query, Request, Response
 
 import brands
+from market_logos import market_domains, market_logo
 from catalog import _BATTERY_FACETS, _RAM_FACETS, _STORAGE_FACETS, _get_spec_index, _norm_mem
 from resp_cache import _cache_get, _cache_put
 
@@ -28,9 +29,30 @@ async def get_markets(request: Request, response: Response) -> dict:
     rows = await pool.fetch(
         "SELECT lower(source) AS key, source AS name, COUNT(*) AS count FROM product_markets GROUP BY source ORDER BY count DESC"
     )
+    domains = await market_domains(pool)
     return _cache_put("markets", {
-        "markets": [{"key": r["key"], "name": r["name"], "count": r["count"]} for r in rows]
+        "markets": [{
+            "key": r["key"], "name": r["name"], "count": r["count"],
+            "domain": domains.get(r["key"]),
+            "logo": f"/api/markets/{r['key']}/logo" if domains.get(r["key"]) else None,
+        } for r in rows]
     })
+
+
+@router.get("/api/markets/{key}/logo")
+async def get_market_logo(key: str, request: Request) -> Response:
+    """Do'kon logotipi — domeni bazadagi e'lonlaridan, rasmi do'kon saytidan."""
+    domains = _cache_get("market-domains", 3600)
+    if domains is None:
+        domains = _cache_put("market-domains", await market_domains(request.app.state.pool))
+    domain = domains.get(key.lower())
+    if not domain:
+        raise HTTPException(status_code=404, detail="Unknown market")
+    img = await market_logo(request.app.state.http, key.lower(), domain)
+    if not img:
+        raise HTTPException(status_code=404, detail="Logo not found")
+    return Response(content=img[0], media_type=img[1],
+                    headers={"Cache-Control": "public, max-age=604800"})
 
 
 @router.get("/api/brands")

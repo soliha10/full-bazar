@@ -32,7 +32,7 @@ export function MobileToolbar() {
 
   return (
     <div
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-950/95 backdrop-blur-2xl border-t border-gray-100/80 dark:border-gray-800/60"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/70 dark:bg-gray-950/60 backdrop-blur-2xl backdrop-saturate-150 border-t border-white/60 dark:border-white/[0.06]"
       style={{ boxShadow: '0 -1px 0 rgba(0,0,0,0.04), 0 -8px 40px rgba(109,40,217,0.06)' }}
     >
       <div

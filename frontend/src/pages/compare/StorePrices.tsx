@@ -2,6 +2,7 @@ import { formatSum } from '../../utils/productMapper';
 import { trackStoreClick } from '../../services/tracking';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { CompareItem } from './types';
+import { StoreLogo } from '../../components/StoreLogo';
 
 /** Jadvalning oxirgi bo'limi: har bir mahsulotning do'konlardagi narxlari,
  *  arzonidan qimmatiga qarab (birinchisi yashil). */
@@ -37,7 +38,8 @@ export function StorePricesRows({ items }: { items: CompareItem[] }) {
                       : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
-                  <span className="flex items-center gap-1 truncate">
+                  <span className="flex items-center gap-1.5 truncate">
+                    <StoreLogo name={mkt.source} size="xs" />
                     {mkt.source}
                   </span>
                   <span className="flex items-center gap-1 shrink-0">

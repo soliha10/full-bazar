@@ -16,6 +16,7 @@ import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { MobileToolbar } from "./components/MobileToolbar";
 import { CompareBar } from "./components/CompareBar";
+import { SkipLink, useSearchShortcut } from "./components/A11y";
 import { Landing } from "./pages/Landing";
 
 // Bosh sahifa darhol kerak, qolganlari esa faqat o'sha marshrutga o'tilganda.
@@ -75,6 +76,7 @@ function AppContent() {
   const isWatchlistPage = location.pathname === '/watchlist';
   const isFeedbackPage  = location.pathname === '/feedback';
 
+  useSearchShortcut();
   const hideNavbarOnMobile = isSearchPage || isDetailPage || isProfilePage || isWatchlistPage || isFeedbackPage;
   const hideFooter = isSearchPage || isDetailPage || location.pathname === '/wishlist' || isProfilePage || isWatchlistPage || isFeedbackPage;
 
@@ -87,12 +89,13 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
+    <div className="min-h-screen flex flex-col text-foreground transition-colors duration-300">
+      <SkipLink />
       <div className={hideNavbarOnMobile ? 'hidden md:block' : 'block'}>
         <Navbar onSearchChange={handleSearch} />
       </div>
 
-      <main className={`flex-1 md:mt-[70px] ${!hideNavbarOnMobile ? 'mt-[108px]' : ''}`}>
+      <main id="main" tabIndex={-1} className={`flex-1 outline-none md:mt-[70px] ${!hideNavbarOnMobile ? 'mt-[108px]' : ''}`}>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/"            element={<Landing />} />

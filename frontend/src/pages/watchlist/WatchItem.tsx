@@ -7,6 +7,7 @@ import { trackStoreClick } from '../../services/tracking';
 import { productPath } from '../../utils/slug';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { Product } from '../../components/ProductCard';
+import { StoreLogo } from '../../components/StoreLogo';
 
 /** Kuzatuvdagi bitta mahsulot: qo'shilgan paytdagi narx bilan hozirgi eng
  *  arzon narx taqqoslanadi (±1% dan katta farq — tushdi/oshdi).
@@ -37,7 +38,7 @@ export const WatchItem = forwardRef<HTMLDivElement, {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
       transition={{ duration: 0.3, delay: Math.min(i, 8) * 0.04 }}
-      className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:border-violet-200/70 dark:hover:border-violet-800/50 transition-all"
+      className="glass rounded-2xl overflow-hidden hover:border-violet-200/70 dark:hover:border-violet-800/50 transition-all"
     >
       {/* Price change banner */}
       {(dropped || rose) && (
@@ -112,7 +113,7 @@ export const WatchItem = forwardRef<HTMLDivElement, {
             <div className="flex items-center gap-1.5">
               {bestMarket && (
                 <>
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                  <StoreLogo name={bestMarket.source} size="xs" />
                   <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium truncate max-w-[100px]">
                     {bestMarket.source}
                   </span>

@@ -51,7 +51,7 @@ export function QuickLinks({ favoritesCount, watchedCount }: { favoritesCount: n
     >
       <Link
         to="/wishlist"
-        className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 py-5 active:scale-95 transition-all hover:border-red-200 dark:hover:border-red-800 group"
+        className="flex flex-col items-center justify-center gap-2 glass rounded-2xl py-5 active:scale-95 transition-all hover:border-red-200 dark:hover:border-red-800 group"
       >
         <div className="relative">
           <div className="w-11 h-11 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/30 transition-colors">
@@ -68,7 +68,7 @@ export function QuickLinks({ favoritesCount, watchedCount }: { favoritesCount: n
 
       <Link
         to="/watchlist"
-        className="flex flex-col items-center justify-center gap-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 py-5 active:scale-95 transition-all hover:border-violet-200 dark:hover:border-violet-800 group"
+        className="flex flex-col items-center justify-center gap-2 glass rounded-2xl py-5 active:scale-95 transition-all hover:border-violet-200 dark:hover:border-violet-800 group"
       >
         <div className="relative">
           <div className="w-11 h-11 rounded-xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center group-hover:bg-violet-100 dark:group-hover:bg-violet-900/30 transition-colors">
@@ -95,7 +95,7 @@ export function PreferredBrands({ brands }: { brands: string[] }) {
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.14, duration: 0.4 }}
-      className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-4"
+      className="glass rounded-2xl p-4"
     >
       <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">{t.nav.favoriteBrands}</p>
       <div className="flex flex-wrap gap-2">

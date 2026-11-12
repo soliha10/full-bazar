@@ -1,5 +1,6 @@
 export const general = {
   nav: {
+    skipToContent: "Asosiy qismga o'tish",
     profile: "Profil",
     age: "Yosh",
     ageGroup: "Yosh guruh",
@@ -34,7 +35,7 @@ export const general = {
 
   home: {
     eyebrow: "{{products}} ta smartfon · {{stores}} ta do'kon",
-    title: "Telefonni eng arzon narxda toping",
+    title: "Smartfonni tez va hamyonbop narxda sotib oling",
     subtitle: "O'zbekistondagi {{stores}} ta onlayn do'kondagi narxlarni bir joyda solishtiring va ortiqcha pul to'lamang.",
     searchPlaceholder: "Model nomi: iPhone 16, Galaxy A55, Redmi Note 14...",
     searchButton: "Qidirish",
@@ -43,6 +44,7 @@ export const general = {
     showcaseCheapest: "Eng arzon",
     showcaseGap: "Narx farqi: {{amount}}",
     showcaseCta: "Barcha narxlarni ko'rish",
+    showcaseNext: "Keyingi taklif",
     statProducts: "Smartfon katalogda",
     statStores: "Onlayn do'kon",
     statComparable: "Kamida 2 do'konda bor",

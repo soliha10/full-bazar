@@ -11,7 +11,7 @@ export function Wishlist() {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 pb-24 md:pb-10">
+    <div className="min-h-screen pb-24 md:pb-10">
       <SEO
         title={t.wishlistPage.seoTitle}
         description={t.wishlistPage.seoDesc}

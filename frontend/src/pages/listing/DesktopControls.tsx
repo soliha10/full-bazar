@@ -18,8 +18,8 @@ export function DesktopSidebar({ f, actions }: { f: ListingFilters; actions: Fil
   const { activeFilterCount, handleResetFilters } = actions;
 
   return (
-    <aside className="hidden w-[232px] shrink-0 lg:block">
-      <div className="sticky top-[86px] max-h-[calc(100vh-102px)] overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-thin pr-2">
+    <aside className="hidden w-[256px] shrink-0 lg:block">
+      <div className="glass rounded-2xl sticky top-[86px] max-h-[calc(100vh-102px)] overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-thin px-4 py-3">
         <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-800">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
             {t.listing.filters}
@@ -53,7 +53,7 @@ export function DesktopToolbar({ f, total, showCount }: { f: ListingFilters; tot
         )}
       </p>
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-0.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5">
+        <div className="flex items-center gap-0.5 glass-soft rounded-xl p-0.5">
           {SORT_OPTIONS.map(({ key, labelKey }) => (
             <button key={key} onClick={() => setSortBy(key)}
               aria-pressed={sortBy === key}
@@ -65,7 +65,7 @@ export function DesktopToolbar({ f, total, showCount }: { f: ListingFilters; tot
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-0.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5">
+        <div className="flex items-center gap-0.5 glass-soft rounded-xl p-0.5">
           <button onClick={() => setViewMode('grid')}
             aria-label={t.listing.grid} aria-pressed={viewMode === 'grid'}
             className={`rounded-md p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-400 hover:text-gray-700'}`}>

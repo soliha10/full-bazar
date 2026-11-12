@@ -31,7 +31,7 @@ export function PriceHistoryChart({ priceHistory, activeTab }: { priceHistory: P
 
   return (
     <div className={`${activeTab !== 'priceHistory' && 'hidden lg:block'} mt-10`}>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 md:p-8 border border-gray-200 dark:border-gray-800">
+      <div className="glass rounded-2xl p-6 md:p-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             {t.detailPage.priceHistoryTitle}

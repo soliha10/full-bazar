@@ -3,6 +3,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum, formatCheckedAt } from "../../utils/productMapper";
 import { trackStoreClick } from "../../services/tracking";
 import type { PriceStats } from "./priceStats";
+import { StoreLogo } from '../../components/StoreLogo';
 
 /** Mobile market cards — birinchi 4 ta taklif, qolgani tugma orqali. */
 export function MobileOffers({ product, sortedMarkets, showAllMarkets, onToggleShowAll }: {
@@ -27,6 +28,7 @@ export function MobileOffers({ product, sortedMarkets, showAllMarkets, onToggleS
           className="flex items-center justify-between py-3 border-b last:border-b-0 border-gray-100 dark:border-gray-800"
         >
           <div className="flex items-center gap-3">
+            <StoreLogo name={market.source} size="lg" />
             <div>
               <span className={`text-sm block text-gray-900 dark:text-white ${idx === 0 ? 'font-medium' : ''}`}>
                 {market.source}

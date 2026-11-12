@@ -16,7 +16,7 @@ export function BrandsSection({ brands }: { brands: BrandFacet[] }) {
         {brands.map(b => (
           <li key={b.key}>
             <Link to={`/products?brand=${encodeURIComponent(b.key)}`}
-              className="flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm text-gray-800 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500 transition-colors">
+              className="flex items-center gap-2 rounded-full glass-soft px-4 py-2 text-sm text-gray-800 dark:text-gray-100 hover:text-violet-700 dark:hover:text-violet-300 transition-colors">
               {b.name}
               {b.count > 0 && <span className="text-xs text-gray-400">{fmt(b.count)}</span>}
             </Link>

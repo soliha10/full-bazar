@@ -50,7 +50,7 @@ export function PriceChanges({ dropping, rising }: { dropping: PriceItem[]; risi
       <div className="grid md:grid-cols-2 gap-4">
 
         {/* Dropping */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+        <div className="glass rounded-2xl overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-emerald-50 dark:bg-emerald-950/30">
             <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{t.trends.priceDropped}</span>
           </div>
@@ -79,7 +79,7 @@ export function PriceChanges({ dropping, rising }: { dropping: PriceItem[]; risi
         </div>
 
         {/* Rising */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+        <div className="glass rounded-2xl overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-rose-50 dark:bg-rose-950/30">
             <span className="text-sm font-semibold text-rose-700 dark:text-rose-400">{t.trends.priceIncreased}</span>
           </div>

@@ -2,6 +2,7 @@ import type { general as uzGeneral } from '../uz/general';
 
 export const general: typeof uzGeneral = {
   nav: {
+    skipToContent: "Перейти к содержимому",
     profile: "Профиль",
     age: "Возраст",
     ageGroup: "Возрастная группа",
@@ -36,7 +37,7 @@ export const general: typeof uzGeneral = {
 
   home: {
     eyebrow: "{{products}} смартфонов · {{stores}} магазинов",
-    title: "Найдите телефон по самой низкой цене",
+    title: "Купите смартфон быстро и по выгодной цене",
     subtitle: "Сравните цены в {{stores}} интернет-магазинах Узбекистана в одном месте и не переплачивайте.",
     searchPlaceholder: "Модель: iPhone 16, Galaxy A55, Redmi Note 14...",
     searchButton: "Найти",
@@ -45,6 +46,7 @@ export const general: typeof uzGeneral = {
     showcaseCheapest: "Дешевле всего",
     showcaseGap: "Разница: {{amount}}",
     showcaseCta: "Все цены",
+    showcaseNext: "Следующее предложение",
     statProducts: "Смартфонов в каталоге",
     statStores: "Интернет-магазинов",
     statComparable: "Есть минимум в 2 магазинах",

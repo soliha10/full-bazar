@@ -58,8 +58,8 @@ export function Navbar({ onSearchChange }: NavbarProps) {
     <>
       {/* ════════════════════════════════════ NAV BAR ════════════════════════════════════ */}
       <nav className={`fixed w-full top-0 z-50 transition-all duration-300
-        bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl
-        border-b border-gray-100 dark:border-gray-800/60
+        bg-white/70 dark:bg-gray-950/60 backdrop-blur-xl backdrop-saturate-150
+        border-b border-white/60 dark:border-white/[0.06]
         ${scrolled ? 'shadow-sm shadow-black/5 dark:shadow-black/20' : ''}
       `}>
         <div className="max-w-7xl mx-auto px-4 sm:px-5">

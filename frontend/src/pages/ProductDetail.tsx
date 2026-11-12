@@ -48,7 +48,7 @@ export function ProductDetail() {
   const toggleLike = () => product && toggle(product);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-32 md:pb-12 transition-colors">
+    <div className="min-h-screen pb-32 md:pb-12 transition-colors">
       <DetailSeo product={product} />
 
       {/* ── Mobile top bar ── */}

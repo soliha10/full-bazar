@@ -5,7 +5,7 @@ import { reveal } from './shared';
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   return (
-    <details className="group border-b border-gray-200 dark:border-gray-800 py-4">
+    <details className="group glass rounded-2xl px-5 py-4">
       <summary className="flex items-center justify-between gap-4 cursor-pointer list-none font-medium text-sm md:text-base text-gray-900 dark:text-white [&::-webkit-details-marker]:hidden">
         {q}
         <ChevronDown className="w-4 h-4 text-gray-400 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
@@ -29,7 +29,7 @@ export function FaqSection({ updated, storesCount, storeList }: {
       <h2 id="faq-title" className="font-semibold text-gray-900 dark:text-white text-xl md:text-2xl mb-4 tracking-tight">
         {h.faqTitle}
       </h2>
-      <div className="border-t border-gray-200 dark:border-gray-800">
+      <div className="space-y-2.5">
         {h.faq.map(item => (
           <FaqItem key={item.q} q={item.q}
             a={item.a

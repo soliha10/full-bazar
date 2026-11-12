@@ -17,7 +17,7 @@ export function Watchlist() {
   // ── Not logged in ──────────────────────────────────────────────────────────
   if (!user) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-950 pb-28 flex flex-col">
+      <div className="min-h-screen pb-28 flex flex-col">
         <SEO
           title={t.watchlist.title}
           description={t.watchlist.seoDescription}
@@ -58,7 +58,7 @@ export function Watchlist() {
 
   // ── Logged in ──────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-28">
+    <div className="min-h-screen pb-28">
       <SEO
         title={t.watchlist.title}
         description={t.watchlist.seoDescription}

@@ -56,7 +56,7 @@ export function Feedback() {
 
   if (sent) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center px-6 text-center gap-4 pb-28">
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center gap-4 pb-28">
         <motion.div
           initial={{ scale: 0.85, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -80,7 +80,7 @@ export function Feedback() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-28">
+    <div className="min-h-screen pb-28">
       <SEO
         title={t.feedback.title}
         description={t.feedback.seoDesc}
@@ -109,7 +109,7 @@ export function Feedback() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 space-y-5">
+        <div className="glass rounded-2xl p-5 space-y-5">
 
           {/* Rating */}
           <div>

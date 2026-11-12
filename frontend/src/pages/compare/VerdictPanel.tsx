@@ -2,6 +2,7 @@ import { formatSum } from '../../utils/productMapper';
 import { trackStoreClick } from '../../services/tracking';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { CompareItem, Verdict } from './types';
+import { StoreLogo } from '../../components/StoreLogo';
 
 /**
  * Solishtirishdan keyingi xulosa.
@@ -114,7 +115,8 @@ export function VerdictPanel({ verdict, items, onOpen }: {
                     : 'bg-white/70 dark:bg-gray-900/40 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
                 }`}
               >
-                <span className="flex items-center gap-1 truncate">
+                <span className="flex items-center gap-1.5 truncate">
+                  <StoreLogo name={market.source} size="xs" />
                   {market.source}
                 </span>
                 <span className="flex items-center gap-1 shrink-0">

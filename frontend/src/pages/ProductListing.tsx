@@ -55,7 +55,7 @@ export function ProductListing() {
   }, [searchQuery, selectedBrand, brandLabel, t]);
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950">
+    <div className="min-h-screen">
       <SEO
         title={seoTitle}
         description={seoDesc}

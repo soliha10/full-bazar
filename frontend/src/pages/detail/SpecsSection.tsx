@@ -14,7 +14,7 @@ export function SpecsSection({ specs, activeTab }: {
   return (
     <section
       id="specs"
-      className={`${activeTab !== 'specs' && 'hidden md:block'} space-y-6 bg-white dark:bg-gray-900 rounded-2xl p-6 md:p-8 border border-gray-200 dark:border-gray-800`}
+      className={`${activeTab !== 'specs' && 'hidden md:block'} space-y-6 glass rounded-2xl p-6 md:p-8`}
     >
       <h2 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">{t.detail.mainSpecifications}</h2>
 

@@ -22,7 +22,7 @@ export function Profile() {
 
   // ── Logged in ──────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-28">
+    <div className="min-h-screen pb-28">
       <SEO
         title={t.nav.profile}
         description={t.profile.seoDescription}

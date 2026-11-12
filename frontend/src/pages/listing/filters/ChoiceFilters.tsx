@@ -3,6 +3,7 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { MARKETS_VISIBLE } from '../constants';
 import type { ListingFilters } from '../useListingFilters';
 import { Cb, ClearButton, Section } from './ui';
+import { StoreLogo } from '../../../components/StoreLogo';
 
 interface Props { f: ListingFilters; isMobile: boolean }
 
@@ -43,14 +44,15 @@ export function RatingFilter({ f, isMobile }: Props) {
 }
 
 /** Brend va do'kon qatorlari bir xil ko'rinishda: belgi, nom, soni. */
-function ChoiceRow({ on, name, count, onClick }: {
-  on: boolean; name: string; count?: number; onClick: () => void;
+function ChoiceRow({ on, name, count, onClick, logo }: {
+  on: boolean; name: string; count?: number; onClick: () => void; logo?: string;
 }) {
   return (
     <button type="button" onClick={onClick} aria-pressed={on}
       className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
     >
       <Cb on={on} />
+      {logo && <StoreLogo name={logo} size="sm" />}
       <span className={`flex-1 text-sm ${on ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-700 dark:text-gray-300'}`}>
         {name}
       </span>
@@ -131,7 +133,7 @@ export function StoreFilter({ f, isMobile }: Props) {
       <div className="space-y-0.5">
         {visibleMarkets.map(({ name, key }) => (
           <ChoiceRow key={key} on={mps.includes(key)} name={name}
-            count={marketCounts[key]} onClick={() => toggleMp(key)} />
+            count={marketCounts[key]} onClick={() => toggleMp(key)} logo={key} />
         ))}
       </div>
       {!isMobile && markets.length > MARKETS_VISIBLE && (

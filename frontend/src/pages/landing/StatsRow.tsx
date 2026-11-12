@@ -22,7 +22,7 @@ export function StatsRow({ stats, failed, updated, onRetry }: {
       {failed ? (
         <div className="mt-4"><LoadError text={h.loadError} retry={h.retry} onRetry={onRetry} /></div>
       ) : (
-        <dl className="grid grid-cols-2 md:grid-cols-4 gap-y-4 mt-6 md:mt-2 py-2">
+        <dl className="glass rounded-2xl grid grid-cols-2 md:grid-cols-4 gap-y-4 mt-6 md:mt-2 py-4 px-2">
           {statTiles.map(({ label, value }) => (
             <div key={label} className="flex flex-col-reverse px-1 md:px-4 md:border-l first:border-l-0 border-gray-200 dark:border-gray-800">
               <div className="min-w-0">

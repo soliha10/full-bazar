@@ -1,6 +1,7 @@
 import { Heart, Bell, Scale } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatSum } from '../../utils/productMapper';
+import { StoreLogo } from '../StoreLogo';
 import type { Product } from './types';
 import type { ProductCardState } from './useProductCard';
 
@@ -14,7 +15,7 @@ function CardAction({ on, title, onClick, disabled, children }: {
     <button type="button" title={title} aria-label={title} aria-pressed={on}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
-        on ? 'bg-violet-600 text-white' : 'bg-white/90 dark:bg-gray-900/90 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+        on ? 'bg-violet-600 text-white' : 'glass-soft text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100'
       } ${disabled ? 'opacity-40' : ''}`}>
       {children}
     </button>
@@ -36,9 +37,9 @@ export function ProductCardGrid({ product, card }: { product: Product; card: Pro
   return (
     <div
       onClick={card.open}
-      className="group bg-white dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 flex flex-col hover:border-gray-300 dark:hover:border-gray-700 transition-colors cursor-pointer"
+      className="group glass glass-hover rounded-2xl overflow-hidden flex flex-col cursor-pointer h-full"
     >
-      <div className="relative aspect-square bg-gray-50 dark:bg-gray-800/40">
+      <div className="relative aspect-square m-1.5 rounded-xl bg-white dark:bg-white/[0.04]">
         <img
           src={product.image || PLACEHOLDER}
           alt={product.name}
@@ -61,7 +62,7 @@ export function ProductCardGrid({ product, card }: { product: Product; card: Pro
         </div>
       </div>
 
-      <div className="p-3 md:p-4 flex flex-col flex-1 gap-1.5">
+      <div className="px-3 pb-3 pt-1.5 md:px-4 md:pb-4 flex flex-col flex-1 gap-1.5">
         <h3 className="text-sm md:text-[15px] font-medium text-gray-900 dark:text-white leading-snug line-clamp-2 min-h-[38px] md:min-h-[42px]">
           <Link to={href} onClick={stop} className="hover:text-violet-700 dark:hover:text-violet-300 transition-colors">
             {product.name}
@@ -71,7 +72,8 @@ export function ProductCardGrid({ product, card }: { product: Product; card: Pro
           <p className="text-base md:text-lg font-semibold text-gray-900 dark:text-white tracking-tight">
             {formatSum(bestPrice)}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+          <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 truncate">
+            {bestMarket && <StoreLogo name={bestMarket.source} size="xs" />}
             {stores > 1
               ? t.common.fromStores.replace('{{count}}', String(stores))
               : bestMarket?.source}

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { MarketFacet } from '../../hooks/useMarkets';
 import { fmt, reveal, SectionHeader, LoadError } from './shared';
+import { StoreLogo } from '../../components/StoreLogo';
 
 export function StoresSection({ markets, status, onRetry }: {
   markets: MarketFacet[];
@@ -23,7 +24,8 @@ export function StoresSection({ markets, status, onRetry }: {
             : markets.map(mk => (
                 <li key={mk.key}>
                   <Link to={`/products?market=${encodeURIComponent(mk.key)}`}
-                    className="block rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3.5 py-3 hover:border-gray-400 dark:hover:border-gray-600 transition-colors">
+                    className="glass glass-hover flex items-center gap-3 rounded-2xl px-3.5 py-3">
+                    <StoreLogo name={mk.key} size="lg" />
                     <span className="min-w-0">
                       <span className="block text-sm font-medium text-gray-900 dark:text-white truncate">{mk.name}</span>
                       <span className="block text-xs text-gray-500 dark:text-gray-400">

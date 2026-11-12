@@ -40,7 +40,7 @@ export function PriceInsight({ stats }: { stats: PriceStats }) {
   const { sortedMarkets, bestPrice, worstPrice, savings, priceChange30 } = stats;
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 md:p-6 border border-gray-200 dark:border-gray-800 space-y-4">
+    <div className="glass rounded-2xl p-5 md:p-6 space-y-4">
       <h3 className="text-base font-semibold text-gray-900 dark:text-white">
         {t.detailPage.priceInsight.title}
       </h3>

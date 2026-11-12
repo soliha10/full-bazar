@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { Children, useState, useEffect, useCallback } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -25,11 +25,16 @@ export function Carousel({ children }: { children: React.ReactNode[] }) {
     onSelect();
   }, [emblaApi, onSelect]);
 
-  const arrow = 'hidden md:flex absolute top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-full hover:border-gray-400 dark:hover:border-gray-500 transition-colors z-10';
+  const arrow = 'hidden md:flex absolute top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center glass rounded-full hover:text-violet-700 transition-colors z-10';
   return (
     <div className="relative">
       <div className="overflow-hidden -mx-4 px-4 md:mx-0 md:px-0" ref={emblaRef}>
-        <div className="flex gap-3 md:gap-4">{children}</div>
+        <div className="flex gap-3 md:gap-4 py-2">
+          {/* Kartalar navbat bilan, ustma-ust ko'tarilib chiqadi (index.css: .card-rise) */}
+          {Children.map(children, (child, i) => (
+            <div className="card-rise shrink-0" style={{ '--i': i } as React.CSSProperties}>{child}</div>
+          ))}
+        </div>
       </div>
       {canPrev && (
         <button type="button" onClick={() => emblaApi?.scrollPrev()} className={`${arrow} left-0 -translate-x-5`} aria-label="Previous">
@@ -54,9 +59,9 @@ export function MiniProductCard({ product, badge, storesLabel }: {
   return (
     <Link
       to={productPath(product)}
-      className="shrink-0 w-[160px] md:w-[220px] group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+      className="shrink-0 w-[160px] md:w-[220px] group flex flex-col bg-white dark:bg-gray-900 glass glass-hover rounded-2xl overflow-hidden"
     >
-      <div className="relative h-36 md:h-44 bg-gray-50 dark:bg-gray-800/50 overflow-hidden">
+      <div className="relative h-36 md:h-44 m-1.5 rounded-xl bg-white dark:bg-white/[0.04] overflow-hidden">
         <img
           src={product.image || PLACEHOLDER} alt={product.name} loading="lazy"
           onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}

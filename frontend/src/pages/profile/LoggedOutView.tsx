@@ -71,7 +71,7 @@ export function LoggedOutView() {
           transition={{ delay: 0.25 }}
           className="w-full max-w-xs mt-2"
         >
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800">
+          <div className="glass rounded-2xl divide-y divide-gray-100 dark:divide-gray-800">
             {/* Dark mode */}
             <button onClick={toggleTheme} className="w-full flex items-center justify-between px-4 py-3.5 active:bg-gray-50 dark:active:bg-gray-800 rounded-t-2xl transition-colors">
               <div className="flex items-center gap-3">

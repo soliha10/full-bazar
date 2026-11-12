@@ -1,6 +1,7 @@
 import { Heart, Scale } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatSum } from '../../utils/productMapper';
+import { StoreLogo } from '../StoreLogo';
 import type { Product } from './types';
 import type { ProductCardState } from './useProductCard';
 
@@ -19,9 +20,9 @@ export function ProductCardList({ product, card }: { product: Product; card: Pro
   return (
     <div
       onClick={card.open}
-      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 flex items-center gap-4 hover:border-gray-300 dark:hover:border-gray-700 transition-colors cursor-pointer"
+      className="glass glass-hover rounded-2xl p-3 flex items-center gap-4 cursor-pointer"
     >
-      <div className="w-20 h-20 shrink-0 bg-gray-50 dark:bg-gray-800/40 rounded-lg overflow-hidden">
+      <div className="w-20 h-20 shrink-0 bg-white dark:bg-white/[0.04] rounded-xl overflow-hidden">
         <img
           src={product.image || PLACEHOLDER}
           alt={product.name}
@@ -37,7 +38,8 @@ export function ProductCardList({ product, card }: { product: Product; card: Pro
             {product.name}
           </Link>
         </h3>
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
+        <p className="mt-1 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 truncate">
+          {bestMarket && <StoreLogo name={bestMarket.source} size="xs" />}
           {stores > 1 ? t.common.fromStores.replace('{{count}}', String(stores)) : bestMarket?.source}
           {savings > 0 && <span className="text-emerald-600 dark:text-emerald-400"> · −{formatSum(savings)}</span>}
         </p>

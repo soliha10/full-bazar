@@ -27,9 +27,26 @@ _NOT_SMARTPHONE_RE = re.compile(
     r"powerbank|видеоусилитель|video amplif|earphone|headphone|bluetooth.*speaker|"
     r"kolonka|колонка|garshet|plyonka|screen.*protect|защитное стекло|защитная плёнка|"
     r"cover|\bcase\b|наушники|аудио|aksesuar|aksessuar|аксессуар|наушник|"
-    r"soat\b|watch\b|часы\b|часов\b|chasy\b|smartwatch|smart\s*watch)",
+    r"soat\b|watch\b|часы\b|часов\b|chasy\b|smartwatch|smart\s*watch|"
+    # Uy (simli va DECT) telefonlari — "telefon" so'zi bor, lekin smartfon emas
+    r"panasonic|\bkx[\s-]?t|\bdect\b|vtech|vteck|gigaset|statsionar|stasionar|"
+    r"стационарн|radiotelefon|радиотелефон|wi-?fi.?телефон|адаптер питания|quvvatlash qurilmasi|"
+    # Planshetlar: "Galaxy Tab A7", "MatePad T10", "Redmi Pad Pro", "iPad"
+    r"\bgalaxy\s+tab\b|\btab\s+[a-z]?\d|matepad|\bi?pad\b)",
     re.IGNORECASE,
 )
+
+# Zaryadlovchi bloklar brend nomi bilan keladi ("Samsung 25W Low Standby") va
+# smartfon filtridan o'tib ketadi. Quvvat (W) yozilgan, lekin xotira hajmi
+# yozilmagan sarlavha — telefon emas ("... 8/256 GB 67W" esa telefon).
+_WATT_RE = re.compile(r"(?<![\d.])\d{2,3}\s*(w|вт)\b", re.IGNORECASE)
+_MEMORY_RE = re.compile(r"\d\s*(gb|tb|гб|тб)\b|\d{1,2}\s*/\s*\d{2,4}", re.IGNORECASE)
+
+
+def is_smartphone(title: str) -> bool:
+    if not _SMARTPHONE_RE.search(title) or _NOT_SMARTPHONE_RE.search(title):
+        return False
+    return not (_WATT_RE.search(title) and not _MEMORY_RE.search(title))
 
 
 # Faoliyati to'xtagan yoki eskirgan saytlar — bu CSV fayllarini o'tkazib yuboramiz
@@ -137,7 +154,7 @@ def load_rows():
                 reader.fieldnames = [(h.lower().strip() if h else "") for h in reader.fieldnames]
                 for row in reader:
                     title = (row.get("title") or row.get("product_name") or row.get("name") or "").strip()
-                    if not title or not _SMARTPHONE_RE.search(title) or _NOT_SMARTPHONE_RE.search(title):
+                    if not title or not is_smartphone(title):
                         continue
                     raw = row.get("actual_price") or row.get("price") or "0"
                     pstr = str(raw).lower()

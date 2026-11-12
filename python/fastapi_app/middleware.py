@@ -118,7 +118,7 @@ _CDN_IMAGES = "public, durable, s-maxage=86400, stale-while-revalidate=604800"
 
 
 def _cdn_header(path: str) -> str | None:
-    if path == "/api/proxy-image":
+    if path == "/api/proxy-image" or (path.startswith("/api/markets/") and path.endswith("/logo")):
         return _CDN_IMAGES
     if path.startswith(_CDN_CACHEABLE) and not path.startswith("/api/recommendations/personalized"):
         return _CDN_DEFAULT

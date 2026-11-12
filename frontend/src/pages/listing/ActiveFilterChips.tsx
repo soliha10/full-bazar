@@ -9,12 +9,12 @@ import type { FilterActions } from './useFilterActions';
 // "nima tanlangan" degan oddiy ma'lumotni shovqinga aylantirardi.
 const STYLES = {
   mobile: {
-    chip:  'flex items-center gap-1 shrink-0 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-2.5 pr-1 py-0.5 text-xs text-gray-700 dark:text-gray-300',
+    chip:  'flex items-center gap-1 shrink-0 rounded-full glass-soft pl-2.5 pr-1 py-0.5 text-xs text-gray-700 dark:text-gray-300',
     reset: 'shrink-0 px-2 py-0.5 text-xs text-gray-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors',
     icon:  'w-3 h-3',
   },
   desktop: {
-    chip:  'flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-3 pr-1.5 py-1 text-xs text-gray-700 dark:text-gray-300',
+    chip:  'flex items-center gap-1 rounded-full glass-soft pl-3 pr-1.5 py-1 text-xs text-gray-700 dark:text-gray-300',
     reset: 'px-2 py-1 text-xs text-gray-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors',
     icon:  'w-3.5 h-3.5',
   },

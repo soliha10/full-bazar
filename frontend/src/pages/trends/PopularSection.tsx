@@ -19,7 +19,7 @@ export function PopularSection({ popular }: { popular: PopularProduct[] }) {
           <Link
             key={p.id}
             to={productPath(p)}
-            className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800
+            className="glass rounded-2xl
               hover:border-violet-300 dark:hover:border-violet-700
              
               transition-all group overflow-hidden"

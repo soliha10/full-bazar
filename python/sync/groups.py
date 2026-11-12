@@ -32,6 +32,10 @@ def build_groups(rows):
     # qayta yozardi.
     rows = sorted(rows, key=lambda r: (_norm(r["title"]), r["src"], r["price"],
                                        r["url"], r["image"], r["title"]))
+    rows, placeholders = matching.drop_placeholder_prices(rows)
+    if placeholders:
+        print(f"[sync] bir nechta xotira variantiga bir xil narx: {placeholders} ta "
+              f"taklif chiqarildi (do'kon narxi hali qo'yilmagan)", flush=True)
     clustered, dropped = matching.drop_price_outliers(matching.group_rows(rows))
     if dropped:
         print(f"[sync] narxi g'ayritabiiy {dropped} ta taklif chiqarildi "

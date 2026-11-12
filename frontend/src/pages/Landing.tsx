@@ -46,13 +46,14 @@ export function Landing() {
     updated, fill, retry,
   } = useLandingData();
 
-  const showcase = deals.find(p => (p.markets?.length ?? 0) >= 3) ?? deals[0];
+  // Hero dastasi: kamida 2 do'konda narxi bor eng katta farqli 4 ta taklif
+  const deck = deals.filter(p => (p.markets?.length ?? 0) >= 2).slice(0, 4);
   const topBrands = brands.slice(0, 6);
   const storeList = markets.map(x => x.name).join(', ');
 
   return (
     <LazyMotion features={loadMotionFeatures}>
-    <div className="min-h-screen bg-white dark:bg-gray-950 pb-24 md:pb-0 transition-colors">
+    <div className="min-h-screen pb-24 md:pb-0 transition-colors">
       <SEO
         title={t.landing.seoTitle}
         description={t.landing.seoDesc}
@@ -62,7 +63,7 @@ export function Landing() {
       />
 
       {/* ══ HERO ══ */}
-      <Hero hasStats={!!stats} fill={fill} showcase={showcase}
+      <Hero hasStats={!!stats} fill={fill} deck={deck}
         dealsLoading={dealsStatus === 'loading'} topBrands={topBrands} />
 
       {/* ══ STATS ══ */}

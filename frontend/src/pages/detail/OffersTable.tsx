@@ -4,6 +4,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum, formatCheckedAt } from "../../utils/productMapper";
 import { trackStoreClick } from "../../services/tracking";
 import type { PriceStats } from "./priceStats";
+import { StoreLogo } from '../../components/StoreLogo';
 
 /** Desktop price table — barcha takliflar narx bo'yicha o'sish tartibida. */
 export function OffersTable({ product, sortedMarkets, selectedMarketIndex, onSelect }: {
@@ -40,7 +41,8 @@ export function OffersTable({ product, sortedMarkets, selectedMarketIndex, onSel
               }`}
             >
               <td className="py-3.5">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
+                  <StoreLogo name={market.source} size="md" />
                   <span className="font-medium text-gray-900 dark:text-white text-sm">{market.source}</span>
                   {/* sortedMarkets narx bo'yicha o'sish tartibida — birinchisi eng arzoni */}
                   {idx === 0 && sortedMarkets.length > 1 && (

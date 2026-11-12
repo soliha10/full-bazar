@@ -17,18 +17,13 @@ export interface MarketFacet {
   name: string;
   /** Shu do'kondagi takliflar soni */
   count: number;
-  color: string;
+  /** Do'kon sayti (e'lonlari havolalaridan): "texnomart.uz" */
+  domain: string | null;
+  /** Logotip — API do'kon saytidan oladi; yo'q bo'lsa bosh harf ko'rsatiladi */
+  logo: string | null;
 }
 
-/** Faqat bezak: do'kon belgisi rangi. Ro'yxatda yo'q do'kon kulrang. */
-export const MARKET_COLOR: Record<string, string> = {
-  asaxiy: '#7C3AED', texnomart: '#E31E24', olcha: '#F97316', chakana: '#0EA5E9',
-  glotr: '#8B5CF6', openshop: '#6366F1', idea: '#F59E0B', beemarket: '#EC4899',
-  castore: '#14B8A6', joybox: '#F43F5E', alif: '#0891B2', discont: '#EF4444',
-  macbro: '#1D4ED8', radius: '#84CC16', mi: '#FF6900', ucell: '#65A30D', ozon: '#005BFF',
-};
-
-export const marketColor = (key: string) => MARKET_COLOR[key] ?? '#9ca3af';
+type ApiMarket = { key: string; name: string; count: number; domain?: string | null; logo?: string | null };
 
 let cache: MarketFacet[] | null = null;
 let inflight: Promise<MarketFacet[]> | null = null;
@@ -38,9 +33,9 @@ function load(): Promise<MarketFacet[]> {
   if (inflight) return inflight;
   inflight = fetch('/api/markets')
     .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-    .then((d: { markets?: { key: string; name: string; count: number }[] }) => {
+    .then((d: { markets?: ApiMarket[] }) => {
       cache = (d.markets ?? [])
-        .map(m => ({ key: m.key, name: m.name, count: m.count, color: marketColor(m.key) }))
+        .map(m => ({ key: m.key, name: m.name, count: m.count, domain: m.domain ?? null, logo: m.logo ?? null }))
         .sort((a, b) => b.count - a.count);
       return cache;
     })

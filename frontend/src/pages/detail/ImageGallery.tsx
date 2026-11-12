@@ -17,7 +17,7 @@ export function ImageGallery({ gallery, productName, savings, liked, onToggleLik
 
   return (
     <div className="md:flex md:flex-row-reverse md:items-start gap-3">
-    <div className="relative flex-1 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <div className="relative flex-1 glass rounded-2xl overflow-hidden">
       {/* Savings badge */}
       {savings > 0 && (
         <div className="absolute top-4 right-14 md:right-4 z-10">

@@ -12,12 +12,14 @@ export function DesktopSearch({ search }: { search: NavbarSearch }) {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-violet-500 transition-colors pointer-events-none" />
         <input
           type="text"
+          data-global-search
+          aria-keyshortcuts="/"
           value={searchValue}
           placeholder={t.nav.searchPlaceholder}
           onChange={(e) => setSearchValue(e.target.value)}
           className="w-full pl-11 pr-[104px] py-2.5
-            bg-gray-50 dark:bg-gray-900
-            border border-gray-200 dark:border-gray-700
+            bg-white/60 dark:bg-white/[0.04] backdrop-blur
+            border border-gray-900/10 dark:border-white/10
             rounded-2xl text-sm font-medium
             text-gray-900 dark:text-white
             placeholder:text-gray-400 dark:placeholder:text-gray-500
@@ -63,6 +65,7 @@ export function MobileSearch({ search }: { search: NavbarSearch }) {
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         <input
           type="text"
+          data-global-search
           value={searchValue}
           placeholder={t.nav.searchPlaceholder}
           onChange={(e) => setSearchValue(e.target.value)}

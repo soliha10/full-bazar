@@ -15,7 +15,7 @@ export function SettingsBlock() {
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.21, duration: 0.4 }}
-      className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800"
+      className="glass rounded-2xl divide-y divide-gray-100 dark:divide-gray-800"
     >
       <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-4 pt-4 pb-2">{t.profile.settings}</p>
 
