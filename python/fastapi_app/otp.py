@@ -35,12 +35,14 @@ EMAIL_FROM = os.getenv("EMAIL_FROM") or "Bazarcom <noreply@bazarcom.online>"
 ESKIZ_EMAIL = os.getenv("ESKIZ_EMAIL", "")
 ESKIZ_PASSWORD = os.getenv("ESKIZ_PASSWORD", "")
 ESKIZ_FROM = os.getenv("ESKIZ_FROM") or "4546"
-# Eskiz faqat oldindan TASDIQLANGAN shablon matnini yuboradi — bu matn
-# my.eskiz.uz dagi shablon bilan harfma-harf bir xil bo'lishi shart.
+# Eskiz faqat oldindan TASDIQLANGAN matnni yuboradi. my.eskiz.uz -> SMS ->
+# "Mening matnlarim" ga bu matn {code} o'rniga namunaviy kod bilan
+# (masalan 482915) yuboriladi — moderator raqamni o'zi maskalaydi. Operator
+# talabi: tasdiqlash kodli SMS da sayt nomi va kod nima uchunligi bo'lishi shart.
 # `or`: docker-compose bo'sh qiymatni ham uzatadi, getenv standartga qaytmaydi
 ESKIZ_TEMPLATE = (
     os.getenv("ESKIZ_TEMPLATE")
-    or "Bazarcom: tasdiqlash kodingiz {code}. Kodni hech kimga bermang."
+    or "Bazarcom.online saytida ro'yxatdan o'tish uchun tasdiqlash kodi: {code}. Kodni hech kimga bermang."
 )
 
 OTP_DEBUG = os.getenv("OTP_DEBUG", "") == "1"
