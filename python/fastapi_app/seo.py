@@ -79,7 +79,8 @@ def _replace_tag(page: str, pattern: str, value: str) -> str:
 def inject_product_meta(page: str, product: dict, canonical_path: str,
                         brand_name: str | None = None, brand_key: str | None = None) -> str:
     """brand_name — nomdan aniqlangan brend (pages.py); ilgari brand o'rniga kategoriya yozilardi."""
-    name = product.get("title") or product.get("name")
+    # Sahifadagi h1 bilan bir xil — do'kondan kelgan xom title (ko'pincha ruscha) emas
+    name = product.get("name") or product.get("title")
     url = SITE + canonical_path
     markets = product.get("markets") if isinstance(product.get("markets"), list) else []
     prices = [p for p in (_num(m.get("price")) for m in markets) if p > 0]

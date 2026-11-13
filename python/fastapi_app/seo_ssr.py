@@ -40,7 +40,7 @@ def inject_root(page: str, body: str) -> str:
 
 def product_body(product: dict, brand: tuple[str, str] | None) -> str:
     """Mahsulot: h1, eng arzon narx, do'konlar ro'yxati (narx bo'yicha), non bo'laklari."""
-    name = product.get("title") or product.get("name") or ""
+    name = product.get("name") or product.get("title") or ""
     markets = sorted((m for m in (product.get("markets") or []) if m.get("price")),
                      key=lambda m: float(m["price"]))
     crumbs = [("Bosh sahifa", "/"), ("Smartfonlar", "/products")]
