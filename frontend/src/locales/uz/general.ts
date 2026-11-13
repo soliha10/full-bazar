@@ -58,6 +58,11 @@ export const general = {
     statProducts: "{{count}} ta smartfon",
     statStores: "{{count}} ta do'kon",
     statGap: "o'rtacha {{count}}% narx farqi",
+    // Telefon uchun qisqa variantlar (tor ekranda to'liq matn sig'maydi)
+    searchPlaceholderShort: "iPhone 16, Galaxy A55…",
+    statProductsShort: "smartfon",
+    statStoresShort: "do'kon",
+    statGapShort: "narx farqi",
     subtitle: "{{stores}} ta onlayn do'kon narxlari bir joyda. Modelni toping, narxlarni solishtiring va eng arzon do'kondan xarid qiling.",
     searchPlaceholder: "Model nomi: iPhone 16, Galaxy A55, Redmi Note 14...",
     searchButton: "Qidirish",

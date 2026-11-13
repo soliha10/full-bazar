@@ -122,8 +122,11 @@ export function SearchBox({ variant, value = '', placeholder, onSubmit, globalSh
           </button>
         )}
         {variant === 'hero' ? (
-          <button type="submit" className="shrink-0 bg-violet-600 hover:bg-violet-700 text-white font-medium text-sm rounded-xl px-5 md:px-6 py-3 transition-colors">
-            {t.home.searchButton}
+          // Eng tor telefonda (<380px) — faqat ikonka: matnli tugma namunani kesib qo'yardi
+          <button type="submit" aria-label={t.home.searchButton}
+            className="shrink-0 flex items-center justify-center bg-violet-600 hover:bg-violet-700 text-white font-medium text-sm rounded-xl px-3.5 min-[380px]:px-5 md:px-6 py-3 transition-colors">
+            <Search className="w-4 h-4 min-[380px]:hidden" aria-hidden="true" />
+            <span className="hidden min-[380px]:inline">{t.home.searchButton}</span>
           </button>
         ) : (
           <button type="submit" aria-label={t.nav.search} title={t.nav.search}

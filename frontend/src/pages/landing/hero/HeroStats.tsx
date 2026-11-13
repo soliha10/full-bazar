@@ -25,15 +25,22 @@ function useCountUp(target: number): number {
   return value;
 }
 
-function Stat({ icon: Icon, value, template, tone, live }: {
-  icon: LucideIcon; value: number; template: string; tone: string;
+/**
+ * Telefonda — teng ustunli ixcham karta (ikonka, katta raqam, qisqa yorliq):
+ * to'liq matnli chiplar tor ekranda 2+1 yoki 1+1+1 bo'lib tartibsiz bo'linardi.
+ * sm dan — bir qatorli chip, to'liq matn bilan.
+ */
+function Stat({ icon: Icon, value, template, short, unit = '', tone, live }: {
+  icon: LucideIcon; value: number; template: string; short: string; unit?: string; tone: string;
   /** Yangilanish vaqti — yashil nuqta va data-tip (alohida qator emas) */
   live?: string | null;
 }) {
   const n = useCountUp(value);
+  const num = n.toLocaleString('ru-RU');
   return (
     <span data-tip={live ?? undefined}
-      className="relative inline-flex items-center gap-2 rounded-full glass-soft py-1.5 pl-1.5 pr-3.5 text-sm text-gray-700 dark:text-gray-200">
+      className="relative flex flex-col items-start gap-1.5 rounded-2xl glass-soft p-2.5 text-gray-700 dark:text-gray-200
+        sm:inline-flex sm:flex-row sm:items-center sm:gap-2 sm:rounded-full sm:py-1.5 sm:pl-1.5 sm:pr-3.5 sm:text-sm">
       {live && (
         <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5" aria-hidden="true">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
@@ -41,12 +48,20 @@ function Stat({ icon: Icon, value, template, tone, live }: {
         </span>
       )}
       {live && <span className="sr-only">{live}. </span>}
-      <span className={`flex h-7 w-7 items-center justify-center rounded-full ${tone}`}>
+      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${tone}`}>
         <Icon className="w-3.5 h-3.5" aria-hidden="true" />
       </span>
-      {template.split('{{count}}').map((part, i) => (
-        <span key={i}>{i > 0 && <strong className="font-semibold tabular-nums text-gray-900 dark:text-white">{n.toLocaleString('ru-RU')}</strong>}{part}</span>
-      ))}
+      {/* Telefon: raqam + qisqa yorliq */}
+      <span className="sm:hidden min-w-0">
+        <strong className="block text-base font-semibold leading-tight tabular-nums text-gray-900 dark:text-white">{num}{unit}</strong>
+        <span className="block truncate text-[11px] text-gray-500 dark:text-gray-400">{short}</span>
+      </span>
+      {/* sm+: to'liq matn */}
+      <span className="hidden sm:inline">
+        {template.split('{{count}}').map((part, i) => (
+          <span key={i}>{i > 0 && <strong className="font-semibold tabular-nums text-gray-900 dark:text-white">{num}</strong>}{part}</span>
+        ))}
+      </span>
     </span>
   );
 }
@@ -59,10 +74,10 @@ export function HeroStats({ stats, updated }: { stats: Stats | null; updated?: s
   if (!stats) return <div className="h-10 w-80 max-w-full rounded-full glass-soft animate-pulse" aria-hidden="true" />;
   const gap = stats.medianPriceGap != null ? Math.round(stats.medianPriceGap * 100) : null;
   return (
-    <div className="flex flex-wrap gap-2">
-      <Stat icon={Smartphone} value={stats.products} template={h.statProducts} tone="bg-violet-600 text-white" />
-      <Stat icon={Store} value={stats.markets} template={h.statStores} tone="bg-sky-500 text-white" live={live} />
-      {gap ? <Stat icon={TrendingDown} value={gap} template={h.statGap} tone="bg-emerald-500 text-white" /> : null}
+    <div className={`grid ${gap ? 'grid-cols-3' : 'grid-cols-2'} gap-2 sm:flex sm:flex-wrap`}>
+      <Stat icon={Smartphone} value={stats.products} template={h.statProducts} short={h.statProductsShort} tone="bg-violet-600 text-white" />
+      <Stat icon={Store} value={stats.markets} template={h.statStores} short={h.statStoresShort} tone="bg-sky-500 text-white" live={live} />
+      {gap ? <Stat icon={TrendingDown} value={gap} unit="%" template={h.statGap} short={h.statGapShort} tone="bg-emerald-500 text-white" /> : null}
     </div>
   );
 }

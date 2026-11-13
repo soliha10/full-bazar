@@ -5,6 +5,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import type { Product } from '../../components/ProductCard';
 import { setHeroSearchVisible } from '../../utils/heroSearch';
 import { SearchBox } from '../../components/search/SearchBox';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { DealDeck } from './DealDeck';
 import { Card } from "../../components/Card";
 import { PAGE_CONTAINER } from '../../components/layout';
@@ -53,6 +54,8 @@ export function Hero({ stats, deck, dealsLoading, updated }: {
   const h = t.home;
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
+  // Telefonda qidiruvning to'liq namunasi kesilib qolardi — qisqasi
+  const isMobile = useIsMobile();
 
   // Hero qidiruvi ko'rinib turganda navbardagi qidiruv yashirin (utils/heroSearch).
   // Birinchi chizilishdan oldin "ko'rinadi" deb belgilanadi — navbar qidiruvi
@@ -80,7 +83,7 @@ export function Hero({ stats, deck, dealsLoading, updated }: {
             <Title text={h.title} accent={h.titleAccent} />
           </m.h1>
           <m.div {...rise(0.15)} className="max-w-xl">
-            <SearchBox variant="hero" formRef={formRef} placeholder={h.searchPlaceholder} globalShortcut
+            <SearchBox variant="hero" formRef={formRef} placeholder={isMobile ? h.searchPlaceholderShort : h.searchPlaceholder} globalShortcut
               onSubmit={(q) => navigate(q ? `/products?search=${encodeURIComponent(q)}` : '/products')} />
           </m.div>
 

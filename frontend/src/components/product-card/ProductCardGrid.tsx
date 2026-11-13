@@ -21,8 +21,9 @@ function StoreStack({ markets }: { markets: { source: string; price: number }[] 
           <StoreLogo name={m.source} size="sm" />
         </span>
       ))}
+      {/* Eng tor ekranda (<360px) "+N" yashirin — do'konlar soni yonida baribir yozilgan */}
       {extra > 0 && (
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-md glass-soft px-1 text-[10px] font-semibold text-gray-600 dark:text-gray-300 ring-2 ring-white dark:ring-gray-900">
+        <span className="max-[359px]:hidden flex h-5 min-w-5 items-center justify-center rounded-md glass-soft px-1 text-[10px] font-semibold text-gray-600 dark:text-gray-300 ring-2 ring-white dark:ring-gray-900">
           +{extra}
         </span>
       )}
@@ -40,9 +41,15 @@ export function CatalogMeta({ card }: { card: ProductCardState }) {
   return (
     <>
       <StoreStack markets={byPrice} />
+      {/* Telefonda bir nechta do'kon bo'lsa — faqat "N do'kon" (nomi logo data-tip ida):
+          tor kartada "Chakana · 6 do'kon" sig'masdan kesilardi */}
       <span className="truncate">
-        {bestMarket.source}
-        {stores > 1 && <span className="text-gray-400 dark:text-gray-500"> · {t.home.storesTag.replace('{{count}}', String(stores))}</span>}
+        {stores > 1 ? (
+          <>
+            <span className="hidden sm:inline">{bestMarket.source} · </span>
+            <span className="text-gray-500 dark:text-gray-400 sm:text-gray-400 sm:dark:text-gray-500">{t.home.storesTag.replace('{{count}}', String(stores))}</span>
+          </>
+        ) : bestMarket.source}
       </span>
     </>
   );

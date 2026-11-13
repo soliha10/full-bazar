@@ -60,6 +60,11 @@ export const general: typeof uzGeneral = {
     statProducts: "{{count}} smartphones",
     statStores: "{{count}} stores",
     statGap: "{{count}}% average price gap",
+    // Telefon uchun qisqa variantlar (tor ekranda to'liq matn sig'maydi)
+    searchPlaceholderShort: "iPhone 16, Galaxy A55…",
+    statProductsShort: "smartphones",
+    statStoresShort: "stores",
+    statGapShort: "price gap",
     subtitle: "Prices from {{stores}} online stores in one place. Find your model, compare prices and buy where it's cheapest.",
     searchPlaceholder: "Model: iPhone 16, Galaxy A55, Redmi Note 14...",
     searchButton: "Search",

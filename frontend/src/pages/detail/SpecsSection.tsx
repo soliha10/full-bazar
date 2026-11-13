@@ -40,8 +40,8 @@ export function SpecsSection({ specs }: { specs: Specs | null }) {
               <div key={row.key} data-tip={`${row.label}: ${row.value}`} className="flex items-center gap-2.5 rounded-lg bg-gray-900/[0.03] dark:bg-white/[0.04] px-2.5 py-1.5 min-w-0 cursor-default">
                 <Icon className="w-4 h-4 shrink-0 text-gray-400 dark:text-gray-500" aria-hidden="true" />
                 <div className="min-w-0">
-                  <dt className="truncate text-[11px] leading-tight text-gray-500 dark:text-gray-400">{row.label}</dt>
-                  <dd className="truncate text-sm font-medium text-gray-900 dark:text-white leading-snug">{row.value}</dd>
+                  <dt className="line-clamp-2 text-[11px] leading-tight text-gray-500 dark:text-gray-400">{row.label}</dt>
+                  <dd className="line-clamp-2 text-sm font-medium text-gray-900 dark:text-white leading-snug">{row.value}</dd>
                 </div>
               </div>
             );

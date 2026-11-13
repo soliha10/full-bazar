@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import { formatSum } from '../../utils/productMapper';
 import { productPath } from '../../utils/slug';
 import type { Product } from '../../components/ProductCard';
@@ -45,9 +46,12 @@ function DealCard({ product, labels, back }: { product: Product; labels: DeckLab
         ))}
       </ul>
       <div className="flex items-center justify-between gap-2 mt-2 pt-3 border-t border-gray-900/5 dark:border-white/10">
-        <span className="text-xs text-gray-500 dark:text-gray-400">{labels.gap.replace('{{amount}}', formatSum(gap))}</span>
-        <Link to={productPath(product)} className="text-xs font-medium text-violet-600 dark:text-violet-400 hover:underline">
-          {labels.cta}
+        <span className="min-w-0 truncate text-xs text-gray-500 dark:text-gray-400">{labels.gap.replace('{{amount}}', formatSum(gap))}</span>
+        {/* Eng tor telefonda (<380px) — strelka: to'liq matn narx farqini siqib qo'yardi */}
+        <Link to={productPath(product)} aria-label={labels.cta} data-tip={labels.cta}
+          className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-medium text-violet-600 dark:text-violet-400 hover:underline">
+          <span className="hidden min-[380px]:inline">{labels.cta}</span>
+          <ArrowRight className="w-4 h-4 min-[380px]:hidden" aria-hidden="true" />
         </Link>
       </div>
       </div>
