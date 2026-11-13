@@ -52,6 +52,12 @@ if changed data/ python/sync_csv.py python/sync/ python/matching.py python/match
   ./scrape.sh --sync-only
 fi
 if changed data/gsmarena_specs.csv python/sync_specs.py python/sync/specs_sql.py python/sync/specs_report.py; then
+  # jobs konteyneri /var/lib/bazar/data dagi CSV ni o'qiydi: repodagi yangi
+  # fayl u yerga faqat keyingi narx ishida (Dagster) ko'chirilardi va bu
+  # yerdagi yuklash ESKI faylni qayta yozib qo'yardi
+  if changed data/gsmarena_specs.csv; then
+    cp -p "$REPO/data/gsmarena_specs.csv" /var/lib/bazar/data/gsmarena_specs.csv
+  fi
   docker compose --profile jobs run --rm -T jobs python python/sync_specs.py
 fi
 

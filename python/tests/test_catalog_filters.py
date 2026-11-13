@@ -63,3 +63,25 @@ def test_novey_colors_merge():
     assert m.parse("Телефон Novey 101 черный").brand == "novey"
     groups = m.group_rows([{"title": "Novey 101 Black"}, {"title": "Novey 101 Blue"}])
     assert len(groups) == 1
+
+
+def test_samsung_model_codes_do_not_split_models():
+    a = m.parse("Смартфон Samsung Galaxy A53 SM-A536 6/128GB")
+    b = m.parse("Samsung Galaxy A53 6/128 GB")
+    assert (a.brand, a.model, a.storage) == (b.brand, b.model, b.storage)
+    assert m.parse("Samsung Galaxy S24 Ultra SM-S928N 1SIM 1ESIM 12/512 GB").model == frozenset({"s24", "ultra"})
+
+
+def test_sim_type_is_not_a_model_word():
+    # "Mini-SIM" dagi "mini" model nomi emas, lekin "iPhone 13 mini" — model
+    assert m.parse("Смартфон 12/512 ГБ, Mini-SIM, Nano-SIM").model == frozenset()
+    assert "mini" in m.parse("Apple iPhone 13 mini 128GB").model
+
+
+def test_listings_without_model_are_unidentified():
+    from sync.load import unidentified
+    for title in ["Смартфон 12/512 ГБ, Nano-SIM, бордовый", "Samsung Смартфон 6/128 ГБ, черный",
+                  "Hyundai Смартфон 8/512 ГБ, синий", "Смартфон Apple iPhone 256 ГБ (nanoSim+eSim)"]:
+        assert unidentified(title), title
+    for title in ["Samsung Galaxy A55 8/256", "Apple iPhone Air 256GB", "Novey 101", "Tecno Spark 30C 4/128GB"]:
+        assert not unidentified(title), title

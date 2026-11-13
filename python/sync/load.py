@@ -8,6 +8,7 @@ from collections import Counter
 from datetime import datetime
 
 from .common import _annotate
+from matching import parse as parse_title
 
 
 DATA_DIR = os.getenv("DATA_DIR", "./data")
@@ -115,9 +116,23 @@ def fake_reason(title: str, price: float) -> str | None:
     return None
 
 
+def unidentified(title: str) -> bool:
+    """
+    Sarlavhada model nomi yo'q: "Смартфон 12/512 ГБ, Nano-SIM, бордовый" yoki
+    noma'lum brend va raqamsiz "Hyundai Смартфон 8/256". Bunday e'lonni hech
+    qaysi model bilan solishtirib bo'lmaydi — katalogda "12/512 GB" nomli
+    mahsulot bo'lib chiqardi (2026-11-13 da 96 ta).
+    """
+    listing = parse_title(title)
+    if not listing.model:
+        return True
+    return not listing.brand and not any(ch.isdigit() for w in listing.model for ch in w)
+
+
 def load_rows():
     rows = []
     fakes: Counter = Counter()
+    unnamed: Counter = Counter()
     # FAQAT scraper chiqarigan "<do'kon>_products.csv" fayllari.
     # Ilgari papkadagi HAR QANDAY .csv o'qilardi va bu ikki xatoga olib kelardi:
     #   · data/olcha_phones.csv — bir yil oldingi eskirgan narxlar. Manba nomi
@@ -166,6 +181,9 @@ def load_rows():
                     if fake_reason(title, price):
                         fakes[src_fallback] += 1
                         continue
+                    if unidentified(title):
+                        unnamed[src_fallback] += 1
+                        continue
                     rows.append({
                         "title": title,
                         "image": (row.get("image_url") or row.get("image") or row.get("img") or "").strip(),
@@ -177,6 +195,9 @@ def load_rows():
                     })
         except Exception as exc:
             print(f"  skip {fn}: {exc}", flush=True)
+    if unnamed:
+        print(f"[sync] model nomi yo'q e'lonlar tashlandi: {sum(unnamed.values())} ta — "
+              + ", ".join(f"{k} {v}" for k, v in unnamed.most_common()), flush=True)
     if fakes:
         print(f"[sync] soxta (nusxa) telefonlar tashlandi: {sum(fakes.values())} ta — "
               + ", ".join(f"{k} {v}" for k, v in fakes.most_common()), flush=True)

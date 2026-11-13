@@ -7,11 +7,16 @@ import type { PriceStats } from "./priceStats";
 import { StoreLogo } from '../../components/StoreLogo';
 
 /** Desktop price table — barcha takliflar narx bo'yicha o'sish tartibida. */
-export function OffersTable({ product, sortedMarkets, selectedMarketIndex, onSelect }: {
+// Sukut bo'yicha shuncha do'kon: 12 ta qator blokni ekrandan uzun qilib yuborardi
+export const OFFERS_VISIBLE = 5;
+
+export function OffersTable({ product, sortedMarkets, selectedMarketIndex, onSelect, showAll, onToggleShowAll }: {
   product: Product;
   sortedMarkets: PriceStats['sortedMarkets'];
   selectedMarketIndex: number;
   onSelect: (index: number) => void;
+  showAll: boolean;
+  onToggleShowAll: () => void;
 }) {
   const { t } = useLanguage();
 
@@ -27,7 +32,7 @@ export function OffersTable({ product, sortedMarkets, selectedMarketIndex, onSel
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-          {sortedMarkets.map((market, idx) => (
+          {(showAll ? sortedMarkets : sortedMarkets.slice(0, OFFERS_VISIBLE)).map((market, idx) => (
             <motion.tr
               key={idx}
               initial={{ opacity: 0, x: 12 }}
@@ -87,6 +92,14 @@ export function OffersTable({ product, sortedMarkets, selectedMarketIndex, onSel
           ))}
         </tbody>
       </table>
+      {/* Narxni solishtirish uchun hamma taklif kerak bo'lishi mumkin — yashirilmaydi, yig'iladi */}
+      {sortedMarkets.length > OFFERS_VISIBLE && (
+        <button type="button" onClick={onToggleShowAll} aria-expanded={showAll}
+          className="mt-2 w-full rounded-xl py-2.5 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-500/5 transition-colors">
+          {showAll ? t.detailPage.showFewerStores
+            : t.detailPage.showMoreStores.replace('{{count}}', String(sortedMarkets.length - OFFERS_VISIBLE))}
+        </button>
+      )}
     </div>
   );
 }

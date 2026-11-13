@@ -149,6 +149,19 @@ def matcher_oqitish(context: OpExecutionContext) -> None:
 
 
 @op(out=Out(Nothing))
+def gsmarena_tafsilotlari(context: OpExecutionContext) -> None:
+    """Sotuvdagi modellarning model sahifalari: kamera, zaryadlash, OS, korpus.
+    Ilgari bu bosqich faqat qo'lda ishga tushirilardi va 2026-11-13 da 7081
+    modelning birortasida kamera/OS yo'q edi. GSMArena serverni cheklasa ham
+    (429) ish to'xtamaydi — yig'ilgani yoziladi, qolgani keyingi haftaga."""
+    try:
+        _run(context, [PY, "python/scrape_specs_local.py", "--details-only", "--detail", "2400"],
+             timeout=3000)
+    except Failure as exc:
+        context.log.warning(f"GSMArena tafsilotlari to'liq olinmadi: {exc}")
+
+
+@op(ins={"after": In(Nothing)}, out=Out(Nothing))
 def xususiyatlarni_yozish(context: OpExecutionContext) -> None:
     _run(context, [PY, "python/sync_specs.py"])
 
@@ -167,7 +180,7 @@ def faqat_matcher():
 
 @job
 def xususiyatlar():
-    xususiyatlarni_yozish()
+    xususiyatlarni_yozish(after=gsmarena_tafsilotlari())
 
 
 defs = Definitions(

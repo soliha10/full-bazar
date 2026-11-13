@@ -64,6 +64,12 @@ def _canon(title: str) -> str:
     t = re.sub(r"(\d)\s*тб\b", r"\1tb", t)
     t = re.sub(r"(\d)\s*гб", r"\1gb", t)
     t = re.sub(r"(\d)\s*тб", r"\1tb", t)
+    # Samsung model kodi ("SM-A536", "Sm A065FZKGSKZ", "SM-S928N") — bir model
+    # turli kod bilan yoziladi va xususiyatlar moslashmay qolardi
+    t = re.sub(r"\bsm[-\s]?[a-z]\d{3}[a-z0-9/]*", " ", t)
+    # SIM turi model nomi emas: "Mini-SIM, Nano-SIM" dagi "mini" "iPhone mini" ga o'xshab qolardi
+    t = re.sub(r"\b(?:mini|nano|micro|e|dual|physical)[-\s]?sim\b", " ", t)
+    t = re.sub(r"\b\d\s*(?:sim|esim)\b", " ", t)
     # Openshop aksiyasi: "+100 GB of Internet + 3 months of TV-COM ..."
     t = re.sub(r"\+?\s*\d+\s*gb\s+of\s+internet.*$", "", t)
     # "12+512GB" -> "12/512GB"

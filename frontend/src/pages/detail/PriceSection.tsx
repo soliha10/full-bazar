@@ -48,7 +48,8 @@ export function PriceSection({ product, stats, selectedMarketIndex, onSelectMark
       </div>
 
       <OffersTable product={product} sortedMarkets={sortedMarkets}
-        selectedMarketIndex={selectedMarketIndex} onSelect={onSelectMarket} />
+        selectedMarketIndex={selectedMarketIndex} onSelect={onSelectMarket}
+        showAll={showAllMarkets} onToggleShowAll={onToggleShowAll} />
 
       <MobileOffers product={product} sortedMarkets={sortedMarkets}
         showAllMarkets={showAllMarkets} onToggleShowAll={onToggleShowAll} />
