@@ -42,11 +42,14 @@ export function PriceSummary({ product, stats, history }: {
           <verdict.icon className="w-3.5 h-3.5" aria-hidden="true" />{verdictLabel}
         </span>
       )}
+      {/* Bosh narx — bitta aniq raqam; "nimaning narxi" — ostidagi izohda */}
       <p className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white tabular-nums">
-        {d.colorFrom.replace('{{price}}', formatSum(bestPrice || product.price))}
+        {formatSum(bestPrice || product.price)}
       </p>
       <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-        {d.summaryStores.replace('{{count}}', String(sortedMarkets.length || 1))}
+        {sortedMarkets.length > 1
+          ? d.summaryStores.replace('{{count}}', String(sortedMarkets.length))
+          : d.offersCount.replace('{{count}}', '1')}
       </p>
 
       {/* Mobilda shu tugma pastki yopishqoq panelda — takrorlanmaydi */}
@@ -55,7 +58,8 @@ export function PriceSummary({ product, stats, history }: {
           onClick={() => trackStoreClick(product.id, best.source, best.price)}
           title={d.goToStore.replace('{{store}}', best.source)}
           className="mt-3 hidden md:flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors">
-          <StoreLogo name={best.source} size="xs" />{t.detail.goToShop}
+          {/* Qaysi do'konga o'tishi tugmaning o'zida yoziladi */}
+          <StoreLogo name={best.source} size="xs" />{d.goToStore.replace('{{store}}', best.source)}
         </a>
       )}
 

@@ -129,9 +129,10 @@ export const tracking = {
     goToStore: "{{store}} do'koniga o'tish",
     navOffers: "Takliflar",
     offersCount: "{{count}} ta do'kon",
-    summaryStores: "{{count}} ta do'konda",
+    summaryStores: "{{count}} ta do'kon ichida eng arzoni",
     summaryRange: "Narxlar oralig'i",
-    summaryChange30: "30 kunda",
+    changeShort: "{{n}} kunda",
+    summaryChange30: "30 kunlik o'zgarish",
     summaryBest: "Eng arzoni",
     colors: {
       black: "Qora",
@@ -195,7 +196,7 @@ export const tracking = {
     similarCheaper: "{{amount}} arzon",
     similarPricier: "{{amount}} qimmat",
     specGroups: { display: "Ekran", performance: "Ishlash", camera: "Kamera", battery: "Batareya", other: "Boshqa" },
-    specRows: { display: "Ekran", chipset: "Protsessor", ram: "RAM", storage: "Xotira", mainCamera: "Asosiy", selfieCamera: "Old kamera", capacity: "Sig'im", charging: "Zaryadlash", body: "Korpus", os: "OS", releaseYear: "Chiqarilgan yili" },
+    specRows: { display: "Ekran", chipset: "Protsessor", ram: "RAM", storage: "Xotira", mainCamera: "Asosiy kamera", selfieCamera: "Old kamera", capacity: "Sig'im", charging: "Zaryadlash", body: "Korpus", os: "OS", releaseYear: "Chiqarilgan yili" },
   },
 
   checkedAt: {

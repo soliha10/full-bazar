@@ -46,7 +46,9 @@ export function ColorPicker({ variants, active, cheapest, onSelect }: {
           const key = v.color ?? 'other';
           return (
             <button key={key} type="button" role="radio" aria-checked={on} onClick={() => onSelect(v.color)}
-              title={v.price != null ? `${names[key] ?? key} — ${d.colorFrom.replace('{{price}}', formatSum(v.price))}` : names[key] ?? key}
+              title={v.price != null
+                ? `${names[key] ?? key} — ${d.colorFrom.replace('{{price}}', formatSum(v.price))}${v === cheapest ? ` · ${d.cheapestTag}` : ''}`
+                : names[key] ?? key}
               className={`flex min-w-0 items-center gap-2 rounded-xl border py-1.5 pl-1.5 pr-3 text-left transition-colors ${
                 on ? 'border-violet-600 ring-1 ring-violet-600 bg-violet-500/5'
                    : 'border-gray-900/10 dark:border-white/15 hover:border-gray-900/25 dark:hover:border-white/30'}`}>
@@ -59,10 +61,11 @@ export function ColorPicker({ variants, active, cheapest, onSelect }: {
                 <span className="block truncate text-sm text-gray-900 dark:text-white">
                   {names[key] ?? key}
                 </span>
+                {/* Hamma chip ikki qatorli (teng balandlik); eng arzon rang narxi yashil */}
                 {v.price != null && (
-                  <span className="block whitespace-nowrap text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 tabular-nums">
-                    {d.colorFrom.replace('{{price}}', formatSum(v.price))}
-                    {v === cheapest && <span className="block font-medium text-emerald-600 dark:text-emerald-400">{d.cheapestTag}</span>}
+                  <span className={`block whitespace-nowrap text-[11px] sm:text-xs tabular-nums ${v === cheapest && variants.length > 1
+                    ? 'font-medium text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                    {formatSum(v.price)}
                   </span>
                 )}
               </span>

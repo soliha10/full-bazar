@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ExternalLink, TrendingDown, TrendingUp } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import type { Product } from "../../components/ProductCard";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum, formatCheckedAt } from "../../utils/productMapper";
@@ -54,16 +54,19 @@ export function OffersSection({ product, stats, history, allMarkets }: {
           const moved = ch && ch.now === m.price && Math.abs(ch.pct) >= 0.05;
           return (
             <li key={`${m.source}-${idx}`} className="flex items-center gap-2.5 py-2">
-              <StoreLogo name={m.source} size="md" />
+              <StoreLogo name={m.source} size="sm" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm text-gray-900 dark:text-white" title={checked ? `${m.source} · ${checked}` : m.source}>{m.source}</p>
-                <p className="flex flex-wrap items-center gap-x-2 text-xs whitespace-nowrap">
+                <p className="flex items-center gap-x-2 overflow-hidden text-xs whitespace-nowrap">
                   {idx === 0 && sortedMarkets.length > 1 && <span className="text-emerald-600 dark:text-emerald-400">{d.cheapestBadge}</span>}
                   {moved && (
+                    // Raqam yolg'iz turmaydi — nimaning o'zgarishi ekani yonida yozilgan
                     <span title={`${d.changeTab.replace('{{n}}', String(CHANGE_DAYS))}: ${formatSum(ch.first)} → ${formatSum(ch.now)}`}
-                      className={`inline-flex items-center gap-0.5 tabular-nums cursor-default ${ch.pct < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
-                      {ch.pct < 0 ? <TrendingDown className="w-3 h-3" aria-hidden="true" /> : <TrendingUp className="w-3 h-3" aria-hidden="true" />}
-                      {Math.abs(ch.pct).toFixed(1)}%
+                      className="truncate tabular-nums cursor-default text-gray-500 dark:text-gray-400">
+                      <span className={`${ch.pct < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                        {ch.pct > 0 ? '+' : '−'}{Math.abs(ch.pct).toFixed(1)}%
+                      </span>{' '}
+                      {d.changeShort.replace('{{n}}', String(CHANGE_DAYS))}
                     </span>
                   )}
                 </p>

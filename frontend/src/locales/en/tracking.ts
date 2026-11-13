@@ -131,8 +131,9 @@ export const tracking: typeof uzTracking = {
     goToStore: "Go to {{store}}",
     navOffers: "Offers",
     offersCount: "{{count}} stores",
-    summaryStores: "at {{count}} stores",
+    summaryStores: "lowest of {{count}} stores",
     summaryRange: "Price range",
+    changeShort: "in {{n}}d",
     summaryChange30: "30 days",
     summaryBest: "Cheapest",
     colors: {
@@ -197,7 +198,7 @@ export const tracking: typeof uzTracking = {
     similarCheaper: "{{amount}} cheaper",
     similarPricier: "{{amount}} more",
     specGroups: { display: "Display", performance: "Performance", camera: "Camera", battery: "Battery", other: "Other" },
-    specRows: { display: "Display", chipset: "Chipset", ram: "RAM", storage: "Storage", mainCamera: "Main", selfieCamera: "Selfie", capacity: "Capacity", charging: "Charging", body: "Body", os: "OS", releaseYear: "Release year" },
+    specRows: { display: "Display", chipset: "Chipset", ram: "RAM", storage: "Storage", mainCamera: "Main camera", selfieCamera: "Front camera", capacity: "Capacity", charging: "Charging", body: "Body", os: "OS", releaseYear: "Release year" },
   },
 
   checkedAt: {

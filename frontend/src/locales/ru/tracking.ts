@@ -131,8 +131,9 @@ export const tracking: typeof uzTracking = {
     goToStore: "Перейти в магазин {{store}}",
     navOffers: "Предложения",
     offersCount: "{{count}} магазинов",
-    summaryStores: "в {{count}} магазинах",
+    summaryStores: "самая низкая из {{count}} магазинов",
     summaryRange: "Диапазон цен",
+    changeShort: "за {{n}} дн.",
     summaryChange30: "За 30 дней",
     summaryBest: "Дешевле всего",
     colors: {
@@ -197,7 +198,7 @@ export const tracking: typeof uzTracking = {
     similarCheaper: "на {{amount}} дешевле",
     similarPricier: "на {{amount}} дороже",
     specGroups: { display: "Экран", performance: "Производительность", camera: "Камера", battery: "Батарея", other: "Прочее" },
-    specRows: { display: "Экран", chipset: "Процессор", ram: "ОЗУ", storage: "Память", mainCamera: "Основная", selfieCamera: "Фронтальная", capacity: "Ёмкость", charging: "Зарядка", body: "Корпус", os: "ОС", releaseYear: "Год выпуска" },
+    specRows: { display: "Экран", chipset: "Процессор", ram: "ОЗУ", storage: "Память", mainCamera: "Основная камера", selfieCamera: "Фронтальная камера", capacity: "Ёмкость", charging: "Зарядка", body: "Корпус", os: "ОС", releaseYear: "Год выпуска" },
   },
 
   checkedAt: {

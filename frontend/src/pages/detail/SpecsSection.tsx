@@ -3,8 +3,8 @@ import { useState } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { SPEC_GROUPS, specValue, type Specs } from "./specs";
 
-// Har xususiyat — ixcham plitka: ikonka o'rnida nom, nomi sichqoncha ustida (title)
-// va ekran o'quvchi uchun (sr-only) chiqadi
+// Har xususiyat — ixcham plitka: ikonka, kichik nom va qiymat. Nom ko'rinib turadi:
+// "6GB" va "128GB" ning qaysi biri RAM, qaysi biri xotira ekani bir qarashda bilinsin
 const ICONS: Record<string, LucideIcon> = {
   display: Smartphone, chipset: Cpu, ram: MemoryStick, storage: HardDrive,
   mainCamera: Camera, selfieCamera: ScanFace, capacity: BatteryFull, charging: Zap,
@@ -39,11 +39,11 @@ export function SpecsSection({ specs }: { specs: Specs | null }) {
           {(expanded || !collapsible ? rows : rows.slice(0, COLLAPSED)).map(row => {
             const Icon = ICONS[row.key] ?? Smartphone;
             return (
-              <div key={row.key} title={`${row.label}: ${row.value}`} className="flex items-center gap-2.5 rounded-lg bg-gray-900/[0.03] dark:bg-white/[0.04] px-2.5 py-2 min-w-0 cursor-default">
-                <Icon className="w-4 h-4 shrink-0 text-violet-500" aria-hidden="true" />
+              <div key={row.key} title={`${row.label}: ${row.value}`} className="flex items-center gap-2.5 rounded-lg bg-gray-900/[0.03] dark:bg-white/[0.04] px-2.5 py-1.5 min-w-0 cursor-default">
+                <Icon className="w-4 h-4 shrink-0 text-gray-400 dark:text-gray-500" aria-hidden="true" />
                 <div className="min-w-0">
-                  <dt className="sr-only">{row.label}</dt>
-                  <dd className="text-sm font-medium text-gray-900 dark:text-white leading-snug line-clamp-2">{row.value}</dd>
+                  <dt className="truncate text-[11px] leading-tight text-gray-500 dark:text-gray-400">{row.label}</dt>
+                  <dd className="truncate text-sm font-medium text-gray-900 dark:text-white leading-snug">{row.value}</dd>
                 </div>
               </div>
             );

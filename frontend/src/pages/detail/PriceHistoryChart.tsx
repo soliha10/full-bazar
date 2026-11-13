@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Minus, TrendingDown, TrendingUp } from "lucide-react";
+import { CircleCheck, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum } from "../../utils/productMapper";
 import type { PricePoint } from "./useProductDetail";
@@ -15,9 +15,9 @@ const MOBILE = '(max-width: 767px)';
 const round1k = (v: number) => Math.round(v / 1000) * 1000;
 
 // Holat ranglari faqat holat ma'nosida va doim ikonka + matn bilan (dataviz: status)
-export const VERDICT: Record<PriceVerdict, { icon: typeof Minus; tone: string }> = {
+export const VERDICT: Record<PriceVerdict, { icon: LucideIcon; tone: string }> = {
   low:     { icon: TrendingDown, tone: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
-  typical: { icon: Minus,        tone: 'bg-gray-900/5 dark:bg-white/10 text-gray-700 dark:text-gray-200' },
+  typical: { icon: CircleCheck,  tone: 'bg-gray-900/5 dark:bg-white/10 text-gray-700 dark:text-gray-200' },
   high:    { icon: TrendingUp,   tone: 'bg-amber-500/15 text-amber-800 dark:text-amber-300' },
 };
 
