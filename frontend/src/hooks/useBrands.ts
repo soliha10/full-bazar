@@ -24,6 +24,8 @@ export interface BrandFacet {
   min_price?: number | null;
   /** Brendning eng ko'p do'konda sotiladigan modeli rasmi */
   image?: string | null;
+  /** Brendning 3 tagacha mashhur modeli rasmi (birinchisi — image) */
+  images?: string[];
 }
 
 /** Brend rangi — nuqtachalar uchun. Ro'yxatda yo'q brend kulrang bo'ladi. */

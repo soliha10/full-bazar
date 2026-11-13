@@ -45,3 +45,9 @@ def test_same_image_is_not_reused_across_brands():
         _row("Apple A", 3, "shared.jpg", stores=5), _row("Apple B", 4, "a.jpg", stores=2),
     ], _extract)
     assert {b["key"]: b["image"] for b in out} == {"samsung": "shared.jpg", "apple": "a.jpg"}
+
+
+def test_images_are_distinct_and_capped_at_three():
+    [b] = brand_stats([_row(f"Samsung {i}", 1000 + i, f"{i % 4}.jpg", stores=10 - i) for i in range(8)], _extract)
+    assert b["images"][0] == b["image"] == "0.jpg"
+    assert b["images"] == ["0.jpg", "1.jpg", "2.jpg"]

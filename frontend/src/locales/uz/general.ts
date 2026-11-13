@@ -71,6 +71,8 @@ export const general = {
     brandsSubtitle: "Har bir brendning barcha modellari va narxlari",
     brandModels: "{{count}} model",
     brandFrom: "{{price}} dan",
+    brandShare: "Katalogning {{pct}}%",
+    brandCta: "Modellarni ko'rish",
     loadError: "Ma'lumotni yuklab bo'lmadi.",
     retry: "Qayta urinish",
     stepsTitle: "Qanday ishlaydi",

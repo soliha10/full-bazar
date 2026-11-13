@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import Any, Callable, Iterable, Mapping
 
 # Ko'rsatiladigan nom: "poco" -> "Poco", "zte" -> "ZTE"
+MAX_IMAGES = 3
+
 _SPECIAL = {"zte": "ZTE", "lg": "LG", "tcl": "TCL", "oneplus": "OnePlus"}
 
 
@@ -44,6 +46,14 @@ def brand_stats(rows: Iterable[Mapping[str, Any]], extract: Callable[[str], str 
         b["image"] = pick
         if pick:
             used.add(pick)
+        # Bosh sahifadagi yirik plitka uchun: brendning 3 tagacha mashhur modeli rasmi (har xil)
+        images = [pick] if pick else []
+        for c in cands:
+            if len(images) >= MAX_IMAGES:
+                break
+            if c[2] not in images:
+                images.append(c[2])
+        b["images"] = images
         if b["min_price"] is not None:
             b["min_price"] = round(b["min_price"])
     return out

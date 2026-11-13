@@ -1,64 +1,74 @@
 import { m } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { BrandFacet } from '../../hooks/useBrands';
-import { formatSum } from '../../utils/productMapper';
 import { fmt, reveal, SectionHeader } from './shared';
 import { Card } from "../../components/Card";
 import { PAGE_CONTAINER } from '../../components/layout';
+import { FeaturedBrand } from './brands/FeaturedBrand';
 
-// 12 — 2, 3 va 4 ustunda ham to'liq qatorlar
-const SHOWN = 12;
+// Eng ko'p modelli 3 brend — yirik kartalar; keyingi 9 tasi — ixcham plitkalar
+// (9 — telefonda 3×3, katta ekranda bitta qator)
+const FEATURED = 3;
+const COMPACT = 9;
 
-/** Brend plitkasi: brendning eng ko'p do'konda sotiladigan modeli rasmi, nom, modellar soni, eng arzon narx. */
+/** Ixcham brend plitkasi: rasm, nom, modellar soni */
 function BrandTile({ b, index }: { b: BrandFacet; index: number }) {
   const { t } = useLanguage();
-  const h = t.home;
   return (
     <li className="card-rise" style={{ '--i': index } as React.CSSProperties}>
-      {/* Tor plitkada (md gacha) narx rasm ostida, butun kenglikda — 7 xonali narx
-          sig'sin; md dan — rasm yonidagi ikkinchi qatorda; bezak strelkasi faqat xl da */}
       <Card as={Link} interactive padding="none" to={`/products?brand=${encodeURIComponent(b.key)}`}
-        className="group grid h-full grid-cols-[auto_minmax(0,1fr)] xl:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1.5 md:gap-x-3.5 md:gap-y-0 p-2.5 sm:p-3">
-        <span className="flex w-10 h-10 md:w-14 md:h-14 md:row-span-2 shrink-0 items-center justify-center overflow-hidden rounded-xl glass-soft">
+        className="group flex h-full flex-col items-center gap-2 px-2 py-3 text-center">
+        <span className="flex w-12 h-12 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-black/5 dark:ring-white/10 shadow-sm transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-105">
           {b.image
-            ? <img src={b.image} alt="" loading="lazy" className="w-full h-full object-contain p-1 mix-blend-multiply dark:mix-blend-normal" />
+            ? <img src={b.image} alt="" loading="lazy" className="w-full h-full object-contain p-1" />
             // Rasm bo'lmasa — brend bosh harfi (rang/logo qo'lda yozilmaydi)
             : <span aria-hidden="true" className="text-lg font-semibold text-gray-400 dark:text-gray-500">{b.name.charAt(0)}</span>}
         </span>
-        <span className="min-w-0 md:self-end">
-          <span className="block truncate text-sm sm:text-[15px] font-semibold text-gray-900 dark:text-white group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">
+        <span className="w-full min-w-0">
+          <span className="block truncate text-sm font-semibold text-gray-900 dark:text-white group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">
             {b.name}
           </span>
-          <span className="block truncate text-xs text-gray-500 dark:text-gray-400">
-            {h.brandModels.replace('{{count}}', fmt(b.count))}
+          <span className="block truncate text-[11px] text-gray-500 dark:text-gray-400">
+            {t.home.brandModels.replace('{{count}}', fmt(b.count))}
           </span>
         </span>
-        <ChevronRight aria-hidden="true"
-          className="hidden xl:block xl:col-start-3 xl:row-start-1 xl:row-span-2 w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-violet-500 group-hover:translate-x-0.5 transition-all" />
-        {b.min_price ? (
-          <span className="col-span-2 md:col-span-1 md:col-start-2 md:self-start md:mt-0.5 truncate text-xs font-medium tabular-nums text-gray-700 dark:text-gray-200">
-            {h.brandFrom.replace('{{price}}', formatSum(b.min_price))}
-          </span>
-        ) : null}
       </Card>
     </li>
   );
 }
 
-/** Brendlar — /api/brands (bazada haqiqatda mahsuloti bor brendlar), eng ko'p modellilari. */
+/**
+ * Brendlar vitrinasi — /api/brands (bazada haqiqatda mahsuloti bor brendlar).
+ * Bento: chapda №1 brend (katta), o'ngda №2 va №3; ostida keyingi 9 tasi.
+ * Ulush — brend modellarining barcha brendlar modellariga nisbati.
+ */
 export function BrandsSection({ brands }: { brands: BrandFacet[] }) {
   const { t } = useLanguage();
   const h = t.home;
   if (brands.length === 0) return null;
+  const total = brands.reduce((s, b) => s + b.count, 0) || 1;
+  const share = (b: BrandFacet) => Math.round((b.count / total) * 100);
+  const featured = brands.slice(0, FEATURED);
+  const rest = brands.slice(FEATURED, FEATURED + COMPACT);
+
   return (
     <m.section {...reveal} aria-labelledby="brands-title" className={`mt-14 md:mt-24 ${PAGE_CONTAINER}`}>
       <SectionHeader id="brands-title" title={h.brandsTitle} subtitle={h.brandsSubtitle}
         linkTo="/products" linkLabel={t.landing.trending.viewAll} />
-      <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-        {brands.slice(0, SHOWN).map((b, i) => <BrandTile key={b.key} b={b} index={i} />)}
-      </ul>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 lg:grid-rows-2 gap-3 md:gap-4">
+        {featured.map((b, i) => (
+          <FeaturedBrand key={b.key} b={b} rank={i + 1} share={share(b)} hero={i === 0}
+            className={i === 0 ? 'col-span-2 lg:row-span-2' : 'col-span-1 lg:col-span-2'} />
+        ))}
+      </div>
+
+      {rest.length > 0 && (
+        <ul className="mt-3 md:mt-4 grid grid-cols-3 lg:grid-cols-9 gap-3 md:gap-4">
+          {rest.map((b, i) => <BrandTile key={b.key} b={b} index={i} />)}
+        </ul>
+      )}
     </m.section>
   );
 }
