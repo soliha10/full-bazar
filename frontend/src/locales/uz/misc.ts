@@ -52,7 +52,7 @@ export const misc = {
     storeCol: "Do'kon",
     productsCol: "Mahsulotlar",
     avgPriceCol: "O'rtacha narx",
-    priceChangesHint: "Modelning eng arzon narxi 7 kun oldingisi bilan solishtirilgan",
+    priceChangesHint: "Eng arzon narx 7 kun oldingisi bilan solishtirilgan — faqat ikkala davrda ham sotayotgan do'konlar bo'yicha",
     insightLabel: "O'rtacha narx farqi",
     insightText: "Bir xil model turli do'konlarda o'rtacha shuncha farq qiladi",
     insightComparable: "{{count}} ta model kamida 2 do'konda sotiladi — solishtirib, tejash mumkin",

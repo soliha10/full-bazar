@@ -54,7 +54,7 @@ export const misc: typeof uzMisc = {
     storeCol: "Store",
     productsCol: "Products",
     avgPriceCol: "Average price",
-    priceChangesHint: "Each model's lowest price compared with 7 days ago",
+    priceChangesHint: "Lowest price compared with 7 days ago — only across stores that sold the model in both periods",
     insightLabel: "Average price gap",
     insightText: "How much the same model's price differs between stores on average",
     insightComparable: "{{count}} models are sold in at least 2 stores — compare and save",
