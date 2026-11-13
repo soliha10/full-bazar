@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { FALLBACK_IMAGE, type Gallery } from "./useImageGallery";
+import { Card } from "../../components/Card";
 
 /**
  * Mahsulot rasmlari: mobil ko'rinishda gorizontal karusel (nuqtalar va
@@ -15,7 +16,7 @@ export function ImageGallery({ gallery, productName }: {
 
   return (
     <div className="md:flex md:flex-row-reverse md:items-stretch gap-3 lg:h-full">
-    <div className="relative flex-1 min-w-0 glass rounded-2xl overflow-hidden md:flex md:flex-col md:justify-center">
+    <Card padding="none" className="relative flex-1 min-w-0 overflow-hidden md:flex md:flex-col md:justify-center">
       {/* Image carousel */}
       <div
         ref={scrollContainerRef}
@@ -76,7 +77,7 @@ export function ImageGallery({ gallery, productName }: {
           ))}
         </div>
       )}
-    </div>
+    </Card>
 
     {/* Thumbnails — desktop, vertical rail */}
     {/* Absolyut ichki ro'yxat: miniatyuralar soni qator balandligini oshirmaydi,

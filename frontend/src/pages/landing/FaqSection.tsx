@@ -3,16 +3,17 @@ import { ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { reveal } from './shared';
+import { Card } from "../../components/Card";
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   return (
-    <details className="group glass rounded-2xl px-5 py-4 open:pb-5">
+    <Card as="details" padding="none" className="group px-5 py-4 open:pb-5">
       <summary className="flex items-center justify-between gap-4 cursor-pointer list-none font-medium text-sm md:text-base text-gray-900 dark:text-white [&::-webkit-details-marker]:hidden">
         {q}
         <ChevronDown className="w-4 h-4 text-gray-400 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
       </summary>
       <p className="mt-3 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{a}</p>
-    </details>
+    </Card>
   );
 }
 

@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { submitFeedback } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { SEO, SITE_URL } from '../components/SEO';
+import { Card } from "../components/Card";
 
 export function Feedback() {
   const { t } = useLanguage();
@@ -109,7 +110,7 @@ export function Feedback() {
           </div>
         </div>
 
-        <div className="glass rounded-2xl p-5 space-y-5">
+        <Card padding="lg" className="space-y-5">
 
           {/* Rating */}
           <div>
@@ -185,7 +186,7 @@ export function Feedback() {
           >
             {sending ? t.feedback.sending : t.feedback.send}
           </button>
-        </div>
+        </Card>
       </div>
     </div>
   );

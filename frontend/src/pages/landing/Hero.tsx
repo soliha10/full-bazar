@@ -7,6 +7,7 @@ import type { BrandFacet } from '../../hooks/useBrands';
 import { setHeroSearchVisible } from '../../utils/heroSearch';
 import { SearchBox } from '../../components/search/SearchBox';
 import { DealDeck } from './DealDeck';
+import { Card } from "../../components/Card";
 
 const rise = (delay: number) => ({
   initial: { opacity: 0, y: 16 },
@@ -87,7 +88,7 @@ export function Hero({ hasStats, fill, deck, dealsLoading, topBrands, updated }:
             <DealDeck deals={deck}
               labels={{ label: h.showcaseLabel, cheapest: h.showcaseCheapest, gap: h.showcaseGap, cta: h.showcaseCta, next: h.showcaseNext }} />
           ) : dealsLoading ? (
-            <div className="w-full md:w-[360px] h-[290px] rounded-3xl glass animate-pulse" aria-hidden="true" />
+            <Card radius="3xl" padding="none" className="w-full md:w-[360px] h-[290px] animate-pulse" aria-hidden="true" />
           ) : null}
         </m.div>
       </div>

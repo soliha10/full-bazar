@@ -6,6 +6,7 @@ import { formatSum, formatCheckedAt } from "../../utils/productMapper";
 import { trackStoreClick } from "../../services/tracking";
 import { StoreLogo } from "../../components/StoreLogo";
 import type { PriceStats } from "./priceStats";
+import { Card, CardHeader } from "../../components/Card";
 
 // Sukut bo'yicha shuncha do'kon; qolgani tugma orqali (yashirilmaydi — yig'iladi)
 const VISIBLE = 5;
@@ -25,11 +26,8 @@ export function OffersSection({ product, stats }: { product: Product; stats: Pri
   const collapsible = sortedMarkets.length > VISIBLE + 1;
 
   return (
-    <section id="offers" aria-labelledby="offers-title" className="flex-1 flex flex-col glass rounded-2xl p-4">
-      <div className="flex items-baseline justify-between gap-3 mb-1.5">
-        <h2 id="offers-title" className="text-sm font-semibold text-gray-900 dark:text-white">{d.navOffers}</h2>
-        <span className="text-xs text-gray-500 dark:text-gray-400">{d.offersCount.replace('{{count}}', String(sortedMarkets.length))}</span>
-      </div>
+    <Card as="section" id="offers" aria-labelledby="offers-title" className="flex-1 flex flex-col">
+      <CardHeader id="offers-title" title={d.navOffers} aside={d.offersCount.replace('{{count}}', String(sortedMarkets.length))} className="mb-1.5" />
       <ul className="divide-y divide-gray-100 dark:divide-gray-800">
         {(showAll || !collapsible ? sortedMarkets : sortedMarkets.slice(0, VISIBLE)).map((m, idx) => {
           const checked = formatCheckedAt(m.checkedAt, t.checkedAt);
@@ -54,6 +52,6 @@ export function OffersSection({ product, stats }: { product: Product; stats: Pri
           {showAll ? d.showFewerStores : d.showMoreStores.replace('{{count}}', String(sortedMarkets.length - VISIBLE))}
         </button>
       )}
-    </section>
+    </Card>
   );
 }

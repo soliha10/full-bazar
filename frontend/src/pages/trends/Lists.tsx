@@ -4,6 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { productPath } from '../../utils/slug';
 import type { SearchTrend, PriceItem } from './types';
 import { DivergingBars, type DivergingItem } from '../../components/charts/DivergingBars';
+import { Card } from "../../components/Card";
 
 /* Search trends */
 export function SearchTrendsSection({ searchTrends }: { searchTrends: SearchTrend[] }) {
@@ -60,11 +61,11 @@ export function PriceChanges({ dropping, rising }: { dropping: PriceItem[]; risi
     <section aria-labelledby="price-changes">
       <h2 id="price-changes" className="text-base font-semibold text-gray-900 dark:text-white mb-1">{t.trends.priceChanges}</h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t.trends.priceChangesHint}</p>
-      <div className="glass rounded-2xl px-4 py-3">
+      <Card padding="none" className="px-4 py-3">
         {items.length === 0
           ? <p className="py-6 text-sm text-gray-400 text-center">{t.trends.noData}</p>
           : <DivergingBars items={items} negLabel={t.trends.priceDropped} posLabel={t.trends.priceIncreased} />}
-      </div>
+      </Card>
     </section>
   );
 }

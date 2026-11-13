@@ -4,6 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { formatSum } from '../../utils/productMapper';
 import { productPath } from '../../utils/slug';
 import type { Suggestions } from '../../hooks/useSearchSuggest';
+import { Card } from "../Card";
 
 export type SuggestItem =
   | { kind: 'brand'; id: string; href: string; label: string; count: number }
@@ -41,9 +42,9 @@ export function SuggestList({ listId, items, active, loading, onPick, onHover, f
   const firstOf = (kind: SuggestItem['kind']) => items.findIndex(i => i.kind === kind);
 
   return (
-    <ul id={listId} role="listbox" style={fixedTop !== undefined ? { top: fixedTop } : undefined}
-      className={`glass glass-solid z-50 rounded-2xl p-1.5 max-h-[70vh] overflow-y-auto text-left ${
-        fixedTop !== undefined ? 'fixed left-3 right-3' : 'absolute left-0 right-0 top-full mt-2'}`}>
+    <Card as="ul" solid padding="none" id={listId} role="listbox" style={fixedTop !== undefined ? { top: fixedTop } : undefined}
+      className={`z-50 p-1.5 max-h-[70vh] overflow-y-auto text-left ${
+      fixedTop !== undefined ? 'fixed left-3 right-3' : 'absolute left-0 right-0 top-full mt-2'}`}>
       {items.map((item, i) => (
         <li key={item.id} role="presentation">
           {i === firstOf('brand') && <p className="px-3 pt-2 pb-1 text-[11px] text-gray-500 dark:text-gray-400">{s.suggestBrands}</p>}
@@ -85,6 +86,6 @@ export function SuggestList({ listId, items, active, loading, onPick, onHover, f
         </li>
       ))}
       {loading && !hasProducts && <li role="presentation" className="px-3 py-2 text-xs text-gray-400">{s.searching}</li>}
-    </ul>
+    </Card>
   );
 }

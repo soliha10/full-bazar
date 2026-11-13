@@ -4,6 +4,7 @@ import { formatSum } from '../../utils/productMapper';
 import { StoreLogo } from '../StoreLogo';
 import type { Product } from './types';
 import type { ProductCardState } from './useProductCard';
+import { Card } from "../Card";
 
 const PLACEHOLDER = 'https://placehold.co/200x200/f9fafb/9ca3af?text=📱';
 
@@ -18,10 +19,9 @@ export function ProductCardList({ product, card }: { product: Product; card: Pro
     }`;
 
   return (
-    <div
+    <Card interactive padding="sm"
       onClick={card.open}
-      className="glass glass-hover rounded-2xl p-3 flex items-center gap-4 cursor-pointer"
-    >
+      className="flex items-center gap-4 cursor-pointer">
       <div className="w-20 h-20 shrink-0 bg-white dark:bg-white/[0.04] rounded-xl overflow-hidden">
         <img
           src={product.image || PLACEHOLDER}
@@ -61,6 +61,6 @@ export function ProductCardList({ product, card }: { product: Product; card: Pro
           <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
         </button>
       </div>
-    </div>
+    </Card>
   );
 }

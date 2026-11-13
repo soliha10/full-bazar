@@ -3,6 +3,7 @@ import { Search } from 'lucide-react';
 import { fetchProducts } from '../../services/api';
 import { formatSum } from '../../utils/productMapper';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { Card } from "../../components/Card";
 
 export interface SearchResult { id: string; name: string; image: string; price: number }
 
@@ -40,7 +41,7 @@ export function AddProductPanel({ search, onPick }: {
   const { t } = useLanguage();
   const { query, setQuery, results, setResults, searching } = search;
   return (
-    <div className="mb-6 glass rounded-2xl p-4">
+    <Card className="mb-6">
       <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2 mb-3">
         <Search className="w-4 h-4 text-gray-400 shrink-0" />
         <input
@@ -73,6 +74,6 @@ export function AddProductPanel({ search, onPick }: {
           </button>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }

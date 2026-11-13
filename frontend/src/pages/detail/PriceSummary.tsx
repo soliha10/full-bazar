@@ -8,6 +8,7 @@ import type { PricePoint } from "./useProductDetail";
 import type { PriceStats } from "./priceStats";
 import { buildSeries, typicalRange } from "./priceHistorySeries";
 import { VERDICT } from "./PriceHistoryChart";
+import { Card } from "../../components/Card";
 
 /**
  * Narx xulosasi: narx holati (past/odatiy/yuqori), eng arzon narx va shu do'konga
@@ -32,7 +33,7 @@ export function PriceSummary({ product, stats, history }: {
   const verdictLabel = typical && { low: d.verdictLow, typical: d.verdictTypical, high: d.verdictHigh }[typical.verdict];
 
   return (
-    <section className="glass rounded-2xl p-4">
+    <Card as="section">
       {verdict && verdictLabel && (
         <span className={`mb-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${verdict.tone}`}>
           <verdict.icon className="w-3.5 h-3.5" aria-hidden="true" />{verdictLabel}
@@ -51,6 +52,6 @@ export function PriceSummary({ product, stats, history }: {
           <StoreLogo name={best.source} size="xs" />{d.goToStore.replace('{{store}}', best.source)}
         </a>
       )}
-    </section>
+    </Card>
   );
 }

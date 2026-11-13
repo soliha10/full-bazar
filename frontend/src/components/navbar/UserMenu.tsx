@@ -5,6 +5,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import type { AuthUser } from '../../contexts/AuthContext';
 import { brandLabel } from '../../hooks/useBrands';
 import { formatPhone } from '../../utils/authValidation';
+import { Card } from "../Card";
 
 /* Desktop profil menyusi (md+) — avatar tugmasi va ochiladigan panel */
 export function UserMenu({ user, logout }: { user: AuthUser; logout: () => void }) {
@@ -32,11 +33,7 @@ export function UserMenu({ user, logout }: { user: AuthUser; logout: () => void 
       {isUserMenuOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 w-64
-            glass
-           
-            rounded-2xl shadow-xl shadow-black/10
-            overflow-hidden z-50">
+          <Card padding="none" className="absolute right-0 top-full mt-2 w-64 shadow-xl shadow-black/10 overflow-hidden z-50">
 
             {/* User header */}
             <div className="px-4 py-4 bg-gray-50 dark:bg-gray-800/60
@@ -116,7 +113,7 @@ export function UserMenu({ user, logout }: { user: AuthUser; logout: () => void 
                 {t.nav.logout}
               </button>
             </div>
-          </div>
+          </Card>
         </>
       )}
     </div>

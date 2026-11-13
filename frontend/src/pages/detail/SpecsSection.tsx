@@ -2,6 +2,7 @@ import { AppWindow, BatteryFull, CalendarDays, Camera, Cpu, HardDrive, MemorySti
 import { useState } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { SPEC_GROUPS, specValue, type Specs } from "./specs";
+import { Card, CardHeader } from "../../components/Card";
 
 // Har xususiyat — ixcham plitka: ikonka, kichik nom va qiymat. Nom ko'rinib turadi:
 // "6GB" va "128GB" ning qaysi biri RAM, qaysi biri xotira ekani bir qarashda bilinsin
@@ -26,10 +27,8 @@ export function SpecsSection({ specs }: { specs: Specs | null }) {
   const collapsible = rows.length > COLLAPSED + 1;
 
   return (
-    <section id="specs" aria-labelledby="specs-title" className="flex-1 flex flex-col glass rounded-2xl p-4">
-      <div className="flex items-baseline justify-between gap-3 mb-2.5">
-        <h2 id="specs-title" className="text-sm font-semibold text-gray-900 dark:text-white">{t.detail.mainSpecifications}</h2>
-      </div>
+    <Card as="section" id="specs" aria-labelledby="specs-title" className="flex-1 flex flex-col">
+      <CardHeader id="specs-title" title={t.detail.mainSpecifications} className="mb-2.5" />
 
       {/* GSMArena dan; mos model topilmasa — qisqa izoh. Plitkalar teng balandlikda
           va karta qo'shni ustun bilan bir xil bo'lsa — teng cho'ziladi */}
@@ -58,6 +57,6 @@ export function SpecsSection({ specs }: { specs: Specs | null }) {
       {!rows.length && (
         <p className="flex-1 flex items-center justify-center text-center text-sm text-gray-500 dark:text-gray-400">{t.detailPage.specsUnavailable}</p>
       )}
-    </section>
+    </Card>
   );
 }

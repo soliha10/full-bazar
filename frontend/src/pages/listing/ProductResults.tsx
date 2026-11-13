@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { ProductCard, type Product } from '../../components/ProductCard';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { Card } from "../../components/Card";
 
 interface Props {
   products: Product[];
@@ -41,7 +42,7 @@ export function ProductResults(props: Props) {
         // So'rov xato bo'lsa "topilmadi" deyish noto'g'ri — mahsulot bor,
         // faqat server javob bermadi. Shuning uchun alohida xabar va
         // qayta urinish tugmasi.
-        <div role="alert" className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-xl border border-gray-200 dark:border-gray-800">
+        <Card padding="none" role="alert" className="flex flex-col items-center justify-center py-20 px-4 text-center">
           <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">{t.listing.loadErrorTitle}</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-xs">{t.listing.loadErrorDesc}</p>
           <button
@@ -50,9 +51,9 @@ export function ProductResults(props: Props) {
           >
             {t.listing.retry}
           </button>
-        </div>
+        </Card>
       ) : filteredProducts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-xl border border-gray-200 dark:border-gray-800">
+        <Card padding="none" className="flex flex-col items-center justify-center py-20 px-4 text-center">
           <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
             {searchQuery ? t.listing.noResultsFor.replace('{{query}}', searchQuery) : t.listing.noProductsFound}
           </h3>
@@ -77,7 +78,7 @@ export function ProductResults(props: Props) {
               </button>
             )}
           </div>
-        </div>
+        </Card>
       ) : (
         <>
           {viewMode === 'grid' ? (

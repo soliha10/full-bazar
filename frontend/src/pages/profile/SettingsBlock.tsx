@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { LANGUAGES as languages } from './languages';
+import { Card } from "../../components/Card";
 
 /* Settings: tungi rejim, til va foydali havolalar */
 export function SettingsBlock() {
@@ -11,12 +12,11 @@ export function SettingsBlock() {
   const { language, setLanguage, t } = useLanguage();
   const isDark = resolvedTheme === 'dark';
   return (
-    <motion.div
+    <Card as={motion.div} padding="none"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.21, duration: 0.4 }}
-      className="glass rounded-2xl divide-y divide-gray-100 dark:divide-gray-800"
-    >
+      className="divide-y divide-gray-100 dark:divide-gray-800">
       <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-4 pt-4 pb-2">{t.profile.settings}</p>
 
       {/* Dark mode */}
@@ -77,6 +77,6 @@ export function SettingsBlock() {
         <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{t.feedback.leaveFeedback}</span>
         <ChevronRight className="w-4 h-4 text-gray-400" />
       </Link>
-    </motion.div>
+    </Card>
   );
 }

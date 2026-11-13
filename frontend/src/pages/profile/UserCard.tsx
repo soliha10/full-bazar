@@ -5,6 +5,7 @@ import type { AuthUser } from '../../contexts/AuthContext';
 import { brandLabel } from '../../hooks/useBrands';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { formatPhone } from '../../utils/authValidation';
+import { Card } from "../../components/Card";
 
 /* User card */
 export function UserCard({ user }: { user: AuthUser }) {
@@ -49,10 +50,9 @@ export function QuickLinks({ favoritesCount, watchedCount }: { favoritesCount: n
       transition={{ delay: 0.07, duration: 0.4 }}
       className="grid grid-cols-2 gap-3"
     >
-      <Link
+      <Card as={Link} padding="none"
         to="/wishlist"
-        className="flex flex-col items-center justify-center gap-2 glass rounded-2xl py-5 active:scale-95 transition-all hover:border-red-200 dark:hover:border-red-800 group"
-      >
+        className="flex flex-col items-center justify-center gap-2 py-5 active:scale-95 transition-all hover:border-red-200 dark:hover:border-red-800 group">
         <div className="relative">
           <div className="w-11 h-11 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center group-hover:bg-red-100 dark:group-hover:bg-red-900/30 transition-colors">
             <Heart className={`w-5 h-5 ${favoritesCount > 0 ? 'fill-red-500 text-red-500' : 'text-red-400'}`} />
@@ -64,12 +64,11 @@ export function QuickLinks({ favoritesCount, watchedCount }: { favoritesCount: n
           )}
         </div>
         <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{t.profile.favorites}</span>
-      </Link>
+      </Card>
 
-      <Link
+      <Card as={Link} padding="none"
         to="/watchlist"
-        className="flex flex-col items-center justify-center gap-2 glass rounded-2xl py-5 active:scale-95 transition-all hover:border-violet-200 dark:hover:border-violet-800 group"
-      >
+        className="flex flex-col items-center justify-center gap-2 py-5 active:scale-95 transition-all hover:border-violet-200 dark:hover:border-violet-800 group">
         <div className="relative">
           <div className="w-11 h-11 rounded-xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center group-hover:bg-violet-100 dark:group-hover:bg-violet-900/30 transition-colors">
             <Bell className={`w-5 h-5 ${watchedCount > 0 ? 'fill-violet-200 dark:fill-violet-800 text-violet-600 dark:text-violet-400' : 'text-violet-400'}`} />
@@ -81,7 +80,7 @@ export function QuickLinks({ favoritesCount, watchedCount }: { favoritesCount: n
           )}
         </div>
         <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{t.profile.priceWatch}</span>
-      </Link>
+      </Card>
     </motion.div>
   );
 }
@@ -91,12 +90,10 @@ export function PreferredBrands({ brands }: { brands: string[] }) {
   const { t } = useLanguage();
   if (brands.length === 0) return null;
   return (
-    <motion.div
+    <Card as={motion.div}
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.14, duration: 0.4 }}
-      className="glass rounded-2xl p-4"
-    >
+      transition={{ delay: 0.14, duration: 0.4 }}>
       <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">{t.nav.favoriteBrands}</p>
       <div className="flex flex-wrap gap-2">
         {brands.map(b => (
@@ -105,6 +102,6 @@ export function PreferredBrands({ brands }: { brands: string[] }) {
           </span>
         ))}
       </div>
-    </motion.div>
+    </Card>
   );
 }

@@ -4,6 +4,7 @@ import { formatSum } from '../../utils/productMapper';
 import { StoreLogo } from '../StoreLogo';
 import type { Product } from './types';
 import type { ProductCardState } from './useProductCard';
+import { Card } from "../Card";
 
 const PLACEHOLDER = 'https://placehold.co/400x400/f9fafb/9ca3af?text=📱';
 
@@ -35,10 +36,9 @@ export function ProductCardGrid({ product, card }: { product: Product; card: Pro
   const stores = sortedMarkets.length;
 
   return (
-    <div
+    <Card interactive padding="none"
       onClick={card.open}
-      className="group glass glass-hover rounded-2xl overflow-hidden flex flex-col cursor-pointer h-full"
-    >
+      className="group overflow-hidden flex flex-col cursor-pointer h-full">
       <div className="relative aspect-square m-1.5 rounded-xl bg-white dark:bg-white/[0.04]">
         <img
           src={product.image || PLACEHOLDER}
@@ -83,6 +83,6 @@ export function ProductCardGrid({ product, card }: { product: Product; card: Pro
           </p>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

@@ -4,6 +4,7 @@ import { formatSum } from '../../utils/productMapper';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { productPath } from '../../utils/slug';
 import type { PopularProduct } from './types';
+import { Card } from "../../components/Card";
 
 /* Popular products */
 export function PopularSection({ popular }: { popular: PopularProduct[] }) {
@@ -16,14 +17,10 @@ export function PopularSection({ popular }: { popular: PopularProduct[] }) {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {popular.map((p, rank) => (
-          <Link
+          <Card as={Link} padding="none"
             key={p.id}
             to={productPath(p)}
-            className="glass rounded-2xl
-              hover:border-violet-300 dark:hover:border-violet-700
-             
-              transition-all group overflow-hidden"
-          >
+            className="hover:border-violet-300 dark:hover:border-violet-700 transition-all group overflow-hidden">
             <div className="relative aspect-square bg-gray-50 dark:bg-gray-800">
               {p.image ? (
                 <img src={p.image} alt={p.name} className="w-full h-full object-contain p-3" />
@@ -47,7 +44,7 @@ export function PopularSection({ popular }: { popular: PopularProduct[] }) {
                 </div>
               </div>
             </div>
-          </Link>
+          </Card>
         ))}
       </div>
     </section>

@@ -2,6 +2,7 @@ import { formatSum } from '../../utils/productMapper';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { MarketStat } from './types';
 import { StoreLogo } from '../../components/StoreLogo';
+import { Card } from "../../components/Card";
 
 /**
  * Do'konlar: mahsulotlar soni (ustun) va o'rtacha narx — bitta jadval.
@@ -21,7 +22,7 @@ export function StoresBoard({ markets }: { markets: MarketStat[] }) {
     <section aria-labelledby="stores-board">
       <h2 id="stores-board" className="text-base font-semibold text-gray-900 dark:text-white mb-1">{tr.marketRanking}</h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr.marketRankingHint}</p>
-      <div className="glass rounded-2xl overflow-hidden">
+      <Card padding="none" className="overflow-hidden">
         <table className="w-full table-fixed text-sm">
           <thead className="text-xs text-gray-500 dark:text-gray-400">
             <tr className="border-b border-gray-900/5 dark:border-white/10">
@@ -59,7 +60,7 @@ export function StoresBoard({ markets }: { markets: MarketStat[] }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </section>
   );
 }

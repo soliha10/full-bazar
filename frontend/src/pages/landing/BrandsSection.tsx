@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { BrandFacet } from '../../hooks/useBrands';
 import { fmt, reveal, SectionHeader } from './shared';
+import { Card } from "../../components/Card";
 
 /** Brendlar — /api/brands; eng ko'p modelli 12 tasi yirik plitka bo'lib chiqadi. */
 export function BrandsSection({ brands }: { brands: BrandFacet[] }) {
@@ -16,8 +17,8 @@ export function BrandsSection({ brands }: { brands: BrandFacet[] }) {
       <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {brands.slice(0, 12).map((b, i) => (
           <li key={b.key} className="card-rise" style={{ '--i': i } as React.CSSProperties}>
-            <Link to={`/products?brand=${encodeURIComponent(b.key)}`}
-              className="group glass glass-hover rounded-2xl px-4 py-4 flex items-center justify-between gap-2 h-full">
+            <Card as={Link} interactive padding="none" to={`/products?brand=${encodeURIComponent(b.key)}`}
+              className="group px-4 py-4 flex items-center justify-between gap-2 h-full">
               <span className="min-w-0">
                 <span className="block text-base font-semibold text-gray-900 dark:text-white truncate group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">
                   {b.name}
@@ -29,7 +30,7 @@ export function BrandsSection({ brands }: { brands: BrandFacet[] }) {
                 )}
               </span>
               <span aria-hidden="true" className="text-gray-300 dark:text-gray-600 group-hover:text-violet-500 group-hover:translate-x-0.5 transition-all">→</span>
-            </Link>
+            </Card>
           </li>
         ))}
       </ul>

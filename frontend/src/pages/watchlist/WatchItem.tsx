@@ -8,6 +8,7 @@ import { productPath } from '../../utils/slug';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { Product } from '../../components/ProductCard';
 import { StoreLogo } from '../../components/StoreLogo';
+import { Card } from "../../components/Card";
 
 /** Kuzatuvdagi bitta mahsulot: qo'shilgan paytdagi narx bilan hozirgi eng
  *  arzon narx taqqoslanadi (±1% dan katta farq — tushdi/oshdi).
@@ -31,15 +32,14 @@ export const WatchItem = forwardRef<HTMLDivElement, {
   const rose    = pricePct > 1;
 
   return (
-    <motion.div
+    <Card as={motion.div} padding="none"
       ref={ref}
       layout
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
       transition={{ duration: 0.3, delay: Math.min(i, 8) * 0.04 }}
-      className="glass rounded-2xl overflow-hidden hover:border-violet-200/70 dark:hover:border-violet-800/50 transition-all"
-    >
+      className="overflow-hidden hover:border-violet-200/70 dark:hover:border-violet-800/50 transition-all">
       {/* Price change banner */}
       {(dropped || rose) && (
         <div className={`px-3.5 py-1.5 flex items-center gap-2 text-[11px] font-semibold ${
@@ -144,6 +144,6 @@ export const WatchItem = forwardRef<HTMLDivElement, {
           </div>
         </div>
       </div>
-    </motion.div>
+    </Card>
   );
 });

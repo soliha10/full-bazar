@@ -5,6 +5,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum } from "../../utils/productMapper";
 import { productPath } from "../../utils/slug";
 import { FALLBACK_IMAGE } from "./useImageGallery";
+import { Card } from "../../components/Card";
 
 /** ── Saved (liked) products ── */
 export function SavedProducts({ favorites, onToggle }: { favorites: Product[]; onToggle: (p: Product) => void }) {
@@ -22,11 +23,10 @@ export function SavedProducts({ favorites, onToggle }: { favorites: Product[]; o
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
         {favorites.map((p) => (
-          <Link
+          <Card as={Link} interactive padding="sm"
             key={p.id}
             to={productPath(p)}
-            className="group bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
-          >
+            className="group">
             <div className="relative">
               <img
                 src={p.image}
@@ -43,7 +43,7 @@ export function SavedProducts({ favorites, onToggle }: { favorites: Product[]; o
             </div>
             <p className="text-xs font-bold text-gray-800 dark:text-white line-clamp-2 mb-1 leading-snug">{p.name}</p>
             <p className="text-xs font-semibold text-gray-900 dark:text-white">{formatSum(p.price)}</p>
-          </Link>
+          </Card>
         ))}
       </div>
     </div>
@@ -70,11 +70,10 @@ export function SimilarProducts({ loading, products, bestPrice }: { loading: boo
               const diff = p.price - bestPrice;
               const stores = p.markets?.length ?? 0;
               return (
-                <Link
+                <Card as={Link} interactive padding="none"
                   key={p.id}
                   to={productPath(p)}
-                  className="w-40 lg:w-[calc((100%-50px)/6)] shrink-0 snap-start bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-2.5 hover:border-gray-300 dark:hover:border-gray-700 transition-colors flex flex-col"
-                >
+                  className="w-40 lg:w-[calc((100%-50px)/6)] shrink-0 snap-start p-2.5 flex flex-col">
                   <img
                     src={p.image}
                     alt={p.name}
@@ -94,7 +93,7 @@ export function SimilarProducts({ loading, products, bestPrice }: { loading: boo
                       <span className="text-gray-400">{t.home.storesTag.replace('{{count}}', String(stores))}</span>
                     )}
                   </div>
-                </Link>
+                </Card>
               );
             })}
       </div>

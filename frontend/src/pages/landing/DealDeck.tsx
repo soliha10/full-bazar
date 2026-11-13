@@ -6,6 +6,7 @@ import { productPath } from '../../utils/slug';
 import type { Product } from '../../components/ProductCard';
 import { StoreLogo } from '../../components/StoreLogo';
 import { PLACEHOLDER } from './shared';
+import { Card } from "../../components/Card";
 
 export interface DeckLabels { label: string; cheapest: string; gap: string; cta: string; next: string }
 
@@ -16,7 +17,7 @@ function DealCard({ product, labels, back }: { product: Product; labels: DeckLab
   const offers = [...(product.markets ?? [])].sort((a, b) => a.price - b.price);
   const gap = offers.length > 1 ? offers[offers.length - 1].price - offers[0].price : 0;
   return (
-    <div className="glass glass-solid rounded-3xl p-4 md:p-5 h-full">
+    <Card solid radius="3xl" className="md:p-5 h-full">
       {/* Orqadagi kartalar — bo'sh "qog'oz": ularning matni tepadagisi ostidan ko'rinib qolmasin */}
       <div className={`h-full flex flex-col transition-opacity duration-300 ${back ? 'opacity-0' : 'opacity-100'}`}>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{labels.label}</p>
@@ -50,7 +51,7 @@ function DealCard({ product, labels, back }: { product: Product; labels: DeckLab
         </Link>
       </div>
       </div>
-    </div>
+    </Card>
   );
 }
 

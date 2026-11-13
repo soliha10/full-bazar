@@ -6,6 +6,7 @@ import { productPath } from '../../utils/slug';
 import type { Product } from '../../components/ProductCard';
 import { StoreLogo } from '../../components/StoreLogo';
 import { reveal, SectionHeader, LoadError, PLACEHOLDER, priceSpread } from './shared';
+import { Card } from "../../components/Card";
 
 /** Taklif kartasi: eng arzon do'kon (logo bilan), eng qimmat narx va farq foizi. */
 function DealTile({ product, index }: { product: Product; index: number }) {
@@ -15,8 +16,8 @@ function DealTile({ product, index }: { product: Product; index: number }) {
   if (!low || !high) return null;
 
   return (
-    <Link to={productPath(product)} style={{ '--i': index } as React.CSSProperties}
-      className="group glass glass-hover card-rise rounded-3xl p-3 flex flex-col">
+    <Card as={Link} interactive radius="3xl" padding="sm" to={productPath(product)} style={{ '--i': index } as React.CSSProperties}
+      className="group card-rise flex flex-col">
       <div className="relative aspect-[4/3] rounded-2xl bg-white dark:bg-white/[0.04] overflow-hidden">
         <img src={product.image || PLACEHOLDER} alt={product.name} loading="lazy"
           onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}
@@ -52,19 +53,19 @@ function DealTile({ product, index }: { product: Product; index: number }) {
           <span className="line-through tabular-nums">{formatSum(high.price)}</span>
         </p>
       </div>
-    </Link>
+    </Card>
   );
 }
 
 function Skeleton() {
   return (
-    <div className="glass rounded-3xl p-3 animate-pulse" aria-hidden="true">
+    <Card radius="3xl" padding="sm" className="animate-pulse" aria-hidden="true">
       <div className="aspect-[4/3] rounded-2xl bg-gray-200/70 dark:bg-gray-700/50" />
       <div className="mt-4 space-y-2 px-1.5">
         <div className="h-3 rounded-full bg-gray-200/70 dark:bg-gray-700/50 w-4/5" />
         <div className="h-5 rounded-full bg-gray-200/70 dark:bg-gray-700/50 w-2/5 mt-4" />
       </div>
-    </div>
+    </Card>
   );
 }
 

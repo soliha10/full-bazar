@@ -3,6 +3,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { formatSum } from "../../utils/productMapper";
 import type { DayRow } from "./priceHistorySeries";
 import { niceTicks } from "./historyFormat";
+import { Card } from "../../components/Card";
 
 // Diverging — index.css dagi --viz-* bilan bir xil (validate_palette dan o'tgan)
 const COLORS = {
@@ -95,7 +96,7 @@ export function HistoryDeviation({ buckets, typical, fmtShort, fmtLong, labels, 
                 const b = active ? (payload?.[0]?.payload as Bucket | undefined) : undefined;
                 if (!b) return null;
                 return (
-                  <div className="glass glass-solid rounded-xl px-3.5 py-3 text-xs min-w-[200px]">
+                  <Card solid radius="xl" padding="none" className="px-3.5 py-3 text-xs min-w-[200px]">
                     <p className="text-gray-500 dark:text-gray-400">{b.from === b.to ? fmtLong(b.from) : `${fmtShort(b.from)} – ${fmtShort(b.to)}`}</p>
                     <p className="mt-1 text-base font-semibold text-gray-900 dark:text-white">{formatSum(b.price)}</p>
                     <p className="text-gray-500 dark:text-gray-400">{b.source}</p>
@@ -104,7 +105,7 @@ export function HistoryDeviation({ buckets, typical, fmtShort, fmtLong, labels, 
                         {b.dev < -0.05 ? '↓ ' : b.dev > 0.05 ? '↑ ' : ''}{pctText(b.dev)}</span></p>
                       {b.low !== b.high && <p>{labels.range}: {formatSum(b.low)} – {formatSum(b.high)}</p>}
                     </div>
-                  </div>
+                  </Card>
                 );
               }} />
             <Bar dataKey="dev" maxBarSize={compact ? 18 : 32} isAnimationActive animationDuration={500}

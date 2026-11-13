@@ -7,6 +7,7 @@ import { buildSeries, typicalRange, type PriceVerdict } from "./priceHistorySeri
 import { HistoryTable } from "./HistoryTable";
 import { HistoryDeviation, toBuckets } from "./HistoryDeviation";
 import { historyFormatters } from "./historyFormat";
+import { Card } from "../../components/Card";
 
 // Tarix 90 kunlik yuklanadi (useProductDetail), davr mijozda kesiladi
 const PERIODS = [30, 90] as const;
@@ -65,7 +66,7 @@ export function PriceHistoryChart({ history, markets }: {
 
   return (
     <section aria-labelledby="history-title" className="h-full">
-      <div className="h-full glass rounded-2xl p-4">
+      <Card className="h-full">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-3">
           <h2 id="history-title" className="text-sm font-semibold text-gray-900 dark:text-white">{d.priceHistoryTitle}</h2>
           {/* Davrning ikki raqami — sarlavha qatorida, alohida qator egallamaydi */}
@@ -124,7 +125,7 @@ export function PriceHistoryChart({ history, markets }: {
             )}
           </>
         )}
-      </div>
+      </Card>
     </section>
   );
 }

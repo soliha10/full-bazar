@@ -4,6 +4,7 @@ import { formatSum } from '../../utils/productMapper';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { SPEC_GROUPS, WINNER_ROW, specValue, type CompareItem, type Verdict } from './types';
 import { StorePricesRows } from './StorePrices';
+import { Card } from "../../components/Card";
 
 export function SpecTable({ items, diffFields, verdict, onRemove, onOpen }: {
   items: CompareItem[];
@@ -26,14 +27,14 @@ export function SpecTable({ items, diffFields, verdict, onRemove, onOpen }: {
   const priceVaries = new Set(items.map((it) => it.product.price)).size > 1;
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-800">
+    <Card padding="none" className="overflow-x-auto">
       <table className="w-full border-separate border-spacing-0 min-w-[640px]">
         <thead>
           <tr>
             <th className="w-40 sticky left-0 z-10 bg-gray-50 dark:bg-gray-900" />
             {items.map((item) => (
               <th key={item.product.id} className="p-3 text-left align-top min-w-[180px] bg-gray-50 dark:bg-gray-900">
-                <div className="relative bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-3">
+                <Card padding="sm" className="relative">
                   <button
                     onClick={() => onRemove(item.product.id)}
                     className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-red-500 transition-colors"
@@ -66,7 +67,7 @@ export function SpecTable({ items, diffFields, verdict, onRemove, onOpen }: {
                       {t.compare.specsNotFound}
                     </p>
                   )}
-                </div>
+                </Card>
               </th>
             ))}
           </tr>
@@ -115,6 +116,6 @@ export function SpecTable({ items, diffFields, verdict, onRemove, onOpen }: {
           <StorePricesRows items={items} />
         </tbody>
       </table>
-    </div>
+    </Card>
   );
 }

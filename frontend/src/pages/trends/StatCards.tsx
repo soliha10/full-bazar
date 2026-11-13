@@ -1,13 +1,14 @@
 import { useLanguage } from '../../contexts/LanguageContext';
+import { Card } from "../../components/Card";
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-800">
+    <Card>
       <div>
         <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
         <p className="text-xl font-semibold text-gray-900 dark:text-white mt-0.5">{value}</p>
       </div>
-    </div>
+    </Card>
   );
 }
 
