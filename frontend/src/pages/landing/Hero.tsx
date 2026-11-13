@@ -12,7 +12,6 @@ import { PAGE_CONTAINER } from '../../components/layout';
 import type { Stats } from './shared';
 import { HeroBackdrop } from './hero/HeroBackdrop';
 import { HeroStats } from './hero/HeroStats';
-import { StoreOrbit } from './hero/StoreOrbit';
 
 const rise = (delay: number) => ({
   initial: { opacity: 0, y: 16 },
@@ -41,8 +40,8 @@ function Title({ text, accent }: { text: string; accent: string }) {
 
 /*
  * Hero — ixcham: aurora fon, sarlavha (kalit ibora ajratilgan), qidiruv va
- * bitta qator jonli raqam (brendlar — pastdagi bo'limda) va o'ngda — do'kon logolari orbitasidagi haqiqiy
- * takliflar dastasi. Hamma raqam va logo — API dan (/api/stats, /api/markets).
+ * bitta qator jonli raqam (brendlar — pastdagi bo'limda), o'ngda — haqiqiy
+ * takliflar dastasi. Raqamlar — /api/stats dan.
  */
 export function Hero({ stats, deck, dealsLoading, updated }: {
   stats: Stats | null;
@@ -97,10 +96,8 @@ export function Hero({ stats, deck, dealsLoading, updated }: {
         <m.div className="lg:shrink-0" initial={{ opacity: 0, y: 40, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ type: 'spring', stiffness: 180, damping: 22, delay: 0.15 }}>
           {deck.length > 0 ? (
-            <StoreOrbit>
-              <DealDeck deals={deck}
-                labels={{ label: h.showcaseLabel, cheapest: h.showcaseCheapest, gap: h.showcaseGap, cta: h.showcaseCta, next: h.showcaseNext }} />
-            </StoreOrbit>
+            <DealDeck deals={deck}
+              labels={{ label: h.showcaseLabel, cheapest: h.showcaseCheapest, gap: h.showcaseGap, cta: h.showcaseCta, next: h.showcaseNext }} />
           ) : dealsLoading ? (
             <Card radius="3xl" padding="none" className="w-full md:w-[360px] h-[290px] animate-pulse" aria-hidden="true" />
           ) : null}

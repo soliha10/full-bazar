@@ -156,18 +156,13 @@ body {
 .marquee-track { animation: marquee 40s linear infinite; }
 .marquee:hover .marquee-track, .marquee:focus-within .marquee-track { animation-play-state: paused; }
 
-/* ── Hero: aurora nurlari va suzuvchi do'kon logolari ── */
+/* ── Hero: aurora nurlari ── */
 @keyframes aurora {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
   33%      { transform: translate3d(6%, -8%, 0) scale(1.12); }
   66%      { transform: translate3d(-5%, 6%, 0) scale(.94); }
 }
 .aurora { animation: aurora 18s ease-in-out infinite; will-change: transform; }
-@keyframes float-y {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-10px); }
-}
-.float-y { animation: float-y 6s ease-in-out infinite; animation-delay: calc(var(--i, 0) * -0.8s); }
 /* Setka — chetlarga qarab so'nadi (mask), sahifa fonini bosmaydi */
 .hero-grid {
   background-image:
@@ -190,7 +185,7 @@ body {
     transition-duration: .01ms !important;
     scroll-behavior: auto !important;
   }
-  .marquee-track, .aurora, .float-y { animation: none !important; }
+  .marquee-track, .aurora { animation: none !important; }
 }
 
 /* ── Custom Scrollbar ── */
