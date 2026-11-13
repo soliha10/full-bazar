@@ -9,6 +9,7 @@ import asyncpg
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 
 import brands
+from brand_stats import brand_stats
 from market_logos import market_domains, market_logo
 from catalog import _BATTERY_FACETS, _RAM_FACETS, _STORAGE_FACETS, _get_spec_index, _norm_mem
 from resp_cache import _cache_get, _cache_put
@@ -71,22 +72,17 @@ async def get_brands(request: Request, response: Response) -> dict:
         return cached
 
     pool: asyncpg.Pool = request.app.state.pool
-    rows = await pool.fetch("SELECT name, keywords FROM products")
-
-    counts: Counter[str] = Counter()
-    for r in rows:
-        brand = brands.extract_brand(f"{r['name'] or ''} {r['keywords'] or ''}")
-        if brand:
-            counts[brand] += 1
-
-    # Ko'rsatiladigan nom: "poco" -> "Poco", "zte" -> "ZTE"
-    special = {"zte": "ZTE", "lg": "LG", "tcl": "TCL", "oneplus": "OnePlus"}
-    return _cache_put("brands", {
-        "brands": [
-            {"key": key, "name": special.get(key, key.capitalize()), "count": count}
-            for key, count in counts.most_common()
-        ]
-    })
+    rows = await pool.fetch(
+        """
+        SELECT p.name, p.keywords, p.price, p.image, COALESCE(m.stores, 0) AS stores
+        FROM products p
+        LEFT JOIN (
+            SELECT product_id, COUNT(*) AS stores FROM product_markets GROUP BY product_id
+        ) m ON m.product_id = p.id
+        """
+    )
+    # key/name/count — katalog filtri uchun; min_price/image — bosh sahifadagi brend plitkalari
+    return _cache_put("brands", {"brands": brand_stats((dict(r) for r in rows), brands.extract_brand)})
 
 
 @router.get("/api/spec-facets")

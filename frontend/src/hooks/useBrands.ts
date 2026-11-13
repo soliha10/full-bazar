@@ -20,6 +20,10 @@ export interface BrandFacet {
   name: string;
   /** Bazadagi mahsulotlar soni */
   count: number;
+  /** Brenddagi eng arzon narx (bosh sahifa plitkasi uchun; eski javoblarda yo'q) */
+  min_price?: number | null;
+  /** Brendning eng ko'p do'konda sotiladigan modeli rasmi */
+  image?: string | null;
 }
 
 /** Brend rangi — nuqtachalar uchun. Ro'yxatda yo'q brend kulrang bo'ladi. */

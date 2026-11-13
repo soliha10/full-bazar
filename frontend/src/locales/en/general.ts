@@ -72,6 +72,7 @@ export const general: typeof uzGeneral = {
     brandsTitle: "Shop by brand",
     brandsSubtitle: "Every model and price for each brand",
     brandModels: "{{count}} models",
+    brandFrom: "from {{price}}",
     loadError: "Couldn't load this data.",
     retry: "Try again",
     stepsTitle: "How it works",

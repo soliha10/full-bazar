@@ -70,6 +70,7 @@ export const general = {
     brandsTitle: "Brend bo'yicha tanlang",
     brandsSubtitle: "Har bir brendning barcha modellari va narxlari",
     brandModels: "{{count}} model",
+    brandFrom: "{{price}} dan",
     loadError: "Ma'lumotni yuklab bo'lmadi.",
     retry: "Qayta urinish",
     stepsTitle: "Qanday ishlaydi",
