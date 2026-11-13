@@ -1,16 +1,20 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useTheme } from "../../contexts/ThemeContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum } from "../../utils/productMapper";
 import { StoreLogo } from "../../components/StoreLogo";
 import type { PricePoint } from "./useProductDetail";
 import type { DetailTab } from "./SpecsSection";
 import { buildSeries } from "./priceHistorySeries";
-import { HistoryPlot, STORE_COLORS } from "./HistoryPlot";
+import { HistoryPlot, slotColor } from "./HistoryPlot";
+import { HistoryTable } from "./HistoryTable";
 import { historyFormatters } from "./historyFormat";
 
 // Tarix 90 kunlik yuklanadi (useProductDetail), davr mijozda kesiladi
 const PERIODS = [7, 30, 90] as const;
-const MAX_STORES = 5;
+// Ajratib ko'rsatiladigan do'konlar: 3 dan ko'pi bir-biridan ajralmaydi (dataviz)
+const MAX_STORES = 3;
+const MOBILE = '(max-width: 767px)';
 
 const seg = (on: boolean) => `px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
   on ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`;
@@ -27,14 +31,32 @@ export function PriceHistoryChart({ history, markets, activeTab }: {
   const fmt = useMemo(() => historyFormatters(d, language === 'en' ? '.' : ','), [d, language]);
   const [days, setDays] = useState<(typeof PERIODS)[number]>(30);
   const [mode, setMode] = useState<'overview' | 'stores'>('overview');
-  const [selected, setSelected] = useState<string[] | null>(null);
+  // do'kon -> rang sloti. Rang do'konga biriktiriladi: boshqasini tanlash yoki
+  // olib tashlash qolganlarining rangini o'zgartirmaydi
+  const [slots, setSlots] = useState<Record<string, number> | null>(null);
+  const dark = useTheme().resolvedTheme === 'dark';
+  const [compact, setCompact] = useState(() => typeof window !== 'undefined' && window.matchMedia(MOBILE).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE);
+    const on = () => setCompact(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
 
   const { rows, sources, summary } = useMemo(
     () => buildSeries(history ?? [], markets, days), [history, markets, days]);
-  // Standart holatda hozir eng arzon 3 ta do'kon
-  const picked = (selected ?? sources.slice(0, 3)).filter(s => sources.includes(s));
-  const toggle = (src: string) => setSelected(
-    picked.includes(src) ? picked.filter(s => s !== src) : picked.length < MAX_STORES ? [...picked, src] : picked);
+  // Standart holatda — hozir eng arzon do'kon
+  const active = slots ?? (sources[0] ? { [sources[0]]: 0 } : {});
+  const picks = Object.entries(active).filter(([s]) => sources.includes(s));
+  const toggle = (src: string) => {
+    const next = { ...active };
+    if (src in next) delete next[src];
+    else if (Object.keys(next).length < MAX_STORES) {
+      const used = new Set(Object.values(next));
+      next[src] = [0, 1, 2].find(i => !used.has(i))!;
+    }
+    setSlots(next);
+  };
 
   const fmtDate = fmt.short;
   const change = summary.changePct;
@@ -88,7 +110,7 @@ export function PriceHistoryChart({ history, markets, activeTab }: {
               {tiles.map(tile => (
                 <div key={tile.label} className="rounded-2xl bg-gray-900/[0.03] dark:bg-white/[0.04] px-4 py-3">
                   <dt className="text-xs text-gray-500 dark:text-gray-400">{tile.label}</dt>
-                  <dd className={`mt-1 text-base md:text-lg font-semibold tracking-tight tabular-nums ${tile.tone ?? 'text-gray-900 dark:text-white'}`}>
+                  <dd className={`mt-1 text-base md:text-lg font-semibold tracking-tight ${tile.tone ?? 'text-gray-900 dark:text-white'}`}>
                     {tile.value}
                   </dd>
                   {tile.sub && (
@@ -103,20 +125,23 @@ export function PriceHistoryChart({ history, markets, activeTab }: {
             {mode === 'stores' && (
               <div className="mb-4">
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{d.historyPickHint}</p>
+                {/* Chiplar — legenda ham: tanlanganida chizig'i rangidagi qisqa chiziq */}
                 <div className="flex flex-wrap gap-2">
                   {sources.map(src => {
-                    const i = picked.indexOf(src);
+                    const slot = active[src];
+                    const on = slot !== undefined;
                     const now = rows[rows.length - 1].stores[src];
                     return (
-                      <button key={src} type="button" aria-pressed={i >= 0} onClick={() => toggle(src)}
-                        disabled={i < 0 && picked.length >= MAX_STORES}
-                        className={`flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-xs transition-colors disabled:opacity-40 ${
-                          i >= 0 ? 'border-transparent bg-gray-900/5 dark:bg-white/10 text-gray-900 dark:text-white'
-                                 : 'border-gray-900/10 dark:border-white/10 text-gray-600 dark:text-gray-300'}`}>
+                      <button key={src} type="button" aria-pressed={on} onClick={() => toggle(src)}
+                        disabled={!on && picks.length >= MAX_STORES}
+                        className={`flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                          on ? 'border-gray-900/15 dark:border-white/20 bg-white dark:bg-gray-900 text-gray-900 dark:text-white'
+                             : 'border-gray-900/10 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:border-gray-900/20 dark:hover:border-white/20'}`}>
                         <StoreLogo name={src} size="sm" className="!rounded-full" />
                         {src}
                         {now !== undefined && <span className="tabular-nums text-gray-500 dark:text-gray-400">{formatSum(now)}</span>}
-                        {i >= 0 && <span className="w-2 h-2 rounded-full" style={{ background: STORE_COLORS[i] }} aria-hidden="true" />}
+                        <span aria-hidden="true" className="w-3.5 h-0.5 rounded-full"
+                          style={{ background: on ? slotColor(dark, slot) : 'transparent' }} />
                       </button>
                     );
                   })}
@@ -129,17 +154,17 @@ export function PriceHistoryChart({ history, markets, activeTab }: {
               {d.historySummary.replace('{{n}}', String(days)).replace('{{low}}', formatSum(summary.low?.price ?? 0))
                 .replace('{{high}}', formatSum(Math.max(...rows.map(r => r.min)))).replace('{{now}}', formatSum(summary.current?.price ?? 0))}
             </p>
-            <div className="h-[240px] md:h-[320px] -ml-2" aria-hidden="true">
-              <HistoryPlot rows={rows} mode={mode} selected={picked} fmt={fmt}
-                labels={{ lowest: d.historyLowest, median: d.historyMedian, range: d.historyRange, stores: d.historyStores }} />
+            {/* Mobilda o'q tor — birlik har belgida emas, tepada bir marta */}
+            {compact && <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1" aria-hidden="true">{fmt.unit} {t.listing.currency}</p>}
+            <div className="-ml-1" style={{ height: compact ? 240 : 320 }} aria-hidden="true">
+              <HistoryPlot rows={rows} mode={mode} sources={sources} picks={picks} fmt={fmt} compact={compact}
+                height={compact ? 240 : 320}
+                labels={{ lowest: d.historyLowest, median: d.historyMedian, range: d.historyRange, stores: d.historyStores, low: d.historyLowMark }} />
             </div>
 
-            {mode === 'overview' && (
-              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
-                <span className="flex items-center gap-2"><span className="w-4 h-0.5 rounded bg-violet-600" />{d.historyLowest}</span>
-                <span className="flex items-center gap-2"><span className="w-4 border-t-[1.5px] border-dashed border-gray-400" />{d.historyMedian}</span>
-              </div>
-            )}
+            <HistoryTable rows={rows} fmtDate={fmt.long}
+              labels={{ title: d.historyTableTitle, date: d.historyTableDate, store: d.historyTableStore, price: d.historyTablePrice, change: d.historyTableChange }} />
+
           </>
         )}
       </div>

@@ -23,9 +23,31 @@ export function historyFormatters(f: HistoryFormatText, decimal: string) {
   return {
     short: (iso: string) => fill(f.dateShort, iso, f.monthsShort),
     long: (iso: string) => fill(f.dateLong, iso, f.monthsLong),
-    /** Y o'qi: 5 240 000 -> "5,2 mln", 12 400 000 -> "12 mln", 850 000 -> "850k" */
-    axis: (v: number) => (v >= 1_000_000
-      ? `${(v / 1_000_000).toFixed(v >= 10_000_000 ? 0 : 1).replace('.', decimal).replace(`${decimal}0`, '')} ${f.millionShort}`
-      : `${Math.round(v / 1000)}k`),
+    /** Y o'qi: barcha belgilar bir xil kasr xonasida ("2,52 / 2,54 / 2,56 mln") —
+     *  xonalar soni qadamdan kelib chiqadi, 850 000 -> "850k" */
+    axis: (v: number, step: number, withUnit = true) => {
+      if (v < 1_000_000) return `${Math.round(v / 1000)}k`;
+      const digits = step >= 1_000_000 ? 0 : step >= 100_000 ? 1 : 2;
+      const n = (v / 1_000_000).toFixed(digits).replace('.', decimal);
+      return withUnit ? `${n} ${f.millionShort}` : n;
+    },
+    unit: f.millionShort,
   };
+}
+
+/**
+ * Y o'qi uchun "tekis" qadamlar (1, 2, 5 × 10^k; 2.5 emas — "2,625 mln" kabi yozuv chiqardi): 4,5 / 4,6 / 4,7 mln,
+ * 4 517 091 kabi tasodifiy chegaralar emas. Ma'lumot ustidan va ostidan
+ * kamida yarim qadam joy qoladi — chiziq chetga yopishmasin.
+ */
+export function niceTicks(lo: number, hi: number, target = 4): number[] {
+  const span = Math.max(hi - lo, hi * 0.02, 1);
+  const raw = span / target;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 5, 10].map(m => m * mag).find(s => s >= raw) ?? 10 * mag;
+  const start = Math.floor((lo - step / 2) / step) * step;
+  const end = Math.ceil((hi + step / 2) / step) * step;
+  const ticks: number[] = [];
+  for (let v = Math.max(0, start); v <= end + step / 1000; v += step) ticks.push(Math.round(v));
+  return ticks;
 }
