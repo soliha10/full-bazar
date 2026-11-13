@@ -56,12 +56,12 @@ export const general = {
     // Sarlavhadagi ajratib ko'rsatiladigan qism — title ichidagi aynan shu matn
     titleAccent: "hamyonbop narxda",
     // Qisqa variantlar: qidiruv namunasi (telefon) va hero statistika lentasi yorliqlari
-    searchPlaceholderShort: "iPhone 16, Galaxy A55…",
+    searchPlaceholderShort: "iPhone 16, Galaxy A55",
     statProductsShort: "smartfon",
     statStoresShort: "do'kon",
     statGapShort: "narx farqi",
     subtitle: "{{stores}} ta onlayn do'kon narxlari bir joyda. Modelni toping, narxlarni solishtiring va eng arzon do'kondan xarid qiling.",
-    searchPlaceholder: "Model nomi: iPhone 16, Galaxy A55, Redmi Note 14...",
+    searchPlaceholder: "Model nomi: iPhone 16, Galaxy A55…",
     searchButton: "Qidirish",
     popular: "Ommabop:",
     showcaseLabel: "Do'konlardagi narxlar",

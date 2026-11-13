@@ -58,12 +58,12 @@ export const general: typeof uzGeneral = {
     // Sarlavhadagi ajratib ko'rsatiladigan qism — title ichidagi aynan shu matn
     titleAccent: "по выгодной цене",
     // Qisqa variantlar: qidiruv namunasi (telefon) va hero statistika lentasi yorliqlari
-    searchPlaceholderShort: "iPhone 16, Galaxy A55…",
+    searchPlaceholderShort: "iPhone 16, Galaxy A55",
     statProductsShort: "смартфонов",
     statStoresShort: "магазинов",
     statGapShort: "разница цен",
     subtitle: "Цены {{stores}} онлайн-магазинов в одном месте. Найдите модель, сравните цены и купите там, где дешевле.",
-    searchPlaceholder: "Модель: iPhone 16, Galaxy A55, Redmi Note 14...",
+    searchPlaceholder: "Модель: iPhone 16, Galaxy A55…",
     searchButton: "Найти",
     popular: "Популярное:",
     showcaseLabel: "Цены в магазинах",

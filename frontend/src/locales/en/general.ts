@@ -58,12 +58,12 @@ export const general: typeof uzGeneral = {
     // Sarlavhadagi ajratib ko'rsatiladigan qism — title ichidagi aynan shu matn
     titleAccent: "a price that fits your budget",
     // Qisqa variantlar: qidiruv namunasi (telefon) va hero statistika lentasi yorliqlari
-    searchPlaceholderShort: "iPhone 16, Galaxy A55…",
+    searchPlaceholderShort: "iPhone 16, Galaxy A55",
     statProductsShort: "smartphones",
     statStoresShort: "stores",
     statGapShort: "price gap",
     subtitle: "Prices from {{stores}} online stores in one place. Find your model, compare prices and buy where it's cheapest.",
-    searchPlaceholder: "Model: iPhone 16, Galaxy A55, Redmi Note 14...",
+    searchPlaceholder: "Model: iPhone 16, Galaxy A55…",
     searchButton: "Search",
     popular: "Popular:",
     showcaseLabel: "Store prices",

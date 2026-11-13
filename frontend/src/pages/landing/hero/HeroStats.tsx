@@ -36,16 +36,19 @@ function Stat({ value, unit = '', label, accent, live, tip }: {
 }) {
   const n = useCountUp(value);
   return (
-    <div data-tip={live ?? tip} className="min-w-0 px-3 py-2.5 sm:px-5">
-      <p className={`flex items-center gap-1.5 text-lg sm:text-xl font-semibold leading-tight tracking-tight tabular-nums ${
+    <div data-tip={live ?? tip} className="min-w-0 px-3 py-2.5 sm:py-3 text-center">
+      <p className={`text-lg sm:text-xl font-semibold leading-tight tracking-tight tabular-nums ${
         accent ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
+        {/* Nuqta raqam yonida absolyut — raqam ustun markazidan siljimaydi */}
+        <span className="relative inline-block">
         {n.toLocaleString('ru-RU')}{unit}
         {live && (
-          <span className="relative flex h-2 w-2" aria-hidden="true">
+          <span className="absolute -right-3 top-1/2 flex h-2 w-2 -translate-y-1/2" aria-hidden="true">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
         )}
+        </span>
       </p>
       <p className="mt-0.5 text-[11px] sm:text-xs leading-tight text-gray-500 dark:text-gray-400">
         {label}{(live || tip) && <span className="sr-only">. {live ?? tip}</span>}
@@ -56,17 +59,18 @@ function Stat({ value, unit = '', label, accent, live, tip }: {
 
 /**
  * Jonli raqamlar lentasi — /api/stats: mahsulotlar, do'konlar, o'rtacha narx
- * farqi. Bitta glass panel, ustunlar ingichka chiziq bilan ajratilgan;
- * telefonda to'liq kenglikda, kattaroq ekranda — mazmun kengligida.
+ * farqi. Bitta glass panel, ustunlar ingichka chiziq bilan ajratilgan,
+ * kengligi tepadagi qidiruv maydoni bilan bir xil.
  */
 export function HeroStats({ stats, updated }: { stats: Stats | null; updated?: string | null }) {
   const { t } = useLanguage();
   const h = t.home;
   const live = updated ? h.trustUpdated.replace('{{updated}}', updated) : null;
-  if (!stats) return <div className="h-14 w-full sm:w-96 rounded-2xl glass-soft animate-pulse" aria-hidden="true" />;
+  if (!stats) return <div className="h-14 w-full rounded-2xl glass-soft animate-pulse" aria-hidden="true" />;
   const gap = stats.medianPriceGap != null ? Math.round(stats.medianPriceGap * 100) : null;
   return (
-    <div className={`grid w-full sm:inline-grid sm:w-auto ${gap ? 'grid-cols-3' : 'grid-cols-2'} divide-x divide-gray-900/10 dark:divide-white/10 rounded-2xl glass-soft`}>
+    // Qidiruv maydoni bilan bir xil kenglik (Hero: max-w-xl) — chetlari bir chiziqda; ustunlar teng
+    <div className={`grid w-full ${gap ? 'grid-cols-3' : 'grid-cols-2'} divide-x divide-gray-900/10 dark:divide-white/10 rounded-2xl glass-soft`}>
       <Stat value={stats.products} label={h.statProductsShort} />
       <Stat value={stats.markets} label={h.statStoresShort} live={live} />
       {gap ? <Stat value={gap} unit="%" label={h.statGapShort} tip={t.trends.insightText} accent /> : null}

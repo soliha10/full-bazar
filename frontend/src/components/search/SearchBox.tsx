@@ -7,7 +7,8 @@ import { useVoiceSearch } from '../../hooks/useVoiceSearch';
 import { SuggestList, toItems, type SuggestItem } from './SuggestList';
 
 const VARIANTS = {
-  hero:   { box: 'glass rounded-2xl p-1.5 gap-2', input: 'py-3 text-sm md:text-base', icon: 'w-5 h-5 ml-2.5' },
+  // Telefonda boshidagi lupa yashirin — tugmaning o'zida lupa bor, joy namunaga qolsin
+  hero:   { box: 'glass rounded-2xl p-1.5 gap-2', input: 'py-3 pl-2 sm:pl-1 text-sm md:text-base', icon: 'hidden sm:block w-5 h-5 ml-2.5' },
   nav:    { box: 'rounded-2xl border border-gray-900/10 dark:border-white/10 bg-white/60 dark:bg-white/[0.04] backdrop-blur p-1 gap-1.5', input: 'py-1.5 text-sm', icon: 'w-4 h-4 ml-3' },
   mobile: { box: 'rounded-2xl border border-gray-900/10 dark:border-white/10 bg-white/70 dark:bg-white/[0.05] p-1 gap-1', input: 'py-1.5 text-sm', icon: 'w-4 h-4 ml-2.5' },
 } as const;

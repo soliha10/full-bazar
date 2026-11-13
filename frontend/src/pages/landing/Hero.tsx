@@ -5,7 +5,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import type { Product } from '../../components/ProductCard';
 import { setHeroSearchVisible } from '../../utils/heroSearch';
 import { SearchBox } from '../../components/search/SearchBox';
-import { useIsMobile } from '../../hooks/useIsMobile';
+import { useMediaQuery } from '../../hooks/useIsMobile';
 import { DealDeck } from './DealDeck';
 import { Card } from "../../components/Card";
 import { PAGE_CONTAINER } from '../../components/layout';
@@ -54,8 +54,8 @@ export function Hero({ stats, deck, dealsLoading, updated }: {
   const h = t.home;
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
-  // Telefonda qidiruvning to'liq namunasi kesilib qolardi — qisqasi
-  const isMobile = useIsMobile();
+  // Telefonda qidiruv tor — to'liq namuna kesilib qolardi, qisqasi
+  const narrowSearch = useMediaQuery('(max-width: 639px)');
 
   // Hero qidiruvi ko'rinib turganda navbardagi qidiruv yashirin (utils/heroSearch).
   // Birinchi chizilishdan oldin "ko'rinadi" deb belgilanadi — navbar qidiruvi
@@ -75,7 +75,8 @@ export function Hero({ stats, deck, dealsLoading, updated }: {
     <div className="relative isolate overflow-x-clip">
     <HeroBackdrop />
     <section aria-labelledby="hero-title" className={`${PAGE_CONTAINER} pt-10 pb-4 md:pt-20 md:pb-10`}>
-      <div className="flex flex-col md:flex-row md:items-center gap-10 md:gap-16">
+      {/* Yonma-yon faqat lg dan: planshetda takliflar kartasi qidiruvni 131px gacha siqardi */}
+      <div className="flex flex-col lg:flex-row lg:items-center gap-10 lg:gap-16">
         <div className="flex-1 min-w-0">
           <m.h1 {...rise(0)} id="hero-title"
             className="text-gray-900 dark:text-white font-semibold leading-[1.08] tracking-tight mb-7 max-w-2xl"
@@ -83,17 +84,17 @@ export function Hero({ stats, deck, dealsLoading, updated }: {
             <Title text={h.title} accent={h.titleAccent} />
           </m.h1>
           <m.div {...rise(0.15)} className="max-w-xl">
-            <SearchBox variant="hero" formRef={formRef} placeholder={isMobile ? h.searchPlaceholderShort : h.searchPlaceholder} globalShortcut
+            <SearchBox variant="hero" formRef={formRef} placeholder={narrowSearch ? h.searchPlaceholderShort : h.searchPlaceholder} globalShortcut
               onSubmit={(q) => navigate(q ? `/products?search=${encodeURIComponent(q)}` : '/products')} />
           </m.div>
 
           {/* Bitta qator jonli raqam; yangilanish vaqti — do'konlar chipida (nuqta + data-tip) */}
-          <m.div {...rise(0.2)} className="mt-6">
+          <m.div {...rise(0.2)} className="mt-3 max-w-xl">
             <HeroStats stats={stats} updated={updated} />
           </m.div>
         </div>
 
-        <m.div className="md:shrink-0" initial={{ opacity: 0, y: 40, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+        <m.div className="lg:shrink-0" initial={{ opacity: 0, y: 40, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ type: 'spring', stiffness: 180, damping: 22, delay: 0.15 }}>
           {deck.length > 0 ? (
             <StoreOrbit>
