@@ -11,7 +11,7 @@ import { DetailSeo } from "./detail/DetailSeo";
 import { DetailLoading, DetailError } from "./detail/StatusScreens";
 import { MobileTopBar, MobileBuyBar } from "./detail/MobileBars";
 import { ImageGallery } from "./detail/ImageGallery";
-import { MarketOverview, PriceInsight } from "./detail/PriceCards";
+import { PriceInsight } from "./detail/PriceCards";
 import { ProductHeading } from "./detail/ProductHeading";
 import { PriceSection } from "./detail/PriceSection";
 import { DetailTabs } from "./detail/DetailTabs";
@@ -75,17 +75,15 @@ export function ProductDetail() {
 
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
 
-          {/* ── Left: Image ── */}
+          {/* ── Left: Image — desktopda yopishqoq, o'ng ustun uzun bo'lsa bo'sh joy qolmaydi ── */}
           <motion.div
-            className="lg:w-1/2 space-y-4"
+            className="lg:w-1/2 lg:sticky lg:top-24 lg:self-start"
             initial={{ opacity: 0, x: -28 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
           >
             <ImageGallery gallery={gallery} productName={product.name} savings={savings}
               liked={liked} onToggleLike={toggleLike} />
-
-            <MarketOverview product={view ?? product} stats={stats} />
           </motion.div>
 
           {/* ── Right: Info ── */}
