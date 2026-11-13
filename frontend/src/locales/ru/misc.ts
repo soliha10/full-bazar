@@ -55,6 +55,16 @@ export const misc: typeof uzMisc = {
     productsCol: "Товары",
     avgPriceCol: "Средняя цена",
     priceChangesHint: "Самая низкая цена модели в сравнении с ценой 7 дней назад",
+    insightLabel: "Средняя разница цен",
+    insightText: "Настолько в среднем отличается цена одной модели в разных магазинах",
+    insightComparable: "{{count}} моделей продаются минимум в 2 магазинах — можно сравнить и сэкономить",
+    offers: "Предложения",
+    rangeCol: "Диапазон цен",
+    rangeTip: "Дешевле всего {{min}} · в среднем {{avg}} · дороже всего {{max}}",
+    droppedCount: "{{count}} подешевели",
+    risenCount: "{{count}} подорожали",
+    searchedTimes: "Искали {{count}} раз",
+    viewsCount: "Просмотров: {{count}}",
   },
 
   feedback: {

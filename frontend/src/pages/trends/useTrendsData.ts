@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { API, type SearchTrend, type MarketStat, type PopularProduct, type PriceItem } from './types';
+import { API, type SearchTrend, type MarketStat, type PopularProduct, type PriceItem, type TrendsStats } from './types';
 
 /** Tahlil sahifasining barcha ma'lumotlari — to'rtta endpointdan parallel. */
 export function useTrendsData() {
@@ -12,6 +12,7 @@ export function useTrendsData() {
   const [weeklyEvents, setWeeklyEvents] = useState(0);
   const [totalProducts, setTotalProducts] = useState(0);
   const [totalMarkets, setTotalMarkets] = useState(0);
+  const [stats, setStats] = useState<TrendsStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [failedSections, setFailedSections] = useState<string[]>([]);
 
@@ -54,6 +55,7 @@ export function useTrendsData() {
       setRising(price.rising ?? []);
       setTotalProducts(stats.products ?? 0);
       setTotalMarkets(stats.markets ?? 0);
+      setStats(stats.products != null ? stats : null);
       setFailedSections(failed);
       setLoading(false);
     });
@@ -63,6 +65,6 @@ export function useTrendsData() {
 
   return {
     searchTrends, markets, popular, dropping, rising,
-    weeklyEvents, totalProducts, totalMarkets, loading, failedSections,
+    weeklyEvents, totalProducts, totalMarkets, stats, loading, failedSections,
   };
 }

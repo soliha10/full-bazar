@@ -53,6 +53,16 @@ export const misc = {
     productsCol: "Mahsulotlar",
     avgPriceCol: "O'rtacha narx",
     priceChangesHint: "Modelning eng arzon narxi 7 kun oldingisi bilan solishtirilgan",
+    insightLabel: "O'rtacha narx farqi",
+    insightText: "Bir xil model turli do'konlarda o'rtacha shuncha farq qiladi",
+    insightComparable: "{{count}} ta model kamida 2 do'konda sotiladi — solishtirib, tejash mumkin",
+    offers: "Takliflar",
+    rangeCol: "Narx oralig'i",
+    rangeTip: "Eng arzon {{min}} · o'rtacha {{avg}} · eng qimmat {{max}}",
+    droppedCount: "{{count}} ta arzonlashdi",
+    risenCount: "{{count}} ta qimmatlashdi",
+    searchedTimes: "{{count}} marta qidirildi",
+    viewsCount: "{{count}} marta ko'rildi",
   },
 
   feedback: {

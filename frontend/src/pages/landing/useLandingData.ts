@@ -3,6 +3,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { mapProduct } from '../../utils/productMapper';
 import type { Product } from '../../components/ProductCard';
 import { fmt, type Stats } from './shared';
+import { relativeUpdated } from '../../utils/relativeUpdated';
 
 /** Bosh sahifaning serverdan keladigan ma'lumotlari (statistika, eng katta
  *  narx farqlari) va ulardan yasaladigan matnlar. */
@@ -40,16 +41,7 @@ export function useLandingData() {
     return () => { alive = false; };
   }, [attempt]);
 
-  const relativeUpdated = (iso: string | null | undefined) => {
-    if (!iso) return null;
-    const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
-    if (Number.isNaN(mins)) return null;
-    if (mins < 2) return h.updatedJustNow;
-    if (mins < 60) return h.updatedMinutes.replace('{{count}}', String(mins));
-    if (mins < 48 * 60) return h.updatedHours.replace('{{count}}', String(Math.floor(mins / 60)));
-    return h.updatedDays.replace('{{count}}', String(Math.floor(mins / 1440)));
-  };
-  const updated = relativeUpdated(stats?.lastUpdated);
+  const updated = relativeUpdated(stats?.lastUpdated, h);
   const fill = (s: string) => s
     .replace('{{products}}', stats ? fmt(stats.products) : '…')
     .replace('{{stores}}', stats ? fmt(stats.markets) : '…')

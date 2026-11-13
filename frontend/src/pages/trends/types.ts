@@ -9,3 +9,12 @@ export interface MarketStat {
 }
 export interface PopularProduct { id: string; name: string; price: number; image: string | null; viewCount: number }
 export interface PriceItem { id: string; name: string; price: number; oldPrice: number; priceChange: number; pctChange: number }
+
+/** /api/stats — tahlil sahifasining bosh xulosasi uchun */
+export interface TrendsStats {
+  products: number; markets: number; offers: number;
+  comparableProducts: number;
+  /** Bir model do'konlar orasidagi narx farqi medianasi, 0..1 */
+  medianPriceGap: number | null;
+  lastUpdated: string | null;
+}

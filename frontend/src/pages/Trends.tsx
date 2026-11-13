@@ -2,6 +2,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { SEO, SITE_URL } from '../components/SEO';
 import { useTrendsData } from './trends/useTrendsData';
 import { StatCards } from './trends/StatCards';
+import { TrendsHero } from './trends/TrendsHero';
 import { StoresBoard } from './trends/Charts';
 import { SearchTrendsSection, PriceChanges } from './trends/Lists';
 import { PopularSection } from './trends/PopularSection';
@@ -11,7 +12,7 @@ export function Trends() {
   const { t, language } = useLanguage();
   const {
     searchTrends, markets, popular, dropping, rising,
-    weeklyEvents, totalProducts, totalMarkets, loading, failedSections,
+    weeklyEvents, totalProducts, totalMarkets, stats, loading, failedSections,
   } = useTrendsData();
 
   if (loading) {
@@ -39,13 +40,8 @@ export function Trends() {
         ]}
       />
 
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight">{t.trends.title}</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          {t.trends.subtitle}
-        </p>
-      </div>
+      {/* Sarlavha va bozorning asosiy xulosasi */}
+      <TrendsHero stats={stats} />
 
       {/* Qism yuklanmasa — jimgina bo'sh qoldirmaymiz */}
       {failedSections.length > 0 && (
@@ -61,7 +57,7 @@ export function Trends() {
 
       {/* Stat cards */}
       <StatCards totalProducts={totalProducts} totalMarkets={totalMarkets}
-        weeklyEvents={weeklyEvents} droppingCount={dropping.length} />
+        offers={stats?.offers ?? null} weeklyEvents={weeklyEvents} />
 
       {/* Search trends */}
       <SearchTrendsSection searchTrends={searchTrends} />

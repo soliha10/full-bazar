@@ -17,6 +17,11 @@ export function StoresBoard({ markets }: { markets: MarketStat[] }) {
   const rows = [...markets].sort((a, b) => b.productCount - a.productCount);
   const max = Math.max(...rows.map(m => m.productCount), 1);
   if (rows.length === 0) return null;
+  // Narx oralig'i — logarifmik shkala: narxlar 100 mingdan 100 mln gacha, chiziqli
+  // shkalada arzon do'konlar bir nuqtaga yopishib qolardi
+  const prices = rows.flatMap(m => [m.minPrice, m.maxPrice]).filter(v => v > 0);
+  const lo = Math.log(Math.min(...prices)), hi = Math.log(Math.max(...prices));
+  const pos = (v: number) => (hi > lo && v > 0 ? ((Math.log(v) - lo) / (hi - lo)) * 100 : 0);
 
   return (
     <section aria-labelledby="stores-board">
@@ -28,6 +33,7 @@ export function StoresBoard({ markets }: { markets: MarketStat[] }) {
             <tr className="border-b border-gray-900/5 dark:border-white/10">
               <th scope="col" className="px-4 py-3 text-left font-normal sm:w-44">{tr.storeCol}</th>
               <th scope="col" className="hidden sm:table-cell px-4 py-3 text-left font-normal">{tr.productsCol}</th>
+              <th scope="col" className="hidden md:table-cell px-4 py-3 text-left font-normal">{tr.rangeCol}</th>
               <th scope="col" className="px-4 py-3 text-right font-normal whitespace-nowrap w-32 md:w-40">{tr.avgPriceCol}</th>
             </tr>
           </thead>
@@ -48,9 +54,20 @@ export function StoresBoard({ markets }: { markets: MarketStat[] }) {
                 </td>
                 <td className="hidden sm:table-cell px-4 py-2.5">
                   <div className="flex items-center gap-3">
-                    <div className="h-2.5 rounded-r bg-violet-600 dark:bg-violet-500 min-w-[4px]"
+                    <div className="h-2.5 rounded-r bg-linear-to-r from-violet-600 to-violet-400 min-w-[4px]"
                       style={{ width: `calc((100% - 3.5rem) * ${m.productCount / max})` }} />
                     <span className="text-xs tabular-nums text-gray-600 dark:text-gray-300">{m.productCount}</span>
+                  </div>
+                </td>
+                <td className="hidden md:table-cell px-4 py-2.5">
+                  {/* Eng arzon — eng qimmat chizig'i, nuqta — o'rtacha narx; raqamlar — data-tip */}
+                  <div className="relative h-5 cursor-default" data-tip={tr.rangeTip
+                    .replace('{{min}}', formatSum(m.minPrice)).replace('{{avg}}', formatSum(m.avgPrice)).replace('{{max}}', formatSum(m.maxPrice))}>
+                    <div className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full glass-soft" />
+                    <div className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-linear-to-r from-violet-400 to-fuchsia-500"
+                      style={{ left: `${pos(m.minPrice)}%`, width: `${Math.max(pos(m.maxPrice) - pos(m.minPrice), 1)}%` }} />
+                    <span className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white dark:border-gray-900 bg-violet-600 shadow"
+                      style={{ left: `${pos(m.avgPrice)}%` }} />
                   </div>
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-gray-700 dark:text-gray-200 whitespace-nowrap">
