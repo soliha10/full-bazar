@@ -119,8 +119,6 @@ export const tracking: typeof uzTracking = {
     colorCheapestHint: "Дешевле всего: {{color}} — {{price}}",
     moreSpecs: "Ещё {{count}} характеристики",
     fewerSpecs: "Свернуть",
-    moreColors: "Ещё {{count}} цвета",
-    fewerColors: "Меньше цветов",
     actionFavorite: "Добавить в избранное",
     actionUnfavorite: "Убрать из избранного",
     actionShare: "Поделиться",

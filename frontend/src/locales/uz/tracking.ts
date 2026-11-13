@@ -117,8 +117,6 @@ export const tracking = {
     colorCheapestHint: "Eng arzon: {{color}} — {{price}}",
     moreSpecs: "Yana {{count}} ta xususiyat",
     fewerSpecs: "Kamroq",
-    moreColors: "Yana {{count}} ta rang",
-    fewerColors: "Kamroq rang",
     actionFavorite: "Sevimlilarga qo'shish",
     actionUnfavorite: "Sevimlilardan olib tashlash",
     actionShare: "Ulashish",
