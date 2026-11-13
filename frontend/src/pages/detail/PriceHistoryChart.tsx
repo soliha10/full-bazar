@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CircleCheck, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
+import { CircleCheck, Table2, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum } from "../../utils/productMapper";
 import type { PricePoint } from "./useProductDetail";
@@ -11,8 +11,6 @@ import { historyFormatters } from "./historyFormat";
 // Tarix 90 kunlik yuklanadi (useProductDetail), davr mijozda kesiladi
 const PERIODS = [30, 90] as const;
 const MOBILE = '(max-width: 767px)';
-// Oraliq chegarasi — taxminiy qiymat: "2 542 774" emas, "2 543 000"
-const round1k = (v: number) => Math.round(v / 1000) * 1000;
 
 // Holat ranglari faqat holat ma'nosida va doim ikonka + matn bilan (dataviz: status)
 export const VERDICT: Record<PriceVerdict, { icon: LucideIcon; tone: string }> = {
@@ -26,8 +24,10 @@ const seg = (on: boolean) => `px-3 py-1.5 rounded-lg text-xs font-medium transit
 
 /**
  * ── Narx tarixi ──
- * Xaridorning savoli "hozir olsam bo'ladimi?" — javob grafik ustida, so'z
- * bilan: narx odatdagidan past / odatiy / yuqori. Grafik uni tasdiqlaydi.
+ * "Hozir olsam bo'ladimi?" ga javob (past/odatiy/yuqori) — narx kartasida; bu
+ * yerda faqat uni tasdiqlovchi grafik va davrning ikki raqami (eng past narx,
+ * o'zgarish) sarlavha qatorida. Izoh jumlasi yo'q — u kartadagi holat, legenda
+ * va grafikni so'z bilan takrorlardi. Jadval ko'rinishi — ikonka orqali.
  */
 export function PriceHistoryChart({ history, markets }: {
   /** null — hali yuklanmoqda */
@@ -38,6 +38,7 @@ export function PriceHistoryChart({ history, markets }: {
   const d = t.detailPage;
   const fmt = useMemo(() => historyFormatters(d, language === 'en' ? '.' : ','), [d, language]);
   const [days, setDays] = useState<(typeof PERIODS)[number]>(90);
+  const [showTable, setShowTable] = useState(false);
   const [compact, setCompact] = useState(() => typeof window !== 'undefined' && window.matchMedia(MOBILE).matches);
   useEffect(() => {
     const mq = window.matchMedia(MOBILE);
@@ -60,65 +61,67 @@ export function PriceHistoryChart({ history, markets }: {
   const changeTone = change === null || Math.abs(change) < 0.05 ? 'text-gray-900 dark:text-white'
     : change < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400';
 
+  const ready = history !== null && rows.length >= 2;
+
   return (
     <section aria-labelledby="history-title" className="h-full">
       <div className="h-full glass rounded-2xl p-4">
-        <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-3">
           <h2 id="history-title" className="text-sm font-semibold text-gray-900 dark:text-white">{d.priceHistoryTitle}</h2>
-          <div className="flex flex-wrap items-center gap-2">
-          <div role="group" className="flex rounded-xl bg-gray-900/5 dark:bg-white/5 p-1">
-            {PERIODS.map(p => (
-              <button key={p} type="button" aria-pressed={days === p} onClick={() => setDays(p)} className={seg(days === p)}>
-                {d.periodDays.replace('{{n}}', String(p))}
+          {/* Davrning ikki raqami — sarlavha qatorida, alohida qator egallamaydi */}
+          {ready && (
+            <dl className="flex flex-wrap gap-x-5 gap-y-1 text-xs md:text-sm">
+              {summary.low && (
+                <div className="flex gap-1.5">
+                  <dt className="text-gray-500 dark:text-gray-400">{d.historyLow}:</dt>
+                  <dd className="font-medium tabular-nums text-gray-900 dark:text-white">
+                    {formatSum(summary.low.price)} <span className="font-normal text-gray-500 dark:text-gray-400">· {fmt.short(summary.low.date)}</span>
+                  </dd>
+                </div>
+              )}
+              {changeText && (
+                <div className="flex gap-1.5">
+                  <dt className="text-gray-500 dark:text-gray-400">{d.historyChange}:</dt>
+                  <dd className={`font-medium tabular-nums ${changeTone}`}>{changeText}</dd>
+                </div>
+              )}
+            </dl>
+          )}
+          <div className="ml-auto flex items-center gap-2">
+            {ready && (
+              <button type="button" onClick={() => setShowTable(v => !v)} aria-pressed={showTable} aria-controls="history-table"
+                title={d.historyTableTitle} aria-label={d.historyTableTitle}
+                className={`flex w-8 h-8 items-center justify-center rounded-lg transition-colors ${showTable
+                  ? 'bg-violet-600 text-white' : 'bg-gray-900/5 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}>
+                <Table2 className="w-4 h-4" aria-hidden="true" />
               </button>
-            ))}
-          </div>
+            )}
+            <div role="group" className="flex rounded-xl bg-gray-900/5 dark:bg-white/5 p-1">
+              {PERIODS.map(p => (
+                <button key={p} type="button" aria-pressed={days === p} onClick={() => setDays(p)} className={seg(days === p)}>
+                  {d.periodDays.replace('{{n}}', String(p))}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {history === null ? (
           <div className="h-[200px] rounded-2xl bg-gray-900/5 dark:bg-white/5 animate-pulse" aria-hidden="true" />
-        ) : rows.length < 2 ? (
+        ) : !ready ? (
           <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{d.collectingData}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">{d.noPriceHistory}</p>
           </div>
         ) : (
           <>
-            {/* Xulosa jumlasi; holat yorlig'i (past/odatiy/yuqori) sahifa tepasidagi narx kartasida */}
-            <div className="mb-3">
-              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 leading-snug">
-                {typical && (typical.point
-                  ? d.verdictTextPoint.replace('{{price}}', formatSum(round1k((typical.low + typical.high) / 2)))
-                  : d.verdictText.replace('{{low}}', formatSum(round1k(typical.low))).replace('{{high}}', formatSum(round1k(typical.high))))}{' '}
-                {summary.current && d.verdictNow.replace('{{now}}', formatSum(summary.current.price)).replace('{{store}}', summary.current.source)}
-              </p>
-            </div>
-
             {/* Odatiy narxdan og'ish: 30 kun — kunlik, 90 kun — haftalik ustunlar */}
             <HistoryDeviation buckets={buckets} typical={baseline} fmtShort={fmt.short} fmtLong={fmt.long} compact={compact}
               labels={{ typical: d.devTypical, cheaper: d.devCheaper, pricier: d.devPricier, vsTypical: d.devVsTypical, range: d.candleRange }} />
-
-            {/* Davr bo'yicha ikki raqam — grafik ostida, bir qatorda */}
-            <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs md:text-sm">
-              {summary.low && (
-                <div className="flex gap-2">
-                  <dt className="text-gray-500 dark:text-gray-400">{d.historyLow}:</dt>
-                  <dd className="font-medium text-gray-900 dark:text-white">
-                    {formatSum(summary.low.price)} <span className="font-normal text-gray-500 dark:text-gray-400">· {fmt.short(summary.low.date)}</span>
-                  </dd>
-                </div>
-              )}
-              {changeText && (
-                <div className="flex gap-2">
-                  <dt className="text-gray-500 dark:text-gray-400">{d.historyChange}:</dt>
-                  <dd className={`font-medium ${changeTone}`}>{changeText}</dd>
-                </div>
-              )}
-            </dl>
-
-            <HistoryTable rows={rows} fmtDate={fmt.long}
-              labels={{ title: d.historyTableTitle, date: d.historyTableDate, store: d.historyTableStore, price: d.historyTablePrice, change: d.historyTableChange }} />
+            {showTable && (
+              <HistoryTable rows={rows} fmtDate={fmt.long}
+                labels={{ date: d.historyTableDate, store: d.historyTableStore, price: d.historyTablePrice, change: d.historyTableChange }} />
+            )}
           </>
         )}
       </div>

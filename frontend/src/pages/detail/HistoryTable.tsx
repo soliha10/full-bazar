@@ -10,17 +10,15 @@ import type { DayRow } from "./priceHistorySeries";
 export function HistoryTable({ rows, fmtDate, labels }: {
   rows: DayRow[];
   fmtDate: (iso: string) => string;
-  labels: { date: string; store: string; price: string; change: string; title: string };
+  labels: { date: string; store: string; price: string; change: string };
 }) {
   const changes = rows.filter((r, i) => i === 0 || r.min !== rows[i - 1].min || r.minSource !== rows[i - 1].minSource);
   const list = changes.map((r, i) => ({ ...r, delta: i === 0 ? null : r.min - changes[i - 1].min })).reverse();
 
   return (
-    <details className="group mt-2.5 rounded-xl border border-gray-900/5 dark:border-white/10">
-      <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 [&::-webkit-details-marker]:hidden">
-        {labels.title} <span className="text-xs text-gray-400">{list.length}</span>
-      </summary>
-      <div className="max-h-72 overflow-y-auto border-t border-gray-900/5 dark:border-white/10">
+    // Ochish tugmasi — grafik sarlavhasida (jadval ikonkasi); bu yerda faqat jadval
+    <div className="mt-2.5 rounded-xl border border-gray-900/5 dark:border-white/10">
+      <div id="history-table" className="max-h-72 overflow-y-auto">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur text-xs text-gray-500 dark:text-gray-400">
             <tr>
@@ -47,6 +45,6 @@ export function HistoryTable({ rows, fmtDate, labels }: {
           </tbody>
         </table>
       </div>
-    </details>
+    </div>
   );
 }
