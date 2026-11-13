@@ -34,13 +34,14 @@
 		import api
 	}
 
-	# Eski WordPress sayti qoldiqlari — Google indeksdan olib tashlashi uchun 404
+	# Eski WordPress sayti qoldiqlari — 410 Gone: Google ularni 404 dan tezroq
+	# indeksdan butunlay olib tashlaydi (404 da "vaqtincha" deb qayta-qayta tekshiradi)
 	@wordpress path /sample-page /sample-page-2 /sample-page-3 /wp-admin/* /wp-content/* /wp-includes/* /wp-json/* /wp-login.php /wp-cron.php /xmlrpc.php /feed /feed/* /comments/feed/* /category/* /tag/* /author/* /2025/* /2026/*
 	handle @wordpress {
 		root * /srv/site
 		rewrite * /404.html
 		file_server {
-			status 404
+			status 410
 		}
 	}
 
