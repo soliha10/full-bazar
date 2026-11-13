@@ -6,7 +6,9 @@ import { trackStoreClick } from "../../services/tracking";
 import type { PriceStats } from "./priceStats";
 import { StoreLogo } from '../../components/StoreLogo';
 
-/** Desktop price table — barcha takliflar narx bo'yicha o'sish tartibida. */
+/** Desktop price table — takliflar narx bo'yicha o'sish tartibida.
+ *  "Mavjudlik" ustuni yo'q: do'konlardan bunday ma'lumot kelmaydi — ilgari har
+ *  qatorda qotirilgan "Sotuvda bor" yozuvi turardi. */
 // Sukut bo'yicha shuncha do'kon: 12 ta qator blokni ekrandan uzun qilib yuborardi
 export const OFFERS_VISIBLE = 5;
 
@@ -26,7 +28,6 @@ export function OffersTable({ product, sortedMarkets, selectedMarketIndex, onSel
         <thead>
           <tr>
             <th className="text-left text-xs font-normal text-gray-500 dark:text-gray-400 pb-3">{t.detail.marketplace}</th>
-            <th className="text-left text-xs font-normal text-gray-500 dark:text-gray-400 pb-3">{t.detail.availability}</th>
             <th className="text-left text-xs font-normal text-gray-500 dark:text-gray-400 pb-3">{t.detail.price}</th>
             <th className="pb-3" />
           </tr>
@@ -45,7 +46,7 @@ export function OffersTable({ product, sortedMarkets, selectedMarketIndex, onSel
                   : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
               }`}
             >
-              <td className="py-3.5">
+              <td className="py-2.5">
                 <div className="flex items-center gap-2.5">
                   <StoreLogo name={market.source} size="md" />
                   <span className="font-medium text-gray-900 dark:text-white text-sm">{market.source}</span>
@@ -62,13 +63,7 @@ export function OffersTable({ product, sortedMarkets, selectedMarketIndex, onSel
                   </div>
                 )}
               </td>
-              <td className="py-3.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{t.detail.inStock}</span>
-                </div>
-              </td>
-              <td className="py-3.5">
+              <td className="py-2.5">
                 <div className="font-semibold text-gray-900 dark:text-white text-sm tabular-nums">{formatSum(market.price)}</div>
                 {/* Eng arzonidan qancha qimmatligi — agregatorlarda standart */}
                 {idx > 0 && market.price > sortedMarkets[0].price && (
@@ -77,7 +72,7 @@ export function OffersTable({ product, sortedMarkets, selectedMarketIndex, onSel
                   </div>
                 )}
               </td>
-              <td className="py-3.5 text-right">
+              <td className="py-2.5 text-right">
                 <a
                   href={market.url}
                   target="_blank"
