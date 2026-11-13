@@ -30,8 +30,11 @@ export function DetailSeo({ product }: { product: Product }) {
     url: `${SITE_URL}${productPath(product)}`,
     ratingValue: product.rating > 0 ? product.rating : undefined,
     reviewCount: product.reviews > 0 ? product.reviews : undefined,
-    brand: product.category || 'Bazarcom',
+    brand: product.brandName || undefined,
     sku: String(product.id),
+    images: product.images,
+    sellers: (product.markets ?? []).filter(m => Number(m.price) > 0)
+      .map(m => ({ name: m.source, price: Number(m.price), url: m.url })),
     offerCount: marketPrices.length,
     lowPrice: marketPrices.length ? Math.min(...marketPrices) : undefined,
     highPrice: marketPrices.length ? Math.max(...marketPrices) : undefined,
@@ -40,6 +43,7 @@ export function DetailSeo({ product }: { product: Product }) {
   const breadcrumbs = product ? [
     { name: t.nav.home, url: '/' },
     { name: t.listing.seoSmartphones, url: '/products' },
+    ...(product.brand && product.brandName ? [{ name: product.brandName, url: `/brand/${product.brand}` }] : []),
     { name: product.name, url: productPath(product) },
   ] : undefined;
 

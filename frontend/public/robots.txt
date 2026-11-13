@@ -7,8 +7,21 @@ Disallow: /wishlist
 Disallow: /watchlist
 Disallow: /compare
 
-# Filtr/sahifalash kombinatsiyalari — cheksiz URL variantlarini oldini oladi
+# Filtr/sahifalash kombinatsiyalari — cheksiz URL variantlarini oldini oladi.
+# Brend bo'yicha toza sahifalar ochiq: /brand/samsung, /brand/apple ...
 Disallow: /products?*
+Allow: /brand/
+
+# Yandex: so'rov parametrlari bir sahifaning nusxalari (kanonik — parametrsiz)
+User-agent: Yandex
+Allow: /
+Allow: /brand/
+Disallow: /profile
+Disallow: /wishlist
+Disallow: /watchlist
+Disallow: /compare
+Clean-param: search&brand&market&sort&page&category /products
+Clean-param: utm_source&utm_medium&utm_campaign&utm_content&utm_term&color
 
 # AI/skreyper botlari
 User-agent: GPTBot

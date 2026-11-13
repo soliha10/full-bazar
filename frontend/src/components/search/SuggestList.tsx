@@ -16,7 +16,7 @@ export function toItems(data: Suggestions | null, q: string): SuggestItem[] {
   if (!q) return [];
   const items: SuggestItem[] = [];
   for (const b of data?.brands ?? []) {
-    items.push({ kind: 'brand', id: `b-${b.key}`, href: `/products?brand=${encodeURIComponent(b.key)}`, label: b.name, count: b.count });
+    items.push({ kind: 'brand', id: `b-${b.key}`, href: `/brand/${encodeURIComponent(b.key)}`, label: b.name, count: b.count });
   }
   for (const p of data?.products ?? []) {
     items.push({ kind: 'product', id: `p-${p.id}`, href: productPath(p), label: p.name, image: p.image, price: p.price, stores: p.stores });

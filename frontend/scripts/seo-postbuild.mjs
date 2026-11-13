@@ -27,7 +27,7 @@ const ROUTES = [
     path: '/',
     title: `${BRAND} — O'zbekistondagi smartfon narxlarini solishtirish`,
     description:
-      "Bazarcom — Asaxiy, Texnomart, Olcha, Mediapark va boshqa O'zbekiston do'konlaridagi smartfon narxlarini bir joyda solishtiring. Eng arzon narxni toping, narx tushishini kuzating.",
+      "Bazarcom — Asaxiy, Texnomart, Olcha, Glotr va boshqa O'zbekiston do'konlaridagi smartfon narxlarini bir joyda solishtiring. Eng arzon narxni toping, narx tushishini kuzating.",
     changefreq: 'daily',
     priority: '1.0',
   },

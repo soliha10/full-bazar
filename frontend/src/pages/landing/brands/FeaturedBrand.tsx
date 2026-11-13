@@ -59,7 +59,7 @@ export function FeaturedBrand({ b, rank, share, hero, className = '' }: {
   const images = (b.images?.length ? b.images : b.image ? [b.image] : []).slice(0, 3);
 
   return (
-    <Card as={Link} interactive padding="none" to={`/products?brand=${encodeURIComponent(b.key)}`}
+    <Card as={Link} interactive padding="none" to={`/brand/${encodeURIComponent(b.key)}`}
       className={`group relative isolate overflow-hidden flex ${hero ? 'flex-col md:flex-row md:items-center lg:flex-col lg:items-stretch' : 'flex-col lg:flex-row lg:items-center'} gap-4 p-4 sm:p-5 ${className}`}>
       {/* Bezak: binafsha nur — brend rangi qo'lda yozilmaydi, sayt aksenti */}
       <span aria-hidden="true"

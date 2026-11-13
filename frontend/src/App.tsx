@@ -102,6 +102,8 @@ function AppContent() {
           <Routes>
             <Route path="/"            element={<Landing />} />
             <Route path="/products"    element={<ProductListing />} />
+            {/* Brend sahifasi — katalogning o'zi, brend filtri manzilda (SEO: toza URL) */}
+            <Route path="/brand/:brand" element={<ProductListing />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/wishlist"    element={<Wishlist />} />
             <Route path="/watchlist"   element={<Watchlist />} />

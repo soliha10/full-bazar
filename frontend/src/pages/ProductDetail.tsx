@@ -60,6 +60,15 @@ export function ProductDetail() {
             {(t.detail.categories as any)[(product.category ?? '').toLowerCase()] ?? product.category}
           </Link>
           <span aria-hidden="true">/</span>
+          {/* Brend sahifasiga ichki havola (SEO: /brand/<kalit>) */}
+          {product.brand && product.brandName && (
+            <>
+              <Link to={`/brand/${product.brand}`} className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors shrink-0">
+                {product.brandName}
+              </Link>
+              <span aria-hidden="true">/</span>
+            </>
+          )}
           <span className="text-gray-900 dark:text-white font-medium truncate">{product.name}</span>
         </nav>
 

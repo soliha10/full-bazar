@@ -58,6 +58,9 @@ BRAND_KEYWORDS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("nothing",  ("nothing phone",)),
 )
 
+# Brend sahifalari (/brand/<kalit>) va sitemap uchun — faqat shu kalitlar haqiqiy
+CANONICAL_BRANDS: frozenset[str] = frozenset(key for key, _ in BRAND_KEYWORDS)
+
 # GSMArena ishlab chiqaruvchi sahifasi bitta brend ostida bir nechta
 # sub-brendni ko'rsatadi (Xiaomi sahifasida Redmi va Poco, ZTE da nubia).
 # Model nomiga qarab to'g'ri brendga ajratamiz.

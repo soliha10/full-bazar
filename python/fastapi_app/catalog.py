@@ -8,6 +8,7 @@ from typing import Any
 import asyncpg
 
 import brands
+from brand_stats import display_name
 from resp_cache import _cache_get, _cache_put, _single_flight
 
 # _store_specs xususiyatlar ro'yxatini app.state ga ham yozadi. main.py ni
@@ -51,6 +52,11 @@ def _row_to_product(row: asyncpg.Record, markets: list[dict], with_variants: boo
         "url": best.get("url", row["url"] or "#"),
         "markets": sorted_markets,
     }
+    # Brend — nomdan (filtr va brend sahifasi /brand/<kalit> bilan bir xil qoida);
+    # mahsulot sahifasining non bo'laklari va JSON-LD dagi brand shundan
+    brand_key = brands.extract_brand(f"{row['name'] or ''} {row['keywords'] or ''}")
+    product["brand"] = brand_key or None
+    product["brandName"] = display_name(brand_key) if brand_key else None
     # Rang variantlari ({color, images, offers, price}, sync/variants.py) — faqat
     # mahsulot sahifasiga: katalogning 200 talik ro'yxatida har karta uchun
     # barcha ranglarning rasm va takliflari ortiqcha yuk

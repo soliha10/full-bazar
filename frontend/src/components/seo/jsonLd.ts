@@ -1,4 +1,4 @@
-import { SITE_NAME, SITE_URL, type Breadcrumb, type ProductSchema } from './config';
+import { SITE_URL, type Breadcrumb, type ProductSchema } from './config';
 
 /** Sahifaning JSON-LD @graph elementlari: non bo'laklari va mahsulot */
 export function buildGraph(breadcrumbs?: Breadcrumb[], productSchema?: ProductSchema): Record<string, unknown>[] {
@@ -30,6 +30,15 @@ export function buildGraph(breadcrumbs?: Breadcrumb[], productSchema?: ProductSc
               productSchema.availability === 'InStock'
                 ? 'https://schema.org/InStock'
                 : 'https://schema.org/OutOfStock',
+            // python/fastapi_app/seo.py dagi server nusxasi bilan bir xil
+            ...(productSchema.sellers?.length ? {
+              offers: [...productSchema.sellers].sort((a, b) => a.price - b.price).map(s => ({
+                '@type': 'Offer', price: s.price, priceCurrency: productSchema.currency,
+                url: s.url || productSchema.url, itemCondition: 'https://schema.org/NewCondition',
+                availability: productSchema.availability === 'InStock' ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                seller: { '@type': 'Organization', name: s.name },
+              })),
+            } : {}),
           }
         : {
             '@type': 'Offer',
@@ -46,11 +55,13 @@ export function buildGraph(breadcrumbs?: Breadcrumb[], productSchema?: ProductSc
     const product: Record<string, unknown> = {
       '@type': 'Product',
       name: productSchema.name,
-      image: productSchema.image,
+      image: [productSchema.image, ...(productSchema.images ?? []).filter(i => i !== productSchema.image)]
+        .filter(i => /^https?:\/\//.test(i)).slice(0, 6),
       description: productSchema.description,
-      brand: { '@type': 'Brand', name: productSchema.brand || SITE_NAME },
       offers: offer,
     };
+    // Brend noma'lum bo'lsa — yozilmaydi (ilgari o'rniga kategoriya/sayt nomi tushardi)
+    if (productSchema.brand) product.brand = { '@type': 'Brand', name: productSchema.brand };
     if (productSchema.sku) product.sku = productSchema.sku;
     if (productSchema.ratingValue && productSchema.reviewCount) {
       product.aggregateRating = {

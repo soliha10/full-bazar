@@ -104,6 +104,10 @@ export function SEO({
     setLink('canonical', canonical);
 
     // ── JSON-LD ────────────────────────────────────────────────────────────
+    // Server (pages.py) birinchi yuklanishda o'zinikini yozadi — JS ishlatmaydigan
+    // botlar uchun. Keyin uni shu yerdagi to'liq nusxa almashtiradi: aks holda
+    // sahifada ikkita Product bo'lardi, SPA ichida o'tilganda esa eski sahifaniki qolardi.
+    document.getElementById('ld-json-server')?.remove();
     const graph = buildGraph(breadcrumbs, productSchema);
 
     let ldScript: HTMLScriptElement | null = null;

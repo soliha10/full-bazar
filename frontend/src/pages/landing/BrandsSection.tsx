@@ -17,7 +17,7 @@ function BrandTile({ b, index }: { b: BrandFacet; index: number }) {
   const { t } = useLanguage();
   return (
     <li className="card-rise" style={{ '--i': index } as React.CSSProperties}>
-      <Card as={Link} interactive padding="none" to={`/products?brand=${encodeURIComponent(b.key)}`}
+      <Card as={Link} interactive padding="none" to={`/brand/${encodeURIComponent(b.key)}`}
         className="group flex h-full flex-col items-center gap-2 px-2 py-3 text-center">
         <span className="flex w-12 h-12 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-black/5 dark:ring-white/10 shadow-sm transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-105">
           {b.image

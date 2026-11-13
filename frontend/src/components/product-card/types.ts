@@ -22,6 +22,10 @@ export interface Product {
   /** Faqat mahsulot sahifasi javobida */
   variants?: ProductVariant[];
   category: string;
+  /** Brend kaliti nomdan (API: catalog._row_to_product) — /brand/<kalit> sahifasi */
+  brand?: string | null;
+  /** Ko'rinadigan brend nomi: "Samsung", "ZTE" */
+  brandName?: string | null;
   inStock: boolean;
   description?: string;
   source?: string;

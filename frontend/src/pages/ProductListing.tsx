@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { ChevronRight } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { SEO, SITE_URL } from '../components/SEO';
 import { useListingFilters } from './listing/useListingFilters';
@@ -13,6 +13,7 @@ import { ActiveFilterChips } from './listing/ActiveFilterChips';
 import { ProductResults } from './listing/ProductResults';
 import { MobileFilterSheet } from './listing/MobileFilterSheet';
 import { PAGE_CONTAINER } from '../components/layout';
+import { formatSum } from '../utils/productMapper';
 
 export function ProductListing() {
   const { t, language } = useLanguage();
@@ -21,16 +22,37 @@ export function ProductListing() {
   // Hooklar tartibi muhim: effektlar aynan shu ketma-ketlikda ishlaydi
   // (filtr holati → mahsulotlar/cheksiz aylantirish → sessiya va aylantirish).
   const f = useListingFilters();
-  const { searchQuery, selectedBrand, selectedCategory, selectedMarketplaces, viewMode } = f;
+  const { searchQuery, selectedBrand, selectedCategory, selectedMarketplaces, viewMode, brandRoute, brandFacets } = f;
   const { products: filteredProducts, isLoading, isFetchingNextPage, hasMore, total, status, refetch, sentinelRef } =
     useInfiniteProducts(f);
   const actions = useFilterActions(f);
   const { activeFilterCount, brandLabel } = actions;
   useListingEffects(f, isLoading, filteredProducts.length);
+  const location = useLocation();
+
+  // Brend sahifasida (/brand/:brand) foydalanuvchi brend filtrini o'zgartirsa —
+  // manzil ham: boshqa brend tanlansa uning sahifasi, olib tashlansa — katalog.
+  // Manzilning o'zi o'zgargan renderda (havola bosildi) filtr manzilga ergashadi
+  // (useListingFilters), bu yerda qaytarib yuborilmaydi — aks holda eski brendga qaytardi.
+  const prevRoute = useRef(brandRoute);
+  useEffect(() => {
+    const routeChanged = prevRoute.current !== brandRoute;
+    prevRoute.current = brandRoute;
+    if (!brandRoute || routeChanged || selectedBrand === brandRoute) return;
+    navigate((selectedBrand ? `/brand/${selectedBrand}` : '/products') + location.search, { replace: true });
+  }, [brandRoute, selectedBrand, navigate, location.search]);
+
+  // Brend sahifasi: faqat brend filtri, qidiruvsiz — indekslanadi, kanonik /brand/<kalit>
+  const isBrandPage = Boolean(brandRoute) && selectedBrand === brandRoute && !searchQuery;
+  const brandFacet = isBrandPage ? brandFacets.find(b => b.key === brandRoute) : undefined;
 
   // Matnlar lokal fayllardan: ilgari bu yerda faqat uz/ru tanlovi bor edi,
   // shuning uchun ingliz tilida sarlavha ruscha chiqardi.
   const seoTitle = useMemo(() => {
+    if (isBrandPage && brandRoute) {
+      return t.listing.seoBrandTitle.replace('{{brand}}', brandLabel(brandRoute))
+        .replace('{{count}}', String(total || brandFacet?.count || ''));
+    }
     let part = t.listing.seoCatalog;
     if (selectedBrand) {
       part = selectedBrand;
@@ -41,12 +63,16 @@ export function ProductListing() {
       part = t.listing.seoSearch.replace('{{query}}', searchQuery);
     }
     return `${part} - ${t.listing.seoSuffix}`;
-  }, [selectedBrand, selectedCategory, searchQuery, t]);
+  }, [selectedBrand, selectedCategory, searchQuery, isBrandPage, brandRoute, brandFacet, total, brandLabel, t]);
 
-  const seoDesc = useMemo(
-    () => t.listing.seoDesc.replace('{{brand}}', selectedBrand || t.listing.seoDescDefaultBrand),
-    [selectedBrand, t],
-  );
+  const seoDesc = useMemo(() => {
+    if (isBrandPage && brandRoute) {
+      const from = brandFacet?.min_price ? t.listing.seoBrandFrom.replace('{{price}}', formatSum(brandFacet.min_price)) : '';
+      return t.listing.seoBrandDesc.replace('{{brand}}', brandLabel(brandRoute))
+        .replace('{{count}}', String(total || brandFacet?.count || '')).replace('{{from}}', from);
+    }
+    return t.listing.seoDesc.replace('{{brand}}', selectedBrand || t.listing.seoDescDefaultBrand);
+  }, [selectedBrand, isBrandPage, brandRoute, brandFacet, total, brandLabel, t]);
 
   // Sahifadagi ko'rinadigan h1 — SEO sarlavhasidan qisqaroq va tabiiyroq
   const pageHeading = useMemo(() => {
@@ -64,11 +90,13 @@ export function ProductListing() {
         locale={language}
         // Qidiruv va filtr kombinatsiyalari cheksiz URL hosil qiladi — ularni
         // indeksdan chiqarib, kanonikni toza /products ga yo'naltiramiz.
-        noindex={Boolean(searchQuery) || activeFilterCount > 0}
-        canonicalUrl={`${SITE_URL}/products`}
+        // Brend sahifasida brend filtrining o'zi hisobga olinmaydi.
+        noindex={Boolean(searchQuery) || activeFilterCount > (isBrandPage ? 1 : 0)}
+        canonicalUrl={isBrandPage ? `${SITE_URL}/brand/${brandRoute}` : `${SITE_URL}/products`}
         breadcrumbs={[
           { name: t.nav.home, url: '/' },
           { name: t.listing.seoSmartphones, url: '/products' },
+          ...(isBrandPage && brandRoute ? [{ name: brandLabel(brandRoute), url: `/brand/${brandRoute}` }] : []),
         ]}
       />
 
@@ -82,9 +110,17 @@ export function ProductListing() {
         <nav className="mb-4 hidden items-center gap-1.5 text-[12px] text-gray-400 dark:text-gray-500 md:flex">
           <Link to="/" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors">{t.nav.home}</Link>
           <ChevronRight className="h-3 w-3 opacity-60" />
-          <span className="font-semibold text-gray-700 dark:text-gray-300">
-            {searchQuery ? t.listing.resultsFor.replace('{{query}}', searchQuery) : t.listing.products}
-          </span>
+          {isBrandPage && brandRoute ? (
+            <>
+              <Link to="/products" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors">{t.listing.products}</Link>
+              <ChevronRight className="h-3 w-3 opacity-60" />
+              <span className="font-semibold text-gray-700 dark:text-gray-300">{brandLabel(brandRoute)}</span>
+            </>
+          ) : (
+            <span className="font-semibold text-gray-700 dark:text-gray-300">
+              {searchQuery ? t.listing.resultsFor.replace('{{query}}', searchQuery) : t.listing.products}
+            </span>
+          )}
         </nav>
 
         {/* Sahifa ustunlari (layout.ts): filtr paneli — bitta ustun, mahsulotlar —

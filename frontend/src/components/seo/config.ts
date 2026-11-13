@@ -17,6 +17,10 @@ export interface Breadcrumb {
 export interface ProductSchema {
   name: string;
   image: string;
+  /** Galereya — birinchisi image bilan bir xil bo'lishi mumkin */
+  images?: string[];
+  /** Har do'kon — alohida taklif (sotuvchi nomi bilan) */
+  sellers?: { name: string; price: number; url?: string }[];
   description: string;
   price: number;
   currency: string;

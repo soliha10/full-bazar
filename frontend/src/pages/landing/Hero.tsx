@@ -68,7 +68,7 @@ export function Hero({ hasStats, fill, deck, dealsLoading, topBrands, updated }:
             <m.div {...rise(0.2)} className="flex flex-wrap items-center gap-2 mt-5">
               <span className="text-gray-500 dark:text-gray-400 text-xs">{h.popular}</span>
               {topBrands.map(b => (
-                <Link key={b.key} to={`/products?brand=${encodeURIComponent(b.key)}`}
+                <Link key={b.key} to={`/brand/${encodeURIComponent(b.key)}`}
                   className="glass-soft text-xs text-gray-700 dark:text-gray-200 hover:text-violet-700 dark:hover:text-violet-300 rounded-full px-3 py-1.5 transition-colors">
                   {b.name}
                 </Link>

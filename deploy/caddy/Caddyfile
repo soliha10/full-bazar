@@ -27,8 +27,9 @@
 		import api
 	}
 
-	# Mahsulot sahifasi: meta teglar API da yoziladi (pages.py: product_page)
-	handle /product/* {
+	# Mahsulot va brend sahifalari: meta teglar, JSON-LD va ko'rinadigan matn
+	# API da yoziladi (pages.py: product_page, brand_page)
+	handle /product/* /brand/* {
 		import api
 	}
 
@@ -53,9 +54,9 @@
 		file_server
 	}
 
-	# API ishlamay qolsa mahsulot sahifasi oddiy SPA sifatida ochilsin
+	# API ishlamay qolsa mahsulot/brend sahifasi oddiy SPA sifatida ochilsin
 	handle_errors 502 503 504 {
-		@page path /product/*
+		@page path /product/* /brand/*
 		handle @page {
 			root * /srv/site
 			rewrite * /index.html

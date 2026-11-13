@@ -76,7 +76,9 @@ def _replace_tag(page: str, pattern: str, value: str) -> str:
     return re.sub(pattern, sub, page, count=1, flags=re.IGNORECASE)
 
 
-def inject_product_meta(page: str, product: dict, canonical_path: str) -> str:
+def inject_product_meta(page: str, product: dict, canonical_path: str,
+                        brand_name: str | None = None, brand_key: str | None = None) -> str:
+    """brand_name — nomdan aniqlangan brend (pages.py); ilgari brand o'rniga kategoriya yozilardi."""
     name = product.get("title") or product.get("name")
     url = SITE + canonical_path
     markets = product.get("markets") if isinstance(product.get("markets"), list) else []
@@ -106,6 +108,16 @@ def inject_product_meta(page: str, product: dict, canonical_path: str) -> str:
             "@type": "AggregateOffer", "url": url, "priceCurrency": "UZS",
             "lowPrice": min(prices), "highPrice": max(prices),
             "offerCount": len(prices), "availability": availability,
+            # Har do'kon — alohida taklif (sotuvchi nomi bilan): qidiruvda
+            # "N do'konda X so'mdan" ko'rinishi uchun
+            "offers": [
+                {"@type": "Offer", "price": _num(m.get("price")), "priceCurrency": "UZS",
+                 "url": m.get("url") or url, "availability": availability,
+                 "itemCondition": "https://schema.org/NewCondition",
+                 "seller": {"@type": "Organization", "name": m.get("source")}}
+                for m in sorted(markets, key=lambda m: _num(m.get("price")))
+                if _num(m.get("price")) > 0
+            ],
         }
     else:
         offers = {"@type": "Offer", "url": url, "priceCurrency": "UZS"}
@@ -114,12 +126,15 @@ def inject_product_meta(page: str, product: dict, canonical_path: str) -> str:
         offers["itemCondition"] = "https://schema.org/NewCondition"
         offers["availability"] = availability
 
+    gallery = [i for i in (product.get("images") or []) if isinstance(i, str) and re.match(r"^https?://", i)]
     product_ld: dict[str, Any] = {
-        "@type": "Product", "name": name, "sku": product.get("id"), "image": image,
+        "@type": "Product", "name": name, "sku": product.get("id"),
+        "image": ([image] + [i for i in gallery if i != image])[:6],
         "description": description,
-        "brand": {"@type": "Brand", "name": product.get("category") or "Bazarcom"},
         "offers": offers,
     }
+    if brand_name:
+        product_ld["brand"] = {"@type": "Brand", "name": brand_name}
     rating, reviews = _num(product.get("rating")), _num(product.get("reviews"))
     if rating > 0 and reviews > 0:
         product_ld["aggregateRating"] = {
@@ -136,7 +151,9 @@ def inject_product_meta(page: str, product: dict, canonical_path: str) -> str:
                 "itemListElement": [
                     {"@type": "ListItem", "position": 1, "name": "Bosh sahifa", "item": f"{SITE}/"},
                     {"@type": "ListItem", "position": 2, "name": "Smartfonlar", "item": f"{SITE}/products"},
-                    {"@type": "ListItem", "position": 3, "name": name, "item": url},
+                    *([{"@type": "ListItem", "position": 3, "name": brand_name,
+                        "item": f"{SITE}/brand/{brand_key}"}] if brand_name and brand_key else []),
+                    {"@type": "ListItem", "position": 4 if brand_name and brand_key else 3, "name": name, "item": url},
                 ],
             },
         ],
@@ -162,6 +179,6 @@ def inject_product_meta(page: str, product: dict, canonical_path: str) -> str:
 
     return page.replace(
         "</head>",
-        f'  <script type="application/ld+json">{_esc_json_ld(json_ld)}</script>\n  </head>',
+        f'  <script type="application/ld+json" id="ld-json-server">{_esc_json_ld(json_ld)}</script>\n  </head>',
         1,
     )

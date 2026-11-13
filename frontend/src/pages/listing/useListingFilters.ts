@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useSearchParams, useLocation } from 'react-router-dom';
+import { useSearchParams, useLocation, useParams } from 'react-router-dom';
 import { fetchSpecFacets } from '../../services/api';
 import { useBrands } from '../../hooks/useBrands';
 import { useMarkets } from '../../hooks/useMarkets';
@@ -20,6 +20,8 @@ export type SpecFacets = {
 export function useListingFilters() {
   const location = useLocation();
   const [, setSearchParams] = useSearchParams();
+  // /brand/:brand — brend sahifasi (toza manzil); katalog shu brend bilan ochiladi
+  const brandRoute = useParams().brand?.toLowerCase() ?? null;
 
   const searchQuery   = useMemo(() => new URLSearchParams(location.search).get('search') || '', [location.search]);
   const categoryParam = useMemo(() => new URLSearchParams(location.search).get('category') || 'All', [location.search]);
@@ -29,7 +31,7 @@ export function useListingFilters() {
   // katalogni darhol filtrlangan holda ochadi (sessiyadagi filtrdan ustun).
   const urlInit = useRef(() => {
     const p = new URLSearchParams(location.search);
-    return { market: p.get('market'), brand: p.get('brand') };
+    return { market: p.get('market'), brand: brandRoute ?? p.get('brand') };
   });
   const initial = useRef(urlInit.current());
 
@@ -64,6 +66,11 @@ export function useListingFilters() {
   useEffect(() => {
     setLocalSearch(searchQuery);
   }, [searchQuery]);
+
+  // Bir brend sahifasidan boshqasiga havola bosildi (komponent o'sha) — filtr ham
+  useEffect(() => {
+    if (brandRoute) setSelectedBrand(brandRoute);
+  }, [brandRoute]);
 
   const handleSearch = useCallback((query: string) => {
     setSearchParams(p => {
@@ -136,7 +143,7 @@ export function useListingFilters() {
   }, [isMobileFilterOpen]);
 
   return {
-    searchQuery, categoryParam, initial, setSearchParams, handleSearch,
+    searchQuery, categoryParam, initial, setSearchParams, handleSearch, brandRoute,
     localSearch, setLocalSearch,
     selectedCategory, setSelectedCategory, selectedMarketplaces, setSelectedMarketplaces,
     minRating, setMinRating, selectedBrand, setSelectedBrand,

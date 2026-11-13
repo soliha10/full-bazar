@@ -73,6 +73,8 @@ export function mapProduct(item: any): Product {
     price: price,
     originalPrice: item.old_price ? parseFloat(String(item.old_price).replace(/\s/g, '').replace(/[^\d.]/g, '')) : undefined,
     category: normalizedCategory,
+    brand: item.brand ?? null,
+    brandName: item.brandName ?? null,
     image: resolveImageUrl(item.image),
     images: item.images && item.images.length > 0 ? item.images.map(resolveImageUrl) : [resolveImageUrl(item.image)],
     rating: rating,

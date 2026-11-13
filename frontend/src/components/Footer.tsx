@@ -2,15 +2,20 @@ import { ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PAGE_CONTAINER } from './layout';
+import { useBrands } from '../hooks/useBrands';
+
+// Footer da eng ko'p modelli shuncha brend — har sahifadan brend sahifalariga ichki havola
+const FOOTER_BRANDS = 8;
 
 export function Footer() {
   const { t } = useLanguage();
+  const brands = useBrands().slice(0, FOOTER_BRANDS);
 
   return (
     <footer className="bg-gray-950 text-white mt-12 border-t border-gray-800">
 
       <div className={`${PAGE_CONTAINER} py-12`}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 lg:gap-8">
 
           {/* Brand */}
           <div className="space-y-5 text-center md:text-left">
@@ -38,6 +43,18 @@ export function Footer() {
               <li><Link to="/compare" className="hover:text-white transition-colors">{t.footer.compare}</Link></li>
             </ul>
           </div>
+
+          {/* Brendlar — /api/brands dan (bazada mahsuloti borlari) */}
+          {brands.length > 0 && (
+            <div className="text-center md:text-left">
+              <h3 className="font-medium text-sm text-white mb-4">{t.nav.brands}</h3>
+              <ul className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm text-gray-400">
+                {brands.map(b => (
+                  <li key={b.key}><Link to={`/brand/${encodeURIComponent(b.key)}`} className="hover:text-white transition-colors">{b.name}</Link></li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Customer */}
           <div className="text-center md:text-left">
