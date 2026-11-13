@@ -1,14 +1,9 @@
 import { useLanguage } from "../../contexts/LanguageContext";
 import { SPEC_GROUPS, specValue, type Specs } from "./specs";
 
-export type DetailTab = 'overview' | 'specs' | 'priceHistory';
-
 // Do'kon narxlari bu yerda takrorlanmaydi — ular sahifa tepasidagi
 // takliflar jadvalida bor (ilgari bir sahifada uch marta chiqardi).
-export function SpecsSection({ specs, activeTab }: {
-  specs: Specs | null;
-  activeTab: DetailTab;
-}) {
+export function SpecsSection({ specs }: { specs: Specs | null }) {
   const { t } = useLanguage();
 
   const groups = specs ? SPEC_GROUPS.map(group => ({
@@ -23,7 +18,7 @@ export function SpecsSection({ specs, activeTab }: {
   return (
     <section
       id="specs"
-      className={`${activeTab !== 'specs' && 'hidden md:block'} glass rounded-2xl overflow-hidden`}
+      className="scroll-mt-32 glass rounded-2xl overflow-hidden"
     >
       <header className="flex items-baseline justify-between gap-3 px-5 py-4 border-b border-gray-200 dark:border-gray-800">
         <h2 className="text-base font-semibold text-gray-900 dark:text-white tracking-tight">{t.detail.mainSpecifications}</h2>

@@ -3,7 +3,6 @@ import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum } from "../../utils/productMapper";
 import type { PricePoint } from "./useProductDetail";
-import type { DetailTab } from "./SpecsSection";
 import { buildSeries, typicalRange, type PriceVerdict } from "./priceHistorySeries";
 import { HistoryTable } from "./HistoryTable";
 import { HistoryDeviation, toBuckets } from "./HistoryDeviation";
@@ -16,7 +15,7 @@ const MOBILE = '(max-width: 767px)';
 const round1k = (v: number) => Math.round(v / 1000) * 1000;
 
 // Holat ranglari faqat holat ma'nosida va doim ikonka + matn bilan (dataviz: status)
-const VERDICT: Record<PriceVerdict, { icon: typeof Minus; tone: string }> = {
+export const VERDICT: Record<PriceVerdict, { icon: typeof Minus; tone: string }> = {
   low:     { icon: TrendingDown, tone: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
   typical: { icon: Minus,        tone: 'bg-gray-900/5 dark:bg-white/10 text-gray-700 dark:text-gray-200' },
   high:    { icon: TrendingUp,   tone: 'bg-amber-500/15 text-amber-800 dark:text-amber-300' },
@@ -30,11 +29,10 @@ const seg = (on: boolean) => `px-3 py-1.5 rounded-lg text-xs font-medium transit
  * Xaridorning savoli "hozir olsam bo'ladimi?" — javob grafik ustida, so'z
  * bilan: narx odatdagidan past / odatiy / yuqori. Grafik uni tasdiqlaydi.
  */
-export function PriceHistoryChart({ history, markets, activeTab }: {
+export function PriceHistoryChart({ history, markets }: {
   /** null — hali yuklanmoqda */
   history: PricePoint[] | null;
   markets: { source: string; price: number }[];
-  activeTab: DetailTab;
 }) {
   const { t, language } = useLanguage();
   const d = t.detailPage;
@@ -65,8 +63,8 @@ export function PriceHistoryChart({ history, markets, activeTab }: {
     : change < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400';
 
   return (
-    <section aria-labelledby="history-title" className={`${activeTab !== 'priceHistory' && 'hidden lg:block'} mt-10`}>
-      <div className="glass rounded-3xl p-5 md:p-8">
+    <section aria-labelledby="history-title">
+      <div className="glass rounded-2xl p-5 md:p-6">
         <div className="flex items-center justify-between gap-3 mb-5">
           <h2 id="history-title" className="text-lg font-semibold text-gray-900 dark:text-white">{d.priceHistoryTitle}</h2>
           <div className="flex flex-wrap items-center gap-2">

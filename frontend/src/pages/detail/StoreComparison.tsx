@@ -1,20 +1,15 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum } from "../../utils/productMapper";
 import { DivergingBars, type DivergingItem } from "../../components/charts/DivergingBars";
-import { PriceLadder } from "../../components/charts/PriceLadder";
 import type { PricePoint } from "./useProductDetail";
 import { buildSeries } from "./priceHistorySeries";
 
 const CHANGE_DAYS = 30;
 
-const seg = (on: boolean) => `px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-  on ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`;
-
 /**
- * Do'konlar taqqoslanishi — ikki savol, ikki grafik turi:
- *   · "Qaysi do'kon qanchaga qimmat?" — narx narvoni (progressive, bitta rang);
- *   · "Qayerda narx tushdi/ko'tarildi?" — 30 kunlik o'zgarish, diverging (±).
+ * Do'konlarda narx qayerda tushdi/ko'tarildi — 30 kunlik o'zgarish, diverging (±).
+ * Kim qanchaga qimmatligi takliflar jadvalida (+farq) bor — bu yerda takrorlanmaydi.
  * Faqat 2+ do'konda sotiladigan mahsulot uchun ma'noli.
  */
 export function StoreComparison({ history, markets }: {
@@ -23,7 +18,6 @@ export function StoreComparison({ history, markets }: {
 }) {
   const { t } = useLanguage();
   const d = t.detailPage;
-  const [view, setView] = useState<'ladder' | 'change'>('ladder');
 
   const changes = useMemo<{ items: DivergingItem[]; flat: string[] }>(() => {
     if (!history?.length) return { items: [], flat: [] };
@@ -51,26 +45,14 @@ export function StoreComparison({ history, markets }: {
   if (markets.length < 2) return null;
 
   return (
-    <section aria-labelledby="compare-title" className="mt-10 glass rounded-3xl p-5 md:p-8">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
-        <h2 id="compare-title" className="text-lg font-semibold text-gray-900 dark:text-white">{d.compareTitle}</h2>
-        <div role="group" className="flex rounded-xl bg-gray-900/5 dark:bg-white/5 p-1">
-          <button type="button" aria-pressed={view === 'ladder'} onClick={() => setView('ladder')} className={seg(view === 'ladder')}>{d.ladderTab}</button>
-          <button type="button" aria-pressed={view === 'change'} onClick={() => setView('change')} className={seg(view === 'change')}>
-            {d.changeTab.replace('{{n}}', String(CHANGE_DAYS))}
-          </button>
-        </div>
-      </div>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
-        {view === 'ladder' ? d.ladderHint : d.changeHint.replace('{{n}}', String(CHANGE_DAYS))}
-      </p>
+    <section aria-labelledby="compare-title" className="mt-6 glass rounded-2xl p-5 md:p-6">
+      <h2 id="compare-title" className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{d.compareTitle}</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{d.changeHint.replace('{{n}}', String(CHANGE_DAYS))}</p>
 
-      {view === 'ladder' ? (
-        <PriceLadder steps={markets} cheapestLabel={d.cheapestTag} />
-      ) : history === null ? (
+      {history === null ? (
         <div className="h-48 rounded-2xl bg-gray-900/5 dark:bg-white/5 animate-pulse" aria-hidden="true" />
       ) : changes.items.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">{d.noStoreChanges}</p>
+        <p className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">{d.noStoreChanges}</p>
       ) : (
         <>
           <DivergingBars items={changes.items} negLabel={d.cheaperLegend} posLabel={d.pricierLegend} />

@@ -16,12 +16,6 @@ export function MobileOffers({ product, sortedMarkets, showAllMarkets, onToggleS
 
   return (
     <div className="md:hidden">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{t.detail.compareStores}</h3>
-        <span className="text-xs text-gray-500 dark:text-gray-400">
-          {product.markets?.length} {t.detail.storesAvailable}
-        </span>
-      </div>
       {(showAllMarkets ? sortedMarkets : sortedMarkets.slice(0, 4)).map((market, idx) => (
         <div
           key={idx}

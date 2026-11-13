@@ -12,11 +12,9 @@ import { StoreLogo } from '../../components/StoreLogo';
 // Sukut bo'yicha shuncha do'kon: 12 ta qator blokni ekrandan uzun qilib yuborardi
 export const OFFERS_VISIBLE = 5;
 
-export function OffersTable({ product, sortedMarkets, selectedMarketIndex, onSelect, showAll, onToggleShowAll }: {
+export function OffersTable({ product, sortedMarkets, showAll, onToggleShowAll }: {
   product: Product;
   sortedMarkets: PriceStats['sortedMarkets'];
-  selectedMarketIndex: number;
-  onSelect: (index: number) => void;
   showAll: boolean;
   onToggleShowAll: () => void;
 }) {
@@ -27,9 +25,9 @@ export function OffersTable({ product, sortedMarkets, selectedMarketIndex, onSel
       <table className="w-full">
         <thead>
           <tr>
-            <th className="text-left text-xs font-normal text-gray-500 dark:text-gray-400 pb-3">{t.detail.marketplace}</th>
-            <th className="text-left text-xs font-normal text-gray-500 dark:text-gray-400 pb-3">{t.detail.price}</th>
-            <th className="pb-3" />
+            <th className="text-left text-xs font-normal text-gray-500 dark:text-gray-400 pb-3 pl-2">{t.detail.marketplace}</th>
+            <th className="text-right text-xs font-normal text-gray-500 dark:text-gray-400 pb-3 pr-6">{t.detail.price}</th>
+            <th className="pb-3 w-px" />
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -39,14 +37,9 @@ export function OffersTable({ product, sortedMarkets, selectedMarketIndex, onSel
               initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.28, delay: idx * 0.06 }}
-              onClick={() => onSelect(product.markets?.indexOf(market) ?? idx)}
-              className={`cursor-pointer transition-colors ${
-                selectedMarketIndex === product.markets?.indexOf(market)
-                  ? 'bg-gray-50 dark:bg-gray-800/40'
-                  : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-              }`}
+              className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
             >
-              <td className="py-2.5">
+              <td className="py-2.5 pl-2">
                 <div className="flex items-center gap-2.5">
                   <StoreLogo name={market.source} size="md" />
                   <span className="font-medium text-gray-900 dark:text-white text-sm">{market.source}</span>
@@ -63,7 +56,7 @@ export function OffersTable({ product, sortedMarkets, selectedMarketIndex, onSel
                   </div>
                 )}
               </td>
-              <td className="py-2.5">
+              <td className="py-2.5 pr-6 text-right">
                 <div className="font-semibold text-gray-900 dark:text-white text-sm tabular-nums">{formatSum(market.price)}</div>
                 {/* Eng arzonidan qancha qimmatligi — agregatorlarda standart */}
                 {idx > 0 && market.price > sortedMarkets[0].price && (
@@ -72,13 +65,13 @@ export function OffersTable({ product, sortedMarkets, selectedMarketIndex, onSel
                   </div>
                 )}
               </td>
-              <td className="py-2.5 text-right">
+              <td className="py-2.5 pr-2 text-right">
                 <a
                   href={market.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={e => { e.stopPropagation(); if (product) trackStoreClick(product.id, market.source, market.price); }}
-                  className="inline-flex items-center border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-violet-600 hover:text-white hover:border-violet-600 transition-colors"
+                  onClick={() => trackStoreClick(product.id, market.source, market.price)}
+                  className="inline-flex items-center whitespace-nowrap border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-violet-600 hover:text-white hover:border-violet-600 transition-colors"
                 >
                   {t.detail.goToShop}
                 </a>

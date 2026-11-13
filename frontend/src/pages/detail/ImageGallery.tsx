@@ -1,42 +1,19 @@
-import { Heart, ChevronLeft, ChevronRight } from "lucide-react";
-import { formatSum } from "../../utils/productMapper";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { FALLBACK_IMAGE, type Gallery } from "./useImageGallery";
 
 /**
  * Mahsulot rasmlari: mobil ko'rinishda gorizontal karusel (nuqtalar va
  * strelkalar bilan), desktopda bitta katta rasm va yon tomonda miniatyuralar.
  */
-export function ImageGallery({ gallery, productName, savings, liked, onToggleLike }: {
+export function ImageGallery({ gallery, productName }: {
   gallery: Gallery;
   productName: string;
-  savings: number;
-  liked: boolean;
-  onToggleLike: () => void;
 }) {
   const { images, selectedImage, setSelectedImage, goToImage, scrollContainerRef, imageRefs } = gallery;
 
   return (
     <div className="md:flex md:flex-row-reverse md:items-start gap-3">
     <div className="relative flex-1 glass rounded-2xl overflow-hidden">
-      {/* Savings badge */}
-      {savings > 0 && (
-        <div className="absolute top-4 right-14 md:right-4 z-10">
-          <span className="bg-white/90 dark:bg-gray-900/90 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-md text-xs font-medium">
-            -{formatSum(savings)}
-          </span>
-        </div>
-      )}
-
-      {/* Like on image (mobile overlay) */}
-      <div className="md:hidden absolute top-4 right-4 z-10">
-        <button
-          onClick={onToggleLike}
-          className="w-9 h-9 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all"
-        >
-          <Heart className={`w-4 h-4 transition-all duration-200 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-400 dark:text-gray-500'}`} />
-        </button>
-      </div>
-
       {/* Image carousel */}
       <div
         ref={scrollContainerRef}

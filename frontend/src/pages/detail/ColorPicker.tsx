@@ -27,13 +27,13 @@ export function ColorPicker({ variants, active, cheapest, onSelect }: {
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
         {d.colorLabel}: <span className="font-medium text-gray-900 dark:text-white">{names[active?.color ?? 'other'] ?? active?.color}</span>
       </p>
-      <div role="radiogroup" aria-label={d.colorLabel} className="flex flex-wrap gap-2">
+      <div role="radiogroup" aria-label={d.colorLabel} className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
         {variants.map(v => {
           const on = v === active;
           const key = v.color ?? 'other';
           return (
             <button key={key} type="button" role="radio" aria-checked={on} onClick={() => onSelect(v.color)}
-              className={`flex items-center gap-2 rounded-xl border py-1.5 pl-1.5 pr-3 text-left transition-colors ${
+              className={`flex min-w-0 items-center gap-2 rounded-xl border py-1.5 pl-1.5 pr-3 text-left transition-colors ${
                 on ? 'border-violet-600 ring-1 ring-violet-600 bg-violet-500/5'
                    : 'border-gray-900/10 dark:border-white/15 hover:border-gray-900/25 dark:hover:border-white/30'}`}>
               {v.images[0]
@@ -50,7 +50,7 @@ export function ColorPicker({ variants, active, cheapest, onSelect }: {
                 {v.price != null && (
                   <span className="block text-xs text-gray-500 dark:text-gray-400 tabular-nums">
                     {d.colorFrom.replace('{{price}}', formatSum(v.price))}
-                    {v === cheapest && <span className="ml-1 font-medium text-emerald-600 dark:text-emerald-400">· {d.cheapestTag}</span>}
+                    {v === cheapest && <span className="block sm:inline sm:ml-1 font-medium text-emerald-600 dark:text-emerald-400"><span className="hidden sm:inline">· </span>{d.cheapestTag}</span>}
                   </span>
                 )}
               </span>

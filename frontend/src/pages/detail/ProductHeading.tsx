@@ -52,7 +52,8 @@ export function ProductHeading({ product, liked, inCompare, onToggleLike, onTogg
         </button>
       </div>
 
-      {product.rating > 0 && (
+      {/* Sharhsiz reyting ishonchsiz — ko'rsatilmaydi */}
+      {product.rating > 0 && product.reviews > 0 && (
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
             {[...Array(5)].map((_, i) => (

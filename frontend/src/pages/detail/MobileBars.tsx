@@ -43,7 +43,7 @@ export function MobileTopBar({ product, liked, onBack, onToggleLike }: {
 }
 
 /** Mobil pastki yopishqoq panel: tanlangan do'kon narxi va do'konga o'tish. */
-export function MobileBuyBar({ product, selectedMarket }: { product: Product; selectedMarket: PriceStats['selectedMarket'] }) {
+export function MobileBuyBar({ product, selectedMarket }: { product: Product; selectedMarket: PriceStats['sortedMarkets'][number] | undefined }) {
   const { t } = useLanguage();
   return (
     <div
