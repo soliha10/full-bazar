@@ -8,6 +8,8 @@ export interface Stats {
   markets: number;
   offers: number;
   comparableProducts: number;
+  /** Bir model do'konlar orasidagi narx farqi medianasi, 0..1 */
+  medianPriceGap?: number | null;
   lastUpdated: string | null;
 }
 

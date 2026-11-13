@@ -50,7 +50,7 @@ export function Landing() {
       {/* Tartib: qidiruv → kimdan narx olinadi → nimani tejash mumkin →
           brend bo'yicha tanlash → qanday ishlaydi → savollar. Bitta qidiruv,
           bitta chaqiruv: har bo'lim o'z vazifasini bajaradi, takror yo'q. */}
-      <Hero hasStats={!!stats} fill={fill} deck={deck} updated={updated}
+      <Hero stats={stats} hasStats={!!stats} fill={fill} deck={deck} updated={updated}
         dealsLoading={dealsStatus === 'loading'} topBrands={brands.slice(0, 6)} />
 
       <StoreMarquee markets={markets} />

@@ -55,6 +55,11 @@ export const general: typeof uzGeneral = {
   home: {
     eyebrow: "{{products}} smartphones · {{stores}} stores",
     title: "Buy your smartphone fast, at a price that fits your budget",
+    // Sarlavhadagi ajratib ko'rsatiladigan qism — title ichidagi aynan shu matn
+    titleAccent: "a price that fits your budget",
+    statProducts: "{{count}} smartphones",
+    statStores: "{{count}} stores",
+    statGap: "{{count}}% average price gap",
     subtitle: "Prices from {{stores}} online stores in one place. Find your model, compare prices and buy where it's cheapest.",
     searchPlaceholder: "Model: iPhone 16, Galaxy A55, Redmi Note 14...",
     searchButton: "Search",

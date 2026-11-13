@@ -53,6 +53,11 @@ export const general = {
   home: {
     eyebrow: "{{products}} ta smartfon · {{stores}} ta do'kon",
     title: "Smartfonni tez va hamyonbop narxda sotib oling",
+    // Sarlavhadagi ajratib ko'rsatiladigan qism — title ichidagi aynan shu matn
+    titleAccent: "hamyonbop narxda",
+    statProducts: "{{count}} ta smartfon",
+    statStores: "{{count}} ta do'kon",
+    statGap: "o'rtacha {{count}}% narx farqi",
     subtitle: "{{stores}} ta onlayn do'kon narxlari bir joyda. Modelni toping, narxlarni solishtiring va eng arzon do'kondan xarid qiling.",
     searchPlaceholder: "Model nomi: iPhone 16, Galaxy A55, Redmi Note 14...",
     searchButton: "Qidirish",
