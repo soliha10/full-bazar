@@ -57,10 +57,7 @@ export const general: typeof uzGeneral = {
     title: "Купите смартфон быстро и по выгодной цене",
     // Sarlavhadagi ajratib ko'rsatiladigan qism — title ichidagi aynan shu matn
     titleAccent: "по выгодной цене",
-    statProducts: "{{count}} смартфонов",
-    statStores: "{{count}} магазинов",
-    statGap: "разница цен в среднем {{count}}%",
-    // Telefon uchun qisqa variantlar (tor ekranda to'liq matn sig'maydi)
+    // Qisqa variantlar: qidiruv namunasi (telefon) va hero statistika lentasi yorliqlari
     searchPlaceholderShort: "iPhone 16, Galaxy A55…",
     statProductsShort: "смартфонов",
     statStoresShort: "магазинов",

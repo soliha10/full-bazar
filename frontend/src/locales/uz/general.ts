@@ -55,10 +55,7 @@ export const general = {
     title: "Smartfonni tez va hamyonbop narxda sotib oling",
     // Sarlavhadagi ajratib ko'rsatiladigan qism — title ichidagi aynan shu matn
     titleAccent: "hamyonbop narxda",
-    statProducts: "{{count}} ta smartfon",
-    statStores: "{{count}} ta do'kon",
-    statGap: "o'rtacha {{count}}% narx farqi",
-    // Telefon uchun qisqa variantlar (tor ekranda to'liq matn sig'maydi)
+    // Qisqa variantlar: qidiruv namunasi (telefon) va hero statistika lentasi yorliqlari
     searchPlaceholderShort: "iPhone 16, Galaxy A55…",
     statProductsShort: "smartfon",
     statStoresShort: "do'kon",
