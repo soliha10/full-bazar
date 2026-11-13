@@ -1,5 +1,3 @@
-import type { MouseEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useFavorites } from '../../hooks/useFavorites';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,7 +8,6 @@ import type { Product } from './types';
 
 /** Kartaning ikkala ko'rinishi (grid/list) uchun umumiy holat va hisob-kitob */
 export function useProductCard(product: Product, activeMarkets: string[]) {
-  const navigate = useNavigate();
   const { t } = useLanguage();
   const { toggle, isLiked } = useFavorites();
   const { user } = useAuth();
@@ -20,14 +17,9 @@ export function useProductCard(product: Product, activeMarkets: string[]) {
   const watching = isWatched(product.id);
   const comparing = isComparing(product.id);
   const compareDisabled = !comparing && compareIds.length >= MAX_COMPARE;
-  // Kartaning bosiladigan qismi <div onClick> edi — qidiruv robotlari bunday
-  // "havola"ni ko'rmaydi, ya'ni katalogdan birorta mahsulot manzili ham
-  // indeksga tushmaydi. Endi nom va CTA haqiqiy <a href> bo'ladi; karta
-  // o'zining onClick'ini saqlab qoladi (butun karta bosiladigan bo'lib
-  // qolishi uchun), lekin havola bosilganda hodisa yuqoriga chiqmaydi —
-  // aks holda bir bosishda ikki marta navigatsiya bo'lardi.
+  // Karta — bitta haqiqiy <a href> (ProductTile: nomdagi havola butun kartani
+  // qoplaydi), qidiruv robotlari ham ko'radi; onClick navigatsiyasi shart emas.
   const href = productPath(product);
-  const stop = (e: MouseEvent) => e.stopPropagation();
 
   const activeSet = new Set(activeMarkets.map(m => m.toLowerCase()));
   const sortedMarkets = [...(product.markets ?? [])].sort((a, b) => {
@@ -45,7 +37,7 @@ export function useProductCard(product: Product, activeMarkets: string[]) {
     : t.common.compare;
 
   return {
-    t, user, href, stop, open: () => navigate(href),
+    t, user, href,
     liked, watching, comparing, compareDisabled, compareTitle,
     toggleLike: () => toggle(product),
     toggleWatch: () => toggleWatch(product),

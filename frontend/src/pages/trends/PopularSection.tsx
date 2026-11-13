@@ -1,10 +1,9 @@
-import { Link } from 'react-router-dom';
-import { ShoppingBag } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { formatSum } from '../../utils/productMapper';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { productPath } from '../../utils/slug';
 import type { PopularProduct } from './types';
-import { Card } from "../../components/Card";
+import { ProductTile } from '../../components/product-card/ProductTile';
 
 /* Popular products */
 export function PopularSection({ popular }: { popular: PopularProduct[] }) {
@@ -17,34 +16,13 @@ export function PopularSection({ popular }: { popular: PopularProduct[] }) {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {popular.map((p, rank) => (
-          <Card as={Link} padding="none"
-            key={p.id}
-            to={productPath(p)}
-            className="hover:border-violet-300 dark:hover:border-violet-700 transition-all group overflow-hidden">
-            <div className="relative aspect-square bg-gray-50 dark:bg-gray-800">
-              {p.image ? (
-                <img src={p.image} alt={p.name} className="w-full h-full object-contain p-3" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <ShoppingBag className="w-8 h-8 text-gray-300" />
-                </div>
-              )}
-              <span className="absolute top-2 left-2 w-5 h-5 rounded-full bg-violet-600 text-white text-[9px] font-semibold flex items-center justify-center">
+          <ProductTile key={p.id} size="sm" to={productPath(p)} name={p.name} image={p.image} price={formatSum(p.price)}
+            badge={(
+              <span className="flex w-5 h-5 items-center justify-center rounded-full bg-violet-600 text-[9px] font-semibold text-white">
                 {rank + 1}
               </span>
-            </div>
-            <div className="p-3">
-              <p className="text-[11px] font-bold text-gray-800 dark:text-gray-200 line-clamp-2 leading-tight group-hover:text-violet-600 dark:group-hover:text-violet-400">
-                {p.name}
-              </p>
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-xs font-semibold text-violet-600 dark:text-violet-400">{formatSum(p.price)}</p>
-                <div className="flex items-center gap-0.5 text-gray-400">
-                  <span className="text-[10px] font-bold">{p.viewCount}</span>
-                </div>
-              </div>
-            </div>
-          </Card>
+            )}
+            meta={<><Eye className="w-3 h-3" aria-hidden="true" /><span className="tabular-nums">{p.viewCount}</span></>} />
         ))}
       </div>
     </section>

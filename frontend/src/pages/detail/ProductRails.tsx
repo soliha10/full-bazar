@@ -1,11 +1,12 @@
-import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import type { Product } from "../../components/ProductCard";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum } from "../../utils/productMapper";
 import { productPath } from "../../utils/slug";
-import { FALLBACK_IMAGE } from "./useImageGallery";
-import { Card } from "../../components/Card";
+import { ProductTile, ProductTileSkeleton, TileAction } from "../../components/product-card/ProductTile";
+
+// Gorizontal qatordagi karta kengligi: mobilda 160px, lg da 6 tasi bir qatorda
+const RAIL_ITEM = "w-40 lg:w-[calc((100%-50px)/6)] shrink-0";
 
 /** ── Saved (liked) products ── */
 export function SavedProducts({ favorites, onToggle }: { favorites: Product[]; onToggle: (p: Product) => void }) {
@@ -21,29 +22,14 @@ export function SavedProducts({ favorites, onToggle }: { favorites: Product[]; o
           {t.detailPage.itemsCount.replace('{{count}}', String(favorites.length))}
         </span>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {favorites.map((p) => (
-          <Card as={Link} interactive padding="sm"
-            key={p.id}
-            to={productPath(p)}
-            className="group">
-            <div className="relative">
-              <img
-                src={p.image}
-                alt={p.name}
-                className="w-full aspect-square object-contain rounded-xl bg-gray-50 dark:bg-gray-800 p-2 mb-2"
-                onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/200x200?text=No+image'; }}
-              />
-              <button
-                onClick={(e) => { e.preventDefault(); onToggle(p); }}
-                className="absolute top-1.5 right-1.5 w-7 h-7 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity"
-              >
-                <Heart className="w-3.5 h-3.5 fill-red-500 text-red-500" />
-              </button>
-            </div>
-            <p className="text-xs font-bold text-gray-800 dark:text-white line-clamp-2 mb-1 leading-snug">{p.name}</p>
-            <p className="text-xs font-semibold text-gray-900 dark:text-white">{formatSum(p.price)}</p>
-          </Card>
+          <ProductTile key={p.id} size="sm" to={productPath(p)} name={p.name} image={p.image} price={formatSum(p.price)}
+            actions={(
+              <TileAction on label={t.detailPage.actionUnfavorite} onClick={() => onToggle(p)}>
+                <Heart className="w-3.5 h-3.5 fill-current" />
+              </TileAction>
+            )} />
         ))}
       </div>
     </div>
@@ -63,37 +49,23 @@ export function SimilarProducts({ loading, products, bestPrice }: { loading: boo
       {/* Bitta qator, gorizontal aylantiriladi — soni ustunlarga bo'linmasa ham "yetim" kartalar qolmaydi */}
       <div className="flex gap-2.5 overflow-x-auto snap-x pb-1 [scrollbar-width:thin]">
         {loading
-          ? Array.from({ length: 6 }, (_, i) => (
-              <div key={i} className="w-40 lg:w-[calc((100%-50px)/6)] shrink-0 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse h-44" aria-hidden="true" />
-            ))
+          ? Array.from({ length: 6 }, (_, i) => <ProductTileSkeleton key={i} size="sm" ratio="wide" className={RAIL_ITEM} />)
           : products.map((p) => {
               const diff = p.price - bestPrice;
               const stores = p.markets?.length ?? 0;
               return (
-                <Card as={Link} interactive padding="none"
-                  key={p.id}
-                  to={productPath(p)}
-                  className="w-40 lg:w-[calc((100%-50px)/6)] shrink-0 snap-start p-2.5 flex flex-col">
-                  <img
-                    src={p.image}
-                    alt={p.name}
-                    loading="lazy"
-                    className="w-full aspect-[4/3] object-contain rounded-lg bg-gray-50 dark:bg-gray-800 p-1.5 mb-2"
-                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                  />
-                  <p className="text-xs font-medium text-gray-800 dark:text-white line-clamp-2 mb-1.5 leading-snug flex-1">{p.name}</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatSum(p.price)}</p>
-                  <div className="mt-1 flex items-center justify-between gap-2 text-[11px]">
-                    {bestPrice > 0 && Math.abs(diff) >= 1000 ? (
-                      <span className={diff < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}>
-                        {(diff < 0 ? t.detailPage.similarCheaper : t.detailPage.similarPricier).replace('{{amount}}', formatSum(Math.abs(diff)))}
-                      </span>
-                    ) : <span />}
-                    {stores > 1 && (
-                      <span className="text-gray-400">{t.home.storesTag.replace('{{count}}', String(stores))}</span>
-                    )}
-                  </div>
-                </Card>
+                <ProductTile key={p.id} size="sm" ratio="wide" className={`${RAIL_ITEM} snap-start`}
+                  to={productPath(p)} name={p.name} image={p.image} price={formatSum(p.price)}
+                  meta={(
+                    <span className="flex w-full items-center justify-between gap-2">
+                      {bestPrice > 0 && Math.abs(diff) >= 1000 ? (
+                        <span className={diff < 0 ? 'text-emerald-600 dark:text-emerald-400' : ''}>
+                          {(diff < 0 ? t.detailPage.similarCheaper : t.detailPage.similarPricier).replace('{{amount}}', formatSum(Math.abs(diff)))}
+                        </span>
+                      ) : <span />}
+                      {stores > 1 && <span className="text-gray-400">{t.home.storesTag.replace('{{count}}', String(stores))}</span>}
+                    </span>
+                  )} />
               );
             })}
       </div>

@@ -1,12 +1,11 @@
 import { m } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { formatSum } from '../../utils/productMapper';
 import { productPath } from '../../utils/slug';
 import type { Product } from '../../components/ProductCard';
 import { StoreLogo } from '../../components/StoreLogo';
-import { reveal, SectionHeader, LoadError, PLACEHOLDER, priceSpread } from './shared';
-import { Card } from "../../components/Card";
+import { reveal, SectionHeader, LoadError, priceSpread } from './shared';
+import { ProductTile, ProductTileSkeleton } from "../../components/product-card/ProductTile";
 
 /** Taklif kartasi: eng arzon do'kon (logo bilan), eng qimmat narx va farq foizi. */
 function DealTile({ product, index }: { product: Product; index: number }) {
@@ -16,56 +15,21 @@ function DealTile({ product, index }: { product: Product; index: number }) {
   if (!low || !high) return null;
 
   return (
-    <Card as={Link} interactive radius="3xl" padding="sm" to={productPath(product)} style={{ '--i': index } as React.CSSProperties}
-      className="group card-rise flex flex-col">
-      <div className="relative aspect-[4/3] rounded-2xl bg-white dark:bg-white/[0.04] overflow-hidden">
-        <img src={product.image || PLACEHOLDER} alt={product.name} loading="lazy"
-          onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}
-          className="w-full h-full object-contain p-4 mix-blend-multiply dark:mix-blend-normal transition-transform duration-500 group-hover:scale-[1.04]" />
-        {pct > 0 && (
-          <span className="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 rounded-full bg-emerald-500/95 px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold text-white">
-            {h.dealSave.replace('{{pct}}', String(pct))}
-          </span>
-        )}
-        <span className="absolute top-2.5 right-2.5 hidden sm:inline-flex glass-soft rounded-full px-2 py-1 text-[11px] text-gray-700 dark:text-gray-200">
-          {h.dealStores.replace('{{count}}', String(count))}
+    <ProductTile to={productPath(product)} name={product.name} image={product.image} ratio="wide"
+      className="card-rise" style={{ '--i': index } as React.CSSProperties}
+      badge={pct > 0 && (
+        <span className="rounded-full bg-emerald-500/95 px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold text-white">
+          {h.dealSave.replace('{{pct}}', String(pct))}
         </span>
-      </div>
-
-      <div className="px-1.5 pt-3 pb-1 flex flex-col flex-1">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-white leading-snug line-clamp-2 min-h-[2.5rem]">
-          {product.name}
-        </h3>
-        <div className="mt-3 flex flex-wrap items-end justify-between gap-x-2 gap-y-1.5">
-          <div className="min-w-0">
-            <p className="text-[11px] text-gray-500 dark:text-gray-400">{h.dealCheapest}</p>
-            <p className="text-[15px] sm:text-lg font-semibold tracking-tight text-gray-900 dark:text-white tabular-nums leading-tight whitespace-nowrap">
-              {formatSum(low.price)}
-            </p>
-          </div>
-          <span className="flex items-center gap-1.5 min-w-0 text-xs text-gray-600 dark:text-gray-300">
-            <StoreLogo name={low.source} size="sm" />
-            <span className="truncate">{low.source}</span>
-          </span>
-        </div>
-        <p className="mt-2 pt-2 border-t border-gray-900/5 dark:border-white/10 text-xs text-gray-500 dark:text-gray-400 flex justify-end sm:justify-between gap-2">
+      )}
+      priceLabel={h.dealCheapest} price={formatSum(low.price)}
+      meta={<><StoreLogo name={low.source} size="xs" /><span className="truncate">{low.source} · {h.dealStores.replace('{{count}}', String(count))}</span></>}
+      footer={
+        <span className="flex justify-end sm:justify-between gap-2">
           <span className="hidden sm:inline">{h.dealPriciest}</span>
           <span className="line-through tabular-nums">{formatSum(high.price)}</span>
-        </p>
-      </div>
-    </Card>
-  );
-}
-
-function Skeleton() {
-  return (
-    <Card radius="3xl" padding="sm" className="animate-pulse" aria-hidden="true">
-      <div className="aspect-[4/3] rounded-2xl bg-gray-200/70 dark:bg-gray-700/50" />
-      <div className="mt-4 space-y-2 px-1.5">
-        <div className="h-3 rounded-full bg-gray-200/70 dark:bg-gray-700/50 w-4/5" />
-        <div className="h-5 rounded-full bg-gray-200/70 dark:bg-gray-700/50 w-2/5 mt-4" />
-      </div>
-    </Card>
+        </span>
+      } />
   );
 }
 
@@ -91,7 +55,7 @@ export function DealsGrid({ deals, status, onRetry }: {
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {status === 'loading'
-            ? Array.from({ length: 8 }, (_, i) => <Skeleton key={i} />)
+            ? Array.from({ length: 8 }, (_, i) => <ProductTileSkeleton key={i} ratio="wide" />)
             : deals.slice(0, fullRows(deals.length)).map((p, i) => <DealTile key={p.id} product={p} index={i} />)}
         </div>
       )}

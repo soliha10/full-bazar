@@ -76,37 +76,49 @@ body {
     radial-gradient(40rem 28rem at -10% 30%, rgba(56, 189, 248, 0.07), transparent 60%);
 }
 
-.glass {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
-}
-.dark .glass {
-  background: rgba(17, 24, 39, 0.62);
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
-}
-/* Ustma-ust turadigan kartalar (hero dastasi): ortidagi karta matni ko'rinib
-   qolmasligi uchun zichroq shisha */
-.glass-solid { background: rgba(255, 255, 255, 0.94); }
-.dark .glass-solid { background: rgba(17, 24, 39, 0.92); }
-/* Kichik, ichki sirtlar (tugma, chip, kiritish maydoni) */
-.glass-soft {
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-}
-.dark .glass-soft {
-  background: rgba(31, 41, 55, 0.45);
-  border-color: rgba(255, 255, 255, 0.08);
-}
-.glass-hover { transition: transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s, border-color .25s; }
-.glass-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 16px 32px -16px rgba(91, 33, 182, 0.25);
+/* Shisha sirtlar. @layer components ichida — Tailwind utility'lari (border-*,
+   hover:*, bg-* holatlari) ularni bosib o'ta olsin. */
+@layer components {
+  .glass {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
+  }
+  .dark .glass {
+    background: rgba(17, 24, 39, 0.62);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  }
+  /* Ustma-ust turadigan kartalar (hero dastasi): ortidagi karta matni ko'rinib
+     qolmasligi uchun zichroq shisha */
+  .glass-solid { background: rgba(255, 255, 255, 0.94); }
+  .dark .glass-solid { background: rgba(17, 24, 39, 0.92); }
+  /* Kichik, ichki sirtlar (tugma, chip, kiritish maydoni) */
+  .glass-soft {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+  }
+  .dark .glass-soft {
+    background: rgba(31, 41, 55, 0.45);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  .glass-hover { transition: transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s, border-color .25s; }
+  .glass-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 16px 32px -16px rgba(91, 33, 182, 0.25);
+  }
+  /* Yopishqoq panellar, pastki oynalar (sheet), mobil panellar: zich shisha,
+     chegara va soya elementning o'zida (border-b / border-t) */
+  .glass-bar {
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+  }
+  .dark .glass-bar { background: rgba(10, 12, 22, 0.78); }
 }
 
 /* ── Grafik ranglari (dataviz validate_palette.js dan o'tgan) ──
