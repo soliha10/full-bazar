@@ -78,4 +78,18 @@ export const misc: typeof uzMisc = {
     sending: "Sending...",
     send: "Send",
   },
+
+  priceAlerts: {
+    region: "Price alerts",
+    title: "Prices on your watchlist changed",
+    summary: "{{count}} products changed price since your last visit",
+    more: "{{count}} more products",
+    open: "Open watchlist",
+    later: "Later",
+    close: "Close",
+    introTitle: "Never miss a price change",
+    introText: "Tap the bell on a product card — when the price drops or rises, we'll show it here on your next visit.",
+    introCta: "Browse catalog",
+  },
+
 };

@@ -1,5 +1,6 @@
 import { Suspense, lazy } from "react";
 import { HoverTip } from "./components/HoverTip";
+import { PriceAlertToast } from "./components/PriceAlertToast";
 import {
   BrowserRouter as Router,
   Routes,
@@ -119,6 +120,7 @@ function AppContent() {
       <AuthModalSlot />
       <CompareBar />
       <HoverTip />
+      <PriceAlertToast />
     </div>
   );
 }

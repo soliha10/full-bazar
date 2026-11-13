@@ -125,6 +125,12 @@ async def _prepare_db(pool: asyncpg.Pool) -> None:
             # hosting). Qidiruv baribir ishlaydi, faqat sekinroq — startupni
             # buning uchun to'xtatmaymiz.
             print(f"[startup] pg_trgm indekslari o'rnatilmadi: {exc}")
+        # Foydalanuvchi oxirgi marta ko'rgan narx — narx o'zgarishi xabari shundan
+        # hisoblanadi (price_alerts.py); eski yozuvlarda NULL — qo'shilgan narx olinadi
+        await conn.execute("""
+            ALTER TABLE user_watchlist
+            ADD COLUMN IF NOT EXISTS seen_price DECIMAL(15, 2) DEFAULT NULL
+        """)
         # Telegram chat_id column (added later — safe to run on existing installs)
         await conn.execute("""
             ALTER TABLE user_profiles

@@ -27,6 +27,7 @@ import specs_api
 import tracking
 import trends_api
 import users_api
+import price_alerts_api
 from auth_models import _auth_validation_handler
 from lifecycle import lifespan
 from middleware import _ALLOWED_ORIGINS, CdnCacheMiddleware, DbReadyMiddleware, RateLimitMiddleware
@@ -78,6 +79,7 @@ async def health() -> dict:
 app.include_router(auth_codes_api.router)
 app.include_router(auth_api.router)
 app.include_router(users_api.router)
+app.include_router(price_alerts_api.router)
 app.include_router(feedback_api.router)
 app.include_router(image_proxy.router)
 app.include_router(search_api.router)

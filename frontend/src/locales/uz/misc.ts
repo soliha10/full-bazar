@@ -76,4 +76,18 @@ export const misc = {
     sending: "Yuborilmoqda...",
     send: "Yuborish",
   },
+
+  priceAlerts: {
+    region: "Narx xabarlari",
+    title: "Kuzatuvingizdagi narxlar o'zgardi",
+    summary: "{{count}} ta mahsulot narxi siz oxirgi ko'rganingizdan beri o'zgardi",
+    more: "Yana {{count}} ta mahsulot",
+    open: "Kuzatuvni ochish",
+    later: "Keyinroq",
+    close: "Yopish",
+    introTitle: "Narx o'zgarishini o'tkazib yubormang",
+    introText: "Mahsulot kartasidagi qo'ng'iroqcha tugmasini bosing — narx tushsa yoki oshsa, saytga kirganingizda shu yerda ko'rsatamiz.",
+    introCta: "Katalogga o'tish",
+  },
+
 };

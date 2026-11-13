@@ -155,8 +155,8 @@ async def add_watchlist(
     pool: asyncpg.Pool = request.app.state.pool
     await pool.execute(
         """
-        INSERT INTO user_watchlist (user_id, product_id, product_data)
-        VALUES ($1, $2, $3)
+        INSERT INTO user_watchlist (user_id, product_id, product_data, seen_price)
+        VALUES ($1, $2, $3, (SELECT MIN(price) FROM product_markets WHERE product_id = $2))
         ON CONFLICT (user_id, product_id) DO UPDATE SET product_data = EXCLUDED.product_data
         """,
         row["id"], product_id, body.product,
