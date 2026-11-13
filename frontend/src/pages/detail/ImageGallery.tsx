@@ -14,8 +14,8 @@ export function ImageGallery({ gallery, productName }: {
   const d = useLanguage().t.detailPage;
 
   return (
-    <div className="md:flex md:flex-row-reverse md:items-start gap-3">
-    <div className="relative flex-1 glass rounded-2xl overflow-hidden">
+    <div className="md:flex md:flex-row-reverse md:items-stretch gap-3 lg:h-full">
+    <div className="relative flex-1 min-w-0 glass rounded-2xl overflow-hidden md:flex md:flex-col md:justify-center">
       {/* Image carousel */}
       <div
         ref={scrollContainerRef}
@@ -79,19 +79,16 @@ export function ImageGallery({ gallery, productName }: {
     </div>
 
     {/* Thumbnails — desktop, vertical rail */}
-    <div
-      className={`hidden md:flex md:flex-col gap-3 w-16 shrink-0 ${
-        images.length > 4
-          ? "max-h-[480px] lg:max-h-[560px] overflow-y-auto pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          : ""
-      }`}
-    >
+    {/* Absolyut ichki ro'yxat: miniatyuralar soni qator balandligini oshirmaydi,
+        ko'p bo'lsa — shu ustun ichida aylantiriladi */}
+    <div className="hidden md:block relative w-16 shrink-0">
+    <div className="absolute inset-0 flex flex-col gap-2 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {images.map((img, idx) => (
         <button
           key={idx}
           onClick={() => goToImage(idx)}
           title={d.imageN.replace('{{n}}', String(idx + 1))} aria-label={d.imageN.replace('{{n}}', String(idx + 1))}
-          className={`w-full aspect-square shrink-0 bg-white dark:bg-gray-900 rounded-xl p-1.5 border-2 transition-all ${
+          className={`w-full aspect-square shrink-0 bg-white dark:bg-gray-900 rounded-xl p-1 border-2 transition-all ${
             selectedImage === idx
               ? "border-violet-600"
               : "border-gray-100 dark:border-gray-800 hover:border-violet-200 dark:hover:border-violet-700"
@@ -105,6 +102,7 @@ export function ImageGallery({ gallery, productName }: {
           />
         </button>
       ))}
+    </div>
     </div>
     </div>
   );

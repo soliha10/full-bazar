@@ -62,9 +62,9 @@ export function PriceHistoryChart({ history, markets }: {
 
   return (
     <section aria-labelledby="history-title" className="h-full">
-      <div className="h-full glass rounded-2xl p-4 md:p-5">
+      <div className="h-full glass rounded-2xl p-4">
         <div className="flex items-center justify-between gap-3 mb-3">
-          <h2 id="history-title" className="text-base font-semibold text-gray-900 dark:text-white">{d.priceHistoryTitle}</h2>
+          <h2 id="history-title" className="text-sm font-semibold text-gray-900 dark:text-white">{d.priceHistoryTitle}</h2>
           <div className="flex flex-wrap items-center gap-2">
           <div role="group" className="flex rounded-xl bg-gray-900/5 dark:bg-white/5 p-1">
             {PERIODS.map(p => (

@@ -26,7 +26,7 @@ export function ProductHeading({ product, liked, inCompare, onToggleLike, onTogg
       </div>
 
       <div className="flex items-start gap-3">
-        <h1 className="flex-1 text-2xl md:text-3xl font-semibold text-gray-900 dark:text-white tracking-tight leading-tight">
+        <h1 title={product.name} className="line-clamp-2 flex-1 text-xl md:text-2xl font-semibold text-gray-900 dark:text-white tracking-tight leading-tight">
           {product.name}
         </h1>
         {/* Solishtirishga qo'shish — sayt oqimining markazi: avval

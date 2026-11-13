@@ -37,15 +37,17 @@ export function OffersSection({ product, stats, history, allMarkets }: {
   const changes = useMemo(() => storeChanges(history, allMarkets, CHANGE_DAYS), [history, allMarkets]);
   if (!sortedMarkets.length) return null;
   const best = sortedMarkets[0].price;
+  // Bitta qatorni yashirish uchun tugma shart emas — u ham shuncha joy oladi
+  const collapsible = sortedMarkets.length > VISIBLE + 1;
 
   return (
-    <section id="offers" aria-labelledby="offers-title" className="glass rounded-2xl px-4 py-3">
-      <div className="flex items-baseline justify-between gap-3 mb-1">
+    <section id="offers" aria-labelledby="offers-title" className="flex-1 flex flex-col glass rounded-2xl p-4">
+      <div className="flex items-baseline justify-between gap-3 mb-1.5">
         <h2 id="offers-title" className="text-sm font-semibold text-gray-900 dark:text-white">{d.navOffers}</h2>
         <span className="text-xs text-gray-500 dark:text-gray-400">{d.offersCount.replace('{{count}}', String(sortedMarkets.length))}</span>
       </div>
       <ul className="divide-y divide-gray-100 dark:divide-gray-800">
-        {(showAll ? sortedMarkets : sortedMarkets.slice(0, VISIBLE)).map((m, idx) => {
+        {(showAll || !collapsible ? sortedMarkets : sortedMarkets.slice(0, VISIBLE)).map((m, idx) => {
           const checked = formatCheckedAt(m.checkedAt, t.checkedAt);
           const go = d.goToStore.replace('{{store}}', m.source);
           const ch = changes[m.source];
@@ -79,9 +81,9 @@ export function OffersSection({ product, stats, history, allMarkets }: {
           );
         })}
       </ul>
-      {sortedMarkets.length > VISIBLE && (
+      {collapsible && (
         <button type="button" onClick={() => setShowAll(v => !v)} aria-expanded={showAll}
-          className="w-full pt-2 text-sm font-medium text-violet-600 dark:text-violet-400 hover:underline">
+          className="mt-auto w-full pt-2 text-sm font-medium text-violet-600 dark:text-violet-400 hover:underline">
           {showAll ? d.showFewerStores : d.showMoreStores.replace('{{count}}', String(sortedMarkets.length - VISIBLE))}
         </button>
       )}

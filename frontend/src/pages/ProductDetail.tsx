@@ -63,10 +63,14 @@ export function ProductDetail() {
         </nav>
 
         {/* Desktop: rasm | nom, ranglar, xususiyatlar | narx kartasi + takliflar.
+            O'ng ustun qat'iy kenglikda — kontent ko'paysa ham ustunlar siljimaydi;
+            uch ustunning pastki cheti bir xil (oxirgi karta qolgan joyni egallaydi).
+            Uzun ro'yxatlar (ranglar, takliflar, miniatyuralar) yig'iladi yoki ichida
+            aylantiriladi — qator cheksiz cho'zilmaydi.
             Mobil tartib DOM bo'yicha: rasm, nom/ranglar, narx/takliflar, xususiyatlar. */}
-        <motion.div className="grid gap-4 lg:gap-5 lg:grid-cols-[minmax(0,4fr)_minmax(0,4.6fr)_minmax(0,3.4fr)] lg:grid-rows-[auto_1fr]"
+        <motion.div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_340px] lg:grid-rows-[auto_1fr]"
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: 'easeOut' }}>
-          <div className="lg:row-span-2">
+          <div className="lg:row-span-2 min-h-0">
             <ImageGallery gallery={gallery} productName={product.name} />
           </div>
           <div className="space-y-3 lg:col-start-2 lg:row-start-1">
@@ -74,11 +78,11 @@ export function ProductDetail() {
               onToggleLike={toggleLike} onToggleCompare={() => toggleCompare(String(product.id))} />
             <ColorPicker variants={variant.variants} active={variant.active} cheapest={variant.cheapest} onSelect={variant.select} />
           </div>
-          <div className="space-y-3 lg:col-start-3 lg:row-start-1 lg:row-span-2">
+          <div className="flex flex-col gap-3 lg:col-start-3 lg:row-start-1 lg:row-span-2">
             <PriceSummary product={view ?? product} stats={stats} history={priceHistory} />
             <OffersSection product={view ?? product} stats={stats} history={priceHistory} allMarkets={product.markets ?? []} />
           </div>
-          <div className="lg:col-start-2 lg:row-start-2">
+          <div className="lg:col-start-2 lg:row-start-2 flex flex-col">
             <SpecsSection specs={specs} />
           </div>
         </motion.div>
