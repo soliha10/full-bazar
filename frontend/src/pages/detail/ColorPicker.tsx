@@ -40,7 +40,7 @@ export function ColorPicker({ variants, active, cheapest, onSelect }: {
             ? `${name(v)} — ${d.colorFrom.replace('{{price}}', formatSum(v.price))}${v === cheapest && variants.length > 1 ? ` · ${d.cheapestTag}` : ''}`
             : name(v);
           return (
-            <button key={v.color ?? 'other'} type="button" role="radio" aria-checked={on} aria-label={label} title={label}
+            <button key={v.color ?? 'other'} type="button" role="radio" aria-checked={on} aria-label={label} data-tip={label}
               onClick={() => onSelect(v.color)}
               className={`w-11 h-11 shrink-0 overflow-hidden rounded-lg border p-0.5 transition-colors ${
                 on ? 'border-violet-600 ring-1 ring-violet-600'

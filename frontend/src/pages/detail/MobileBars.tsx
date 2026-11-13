@@ -17,7 +17,7 @@ export function MobileTopBar({ product, liked, onBack, onToggleLike }: {
     <div className="md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800 px-4 py-3 sticky top-0 z-50 flex items-center justify-between">
       <button
         onClick={onBack}
-        title={t.detailPage.actionBack} aria-label={t.detailPage.actionBack}
+        data-tip={t.detailPage.actionBack} aria-label={t.detailPage.actionBack}
         className="w-10 h-10 flex items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 active:scale-90 transition-all"
       >
         <ChevronLeft className="w-5 h-5" />
@@ -28,7 +28,7 @@ export function MobileTopBar({ product, liked, onBack, onToggleLike }: {
       <div className="flex items-center gap-1">
         <button
           onClick={onToggleLike}
-          title={liked ? t.detailPage.actionUnfavorite : t.detailPage.actionFavorite}
+          data-tip={liked ? t.detailPage.actionUnfavorite : t.detailPage.actionFavorite}
           aria-label={liked ? t.detailPage.actionUnfavorite : t.detailPage.actionFavorite}
           className="w-10 h-10 flex items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800 active:scale-90 transition-all"
         >
@@ -36,7 +36,7 @@ export function MobileTopBar({ product, liked, onBack, onToggleLike }: {
         </button>
         <button
           onClick={() => navigator.share?.({ title: product?.name, url: window.location.href })}
-          title={t.detailPage.actionShare} aria-label={t.detailPage.actionShare}
+          data-tip={t.detailPage.actionShare} aria-label={t.detailPage.actionShare}
           className="w-10 h-10 flex items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800 active:scale-90 transition-all"
         >
           <Share2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />

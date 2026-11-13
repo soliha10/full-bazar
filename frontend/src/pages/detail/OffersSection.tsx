@@ -37,9 +37,9 @@ export function OffersSection({ product, stats }: { product: Product; stats: Pri
           return (
             <li key={`${m.source}-${idx}`} className="flex items-center gap-2.5 py-2">
               <StoreLogo name={m.source} size="sm" />
-              <p className="min-w-0 flex-1 truncate text-sm text-gray-900 dark:text-white" title={checked ? `${m.source} · ${checked}` : m.source}>{m.source}</p>
+              <p className="min-w-0 flex-1 truncate text-sm text-gray-900 dark:text-white" data-tip={checked ? `${m.source} · ${checked}` : m.source}>{m.source}</p>
               <p className="whitespace-nowrap text-sm font-semibold tabular-nums text-gray-900 dark:text-white">{formatSum(m.price)}</p>
-              <a href={m.url} target="_blank" rel="noopener noreferrer" title={go} aria-label={go}
+              <a href={m.url} target="_blank" rel="noopener noreferrer" data-tip={go} aria-label={go}
                 onClick={() => trackStoreClick(product.id, m.source, m.price)}
                 className="flex w-8 h-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-violet-600 hover:text-white hover:border-violet-600 transition-colors">
                 <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />

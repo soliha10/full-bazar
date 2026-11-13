@@ -90,7 +90,7 @@ export function PriceHistoryChart({ history, markets }: {
           <div className="ml-auto flex items-center gap-2">
             {ready && (
               <button type="button" onClick={() => setShowTable(v => !v)} aria-pressed={showTable} aria-controls="history-table"
-                title={d.historyTableTitle} aria-label={d.historyTableTitle}
+                data-tip={d.historyTableTitle} aria-label={d.historyTableTitle}
                 className={`flex w-8 h-8 items-center justify-center rounded-lg transition-colors ${showTable
                   ? 'bg-violet-600 text-white' : 'bg-gray-900/5 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}>
                 <Table2 className="w-4 h-4" aria-hidden="true" />

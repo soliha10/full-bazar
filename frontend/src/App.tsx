@@ -1,4 +1,5 @@
 import { Suspense, lazy } from "react";
+import { HoverTip } from "./components/HoverTip";
 import {
   BrowserRouter as Router,
   Routes,
@@ -117,6 +118,7 @@ function AppContent() {
       <MobileToolbar />
       <AuthModalSlot />
       <CompareBar />
+      <HoverTip />
     </div>
   );
 }
