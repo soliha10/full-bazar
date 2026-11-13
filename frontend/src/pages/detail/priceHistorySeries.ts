@@ -121,7 +121,7 @@ export type PriceVerdict = 'low' | 'typical' | 'high';
  * past bo'lsa — "past", yuqori bo'lsa — "yuqori". 14 kundan kam ma'lumot
  * bilan xulosa chiqarilmaydi: oraliq tasodifiy bo'lib qoladi.
  */
-export function typicalRange(rows: DayRow[]): { low: number; high: number; point: boolean; verdict: PriceVerdict } | null {
+export function typicalRange(rows: DayRow[]): { low: number; high: number; median: number; point: boolean; verdict: PriceVerdict } | null {
   if (rows.length < 14) return null;
   const mins = rows.map(r => r.min).sort((a, b) => a - b);
   const q = (p: number) => {
@@ -134,7 +134,7 @@ export function typicalRange(rows: DayRow[]): { low: number; high: number; point
   // 1% dan kichik farq — "odatiy": 4 517 000 va 4 540 000 xaridor uchun bir xil
   const tol = 0.01;
   return {
-    low, high,
+    low, high, median: q(0.5),
     // Narx davrning ko'p qismida o'zgarmagan — oraliq emas, bitta qiymat
     point: (high - low) / Math.max(1, (high + low) / 2) < tol,
     verdict: now < low * (1 - tol) ? 'low' : now > high * (1 + tol) ? 'high' : 'typical',
