@@ -36,6 +36,7 @@ export function ProductHeading({ product, liked, inCompare, onToggleLike, onTogg
         <button
           onClick={onToggleCompare}
           title={inCompare ? t.detailPage.removeFromCompare : t.detailPage.addToCompare}
+          aria-label={inCompare ? t.detailPage.removeFromCompare : t.detailPage.addToCompare}
           className={`mt-1 w-10 h-10 shrink-0 flex items-center justify-center rounded-full border transition-colors ${
             inCompare
               ? 'border-violet-600 bg-violet-600'
@@ -46,6 +47,8 @@ export function ProductHeading({ product, liked, inCompare, onToggleLike, onTogg
         </button>
         <button
           onClick={onToggleLike}
+          title={liked ? t.detailPage.actionUnfavorite : t.detailPage.actionFavorite}
+          aria-label={liked ? t.detailPage.actionUnfavorite : t.detailPage.actionFavorite}
           className="hidden md:flex mt-1 w-10 h-10 shrink-0 items-center justify-center rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
         >
           <Heart className={`w-5 h-5 transition-all duration-200 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-500 dark:text-gray-400'}`} />

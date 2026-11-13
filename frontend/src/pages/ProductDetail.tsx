@@ -77,11 +77,11 @@ export function ProductDetail() {
           </div>
         </motion.div>
 
-        <div className="mt-4 grid lg:grid-cols-12 gap-4 items-start">
+        <div className="mt-4 grid lg:grid-cols-12 gap-4">
           <div className="lg:col-span-7"><OffersSection product={view ?? product} stats={stats} /></div>
           <div className="lg:col-span-5"><SpecsSection specs={specs} /></div>
           {/* Do'konlarda o'zgarish bo'lmasa StoreComparison null — tarix butun qatorni oladi */}
-          <div className="lg:col-span-12 flex flex-col lg:flex-row gap-4 items-start">
+          <div className="lg:col-span-12 flex flex-col lg:flex-row gap-4">
             <div className="w-full lg:flex-1 min-w-0"><PriceHistoryChart history={priceHistory} markets={product.markets ?? []} /></div>
             <div className="w-full lg:w-[34%] shrink-0 empty:hidden"><StoreComparison history={priceHistory} markets={product.markets ?? []} /></div>
           </div>

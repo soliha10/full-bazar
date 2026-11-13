@@ -3,6 +3,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum, formatCheckedAt } from "../../utils/productMapper";
 import { trackStoreClick } from "../../services/tracking";
 import type { PriceStats } from "./priceStats";
+import { ExternalLink } from "lucide-react";
 import { StoreLogo } from '../../components/StoreLogo';
 
 /** Mobile market cards — birinchi 4 ta taklif, qolgani tugma orqali. */
@@ -47,10 +48,13 @@ export function MobileOffers({ product, sortedMarkets, showAllMarkets, onToggleS
             <a
               href={market.url}
               target="_blank"
-              onClick={() => { if (product) trackStoreClick(product.id, market.source, market.price); }}
-              className="flex items-center border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white px-3 rounded-lg text-xs font-medium min-h-[36px] active:bg-violet-600 active:text-white active:border-violet-600 transition-colors"
+              rel="noopener noreferrer"
+              onClick={() => trackStoreClick(product.id, market.source, market.price)}
+              title={t.detailPage.goToStore.replace('{{store}}', market.source)}
+              aria-label={t.detailPage.goToStore.replace('{{store}}', market.source)}
+              className="flex w-10 h-10 items-center justify-center border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-lg active:bg-violet-600 active:text-white active:border-violet-600 transition-colors"
             >
-              {t.detail.shop}
+              <ExternalLink className="w-4 h-4" aria-hidden="true" />
             </a>
           </div>
         </div>

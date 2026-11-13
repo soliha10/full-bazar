@@ -31,8 +31,8 @@ export function DivergingBars({ items, negLabel, posLabel, stacked = false }: {
   return (
     <div>
       <div className={`flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2 ${stacked ? '' : 'sm:pl-[40%]'}`}>
-        <span className="flex items-center gap-1.5"><span aria-hidden="true" className="w-2.5 h-2.5 rounded-sm" style={{ background: 'var(--viz-neg)' }} />← {negLabel}</span>
-        <span className="flex items-center gap-1.5">{posLabel} →<span aria-hidden="true" className="w-2.5 h-2.5 rounded-sm" style={{ background: 'var(--viz-pos)' }} /></span>
+        <span className="flex items-center gap-1.5"><span aria-hidden="true" className="w-2.5 h-2.5 rounded-sm" style={{ background: 'var(--viz-neg)' }} />{negLabel}</span>
+        <span className="flex items-center gap-1.5">{posLabel}<span aria-hidden="true" className="w-2.5 h-2.5 rounded-sm" style={{ background: 'var(--viz-pos)' }} /></span>
       </div>
       <ul className="divide-y divide-gray-900/5 dark:divide-white/5">
         {items.map(item => {

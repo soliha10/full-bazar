@@ -46,20 +46,23 @@ export function StoreComparison({ history, markets }: {
   if (markets.length < 2 || (history !== null && changes.items.length === 0)) return null;
 
   return (
-    <section aria-labelledby="compare-title" className="glass rounded-2xl p-4 md:p-5">
+    <section aria-labelledby="compare-title" className="h-full flex flex-col glass rounded-2xl p-4 md:p-5">
       <h2 id="compare-title" className="text-base font-semibold text-gray-900 dark:text-white mb-0.5">{d.compareTitle}</h2>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{d.changeHint.replace('{{n}}', String(CHANGE_DAYS))}</p>
 
-      {history === null ? (
-        <div className="h-32 rounded-2xl bg-gray-900/5 dark:bg-white/5 animate-pulse" aria-hidden="true" />
-      ) : (
-        <>
-          <DivergingBars items={changes.items} negLabel={d.cheaperLegend} posLabel={d.pricierLegend} stacked />
-          {changes.flat.length > 0 && (
-            <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">{d.flatStores.replace('{{list}}', changes.flat.join(', '))}</p>
-          )}
-        </>
-      )}
+      {/* Qo'shni grafik balandroq — ro'yxat karta o'rtasida turadi */}
+      <div className="flex-1 flex flex-col justify-center">
+        {history === null ? (
+          <div className="h-32 rounded-2xl bg-gray-900/5 dark:bg-white/5 animate-pulse" aria-hidden="true" />
+        ) : (
+          <>
+            <DivergingBars items={changes.items} negLabel={d.cheaperLegend} posLabel={d.pricierLegend} stacked />
+            {changes.flat.length > 0 && (
+              <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">{d.flatStores.replace('{{list}}', changes.flat.join(', '))}</p>
+            )}
+          </>
+        )}
+      </div>
     </section>
   );
 }

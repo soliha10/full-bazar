@@ -33,18 +33,17 @@ export function ColorPicker({ variants, active, cheapest, onSelect }: {
           const key = v.color ?? 'other';
           return (
             <button key={key} type="button" role="radio" aria-checked={on} onClick={() => onSelect(v.color)}
+              title={v.price != null ? `${names[key] ?? key} — ${d.colorFrom.replace('{{price}}', formatSum(v.price))}` : names[key] ?? key}
               className={`flex min-w-0 items-center gap-2 rounded-xl border py-1.5 pl-1.5 pr-3 text-left transition-colors ${
                 on ? 'border-violet-600 ring-1 ring-violet-600 bg-violet-500/5'
                    : 'border-gray-900/10 dark:border-white/15 hover:border-gray-900/25 dark:hover:border-white/30'}`}>
               {v.images[0]
                 ? <img src={v.images[0]} alt="" loading="lazy" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg object-contain bg-white" />
-                : <span className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg bg-gray-100 dark:bg-gray-800" />}
+                // Rasm bo'lmasa — rang namunasi (rasm bor bo'lsa rangni uning o'zi ko'rsatadi)
+                : <span aria-hidden="true" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg ring-1 ring-black/10 dark:ring-white/20"
+                    style={{ background: (v.color && SWATCH[v.color]) || '#9ca3af' }} />}
               <span className="min-w-0">
-                <span className="flex items-center gap-1.5 text-sm text-gray-900 dark:text-white">
-                  {v.color && (
-                    <span aria-hidden="true" className="w-3 h-3 rounded-full ring-1 ring-black/10 dark:ring-white/20"
-                      style={{ background: SWATCH[v.color] ?? '#9ca3af' }} />
-                  )}
+                <span className="block truncate text-sm text-gray-900 dark:text-white">
                   {names[key] ?? key}
                 </span>
                 {v.price != null && (

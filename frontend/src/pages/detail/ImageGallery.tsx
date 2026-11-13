@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useLanguage } from "../../contexts/LanguageContext";
 import { FALLBACK_IMAGE, type Gallery } from "./useImageGallery";
 
 /**
@@ -10,6 +11,7 @@ export function ImageGallery({ gallery, productName }: {
   productName: string;
 }) {
   const { images, selectedImage, setSelectedImage, goToImage, scrollContainerRef, imageRefs } = gallery;
+  const d = useLanguage().t.detailPage;
 
   return (
     <div className="md:flex md:flex-row-reverse md:items-start gap-3">
@@ -42,12 +44,14 @@ export function ImageGallery({ gallery, productName }: {
         <>
           <button
             onClick={() => goToImage(selectedImage - 1)}
+            title={d.prevImage} aria-label={d.prevImage}
             className="md:hidden absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-md hover:bg-white dark:hover:bg-gray-800 active:scale-90 transition-all"
           >
             <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
           <button
             onClick={() => goToImage(selectedImage + 1)}
+            title={d.nextImage} aria-label={d.nextImage}
             className="md:hidden absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-md hover:bg-white dark:hover:bg-gray-800 active:scale-90 transition-all"
           >
             <ChevronRight className="w-5 h-5 text-gray-700 dark:text-gray-300" />
@@ -62,6 +66,7 @@ export function ImageGallery({ gallery, productName }: {
             <button
               key={idx}
               onClick={() => setSelectedImage(idx)}
+              title={d.imageN.replace('{{n}}', String(idx + 1))} aria-label={d.imageN.replace('{{n}}', String(idx + 1))}
               className={`rounded-full transition-all duration-300 ${
                 selectedImage === idx
                   ? 'w-5 h-1.5 bg-violet-600'
@@ -85,6 +90,7 @@ export function ImageGallery({ gallery, productName }: {
         <button
           key={idx}
           onClick={() => goToImage(idx)}
+          title={d.imageN.replace('{{n}}', String(idx + 1))} aria-label={d.imageN.replace('{{n}}', String(idx + 1))}
           className={`w-full aspect-square shrink-0 bg-white dark:bg-gray-900 rounded-xl p-1.5 border-2 transition-all ${
             selectedImage === idx
               ? "border-violet-600"

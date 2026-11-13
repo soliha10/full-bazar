@@ -4,6 +4,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum, formatCheckedAt } from "../../utils/productMapper";
 import { trackStoreClick } from "../../services/tracking";
 import type { PriceStats } from "./priceStats";
+import { ExternalLink } from "lucide-react";
 import { StoreLogo } from '../../components/StoreLogo';
 
 /** Desktop price table — takliflar narx bo'yicha o'sish tartibida.
@@ -71,9 +72,11 @@ export function OffersTable({ product, sortedMarkets, showAll, onToggleShowAll }
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => trackStoreClick(product.id, market.source, market.price)}
-                  className="inline-flex items-center whitespace-nowrap border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-violet-600 hover:text-white hover:border-violet-600 transition-colors"
+                  title={t.detailPage.goToStore.replace('{{store}}', market.source)}
+                  aria-label={t.detailPage.goToStore.replace('{{store}}', market.source)}
+                  className="inline-flex w-9 h-9 items-center justify-center border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-violet-600 hover:text-white hover:border-violet-600 transition-colors"
                 >
-                  {t.detail.goToShop}
+                  <ExternalLink className="w-4 h-4" aria-hidden="true" />
                 </a>
               </td>
             </motion.tr>
