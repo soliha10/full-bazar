@@ -1,9 +1,8 @@
 import { useRef, useEffect, useLayoutEffect } from 'react';
 import { m } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { Product } from '../../components/ProductCard';
-import type { BrandFacet } from '../../hooks/useBrands';
 import { setHeroSearchVisible } from '../../utils/heroSearch';
 import { SearchBox } from '../../components/search/SearchBox';
 import { DealDeck } from './DealDeck';
@@ -40,18 +39,15 @@ function Title({ text, accent }: { text: string; accent: string }) {
 }
 
 /*
- * Hero: aurora fon, sarlavha (kalit ibora ajratilgan), qidiruv, ommabop
- * brendlar, jonli raqamlar va o'ngda — do'kon logolari orbitasidagi haqiqiy
+ * Hero — ixcham: aurora fon, sarlavha (kalit ibora ajratilgan), qidiruv va
+ * bitta qator jonli raqam (brendlar — pastdagi bo'limda) va o'ngda — do'kon logolari orbitasidagi haqiqiy
  * takliflar dastasi. Hamma raqam va logo — API dan (/api/stats, /api/markets).
  */
-export function Hero({ stats, hasStats, fill, deck, dealsLoading, topBrands, updated }: {
+export function Hero({ stats, deck, dealsLoading, updated }: {
   stats: Stats | null;
-  hasStats: boolean;
   updated: string | null;
-  fill: (s: string) => string;
   deck: Product[];
   dealsLoading: boolean;
-  topBrands: BrandFacet[];
 }) {
   const { t } = useLanguage();
   const h = t.home;
@@ -79,43 +75,18 @@ export function Hero({ stats, hasStats, fill, deck, dealsLoading, topBrands, upd
       <div className="flex flex-col md:flex-row md:items-center gap-10 md:gap-16">
         <div className="flex-1 min-w-0">
           <m.h1 {...rise(0)} id="hero-title"
-            className="text-gray-900 dark:text-white font-semibold leading-[1.08] tracking-tight mb-4 max-w-2xl"
+            className="text-gray-900 dark:text-white font-semibold leading-[1.08] tracking-tight mb-7 max-w-2xl"
             style={{ fontSize: 'clamp(2rem, 5.2vw, 3.4rem)' }}>
             <Title text={h.title} accent={h.titleAccent} />
           </m.h1>
-          <m.p {...rise(0.1)} className="text-gray-600 dark:text-gray-400 text-base md:text-lg leading-relaxed mb-7 max-w-xl">
-            {hasStats ? fill(h.subtitle) : <span className="inline-block w-64 h-4 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />}
-          </m.p>
-
           <m.div {...rise(0.15)} className="max-w-xl">
             <SearchBox variant="hero" formRef={formRef} placeholder={h.searchPlaceholder} globalShortcut
               onSubmit={(q) => navigate(q ? `/products?search=${encodeURIComponent(q)}` : '/products')} />
           </m.div>
 
-          {topBrands.length > 0 && (
-            <m.div {...rise(0.2)} className="flex flex-wrap items-center gap-2 mt-5">
-              <span className="text-gray-500 dark:text-gray-400 text-xs">{h.popular}</span>
-              {topBrands.map(b => (
-                <Link key={b.key} to={`/brand/${encodeURIComponent(b.key)}`}
-                  className="glass-soft text-xs text-gray-700 dark:text-gray-200 hover:text-violet-700 dark:hover:text-violet-300 rounded-full px-3 py-1.5 transition-colors">
-                  {b.name}
-                </Link>
-              ))}
-            </m.div>
-          )}
-
-          {/* Jonli raqamlar va narxlar qachon yangilangani */}
-          <m.div {...rise(0.25)} className="mt-7">
-            <HeroStats stats={stats} />
-            {updated && (
-              <p className="mt-3 inline-flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <span className="relative flex h-2 w-2" aria-hidden="true">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                </span>
-                {h.trustUpdated.replace('{{updated}}', updated)}
-              </p>
-            )}
+          {/* Bitta qator jonli raqam; yangilanish vaqti — do'konlar chipida (nuqta + data-tip) */}
+          <m.div {...rise(0.2)} className="mt-6">
+            <HeroStats stats={stats} updated={updated} />
           </m.div>
         </div>
 

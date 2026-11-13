@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { mapProduct } from '../../utils/productMapper';
 import type { Product } from '../../components/ProductCard';
-import { fmt, type Stats } from './shared';
+import type { Stats } from './shared';
 import { relativeUpdated } from '../../utils/relativeUpdated';
 
 /** Bosh sahifaning serverdan keladigan ma'lumotlari (statistika, eng katta
@@ -42,14 +42,9 @@ export function useLandingData() {
   }, [attempt]);
 
   const updated = relativeUpdated(stats?.lastUpdated, h);
-  const fill = (s: string) => s
-    .replace('{{products}}', stats ? fmt(stats.products) : '…')
-    .replace('{{stores}}', stats ? fmt(stats.markets) : '…')
-    .replace('{{comparable}}', stats ? fmt(stats.comparableProducts) : '…');
-
   const retry = () => setAttempt(a => a + 1);
 
   return {
-    stats, statsFailed, deals, dealsStatus, updated, fill, retry,
+    stats, statsFailed, deals, dealsStatus, updated, retry,
   };
 }

@@ -28,7 +28,7 @@ export function Landing() {
   const { t, language } = useLanguage();
   const brands = useBrands();
   const { markets } = useMarkets();
-  const { stats, deals, dealsStatus, updated, fill, retry } = useLandingData();
+  const { stats, deals, dealsStatus, updated, retry } = useLandingData();
 
   // Hero dastasidagi takliflar pastdagi panjarada takrorlanmaydi
   const deck = deals.filter(p => (p.markets?.length ?? 0) >= 2).slice(0, 4);
@@ -50,8 +50,7 @@ export function Landing() {
       {/* Tartib: qidiruv → kimdan narx olinadi → nimani tejash mumkin →
           brend bo'yicha tanlash → qanday ishlaydi → savollar. Bitta qidiruv,
           bitta chaqiruv: har bo'lim o'z vazifasini bajaradi, takror yo'q. */}
-      <Hero stats={stats} hasStats={!!stats} fill={fill} deck={deck} updated={updated}
-        dealsLoading={dealsStatus === 'loading'} topBrands={brands.slice(0, 6)} />
+      <Hero stats={stats} deck={deck} updated={updated} dealsLoading={dealsStatus === 'loading'} />
 
       <StoreMarquee markets={markets} />
 
