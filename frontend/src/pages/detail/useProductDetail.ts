@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { ApiError, fetchProductById, fetchSimilarProducts, fetchPriceHistory, fetchProductSpecs } from "../../services/api";
 import { mapProduct } from "../../utils/productMapper";
 import type { Product } from "../../components/ProductCard";
@@ -22,7 +22,6 @@ export function useProductDetail() {
   const { id: idParam } = useParams();
   const ref = useMemo(() => productRef(idParam), [idParam]);
   const navigate = useNavigate();
-  const location = useLocation();
   const { t } = useLanguage();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,7 +33,8 @@ export function useProductDetail() {
   const [similarLoading, setSimilarLoading] = useState(true);
   const [specs, setSpecs] = useState<Specs | null>(null);
 
-  useEffect(() => { window.scrollTo(0, 0); }, []);
+  // Boshqa mahsulotga o'tilganda (o'xshash modellar) ham sahifa boshidan
+  useEffect(() => { window.scrollTo(0, 0); }, [ref]);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,10 +42,18 @@ export function useProductDetail() {
       if (!ref) return;
       try {
         setLoading(true);
+        setError(null);
         const data = await fetchProductById(ref);
         if (cancelled) return;
         const mapped = mapProduct(data);
         setProduct(mapped);
+        // Eski yoki noto'g'ri slug bilan kelingan bo'lsa, manzil satrini kanonik
+        // shaklga almashtiramiz (tarixga yangi yozuv qo'shmasdan). Faqat shu yerda —
+        // aynan shu manzil uchun yuklangan mahsulot bilan: alohida effekt bo'lsa,
+        // boshqa mahsulotga o'tilganda yangi ma'lumot kelguncha eski mahsulot
+        // manziliga qaytarib yuborardi (o'xshash modellar kartasi ishlamasdi).
+        const canonical = productPath(mapped);
+        if (window.location.pathname !== canonical) navigate(canonical, { replace: true });
         // Hodisalar va narx tarixi ID bo'yicha yoziladi — manzildagi slug emas,
         // aynan mahsulotning o'zgarmas identifikatori kerak.
         trackEvent('view', String(mapped.id));
@@ -70,16 +78,6 @@ export function useProductDetail() {
     getProduct();
     return () => { cancelled = true; };
   }, [ref]);
-
-  // Eski yoki noto'g'ri slug bilan kelingan bo'lsa, manzil satrini kanonik
-  // shaklga almashtiramiz (tarixga yangi yozuv qo'shmasdan).
-  useEffect(() => {
-    if (!product) return;
-    const canonical = productPath(product);
-    if (location.pathname !== canonical) {
-      navigate(canonical, { replace: true });
-    }
-  }, [product, location.pathname, navigate]);
 
   useEffect(() => {
     if (!ref) return;
