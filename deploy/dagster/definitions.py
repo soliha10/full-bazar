@@ -1,10 +1,14 @@
 """Bazarcom narx quvuri — Dagster.
 
-Kuniga 2 marta (05:00 va 17:00 Toshkent):
+Narxlar kuniga 4 marta — har 6 soatda (05:00, 11:00, 17:00, 23:00 Toshkent):
 
     repodagi CSV lar ─┬─ yigish_texnomart ─┐
-                      ├─ yigish_glotr     ─┼─ bazaga_yozish ── matcher_oqitish
+                      ├─ yigish_glotr     ─┼─ bazaga_yozish
                       └─ ...               ┘
+
+Matcher o'qitish (og'ir, narxga bog'liq emas) — alohida, kuniga bir marta
+05:30 da: run lar navbatda (dagster.yaml: max_concurrent_runs=1), ertalabki
+narx yig'ish tugagach boshlanadi.
 
 Har bir op CLI dagi skriptni (python/run_scrapers.py, sync_csv.py,
 ml_tasks/*) alohida jarayonda ishga tushiradi — qo'lda ishga tushirilgandagi
@@ -45,6 +49,9 @@ PY = sys.executable
 
 sys.path.insert(0, os.path.join(REPO, "python"))
 from scrapers import ALL_SCRAPERS  # noqa: E402
+
+# Narxlar kuniga 4 marta (Toshkent vaqti)
+PRICE_CRON = "0 5,11,17,23 * * *"
 
 # LOCAL_SCRAPERS dan server IP sidan ochiladigani (2026-11-09 da tekshirilgan)
 SERVER_LOCAL = ("chakana",)
@@ -181,7 +188,7 @@ def xususiyatlarni_yozish(context: OpExecutionContext) -> None:
 def narxlar():
     start = repodagi_csvlar()
     counts = [scrape(start=start) for scrape in SCRAPE_OPS]
-    matcher_oqitish(after=bazaga_yozish(after=counts))
+    bazaga_yozish(after=counts)
 
 
 @job
@@ -202,7 +209,11 @@ def xususiyatlar():
 defs = Definitions(
     jobs=[narxlar, faqat_matcher, xususiyatlar, galereya],
     schedules=[
-        ScheduleDefinition(job=narxlar, cron_schedule="0 5,17 * * *",
+        # Har 6 soatda; galereya (03:00) va xususiyatlar (yakshanba 08:00) bilan to'qnashmaydi
+        ScheduleDefinition(job=narxlar, cron_schedule=PRICE_CRON,
+                           execution_timezone="Asia/Tashkent",
+                           default_status=DefaultScheduleStatus.RUNNING),
+        ScheduleDefinition(job=faqat_matcher, cron_schedule="30 5 * * *",
                            execution_timezone="Asia/Tashkent",
                            default_status=DefaultScheduleStatus.RUNNING),
         ScheduleDefinition(job=galereya, cron_schedule="0 3 * * *",
