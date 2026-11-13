@@ -9,28 +9,12 @@ from fastapi import APIRouter, HTTPException, Query, Request
 
 from catalog import _fetch_markets, _find_product, _get_specs, _match_spec_row, _row_to_product
 from compare_verdict import _compare_verdict
+from spec_payload import _spec_payload
 
 router = APIRouter()
 
 
 # ── Specs & compare ────────────────────────────────────────────────────────────
-
-def _spec_payload(row: dict) -> dict:
-    return {
-        "displayName":    row["display_name"],
-        "display":        row["display"],
-        "chipset":        row["chipset"],
-        "ramOptions":     list(row["ram_options"] or []),
-        "storageOptions": list(row["storage_options"] or []),
-        "mainCamera":     row["main_camera"],
-        "selfieCamera":   row["selfie_camera"],
-        "batteryMah":     row["battery_mah"],
-        "charging":       row["charging"],
-        "os":             row["os"],
-        "body":           row["body"],
-        "releaseYear":    row["release_year"],
-    }
-
 
 _SPEC_DIFF_FIELDS = [
     "display", "chipset", "ramOptions", "storageOptions", "mainCamera",
@@ -46,7 +30,7 @@ async def get_product_specs(request: Request, product_ref: str) -> dict:
         raise HTTPException(status_code=404, detail="Not Found")
     _, spec_index = await _get_specs(pool)
     spec = _match_spec_row(row["name"] or "", row["keywords"] or "", spec_index)
-    return {"matched": spec is not None, "specs": _spec_payload(spec) if spec else None}
+    return {"matched": spec is not None, "specs": _spec_payload(spec, row["name"] or "") if spec else None}
 
 
 @router.get("/api/compare")
@@ -90,7 +74,7 @@ async def compare_products(request: Request, ids: str = Query(..., min_length=1)
         spec = _match_spec_row(row["name"] or "", row["keywords"] or "", spec_index)
         items.append({
             "product": _row_to_product(row, markets_map.get(row["id"], [])),
-            "specs": _spec_payload(spec) if spec else None,
+            "specs": _spec_payload(spec, row["name"] or "") if spec else None,
         })
 
     diff_fields = [
