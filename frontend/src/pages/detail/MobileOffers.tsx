@@ -19,10 +19,10 @@ export function MobileOffers({ product, sortedMarkets, showAllMarkets, onToggleS
       {(showAllMarkets ? sortedMarkets : sortedMarkets.slice(0, 4)).map((market, idx) => (
         <div
           key={idx}
-          className="flex items-center justify-between py-3 border-b last:border-b-0 border-gray-100 dark:border-gray-800"
+          className="flex items-center justify-between gap-3 py-2.5 border-b last:border-b-0 border-gray-100 dark:border-gray-800"
         >
           <div className="flex items-center gap-3">
-            <StoreLogo name={market.source} size="lg" />
+            <StoreLogo name={market.source} size="md" />
             <div>
               <span className={`text-sm block text-gray-900 dark:text-white ${idx === 0 ? 'font-medium' : ''}`}>
                 {market.source}
@@ -40,8 +40,8 @@ export function MobileOffers({ product, sortedMarkets, showAllMarkets, onToggleS
               )}
             </div>
           </div>
-          <div className="flex flex-col items-end gap-1.5">
-            <span className={`font-semibold text-sm tabular-nums text-gray-900 dark:text-white`}>
+          <div className="flex items-center gap-3">
+            <span className="whitespace-nowrap font-semibold text-sm tabular-nums text-gray-900 dark:text-white">
               {formatSum(market.price)}
             </span>
             <a

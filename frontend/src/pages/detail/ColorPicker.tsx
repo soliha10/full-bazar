@@ -37,8 +37,8 @@ export function ColorPicker({ variants, active, cheapest, onSelect }: {
                 on ? 'border-violet-600 ring-1 ring-violet-600 bg-violet-500/5'
                    : 'border-gray-900/10 dark:border-white/15 hover:border-gray-900/25 dark:hover:border-white/30'}`}>
               {v.images[0]
-                ? <img src={v.images[0]} alt="" loading="lazy" className="w-9 h-9 rounded-lg object-contain bg-white" />
-                : <span className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800" />}
+                ? <img src={v.images[0]} alt="" loading="lazy" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg object-contain bg-white" />
+                : <span className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg bg-gray-100 dark:bg-gray-800" />}
               <span className="min-w-0">
                 <span className="flex items-center gap-1.5 text-sm text-gray-900 dark:text-white">
                   {v.color && (
@@ -48,7 +48,7 @@ export function ColorPicker({ variants, active, cheapest, onSelect }: {
                   {names[key] ?? key}
                 </span>
                 {v.price != null && (
-                  <span className="block text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+                  <span className="block whitespace-nowrap text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 tabular-nums">
                     {d.colorFrom.replace('{{price}}', formatSum(v.price))}
                     {v === cheapest && <span className="block sm:inline sm:ml-1 font-medium text-emerald-600 dark:text-emerald-400"><span className="hidden sm:inline">· </span>{d.cheapestTag}</span>}
                   </span>

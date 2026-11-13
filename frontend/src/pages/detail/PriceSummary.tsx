@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { ChevronDown } from "lucide-react";
 import type { Product } from "../../components/ProductCard";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum } from "../../utils/productMapper";
@@ -36,7 +35,7 @@ export function PriceSummary({ product, stats, history }: {
     : priceChange30 < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400';
 
   return (
-    <section className="glass rounded-2xl p-5 md:p-6">
+    <section className="glass rounded-2xl p-4 md:p-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           {verdict && verdictLabel && (
@@ -60,18 +59,20 @@ export function PriceSummary({ product, stats, history }: {
             </span>
             <a href={best.url} target="_blank" rel="noopener noreferrer"
               onClick={() => trackStoreClick(product.id, best.source, best.price)}
-              className="inline-flex justify-center rounded-xl bg-violet-600 px-6 py-3 text-sm font-medium text-white hover:bg-violet-700 transition-colors">
+              className="inline-flex justify-center rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors">
               {t.detail.goToShop}
             </a>
           </div>
         )}
       </div>
 
-      <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-gray-200 dark:border-gray-800 pt-4 text-sm">
+      <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-gray-200 dark:border-gray-800 pt-3 text-sm">
         <div className="min-w-0">
           <dt className="text-xs text-gray-500 dark:text-gray-400">{d.summaryRange}</dt>
           <dd className="mt-0.5 font-medium tabular-nums text-gray-900 dark:text-white">
-            {worstPrice && worstPrice > bestPrice ? `${formatSum(bestPrice)} – ${formatSum(worstPrice)}` : formatSum(bestPrice)}
+            {worstPrice && worstPrice > bestPrice
+              ? <><span className="whitespace-nowrap">{formatSum(bestPrice)}</span> – <span className="whitespace-nowrap">{formatSum(worstPrice)}</span></>
+              : formatSum(bestPrice)}
           </dd>
         </div>
         <div className="min-w-0">
@@ -82,11 +83,6 @@ export function PriceSummary({ product, stats, history }: {
         </div>
       </dl>
 
-      {sortedMarkets.length > 1 && (
-        <a href="#offers" className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-violet-600 dark:text-violet-400 hover:underline">
-          {d.allOffers} ({sortedMarkets.length}) <ChevronDown className="w-4 h-4" aria-hidden="true" />
-        </a>
-      )}
     </section>
   );
 }

@@ -64,9 +64,9 @@ export function PriceHistoryChart({ history, markets }: {
 
   return (
     <section aria-labelledby="history-title">
-      <div className="glass rounded-2xl p-5 md:p-6">
-        <div className="flex items-center justify-between gap-3 mb-5">
-          <h2 id="history-title" className="text-lg font-semibold text-gray-900 dark:text-white">{d.priceHistoryTitle}</h2>
+      <div className="glass rounded-2xl p-4 md:p-5">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h2 id="history-title" className="text-base font-semibold text-gray-900 dark:text-white">{d.priceHistoryTitle}</h2>
           <div className="flex flex-wrap items-center gap-2">
           <div role="group" className="flex rounded-xl bg-gray-900/5 dark:bg-white/5 p-1">
             {PERIODS.map(p => (
@@ -79,18 +79,18 @@ export function PriceHistoryChart({ history, markets }: {
         </div>
 
         {history === null ? (
-          <div className="h-[340px] rounded-2xl bg-gray-900/5 dark:bg-white/5 animate-pulse" aria-hidden="true" />
+          <div className="h-[240px] rounded-2xl bg-gray-900/5 dark:bg-white/5 animate-pulse" aria-hidden="true" />
         ) : rows.length < 2 ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
+          <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{d.collectingData}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">{d.noPriceHistory}</p>
           </div>
         ) : (
           <>
             {/* Xulosa: holat yorlig'i + bir jumla. Ma'lumot kam bo'lsa — faqat hozirgi narx */}
-            <div className="mb-6 flex flex-col md:flex-row md:items-center gap-3">
+            <div className="mb-4 flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
               {verdict && verdictLabel && (
-                <span className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ${verdict.tone}`}>
+                <span className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${verdict.tone}`}>
                   <verdict.icon className="w-4 h-4" aria-hidden="true" />{verdictLabel}
                 </span>
               )}
@@ -107,7 +107,7 @@ export function PriceHistoryChart({ history, markets }: {
               labels={{ typical: d.devTypical, cheaper: d.devCheaper, pricier: d.devPricier, vsTypical: d.devVsTypical, range: d.candleRange }} />
 
             {/* Davr bo'yicha ikki raqam — grafik ostida, bir qatorda */}
-            <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm">
+            <dl className="mt-3 flex flex-wrap gap-x-8 gap-y-2 text-sm">
               {summary.low && (
                 <div className="flex gap-2">
                   <dt className="text-gray-500 dark:text-gray-400">{d.historyLow}:</dt>

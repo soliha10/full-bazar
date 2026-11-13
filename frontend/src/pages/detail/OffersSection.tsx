@@ -14,9 +14,9 @@ export function OffersSection({ product, stats }: { product: Product; stats: Pri
   if (!sortedMarkets.length) return null;
 
   return (
-    <section id="offers" aria-labelledby="offers-title" className="scroll-mt-32 glass rounded-2xl p-5 md:p-6">
-      <div className="flex items-baseline justify-between gap-3 mb-4">
-        <h2 id="offers-title" className="text-lg font-semibold text-gray-900 dark:text-white">{d.navOffers}</h2>
+    <section id="offers" aria-labelledby="offers-title" className="scroll-mt-24 glass rounded-2xl p-4 md:p-5">
+      <div className="flex items-baseline justify-between gap-3 mb-2">
+        <h2 id="offers-title" className="text-base font-semibold text-gray-900 dark:text-white">{d.navOffers}</h2>
         <span className="text-sm text-gray-500 dark:text-gray-400">{d.offersCount.replace('{{count}}', String(sortedMarkets.length))}</span>
       </div>
       <OffersTable product={product} sortedMarkets={sortedMarkets} showAll={showAll} onToggleShowAll={() => setShowAll(v => !v)} />

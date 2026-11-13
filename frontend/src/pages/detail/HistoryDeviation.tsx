@@ -80,7 +80,7 @@ export function HistoryDeviation({ buckets, typical, fmtShort, fmtLong, labels, 
         <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: c.up }} />↑ {labels.pricier}</span>
         <span className="flex items-center gap-1.5"><span className="w-3 h-px" style={{ background: c.zero }} />{labels.typical}: {formatSum(Math.round(typical / 1000) * 1000)}</span>
       </div>
-      <div style={{ height: compact ? 220 : 280 }} aria-hidden="true">
+      <div style={{ height: compact ? 180 : 220 }} aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={buckets} margin={{ top: 20, right: 8, left: 0, bottom: 4 }} barCategoryGap={buckets.length > 20 ? '14%' : '24%'}>
             <CartesianGrid vertical={false} stroke={c.grid} />

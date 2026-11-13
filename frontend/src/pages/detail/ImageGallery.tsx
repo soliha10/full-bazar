@@ -28,7 +28,7 @@ export function ImageGallery({ gallery, productName }: {
             <img
               src={img}
               alt={productName}
-              className={`w-full aspect-square object-contain p-8 md:p-12 transition-opacity duration-500 ${
+              className={`w-full aspect-square object-contain p-5 md:p-8 transition-opacity duration-500 ${
                 selectedImage === idx ? 'opacity-100' : 'md:hidden'
               }`}
               onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
@@ -75,7 +75,7 @@ export function ImageGallery({ gallery, productName }: {
 
     {/* Thumbnails — desktop, vertical rail */}
     <div
-      className={`hidden md:flex md:flex-col gap-3 w-20 lg:w-24 shrink-0 ${
+      className={`hidden md:flex md:flex-col gap-3 w-16 shrink-0 ${
         images.length > 4
           ? "max-h-[480px] lg:max-h-[560px] overflow-y-auto pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           : ""
@@ -85,7 +85,7 @@ export function ImageGallery({ gallery, productName }: {
         <button
           key={idx}
           onClick={() => goToImage(idx)}
-          className={`w-full aspect-square shrink-0 bg-white dark:bg-gray-900 rounded-2xl p-2 border-2 transition-all ${
+          className={`w-full aspect-square shrink-0 bg-white dark:bg-gray-900 rounded-xl p-1.5 border-2 transition-all ${
             selectedImage === idx
               ? "border-violet-600"
               : "border-gray-100 dark:border-gray-800 hover:border-violet-200 dark:hover:border-violet-700"

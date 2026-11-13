@@ -55,7 +55,7 @@ export function SimilarProducts({ loading, products, bestPrice }: { loading: boo
   const { t } = useLanguage();
 
   return (
-    <section id="similar" aria-labelledby="similar-title" className="scroll-mt-32 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 mt-10">
+    <section id="similar" aria-labelledby="similar-title" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 mt-6">
       <h2 id="similar-title" className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
         {t.detailPage.similarProducts}
       </h2>

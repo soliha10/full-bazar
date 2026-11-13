@@ -1,51 +1,46 @@
+import { AppWindow, BatteryFull, CalendarDays, Camera, Cpu, HardDrive, MemoryStick, ScanFace, Shield, Smartphone, Zap, type LucideIcon } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { SPEC_GROUPS, specValue, type Specs } from "./specs";
 
-// Do'kon narxlari bu yerda takrorlanmaydi — ular sahifa tepasidagi
-// takliflar jadvalida bor (ilgari bir sahifada uch marta chiqardi).
+// Har xususiyat — bitta ixcham plitka: ikonka, nom, qiymat
+const ICONS: Record<string, LucideIcon> = {
+  display: Smartphone, chipset: Cpu, ram: MemoryStick, storage: HardDrive,
+  mainCamera: Camera, selfieCamera: ScanFace, capacity: BatteryFull, charging: Zap,
+  body: Shield, os: AppWindow, releaseYear: CalendarDays,
+};
+
+// Do'kon narxlari bu yerda takrorlanmaydi — ular takliflar bo'limida.
 export function SpecsSection({ specs }: { specs: Specs | null }) {
   const { t } = useLanguage();
+  const rows = specs ? SPEC_GROUPS.flatMap(g => g.rows)
+    .map(row => ({ key: row.label, label: t.detailPage.specRows[row.label], value: specValue(specs, row.key) }))
+    .filter((row): row is { key: typeof row.key; label: string; value: string } => row.value !== null) : [];
 
-  const groups = specs ? SPEC_GROUPS.map(group => ({
-    key: group.group,
-    rows: group.rows
-      .map(row => ({ label: t.detailPage.specRows[row.label], value: specValue(specs, row.key) }))
-      .filter((row): row is { label: string; value: string } => row.value !== null),
-  })).filter(g => g.rows.length > 0) : [];
-
-  // Ixcham jadval: chapda guruh nomi, o'ngda qatorlar — har guruh bitta
-  // satr bloki, bo'sh guruh umuman chiqmaydi
   return (
-    <section
-      id="specs"
-      className="scroll-mt-32 glass rounded-2xl overflow-hidden"
-    >
-      <header className="flex items-baseline justify-between gap-3 px-5 py-4 border-b border-gray-200 dark:border-gray-800">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-white tracking-tight">{t.detail.mainSpecifications}</h2>
+    <section id="specs" aria-labelledby="specs-title" className="scroll-mt-24 glass rounded-2xl p-4 md:p-5">
+      <div className="flex items-baseline justify-between gap-3 mb-3">
+        <h2 id="specs-title" className="text-base font-semibold text-gray-900 dark:text-white">{t.detail.mainSpecifications}</h2>
         {specs?.displayName && <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{specs.displayName}</span>}
-      </header>
+      </div>
 
-      {/* Texnik xususiyatlar — GSMArena dan; mos model topilmasa — qisqa izoh */}
-      {groups.length ? (
-        <div className="divide-y divide-gray-200 dark:divide-gray-800">
-          {groups.map(group => (
-            <div key={group.key} className="grid sm:grid-cols-[10rem_1fr] gap-x-6 px-5 py-3">
-              <h3 className="text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 pt-0.5 mb-1.5 sm:mb-0">
-                {t.detailPage.specGroups[group.key]}
-              </h3>
-              <dl className="grid md:grid-cols-2 gap-x-8 gap-y-1.5">
-                {group.rows.map(row => (
-                  <div key={row.label} className="grid grid-cols-[8rem_1fr] gap-3 text-sm min-w-0">
-                    <dt className="text-gray-500 dark:text-gray-400">{row.label}</dt>
-                    <dd className="text-gray-900 dark:text-white break-words min-w-0">{row.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          ))}
-        </div>
+      {/* GSMArena dan; mos model topilmasa — qisqa izoh */}
+      {rows.length ? (
+        <dl className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+          {rows.map(row => {
+            const Icon = ICONS[row.key] ?? Smartphone;
+            return (
+              <div key={row.key} className="flex items-start gap-2.5 rounded-xl bg-gray-900/[0.03] dark:bg-white/[0.04] px-3 py-2.5 min-w-0">
+                <Icon className="mt-0.5 w-4 h-4 shrink-0 text-violet-500" aria-hidden="true" />
+                <div className="min-w-0">
+                  <dt className="text-[11px] text-gray-500 dark:text-gray-400">{row.label}</dt>
+                  <dd className="text-sm font-medium text-gray-900 dark:text-white leading-snug line-clamp-2" title={row.value}>{row.value}</dd>
+                </div>
+              </div>
+            );
+          })}
+        </dl>
       ) : (
-        <p className="px-5 py-4 text-sm text-gray-500 dark:text-gray-400">{t.detailPage.specsUnavailable}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t.detailPage.specsUnavailable}</p>
       )}
     </section>
   );

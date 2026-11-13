@@ -45,9 +45,9 @@ export function StoreComparison({ history, markets }: {
   if (markets.length < 2) return null;
 
   return (
-    <section aria-labelledby="compare-title" className="mt-6 glass rounded-2xl p-5 md:p-6">
-      <h2 id="compare-title" className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{d.compareTitle}</h2>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{d.changeHint.replace('{{n}}', String(CHANGE_DAYS))}</p>
+    <section aria-labelledby="compare-title" className="glass rounded-2xl p-4 md:p-5">
+      <h2 id="compare-title" className="text-base font-semibold text-gray-900 dark:text-white mb-0.5">{d.compareTitle}</h2>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{d.changeHint.replace('{{n}}', String(CHANGE_DAYS))}</p>
 
       {history === null ? (
         <div className="h-48 rounded-2xl bg-gray-900/5 dark:bg-white/5 animate-pulse" aria-hidden="true" />
