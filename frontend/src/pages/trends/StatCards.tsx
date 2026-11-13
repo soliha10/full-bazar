@@ -17,9 +17,9 @@ export function StatCards({ totalProducts, totalMarkets, weeklyEvents, droppingC
   const { t } = useLanguage();
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <StatCard label={t.trends.totalProducts}   value={totalProducts.toLocaleString()} />
+      <StatCard label={t.trends.totalProducts}   value={totalProducts.toLocaleString('ru-RU')} />
       <StatCard label={t.trends.marketplaces}     value={totalMarkets} />
-      <StatCard label={t.trends.weeklyActivity} value={weeklyEvents.toLocaleString()} />
+      <StatCard label={t.trends.weeklyActivity} value={weeklyEvents.toLocaleString('ru-RU')} />
       <StatCard label={t.trends.priceDrops}   value={droppingCount} />
     </div>
   );

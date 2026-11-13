@@ -43,81 +43,69 @@ async def get_price_history(
     return {"product_id": product_id, "days": days, "history": history}
 
 
+TREND_DAYS = 7
+# Bir haftada eng arzon narx 40% dan ko'p o'zgarishi deyarli har doim ma'lumot
+# xatosi (noto'g'ri moslashtirilgan e'lon, aksessuar narxi): Tahlil sahifasida
+# "+1360%" chiqardi. Bunday juftliklar ro'yxatga kirmaydi.
+TREND_MAX_PCT = 0.40
+
+
 @router.get("/api/trends")
 async def get_trends(request: Request, response: Response, limit: int = Query(8, ge=1, le=20)) -> dict:
+    """
+    Narxi tushgan/ko'tarilgan modellar: mahsulotning ENG ARZON narxi hozir va
+    7 kun oldin. Ilgari har do'kon o'zgarishi YIG'ILARDI (iPhone uchun "-31.9 mln"
+    — bitta narx emas, o'nta do'kon farqi yig'indisi) va eskirgan e'lonlar
+    ham solishtirilardi.
+    """
     response.headers["Cache-Control"] = "public, max-age=300"
     cached = _cache_get(f"trends:{limit}", 300)
     if cached is not None:
         return cached
 
     pool: asyncpg.Pool = request.app.state.pool
-
     rows = await pool.fetch(
         """
-        WITH latest AS (
-            SELECT DISTINCT ON (product_id, source)
-                product_id, source, price, recorded_at
-            FROM price_history
-            ORDER BY product_id, source, recorded_at DESC
+        WITH before AS (
+            -- Har do'konning 7 kun oldingi oxirgi narxi (bir vaqtda bir nechta
+            -- e'lon yozilgan bo'lsa — eng arzoni), faqat HOZIR sotuvdagilari
+            SELECT DISTINCT ON (h.product_id, h.source) h.product_id, h.price
+            FROM price_history h
+            JOIN product_markets pm ON pm.product_id = h.product_id AND pm.source = h.source
+            WHERE h.recorded_at <= NOW() - make_interval(days => $1)
+            ORDER BY h.product_id, h.source, h.recorded_at DESC, h.price ASC
         ),
-        oldest AS (
-            SELECT DISTINCT ON (product_id, source)
-                product_id, source, price, recorded_at
-            FROM price_history
-            WHERE recorded_at < NOW() - INTERVAL '3 days'
-            ORDER BY product_id, source, recorded_at ASC
-        ),
-        changes AS (
-            SELECT
-                l.product_id,
-                l.price        AS current_price,
-                o.price        AS old_price,
-                l.price - o.price AS price_change,
-                CASE WHEN o.price > 0
-                     THEN ROUND((l.price - o.price) / o.price * 100, 1)
-                     ELSE 0 END AS pct_change
-            FROM latest l
-            JOIN oldest o ON o.product_id = l.product_id AND o.source = l.source
-        ),
-        aggregated AS (
-            SELECT product_id,
-                   MIN(current_price) AS current_price,
-                   SUM(price_change)  AS total_change,
-                   AVG(pct_change)    AS avg_pct
-            FROM changes
-            GROUP BY product_id
-        )
-        SELECT p.*, a.current_price, a.total_change, a.avg_pct
-        FROM aggregated a
-        JOIN products p ON p.id = a.product_id
-        -- Narxi umuman o'zgarmaganlar "qimmatlashdi" ro'yxatiga tushmasligi
-        -- kerak: snapshot faqat narx o'zgarganda yoziladi, shuning uchun
-        -- o'zgarishsiz juftliklar 0 berib, ro'yxatni ifloslantirardi.
-        WHERE a.total_change <> 0
-        ORDER BY ABS(a.total_change) DESC
-        LIMIT $1
+        then_min AS (SELECT product_id, MIN(price) AS old_price FROM before GROUP BY product_id),
+        now_min  AS (SELECT product_id, MIN(price) AS current_price FROM product_markets GROUP BY product_id)
+        SELECT p.*, n.current_price, t.old_price,
+               n.current_price - t.old_price AS change,
+               (n.current_price - t.old_price) / t.old_price * 100 AS pct
+        FROM now_min n
+        JOIN then_min t USING (product_id)
+        JOIN products p ON p.id = n.product_id
+        WHERE t.old_price > 0
+          AND n.current_price <> t.old_price
+          AND (ABS(n.current_price - t.old_price) / t.old_price)::float8 <= $2::float8
         """,
-        limit,
+        TREND_DAYS, TREND_MAX_PCT,
     )
+    # Foiz bo'yicha: mutlaq so'm bo'yicha saralansa ro'yxatni faqat qimmat
+    # flagmanlar egallardi
+    drops = sorted((r for r in rows if r["change"] < 0), key=lambda r: r["pct"])[:limit]
+    rises = sorted((r for r in rows if r["change"] > 0), key=lambda r: -r["pct"])[:limit]
+    markets_map = await _fetch_markets(pool, [r["id"] for r in drops + rises])
 
-    product_ids = [r["id"] for r in rows]
-    markets_map = await _fetch_markets(pool, product_ids)
-
-    dropping, rising = [], []
-    for r in rows:
-        change = float(r["total_change"] or 0)
-        pct = float(r["avg_pct"] or 0)
-        item = {
+    def item(r) -> dict:
+        return {
             **_row_to_product(r, markets_map.get(r["id"], [])),
-            "priceChange": round(change, 2),
-            "pctChange": round(pct, 1),
+            "oldPrice": float(r["old_price"]),
+            "priceChange": round(float(r["change"]), 2),
+            "pctChange": round(float(r["pct"]), 1),
         }
-        if change < 0:
-            dropping.append(item)
-        else:
-            rising.append(item)
 
-    return _cache_put(f"trends:{limit}", {"dropping": dropping, "rising": rising})
+    return _cache_put(f"trends:{limit}", {
+        "days": TREND_DAYS, "dropping": [item(r) for r in drops], "rising": [item(r) for r in rises],
+    })
 
 
 @router.get("/api/stats")

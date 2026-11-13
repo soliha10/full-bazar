@@ -112,3 +112,31 @@ export function buildSeries(
   sources.sort((a, b) => (last?.stores[a] ?? Infinity) - (last?.stores[b] ?? Infinity));
   return { rows, sources, summary };
 }
+
+export type PriceVerdict = 'low' | 'typical' | 'high';
+
+/**
+ * "Odatiy narx" — 90 kunlik kunlik eng arzon narxlarning 25–75 foizli
+ * oralig'i (Google Shopping "price insights" g'oyasi). Hozirgi narx undan
+ * past bo'lsa — "past", yuqori bo'lsa — "yuqori". 14 kundan kam ma'lumot
+ * bilan xulosa chiqarilmaydi: oraliq tasodifiy bo'lib qoladi.
+ */
+export function typicalRange(rows: DayRow[]): { low: number; high: number; point: boolean; verdict: PriceVerdict } | null {
+  if (rows.length < 14) return null;
+  const mins = rows.map(r => r.min).sort((a, b) => a - b);
+  const q = (p: number) => {
+    const i = (mins.length - 1) * p;
+    const lo = Math.floor(i), hi = Math.ceil(i);
+    return mins[lo] + (mins[hi] - mins[lo]) * (i - lo);
+  };
+  const low = q(0.25), high = q(0.75);
+  const now = rows[rows.length - 1].min;
+  // 1% dan kichik farq — "odatiy": 4 517 000 va 4 540 000 xaridor uchun bir xil
+  const tol = 0.01;
+  return {
+    low, high,
+    // Narx davrning ko'p qismida o'zgarmagan — oraliq emas, bitta qiymat
+    point: (high - low) / Math.max(1, (high + low) / 2) < tol,
+    verdict: now < low * (1 - tol) ? 'low' : now > high * (1 + tol) ? 'high' : 'typical',
+  };
+}

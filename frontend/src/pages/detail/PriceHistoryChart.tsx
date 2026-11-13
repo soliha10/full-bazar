@@ -1,25 +1,35 @@
 import { useEffect, useMemo, useState } from "react";
-import { useTheme } from "../../contexts/ThemeContext";
+import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum } from "../../utils/productMapper";
-import { StoreLogo } from "../../components/StoreLogo";
 import type { PricePoint } from "./useProductDetail";
 import type { DetailTab } from "./SpecsSection";
-import { buildSeries } from "./priceHistorySeries";
-import { HistoryPlot, slotColor } from "./HistoryPlot";
+import { buildSeries, typicalRange, type PriceVerdict } from "./priceHistorySeries";
+import { HistoryPlot } from "./HistoryPlot";
 import { HistoryTable } from "./HistoryTable";
 import { historyFormatters } from "./historyFormat";
 
 // Tarix 90 kunlik yuklanadi (useProductDetail), davr mijozda kesiladi
-const PERIODS = [7, 30, 90] as const;
-// Ajratib ko'rsatiladigan do'konlar: 3 dan ko'pi bir-biridan ajralmaydi (dataviz)
-const MAX_STORES = 3;
+const PERIODS = [30, 90] as const;
 const MOBILE = '(max-width: 767px)';
+// Oraliq chegarasi — taxminiy qiymat: "2 542 774" emas, "2 543 000"
+const round1k = (v: number) => Math.round(v / 1000) * 1000;
+
+// Holat ranglari faqat holat ma'nosida va doim ikonka + matn bilan (dataviz: status)
+const VERDICT: Record<PriceVerdict, { icon: typeof Minus; tone: string }> = {
+  low:     { icon: TrendingDown, tone: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' },
+  typical: { icon: Minus,        tone: 'bg-gray-900/5 dark:bg-white/10 text-gray-700 dark:text-gray-200' },
+  high:    { icon: TrendingUp,   tone: 'bg-amber-500/15 text-amber-800 dark:text-amber-300' },
+};
 
 const seg = (on: boolean) => `px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
   on ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`;
 
-/** ── Price History ── */
+/**
+ * ── Narx tarixi ──
+ * Xaridorning savoli "hozir olsam bo'ladimi?" — javob grafik ustida, so'z
+ * bilan: narx odatdagidan past / odatiy / yuqori. Grafik uni tasdiqlaydi.
+ */
 export function PriceHistoryChart({ history, markets, activeTab }: {
   /** null — hali yuklanmoqda */
   history: PricePoint[] | null;
@@ -29,12 +39,7 @@ export function PriceHistoryChart({ history, markets, activeTab }: {
   const { t, language } = useLanguage();
   const d = t.detailPage;
   const fmt = useMemo(() => historyFormatters(d, language === 'en' ? '.' : ','), [d, language]);
-  const [days, setDays] = useState<(typeof PERIODS)[number]>(30);
-  const [mode, setMode] = useState<'overview' | 'stores'>('overview');
-  // do'kon -> rang sloti. Rang do'konga biriktiriladi: boshqasini tanlash yoki
-  // olib tashlash qolganlarining rangini o'zgartirmaydi
-  const [slots, setSlots] = useState<Record<string, number> | null>(null);
-  const dark = useTheme().resolvedTheme === 'dark';
+  const [days, setDays] = useState<(typeof PERIODS)[number]>(90);
   const [compact, setCompact] = useState(() => typeof window !== 'undefined' && window.matchMedia(MOBILE).matches);
   useEffect(() => {
     const mq = window.matchMedia(MOBILE);
@@ -43,62 +48,35 @@ export function PriceHistoryChart({ history, markets, activeTab }: {
     return () => mq.removeEventListener('change', on);
   }, []);
 
-  const { rows, sources, summary } = useMemo(
-    () => buildSeries(history ?? [], markets, days), [history, markets, days]);
-  // Standart holatda — hozir eng arzon do'kon
-  const active = slots ?? (sources[0] ? { [sources[0]]: 0 } : {});
-  const picks = Object.entries(active).filter(([s]) => sources.includes(s));
-  const toggle = (src: string) => {
-    const next = { ...active };
-    if (src in next) delete next[src];
-    else if (Object.keys(next).length < MAX_STORES) {
-      const used = new Set(Object.values(next));
-      next[src] = [0, 1, 2].find(i => !used.has(i))!;
-    }
-    setSlots(next);
-  };
+  const full = useMemo(() => buildSeries(history ?? [], markets, 90), [history, markets]);
+  const { rows, summary } = useMemo(() => buildSeries(history ?? [], markets, days), [history, markets, days]);
+  // "Odatiy narx" doim 90 kunlik ma'lumotdan — davr tanlovi xulosani o'zgartirmasin
+  const typical = useMemo(() => typicalRange(full.rows), [full.rows]);
 
-  const fmtDate = fmt.short;
+  const verdict = typical && VERDICT[typical.verdict];
+  const verdictLabel = typical && { low: d.verdictLow, typical: d.verdictTypical, high: d.verdictHigh }[typical.verdict];
   const change = summary.changePct;
-  const flat = change === null || Math.abs(change) < 0.05;
-
-  const tiles = [
-    { label: d.historyNow, value: summary.current ? formatSum(summary.current.price) : '—', sub: summary.current?.source, logo: true },
-    { label: d.historyLow, value: summary.low ? formatSum(summary.low.price) : '—', sub: summary.low && fmtDate(summary.low.date) },
-    { label: d.historyHigh, value: summary.high ? formatSum(summary.high.price) : '—', sub: summary.high && fmtDate(summary.high.date) },
-    {
-      label: d.historyChange,
-      value: change === null ? '—' : flat ? d.historyNoChange : `${change > 0 ? '+' : '−'}${Math.abs(change).toFixed(1)}%`,
-      // Arzonlashish — xaridor uchun yaxshi xabar (yashil), qimmatlashish — qizil
-      tone: flat ? undefined : change! < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500',
-    },
-  ];
+  const changeText = change === null ? null : Math.abs(change) < 0.05 ? d.historyNoChange
+    : `${change > 0 ? '+' : '−'}${Math.abs(change).toFixed(1)}%`;
+  const changeTone = change === null || Math.abs(change) < 0.05 ? 'text-gray-900 dark:text-white'
+    : change < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400';
 
   return (
     <section aria-labelledby="history-title" className={`${activeTab !== 'priceHistory' && 'hidden lg:block'} mt-10`}>
       <div className="glass rounded-3xl p-5 md:p-8">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div className="flex items-center justify-between gap-3 mb-5">
           <h2 id="history-title" className="text-lg font-semibold text-gray-900 dark:text-white">{d.priceHistoryTitle}</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <div role="group" className="flex rounded-xl bg-gray-900/5 dark:bg-white/5 p-1">
-              {(['overview', 'stores'] as const).map(m => (
-                <button key={m} type="button" aria-pressed={mode === m} onClick={() => setMode(m)} className={seg(mode === m)}>
-                  {m === 'overview' ? d.historyOverview : d.historyByStore}
-                </button>
-              ))}
-            </div>
-            <div role="group" className="flex rounded-xl bg-gray-900/5 dark:bg-white/5 p-1">
-              {PERIODS.map(p => (
-                <button key={p} type="button" aria-pressed={days === p} onClick={() => setDays(p)} className={seg(days === p)}>
-                  {d.periodDays.replace('{{n}}', String(p))}
-                </button>
-              ))}
-            </div>
+          <div role="group" className="flex rounded-xl bg-gray-900/5 dark:bg-white/5 p-1">
+            {PERIODS.map(p => (
+              <button key={p} type="button" aria-pressed={days === p} onClick={() => setDays(p)} className={seg(days === p)}>
+                {d.periodDays.replace('{{n}}', String(p))}
+              </button>
+            ))}
           </div>
         </div>
 
         {history === null ? (
-          <div className="h-[300px] rounded-2xl bg-gray-900/5 dark:bg-white/5 animate-pulse" aria-hidden="true" />
+          <div className="h-[340px] rounded-2xl bg-gray-900/5 dark:bg-white/5 animate-pulse" aria-hidden="true" />
         ) : rows.length < 2 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{d.collectingData}</p>
@@ -106,65 +84,47 @@ export function PriceHistoryChart({ history, markets, activeTab }: {
           </div>
         ) : (
           <>
-            <dl className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mb-6">
-              {tiles.map(tile => (
-                <div key={tile.label} className="rounded-2xl bg-gray-900/[0.03] dark:bg-white/[0.04] px-4 py-3">
-                  <dt className="text-xs text-gray-500 dark:text-gray-400">{tile.label}</dt>
-                  <dd className={`mt-1 text-base md:text-lg font-semibold tracking-tight ${tile.tone ?? 'text-gray-900 dark:text-white'}`}>
-                    {tile.value}
-                  </dd>
-                  {tile.sub && (
-                    <dd className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                      {tile.logo && <StoreLogo name={tile.sub} size="xs" />}{tile.sub}
-                    </dd>
-                  )}
-                </div>
-              ))}
-            </dl>
-
-            {mode === 'stores' && (
-              <div className="mb-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{d.historyPickHint}</p>
-                {/* Chiplar — legenda ham: tanlanganida chizig'i rangidagi qisqa chiziq */}
-                <div className="flex flex-wrap gap-2">
-                  {sources.map(src => {
-                    const slot = active[src];
-                    const on = slot !== undefined;
-                    const now = rows[rows.length - 1].stores[src];
-                    return (
-                      <button key={src} type="button" aria-pressed={on} onClick={() => toggle(src)}
-                        disabled={!on && picks.length >= MAX_STORES}
-                        className={`flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                          on ? 'border-gray-900/15 dark:border-white/20 bg-white dark:bg-gray-900 text-gray-900 dark:text-white'
-                             : 'border-gray-900/10 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:border-gray-900/20 dark:hover:border-white/20'}`}>
-                        <StoreLogo name={src} size="sm" className="!rounded-full" />
-                        {src}
-                        {now !== undefined && <span className="tabular-nums text-gray-500 dark:text-gray-400">{formatSum(now)}</span>}
-                        <span aria-hidden="true" className="w-3.5 h-0.5 rounded-full"
-                          style={{ background: on ? slotColor(dark, slot) : 'transparent' }} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Grafik ko'rinmaydigan foydalanuvchi uchun bitta jumlada xulosa */}
-            <p className="sr-only">
-              {d.historySummary.replace('{{n}}', String(days)).replace('{{low}}', formatSum(summary.low?.price ?? 0))
-                .replace('{{high}}', formatSum(Math.max(...rows.map(r => r.min)))).replace('{{now}}', formatSum(summary.current?.price ?? 0))}
-            </p>
-            {/* Mobilda o'q tor — birlik har belgida emas, tepada bir marta */}
-            {compact && <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1" aria-hidden="true">{fmt.unit} {t.listing.currency}</p>}
-            <div className="-ml-1" style={{ height: compact ? 240 : 320 }} aria-hidden="true">
-              <HistoryPlot rows={rows} mode={mode} sources={sources} picks={picks} fmt={fmt} compact={compact}
-                height={compact ? 240 : 320}
-                labels={{ lowest: d.historyLowest, median: d.historyMedian, range: d.historyRange, stores: d.historyStores, low: d.historyLowMark }} />
+            {/* Xulosa: holat yorlig'i + bir jumla. Ma'lumot kam bo'lsa — faqat hozirgi narx */}
+            <div className="mb-6 flex flex-col md:flex-row md:items-center gap-3">
+              {verdict && verdictLabel && (
+                <span className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ${verdict.tone}`}>
+                  <verdict.icon className="w-4 h-4" aria-hidden="true" />{verdictLabel}
+                </span>
+              )}
+              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                {typical && (typical.point
+                  ? d.verdictTextPoint.replace('{{price}}', formatSum(round1k((typical.low + typical.high) / 2)))
+                  : d.verdictText.replace('{{low}}', formatSum(round1k(typical.low))).replace('{{high}}', formatSum(round1k(typical.high))))}{' '}
+                {summary.current && d.verdictNow.replace('{{now}}', formatSum(summary.current.price)).replace('{{store}}', summary.current.source)}
+              </p>
             </div>
+
+            {compact && <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1" aria-hidden="true">{fmt.unit} {t.listing.currency}</p>}
+            <div className="-ml-1" style={{ height: compact ? 240 : 300 }} aria-hidden="true">
+              <HistoryPlot rows={rows} typical={typical} fmt={fmt} compact={compact}
+                labels={{ lowest: d.historyLowest, stores: d.historyStores, typical: d.historyTypical }} />
+            </div>
+
+            {/* Davr bo'yicha ikki raqam — grafik ostida, bir qatorda */}
+            <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm">
+              {summary.low && (
+                <div className="flex gap-2">
+                  <dt className="text-gray-500 dark:text-gray-400">{d.historyLow}:</dt>
+                  <dd className="font-medium text-gray-900 dark:text-white">
+                    {formatSum(summary.low.price)} <span className="font-normal text-gray-500 dark:text-gray-400">· {fmt.short(summary.low.date)}</span>
+                  </dd>
+                </div>
+              )}
+              {changeText && (
+                <div className="flex gap-2">
+                  <dt className="text-gray-500 dark:text-gray-400">{d.historyChange}:</dt>
+                  <dd className={`font-medium ${changeTone}`}>{changeText}</dd>
+                </div>
+              )}
+            </dl>
 
             <HistoryTable rows={rows} fmtDate={fmt.long}
               labels={{ title: d.historyTableTitle, date: d.historyTableDate, store: d.historyTableStore, price: d.historyTablePrice, change: d.historyTableChange }} />
-
           </>
         )}
       </div>

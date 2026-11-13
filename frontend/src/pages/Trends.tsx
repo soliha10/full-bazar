@@ -2,7 +2,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { SEO, SITE_URL } from '../components/SEO';
 import { useTrendsData } from './trends/useTrendsData';
 import { StatCards } from './trends/StatCards';
-import { MarketChart, MarketShare } from './trends/Charts';
+import { StoresBoard } from './trends/Charts';
 import { SearchTrendsSection, PriceChanges } from './trends/Lists';
 import { PopularSection } from './trends/PopularSection';
 
@@ -65,17 +65,13 @@ export function Trends() {
       {/* Search trends */}
       <SearchTrendsSection searchTrends={searchTrends} />
 
-      {/* Marketplace chart */}
-      <MarketChart markets={markets} />
+      <StoresBoard markets={markets} />
 
       {/* Price changes */}
       <PriceChanges dropping={dropping} rising={rising} />
 
       {/* Popular products */}
       <PopularSection popular={popular} />
-
-      {/* Market share visual */}
-      <MarketShare markets={markets} />
 
     </div>
   );
