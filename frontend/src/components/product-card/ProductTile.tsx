@@ -42,9 +42,12 @@ export interface ProductTileProps {
 function TileImage({ src, alt, className }: { src?: string | null; alt: string; className: string }) {
   return (
     <div className={`relative overflow-hidden rounded-xl glass-soft ${className}`}>
+      {/* Hover da mahsulot ortida yumshoq binafsha nur */}
+      <span aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_60%,rgba(139,92,246,0.22),transparent_65%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
       <img src={src || PRODUCT_PLACEHOLDER} alt={alt} loading="lazy"
         onError={(e) => { (e.target as HTMLImageElement).src = PRODUCT_PLACEHOLDER; }}
-        className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal transition-transform duration-500 group-hover:scale-[1.03]" />
+        className="relative w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal transition-transform duration-500 ease-out group-hover:-translate-y-1 group-hover:scale-[1.04]" />
     </div>
   );
 }
