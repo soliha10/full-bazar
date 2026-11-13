@@ -29,7 +29,8 @@
 
 	# Mahsulot va brend sahifalari: meta teglar, JSON-LD va ko'rinadigan matn
 	# API da yoziladi (pages.py: product_page, brand_page)
-	handle /product/* /brand/* {
+	@seo_pages path /product/* /brand/*
+	handle @seo_pages {
 		import api
 	}
 
