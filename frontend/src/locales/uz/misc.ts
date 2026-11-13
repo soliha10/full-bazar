@@ -1,5 +1,6 @@
 export const misc = {
   common: {
+    savingsTip: "Eng qimmat do'kondan {{amount}} ({{pct}}%) arzon",
     compare: "Solishtirish",
     compareLimit: "Ko'pi bilan {{max}} tagacha solishtirish mumkin",
     compareSelected: "{{count}} ta tanlandi",

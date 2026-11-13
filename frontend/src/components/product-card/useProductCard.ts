@@ -29,8 +29,13 @@ export function useProductCard(product: Product, activeMarkets: string[]) {
     return a.price - b.price;
   });
   const bestPrice = sortedMarkets[0]?.price ?? product.price;
-  const worstPrice = sortedMarkets[sortedMarkets.length - 1]?.price;
-  const savings = worstPrice && worstPrice > bestPrice ? worstPrice - bestPrice : 0;
+  // Do'konlar orasidagi farq — haqiqiy eng arzon va eng qimmat narx bo'yicha
+  // (sortedMarkets da filtrdagi do'konlar oldinda, tartib narx bo'yicha emas)
+  const prices = (product.markets ?? []).map(m => m.price).filter(p => p > 0);
+  const low = prices.length ? Math.min(...prices) : bestPrice;
+  const high = prices.length ? Math.max(...prices) : bestPrice;
+  const savings = high > low ? high - low : 0;
+  const savingsPct = high > 0 ? Math.round((savings / high) * 100) : 0;
   const bestMarket = sortedMarkets[0];
   const compareTitle = compareDisabled
     ? t.common.compareLimit.replace('{{max}}', String(MAX_COMPARE))
@@ -42,7 +47,7 @@ export function useProductCard(product: Product, activeMarkets: string[]) {
     toggleLike: () => toggle(product),
     toggleWatch: () => toggleWatch(product),
     toggleCompare: () => { if (!compareDisabled) toggleCompare(product.id); },
-    sortedMarkets, bestPrice, savings, bestMarket,
+    sortedMarkets, bestPrice, savings, savingsPct, bestMarket,
   };
 }
 

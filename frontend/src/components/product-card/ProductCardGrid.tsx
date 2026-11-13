@@ -5,18 +5,32 @@ import type { Product } from './types';
 import type { ProductCardState } from './useProductCard';
 import { ProductTile, TileAction } from './ProductTile';
 
-/** Katalog kartasi uchun narx ostidagi qator: eng arzon do'kon, do'konlar soni, tejash */
+/** Narx ostidagi qator: eng arzon do'kon (logo + nom) va do'konlar soni */
 export function CatalogMeta({ card }: { card: ProductCardState }) {
-  const { t, sortedMarkets, savings, bestMarket } = card;
+  const { t, sortedMarkets, bestMarket } = card;
   const stores = sortedMarkets.length;
+  if (!bestMarket) return null;
   return (
     <>
-      {bestMarket && <StoreLogo name={bestMarket.source} size="xs" />}
+      <StoreLogo name={bestMarket.source} size="xs" />
       <span className="truncate">
-        {stores > 1 ? t.common.fromStores.replace('{{count}}', String(stores)) : bestMarket?.source}
-        {savings > 0 && <span className="text-emerald-600 dark:text-emerald-400"> · −{formatSum(savings)}</span>}
+        {bestMarket.source}
+        {stores > 1 && <span className="text-gray-400 dark:text-gray-500"> · {t.home.storesTag.replace('{{count}}', String(stores))}</span>}
       </span>
     </>
+  );
+}
+
+/** Tejash belgisi: do'konlar orasidagi farq foizi; to'liq izoh — data-tip */
+export function SavingsBadge({ card }: { card: ProductCardState }) {
+  const { t, savings, savingsPct } = card;
+  if (savingsPct < 1) return null;
+  const tip = t.common.savingsTip.replace('{{amount}}', formatSum(savings)).replace('{{pct}}', String(savingsPct));
+  return (
+    <span data-tip={tip} aria-label={tip}
+      className="relative z-10 inline-flex cursor-default rounded-full bg-emerald-500/95 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-white">
+      −{savingsPct}%
+    </span>
   );
 }
 
@@ -41,11 +55,14 @@ export function CatalogActions({ card, withWatch = true }: { card: ProductCardSt
 }
 
 // ── Grid view ──────────────────────────────────────────────────────────────
-// Minimal karta: rasm, nom, narx va bitta izoh qatori. Butun karta — havola.
-export function ProductCardGrid({ product, card }: { product: Product; card: ProductCardState }) {
+// Loyihadagi yagona mahsulot kartasi (katalog, bosh sahifa, sevimlilar):
+// rasm + amallar, tejash belgisi, nom, eng arzon narx, do'kon va do'konlar soni.
+export function ProductCardGrid({ product, card, className, style }: {
+  product: Product; card: ProductCardState; className?: string; style?: React.CSSProperties;
+}) {
   return (
-    <ProductTile to={card.href} name={product.name} image={product.image}
-      price={formatSum(card.bestPrice)} meta={<CatalogMeta card={card} />}
+    <ProductTile to={card.href} name={product.name} image={product.image} className={className} style={style}
+      badge={<SavingsBadge card={card} />} price={formatSum(card.bestPrice)} meta={<CatalogMeta card={card} />}
       actions={<CatalogActions card={card} />} />
   );
 }

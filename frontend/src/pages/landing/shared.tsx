@@ -23,15 +23,6 @@ export const reveal = {
 // Raqam kelmagan bo'lsa (masalan, API eski versiyada) — "—", hech qachon taxmin emas
 export const fmt = (n: number | null | undefined) => (typeof n === 'number' ? n.toLocaleString('ru-RU').replace(/,/g, ' ') : '—');
 
-/** Eng arzon va eng qimmat taklif hamda farq foizi */
-export function priceSpread(markets: { source: string; price: number }[] = []) {
-  const sorted = [...markets].sort((a, b) => a.price - b.price);
-  const low = sorted[0];
-  const high = sorted[sorted.length - 1];
-  const pct = low && high && high.price > 0 ? Math.round(((high.price - low.price) / high.price) * 100) : 0;
-  return { low, high, pct, gap: low && high ? high.price - low.price : 0, count: sorted.length };
-}
-
 export const PLACEHOLDER = 'https://placehold.co/320x320/f5f3ff/7c3aed?text=📱';
 
 /* ── Section header ── */

@@ -10,10 +10,13 @@ interface ProductCardProps {
   product: Product;
   viewMode?: 'grid' | 'list';
   activeMarkets?: string[];
+  className?: string;
+  style?: React.CSSProperties;
 }
 
-export function ProductCard({ product, viewMode = 'grid', activeMarkets = [] }: ProductCardProps) {
+/** Loyihadagi yagona mahsulot kartasi — katalog, bosh sahifa, sevimlilar bir xil ko'rinishda. */
+export function ProductCard({ product, viewMode = 'grid', activeMarkets = [], className, style }: ProductCardProps) {
   const card = useProductCard(product, activeMarkets);
   if (viewMode === 'list') return <ProductCardList product={product} card={card} />;
-  return <ProductCardGrid product={product} card={card} />;
+  return <ProductCardGrid product={product} card={card} className={className} style={style} />;
 }

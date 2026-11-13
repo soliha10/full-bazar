@@ -68,6 +68,7 @@ export function ProductTile({
           </h3>
           {meta && <div className="mt-1 flex items-center gap-1.5 min-w-0 text-xs text-gray-500 dark:text-gray-400">{meta}</div>}
         </div>
+        {badge && <div className="shrink-0">{badge}</div>}
         <p className="text-base font-semibold tracking-tight tabular-nums whitespace-nowrap text-gray-900 dark:text-white">{price}</p>
         {actions && <div className="relative z-10 flex flex-col gap-1 shrink-0">{actions}</div>}
       </Card>

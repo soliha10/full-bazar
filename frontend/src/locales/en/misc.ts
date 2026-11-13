@@ -2,6 +2,7 @@ import type { misc as uzMisc } from '../uz/misc';
 
 export const misc: typeof uzMisc = {
   common: {
+    savingsTip: "{{amount}} ({{pct}}%) cheaper than the priciest store",
     compare: "Compare",
     compareLimit: "You can compare up to {{max}} products",
     compareSelected: "{{count}} selected",
