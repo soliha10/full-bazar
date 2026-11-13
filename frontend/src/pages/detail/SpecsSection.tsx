@@ -18,16 +18,15 @@ export function SpecsSection({ specs }: { specs: Specs | null }) {
     .filter((row): row is { key: typeof row.key; label: string; value: string } => row.value !== null) : [];
 
   return (
-    <section id="specs" aria-labelledby="specs-title" className="h-full flex flex-col scroll-mt-24 glass rounded-2xl p-4 md:p-5">
+    <section id="specs" aria-labelledby="specs-title" className="scroll-mt-24 glass rounded-2xl p-4">
       <div className="flex items-baseline justify-between gap-3 mb-2.5">
-        <h2 id="specs-title" className="text-base font-semibold text-gray-900 dark:text-white">{t.detail.mainSpecifications}</h2>
+        <h2 id="specs-title" className="text-sm font-semibold text-gray-900 dark:text-white">{t.detail.mainSpecifications}</h2>
         {specs?.displayName && <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{specs.displayName}</span>}
       </div>
 
-      {/* GSMArena dan; mos model topilmasa — qisqa izoh. Qo'shni karta balandroq
-          bo'lsa plitkalar teng cho'ziladi — pastda bo'sh joy qolmaydi */}
+      {/* GSMArena dan; mos model topilmasa — qisqa izoh */}
       {rows.length ? (
-        <dl className="flex-1 grid grid-cols-2 auto-rows-fr gap-1.5">
+        <dl className="grid grid-cols-2 gap-1.5">
           {rows.map(row => {
             const Icon = ICONS[row.key] ?? Smartphone;
             return (

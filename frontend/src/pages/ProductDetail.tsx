@@ -15,7 +15,6 @@ import { PriceSummary } from "./detail/PriceSummary";
 import { OffersSection } from "./detail/OffersSection";
 import { SpecsSection } from "./detail/SpecsSection";
 import { PriceHistoryChart } from "./detail/PriceHistoryChart";
-import { StoreComparison } from "./detail/StoreComparison";
 import { useColorVariant } from "./detail/useColorVariant";
 import { ColorPicker } from "./detail/ColorPicker";
 import { SavedProducts, SimilarProducts } from "./detail/ProductRails";
@@ -23,9 +22,8 @@ import { SavedProducts, SimilarProducts } from "./detail/ProductRails";
 /**
  * Mahsulot sahifasi — narx solishtirish saytlari (Idealo, PriceRunner, Geizhals)
  * tartibida: tepada rasm + xulosa (narx, holat, eng arzon do'kon tugmasi),
- * so'ng desktopda yonma-yon juftliklar: takliflar | xususiyatlar, narx tarixi |
- * do'konlardagi o'zgarish; mobilda ketma-ket. Bo'sh joy qolmasin — kam
- * kontentli blok ham butun qatorni egallamaydi.
+ * uch ustun: rasm | nom, rang, xususiyatlar | narx kartasi + takliflar (har
+ * do'konning 30 kunlik o'zgarishi bilan); ostida narx tarixi to'liq kenglikda.
  */
 export function ProductDetail() {
   const { t } = useLanguage();
@@ -64,28 +62,28 @@ export function ProductDetail() {
           <span className="text-gray-900 dark:text-white font-medium truncate">{product.name}</span>
         </nav>
 
-        <motion.div className="grid lg:grid-cols-12 gap-4 lg:gap-6"
+        {/* Desktop: rasm | nom, ranglar, xususiyatlar | narx kartasi + takliflar.
+            Mobil tartib DOM bo'yicha: rasm, nom/ranglar, narx/takliflar, xususiyatlar. */}
+        <motion.div className="grid gap-4 lg:gap-5 lg:grid-cols-[minmax(0,4fr)_minmax(0,4.6fr)_minmax(0,3.4fr)] lg:grid-rows-[auto_1fr]"
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: 'easeOut' }}>
-          <div className="lg:col-span-4">
+          <div className="lg:row-span-2">
             <ImageGallery gallery={gallery} productName={product.name} />
           </div>
-          <div className="lg:col-span-8 space-y-3">
+          <div className="space-y-3 lg:col-start-2 lg:row-start-1">
             <ProductHeading product={product} liked={liked} inCompare={inCompare}
               onToggleLike={toggleLike} onToggleCompare={() => toggleCompare(String(product.id))} />
             <ColorPicker variants={variant.variants} active={variant.active} cheapest={variant.cheapest} onSelect={variant.select} />
+          </div>
+          <div className="space-y-3 lg:col-start-3 lg:row-start-1 lg:row-span-2">
             <PriceSummary product={view ?? product} stats={stats} history={priceHistory} />
+            <OffersSection product={view ?? product} stats={stats} history={priceHistory} allMarkets={product.markets ?? []} />
+          </div>
+          <div className="lg:col-start-2 lg:row-start-2">
+            <SpecsSection specs={specs} />
           </div>
         </motion.div>
 
-        <div className="mt-4 grid lg:grid-cols-12 gap-4">
-          <div className="lg:col-span-7"><OffersSection product={view ?? product} stats={stats} /></div>
-          <div className="lg:col-span-5"><SpecsSection specs={specs} /></div>
-          {/* Do'konlarda o'zgarish bo'lmasa StoreComparison null — tarix butun qatorni oladi */}
-          <div className="lg:col-span-12 flex flex-col lg:flex-row gap-4">
-            <div className="w-full lg:flex-1 min-w-0"><PriceHistoryChart history={priceHistory} markets={product.markets ?? []} /></div>
-            <div className="w-full lg:w-[34%] shrink-0 empty:hidden"><StoreComparison history={priceHistory} markets={product.markets ?? []} /></div>
-          </div>
-        </div>
+        <div className="mt-4"><PriceHistoryChart history={priceHistory} markets={product.markets ?? []} /></div>
       </div>
 
       {showSimilar && <SimilarProducts loading={similarLoading} products={similarProducts} bestPrice={stats.bestPrice} />}
