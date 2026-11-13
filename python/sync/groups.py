@@ -90,9 +90,14 @@ def build_groups(rows):
             g["variants"] = build_variants(cl.rows)
             # Umumiy galereya — variantlar ketma-ketligida (arzon rangdan), asosiy
             # rasm — eng arzon rangning birinchisi: kartada ham to'g'ri rang
+            # (noma'lum rang ro'yxat oxirida, lekin u ham eng arzon bo'lishi mumkin)
+            priced = [v for v in g["variants"] if v["price"] is not None and v["images"]]
+            cheapest = min(priced, key=lambda v: v["price"]) if priced else None
             ordered = [img for v in g["variants"] for img in v["images"]]
             g["images"] = list(dict.fromkeys(ordered + g["images"]))
-            if ordered:
+            if cheapest:
+                g["image"] = cheapest["images"][0]
+            elif ordered:
                 g["image"] = ordered[0]
     for g in groups.values():
         # Takroriy sarlavhalar keywords ni 5 KB gacha shishirardi

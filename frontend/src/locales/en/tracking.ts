@@ -116,6 +116,7 @@ export const tracking: typeof uzTracking = {
     priceHistoryTitle: "Price history",
     colorLabel: "Color",
     colorFrom: "from {{price}}",
+    colorCheapestHint: "Cheapest: {{color}} — {{price}}",
     colors: {
       black: "Black",
       white: "White",

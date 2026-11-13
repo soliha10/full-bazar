@@ -98,7 +98,7 @@ export function ProductDetail() {
             <ProductHeading product={product} liked={liked} inCompare={inCompare}
               onToggleLike={toggleLike} onToggleCompare={() => product && toggleCompare(String(product.id))} />
 
-            <ColorPicker variants={variant.variants} active={variant.active} onSelect={variant.select} />
+            <ColorPicker variants={variant.variants} active={variant.active} cheapest={variant.cheapest} onSelect={variant.select} />
 
             <PriceSection product={view ?? product} stats={stats}
               selectedMarketIndex={selectedMarketIndex} onSelectMarket={setSelectedMarketIndex}

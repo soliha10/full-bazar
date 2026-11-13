@@ -114,6 +114,7 @@ export const tracking = {
     priceHistoryTitle: "Narx tarixi",
     colorLabel: "Rang",
     colorFrom: "{{price}} dan",
+    colorCheapestHint: "Eng arzon: {{color}} — {{price}}",
     colors: {
       black: "Qora",
       white: "Oq",

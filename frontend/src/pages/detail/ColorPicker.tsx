@@ -10,9 +10,11 @@ const SWATCH: Record<string, string> = {
 };
 
 /** Rang tanlovi: har rang — namuna, nomi va shu rangning eng arzon narxi. */
-export function ColorPicker({ variants, active, onSelect }: {
+export function ColorPicker({ variants, active, cheapest, onSelect }: {
   variants: ProductVariant[];
   active: ProductVariant | null;
+  /** Barcha ranglar ichida eng arzoni — katalog kartasidagi narx shu */
+  cheapest: ProductVariant | null;
   onSelect: (color: string | null) => void;
 }) {
   const { t } = useLanguage();
@@ -46,13 +48,23 @@ export function ColorPicker({ variants, active, onSelect }: {
                   {names[key] ?? key}
                 </span>
                 {v.price != null && (
-                  <span className="block text-xs text-gray-500 dark:text-gray-400 tabular-nums">{d.colorFrom.replace('{{price}}', formatSum(v.price))}</span>
+                  <span className="block text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+                    {d.colorFrom.replace('{{price}}', formatSum(v.price))}
+                    {v === cheapest && <span className="ml-1 font-medium text-emerald-600 dark:text-emerald-400">· {d.cheapestTag}</span>}
+                  </span>
                 )}
               </span>
             </button>
           );
         })}
       </div>
+      {/* Boshqa rang tanlangan — kartadagi (eng arzon) narx qaysi rangda ekanini eslatamiz */}
+      {cheapest && active && active !== cheapest && cheapest.price != null && (
+        <button type="button" onClick={() => onSelect(cheapest.color)}
+          className="mt-2 text-sm text-violet-600 dark:text-violet-400 hover:underline">
+          {d.colorCheapestHint.replace('{{color}}', names[cheapest.color ?? 'other'] ?? '').replace('{{price}}', formatSum(cheapest.price))}
+        </button>
+      )}
     </div>
   );
 }
