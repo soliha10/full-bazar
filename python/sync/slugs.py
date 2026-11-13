@@ -92,6 +92,8 @@ SLUG_DDL = (
     # _write_rows narxlarni (product_id, source) bo'yicha UPSERT qiladi
     "CREATE UNIQUE INDEX IF NOT EXISTS idx_product_markets_product_source "
     "ON product_markets(product_id, source)",
+    # Rang variantlari: [{color, images, offers, price}] — sync/groups.py
+    "ALTER TABLE products ADD COLUMN IF NOT EXISTS variants JSONB",
 )
 
 
@@ -110,7 +112,9 @@ def load_existing_slugs(conn) -> dict:
                       WHERE table_name = 'products' AND column_name = 'slug'),
               EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_products_slug'),
               EXISTS (SELECT 1 FROM pg_indexes
-                      WHERE indexname = 'idx_product_markets_product_source')
+                      WHERE indexname = 'idx_product_markets_product_source'),
+              EXISTS (SELECT 1 FROM information_schema.columns
+                      WHERE table_name = 'products' AND column_name = 'variants')
         """)
         for stmt, present in zip(SLUG_DDL, cur.fetchone()):
             if not present:

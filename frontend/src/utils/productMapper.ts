@@ -80,6 +80,7 @@ export function mapProduct(item: any): Product {
     description: item.title || item.product_name,
     inStock: item.availability !== 'Out of Stock',
     markets: item.markets || [],
+    variants: (item.variants || []).map((v: { images?: string[] }) => ({ ...v, images: (v.images || []).map(resolveImageUrl) })),
     source: item.source,
     url: item.url
   };

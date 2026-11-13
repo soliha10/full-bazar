@@ -5,6 +5,8 @@ import re
 
 import matching
 
+from .variants import build_variants
+
 
 def _norm(title):
     n = title.lower()
@@ -82,6 +84,16 @@ def build_groups(rows):
             src, price = row["src"], row["price"]
             if src not in g["markets"] or price < g["markets"][src]["price"]:
                 g["markets"][src] = {"source": src.capitalize(), "price": price, "url": row["url"]}
+    for cl in clustered:
+        if cl.rows and cl.pid in groups:
+            g = groups[cl.pid]
+            g["variants"] = build_variants(cl.rows)
+            # Umumiy galereya — variantlar ketma-ketligida (arzon rangdan), asosiy
+            # rasm — eng arzon rangning birinchisi: kartada ham to'g'ri rang
+            ordered = [img for v in g["variants"] for img in v["images"]]
+            g["images"] = list(dict.fromkeys(ordered + g["images"]))
+            if ordered:
+                g["image"] = ordered[0]
     for g in groups.values():
         # Takroriy sarlavhalar keywords ni 5 KB gacha shishirardi
         g["keywords"] = " ".join(sorted(g["keywords"]))

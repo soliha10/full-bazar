@@ -21,6 +21,9 @@ export function useImageGallery(product: Product | null) {
     return list.length > 0 ? list : [FALLBACK_IMAGE];
   }, [product]);
 
+  // Rang almashganda yangi galereya birinchi rasmdan boshlanadi
+  useEffect(() => { setSelectedImage(0); }, [images]);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {

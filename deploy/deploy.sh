@@ -47,6 +47,11 @@ if changed deploy/dagster/ python/; then
 fi
 
 # ── Ma'lumotlar ─────────────────────────────────────────────────────────────
+# E'lon galereyalari keshi (python/gallery.py): repodagi nusxa serverdagisidan
+# yangi bo'lsa olinadi — aks holda server o'zi yig'gan kesh saqlanadi
+if changed data/listing_images.csv; then
+  cp -pu "$REPO/data/listing_images.csv" /var/lib/bazar/data/listing_images.csv
+fi
 if changed data/ python/sync_csv.py python/sync/ python/matching.py python/matching_parse.py python/fastapi_app/brands.py; then
   echo "[deploy] data/ yoki sinxronizatsiya kodi o'zgardi — narxlar bazaga yozilmoqda"
   ./scrape.sh --sync-only

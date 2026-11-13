@@ -29,10 +29,10 @@ _match_spec_row = brands.match_spec_row
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _row_to_product(row: asyncpg.Record, markets: list[dict]) -> dict[str, Any]:
+def _row_to_product(row: asyncpg.Record, markets: list[dict], with_variants: bool = False) -> dict[str, Any]:
     sorted_markets = sorted(markets, key=lambda m: m["price"])
     best = sorted_markets[0] if sorted_markets else {}
-    return {
+    product = {
         "id": row["id"],
         # Kanonik manzil bo'lagi. Sinxronizatsiya hali ishlamagan bo'lsa NULL
         # bo'lishi mumkin — bunda mijoz ID ga qaytadi.
@@ -51,6 +51,12 @@ def _row_to_product(row: asyncpg.Record, markets: list[dict]) -> dict[str, Any]:
         "url": best.get("url", row["url"] or "#"),
         "markets": sorted_markets,
     }
+    # Rang variantlari ({color, images, offers, price}, sync/variants.py) — faqat
+    # mahsulot sahifasiga: katalogning 200 talik ro'yxatida har karta uchun
+    # barcha ranglarning rasm va takliflari ortiqcha yuk
+    if with_variants:
+        product["variants"] = (row["variants"] if "variants" in row.keys() else None) or []
+    return product
 
 
 # ── Xususiyatlar keshi ───────────────────────────────────────────────────────

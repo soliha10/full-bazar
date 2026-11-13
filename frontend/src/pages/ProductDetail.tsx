@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -17,6 +17,8 @@ import { PriceSection } from "./detail/PriceSection";
 import { DetailTabs } from "./detail/DetailTabs";
 import { PriceHistoryChart } from "./detail/PriceHistoryChart";
 import { StoreComparison } from "./detail/StoreComparison";
+import { useColorVariant } from "./detail/useColorVariant";
+import { ColorPicker } from "./detail/ColorPicker";
 import { SavedProducts, SimilarProducts } from "./detail/ProductRails";
 import type { DetailTab } from "./detail/SpecsSection";
 
@@ -31,9 +33,13 @@ export function ProductDetail() {
     navigate, product, loading, error, selectedMarketIndex, setSelectedMarketIndex,
     priceHistory, similarProducts, similarLoading, specs,
   } = useProductDetail();
-  const gallery = useImageGallery(product);
+  // Tanlangan rang: galereya, narx va takliflar faqat shu rangga tegishli
+  const variant = useColorVariant(product);
+  const view = variant.view;
+  const gallery = useImageGallery(view);
+  useEffect(() => { setSelectedMarketIndex(0); }, [variant.active, setSelectedMarketIndex]);
 
-  const stats = computePriceStats(product, selectedMarketIndex, priceHistory ?? []);
+  const stats = computePriceStats(view, selectedMarketIndex, priceHistory ?? []);
   const { selectedMarket, sortedMarkets, bestPrice, savings } = stats;
   const liked = product ? isLiked(product.id) : false;
   const inCompare = product ? compareIds.includes(String(product.id)) : false;
@@ -79,7 +85,7 @@ export function ProductDetail() {
             <ImageGallery gallery={gallery} productName={product.name} savings={savings}
               liked={liked} onToggleLike={toggleLike} />
 
-            <MarketOverview product={product} stats={stats} />
+            <MarketOverview product={view ?? product} stats={stats} />
           </motion.div>
 
           {/* ── Right: Info ── */}
@@ -92,7 +98,9 @@ export function ProductDetail() {
             <ProductHeading product={product} liked={liked} inCompare={inCompare}
               onToggleLike={toggleLike} onToggleCompare={() => product && toggleCompare(String(product.id))} />
 
-            <PriceSection product={product} stats={stats}
+            <ColorPicker variants={variant.variants} active={variant.active} onSelect={variant.select} />
+
+            <PriceSection product={view ?? product} stats={stats}
               selectedMarketIndex={selectedMarketIndex} onSelectMarket={setSelectedMarketIndex}
               showAllMarkets={showAllMarkets} onToggleShowAll={() => setShowAllMarkets(v => !v)} />
 
@@ -118,7 +126,7 @@ export function ProductDetail() {
       )}
 
       {/* ── Sticky bottom bar (mobile) ── */}
-      <MobileBuyBar product={product} selectedMarket={selectedMarket} />
+      <MobileBuyBar product={view ?? product} selectedMarket={selectedMarket} />
     </div>
   );
 }

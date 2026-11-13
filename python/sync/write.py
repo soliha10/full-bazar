@@ -57,7 +57,7 @@ def write_db(groups):
 # tashqari). Qator faqat shulardan biri o'zgarsa yangilanadi.
 _PRODUCT_COLS = ("slug", "name", "title", "category", "rating", "reviews",
                  "image", "images", "in_stock", "keywords", "source", "price",
-                 "url")
+                 "url", "variants")
 
 
 def _write_rows(conn, groups):
@@ -71,6 +71,7 @@ def _write_rows(conn, groups):
             g["rating"], g["reviews"], g["image"] or None,
             g["images"] or None, True, g["keywords"][:5000],
             best.get("source"), best.get("price", 0), best.get("url"),
+            psycopg2.extras.Json(g.get("variants") or []),
             # utcnow() naive qiymat beradi va TIMESTAMPTZ ustunida uni server
             # o'z mintaqasida talqin qiladi. Aniq UTC yozamiz.
             now,
@@ -201,7 +202,7 @@ def _write_rows(conn, groups):
                     cur,
                     "INSERT INTO products (id,slug,name,title,category,rating,"
                     "reviews,image,images,in_stock,keywords,source,price,url,"
-                    "updated_at) VALUES %s "
+                    "variants,updated_at) VALUES %s "
                     "ON CONFLICT (id) DO UPDATE SET "
                     + ", ".join(f"{c} = EXCLUDED.{c}" for c in _PRODUCT_COLS + ("updated_at",))
                     + " WHERE (" + ", ".join(f"products.{c}" for c in _PRODUCT_COLS)

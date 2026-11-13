@@ -9,6 +9,7 @@ from datetime import datetime
 
 from .common import _annotate
 from matching import parse as parse_title
+from gallery import cached_images, load_cache
 
 
 DATA_DIR = os.getenv("DATA_DIR", "./data")
@@ -133,6 +134,8 @@ def load_rows():
     rows = []
     fakes: Counter = Counter()
     unnamed: Counter = Counter()
+    # E'lon sahifalaridan yig'ilgan to'liq galereyalar (collect_gallery.py)
+    gallery_cache = load_cache(DATA_DIR)
     # FAQAT scraper chiqarigan "<do'kon>_products.csv" fayllari.
     # Ilgari papkadagi HAR QANDAY .csv o'qilardi va bu ikki xatoga olib kelardi:
     #   · data/olcha_phones.csv — bir yil oldingi eskirgan narxlar. Manba nomi
@@ -190,11 +193,14 @@ def load_rows():
                         "src": (row.get("store") or row.get("market") or row.get("source") or src_fallback).lower(),
                         "price": price,
                         "url": (row.get("product_url") or row.get("url") or row.get("link") or "#").strip().replace("\n", ""),
+                        "gallery": [],
                         "rating": row.get("rating"),
                         "reviews": row.get("review_count") or row.get("reviews"),
                     })
         except Exception as exc:
             print(f"  skip {fn}: {exc}", flush=True)
+    for r in rows:
+        r["gallery"] = cached_images(gallery_cache, r["url"])
     if unnamed:
         print(f"[sync] model nomi yo'q e'lonlar tashlandi: {sum(unnamed.values())} ta — "
               + ", ".join(f"{k} {v}" for k, v in unnamed.most_common()), flush=True)

@@ -91,7 +91,7 @@ def repodagi_csvlar(context: OpExecutionContext) -> None:
             shutil.copy2(csv, DATA)
             shutil.copy2(os.path.join(src_dir, name), DATA)
             context.log.info(f"{store} repodan olindi ({repo_date})")
-    for name in ("gsmarena_specs.csv", "synthetic_matching_data.csv"):
+    for name in ("gsmarena_specs.csv", "synthetic_matching_data.csv", "listing_images.csv"):
         src = os.path.join(src_dir, name)
         if os.path.exists(src) and _newer(src, os.path.join(DATA, name)):
             shutil.copy2(src, DATA)
@@ -161,6 +161,17 @@ def gsmarena_tafsilotlari(context: OpExecutionContext) -> None:
         context.log.warning(f"GSMArena tafsilotlari to'liq olinmadi: {exc}")
 
 
+@op(out=Out(Nothing))
+def galereyalarni_yigish(context: OpExecutionContext) -> None:
+    """E'lon sahifalaridan to'liq galereya (python/gallery.py) — har e'lon bir
+    marta, 30 kunda yangilanadi. Natija /data/listing_images.csv; 05:00 dagi
+    narx ishi uni rang variantlariga qo'shadi. Do'kon cheklasa ham ish to'xtamaydi."""
+    try:
+        _run(context, [PY, "python/collect_gallery.py", "--budget", "2700"], timeout=3300)
+    except Failure as exc:
+        context.log.warning(f"Galereyalar to'liq yig'ilmadi: {exc}")
+
+
 @op(ins={"after": In(Nothing)}, out=Out(Nothing))
 def xususiyatlarni_yozish(context: OpExecutionContext) -> None:
     _run(context, [PY, "python/sync_specs.py"])
@@ -179,14 +190,22 @@ def faqat_matcher():
 
 
 @job
+def galereya():
+    galereyalarni_yigish()
+
+
+@job
 def xususiyatlar():
     xususiyatlarni_yozish(after=gsmarena_tafsilotlari())
 
 
 defs = Definitions(
-    jobs=[narxlar, faqat_matcher, xususiyatlar],
+    jobs=[narxlar, faqat_matcher, xususiyatlar, galereya],
     schedules=[
         ScheduleDefinition(job=narxlar, cron_schedule="0 5,17 * * *",
+                           execution_timezone="Asia/Tashkent",
+                           default_status=DefaultScheduleStatus.RUNNING),
+        ScheduleDefinition(job=galereya, cron_schedule="0 3 * * *",
                            execution_timezone="Asia/Tashkent",
                            default_status=DefaultScheduleStatus.RUNNING),
         ScheduleDefinition(job=xususiyatlar, cron_schedule="0 8 * * 0",

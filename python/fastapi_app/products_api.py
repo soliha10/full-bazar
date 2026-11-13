@@ -67,7 +67,7 @@ async def get_product(request: Request, product_ref: str) -> Response:
         if row is None:
             raise HTTPException(status_code=404, detail="Not Found")
         markets_map = await _fetch_markets(pool, [row["id"]])
-        return _row_to_product(row, markets_map.get(row["id"], []))
+        return _row_to_product(row, markets_map.get(row["id"], []), with_variants=True)
 
     return await _cached_json(f"product:{product_ref.strip()}", 120, load)
 

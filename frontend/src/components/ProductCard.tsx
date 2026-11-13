@@ -4,7 +4,7 @@ import { ProductCardList } from './product-card/ProductCardList';
 import { ProductCardGrid } from './product-card/ProductCardGrid';
 
 // Product turi ko'p sahifalarda shu fayldan import qilinadi — qayta eksport
-export type { Product } from './product-card/types';
+export type { Product, ProductVariant } from './product-card/types';
 
 interface ProductCardProps {
   product: Product;
