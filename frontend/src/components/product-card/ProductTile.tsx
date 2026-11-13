@@ -1,5 +1,6 @@
 import type { CSSProperties, MouseEvent, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowUpRight } from 'lucide-react';
 import { Card } from '../Card';
 
 export const PRODUCT_PLACEHOLDER = 'https://placehold.co/400x400/f9fafb/9ca3af?text=📱';
@@ -16,6 +17,8 @@ const RATIO = { square: 'aspect-square', wide: 'aspect-[4/3]' } as const;
 export interface ProductTileProps {
   to: string;
   name: string;
+  /** Kartada ko'rinadigan qisqa nom (masalan, xotirasiz — xotira chipda); to'liq nom alt va aria-label da */
+  shortName?: string;
   image?: string | null;
   /** Asosiy narx — formatlangan matn */
   price: ReactNode;
@@ -23,6 +26,8 @@ export interface ProductTileProps {
   priceLabel?: ReactNode;
   /** Narx ostidagi bitta qator: do'kon, farq, do'konlar soni */
   meta?: ReactNode;
+  /** Nom ostidagi kichik chiplar (xotira va h.k.) */
+  chips?: ReactNode;
   /** Karta pastidagi chiziq bilan ajratilgan qator */
   footer?: ReactNode;
   /** Rasm ustida, chap burchakda (chegirma, o'rin) */
@@ -42,9 +47,10 @@ export interface ProductTileProps {
 function TileImage({ src, alt, className }: { src?: string | null; alt: string; className: string }) {
   return (
     <div className={`relative overflow-hidden rounded-xl glass-soft ${className}`}>
-      {/* Hover da mahsulot ortida yumshoq binafsha nur */}
+      {/* Doimiy yumshoq binafsha gradient; hover da mahsulot ortidagi nur kuchayadi */}
+      <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-linear-to-b from-violet-500/[0.08] via-transparent to-fuchsia-500/[0.05]" />
       <span aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_60%,rgba(139,92,246,0.22),transparent_65%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_60%,rgba(139,92,246,0.28),transparent_65%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
       <img src={src || PRODUCT_PLACEHOLDER} alt={alt} loading="lazy"
         onError={(e) => { (e.target as HTMLImageElement).src = PRODUCT_PLACEHOLDER; }}
         className="relative w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal transition-transform duration-500 ease-out group-hover:-translate-y-1 group-hover:scale-[1.04]" />
@@ -56,7 +62,7 @@ function TileImage({ src, alt, className }: { src?: string | null; alt: string; 
 const STRETCHED = "after:absolute after:inset-0 after:content-[''] hover:text-violet-700 dark:hover:text-violet-300 transition-colors";
 
 export function ProductTile({
-  to, name, image, price, priceLabel, meta, footer, badge, actions,
+  to, name, shortName, image, price, priceLabel, meta, chips, footer, badge, actions,
   layout = 'grid', size = 'md', ratio = 'square', as = 'article', className = '', style,
 }: ProductTileProps) {
   const sm = size === 'sm';
@@ -67,8 +73,9 @@ export function ProductTile({
         <TileImage src={image} alt={name} className="w-20 h-20 shrink-0 [&_img]:p-2" />
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-snug">
-            <Link to={to} className={STRETCHED}>{name}</Link>
+            <Link to={to} aria-label={shortName ? name : undefined} className={STRETCHED}>{shortName ?? name}</Link>
           </h3>
+          {chips && <div className="mt-1 flex flex-wrap gap-1">{chips}</div>}
           {meta && <div className="mt-1 flex items-center gap-1.5 min-w-0 text-xs text-gray-500 dark:text-gray-400">{meta}</div>}
         </div>
         {badge && <div className="shrink-0">{badge}</div>}
@@ -87,14 +94,24 @@ export function ProductTile({
       </div>
       <div className={`flex flex-col flex-1 gap-1 ${sm ? 'px-2.5 pb-2.5 pt-1' : 'px-3 pb-3 pt-1.5 md:px-4 md:pb-4'}`}>
         <h3 className={`font-medium text-gray-900 dark:text-white leading-snug line-clamp-2 ${sm ? 'text-xs min-h-[2rem]' : 'text-sm md:text-[15px] min-h-[2.5rem]'}`}>
-          <Link to={to} className={STRETCHED}>{name}</Link>
+          <Link to={to} aria-label={shortName ? name : undefined} className={STRETCHED}>{shortName ?? name}</Link>
         </h3>
-        <div className="mt-auto pt-1 min-w-0">
-          {priceLabel && <p className="text-[11px] text-gray-500 dark:text-gray-400">{priceLabel}</p>}
-          <p className={`font-semibold tracking-tight tabular-nums whitespace-nowrap text-gray-900 dark:text-white ${sm ? 'text-sm' : 'text-base md:text-lg'}`}>
-            {price}
-          </p>
-          {meta && <div className="mt-0.5 flex items-center gap-1.5 min-w-0 text-[11px] md:text-xs text-gray-500 dark:text-gray-400">{meta}</div>}
+        {chips && !sm && <div className="flex flex-wrap gap-1">{chips}</div>}
+        {/* Narx bloki — chiziq bilan ajratilgan; o'ngda "o'tish" doirasi (bezak: butun karta havola) */}
+        <div className={`mt-auto min-w-0 flex items-end gap-2 ${sm ? 'pt-1' : 'pt-2.5 border-t border-gray-900/5 dark:border-white/10'}`}>
+          <div className="min-w-0 flex-1">
+            {priceLabel && <p className="text-[11px] text-gray-500 dark:text-gray-400">{priceLabel}</p>}
+            <p className={`font-semibold tracking-tight tabular-nums whitespace-nowrap text-gray-900 dark:text-white ${sm ? 'text-sm' : 'text-base md:text-lg'}`}>
+              {price}
+            </p>
+            {meta && <div className="mt-0.5 flex items-center gap-1.5 min-w-0 text-[11px] md:text-xs text-gray-500 dark:text-gray-400">{meta}</div>}
+          </div>
+          {!sm && (
+            <span aria-hidden="true"
+              className="hidden sm:flex w-8 h-8 shrink-0 items-center justify-center rounded-full glass-soft text-gray-500 dark:text-gray-400 transition-all duration-300 group-hover:bg-violet-600 group-hover:text-white group-hover:border-violet-600 group-hover:rotate-45">
+              <ArrowUpRight className="w-4 h-4" />
+            </span>
+          )}
         </div>
         {footer && (
           <div className="mt-1.5 pt-2 border-t border-gray-900/5 dark:border-white/10 text-xs text-gray-500 dark:text-gray-400">{footer}</div>
