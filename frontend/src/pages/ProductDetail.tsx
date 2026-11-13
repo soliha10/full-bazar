@@ -16,6 +16,7 @@ import { ProductHeading } from "./detail/ProductHeading";
 import { PriceSection } from "./detail/PriceSection";
 import { DetailTabs } from "./detail/DetailTabs";
 import { PriceHistoryChart } from "./detail/PriceHistoryChart";
+import { StoreComparison } from "./detail/StoreComparison";
 import { SavedProducts, SimilarProducts } from "./detail/ProductRails";
 import type { DetailTab } from "./detail/SpecsSection";
 
@@ -103,6 +104,11 @@ export function ProductDetail() {
           activeTab={activeTab} onTabChange={setActiveTab} />
 
         <PriceHistoryChart history={priceHistory} markets={product.markets ?? []} activeTab={activeTab} />
+
+        {/* Narvon (kim qanchaga qimmat) va 30 kunlik o'zgarish (±) — desktopda doim, mobilda narx tarixi tabida */}
+        <div className={activeTab !== 'priceHistory' ? 'hidden lg:block' : ''}>
+          <StoreComparison history={priceHistory} markets={product.markets ?? []} />
+        </div>
       </div>
 
       {favorites.length > 0 && <SavedProducts favorites={favorites} onToggle={toggle} />}

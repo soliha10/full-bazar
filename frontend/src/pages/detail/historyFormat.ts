@@ -40,14 +40,15 @@ export function historyFormatters(f: HistoryFormatText, decimal: string) {
  * 4 517 091 kabi tasodifiy chegaralar emas. Ma'lumot ustidan va ostidan
  * kamida yarim qadam joy qoladi — chiziq chetga yopishmasin.
  */
-export function niceTicks(lo: number, hi: number, target = 4): number[] {
-  const span = Math.max(hi - lo, hi * 0.02, 1);
+export function niceTicks(lo: number, hi: number, target = 4, allowNegative = false): number[] {
+  // Narx uchun span: kamida 2%; farq (manfiy bo'lishi mumkin) uchun — mutlaq qiymat
+  const span = Math.max(hi - lo, Math.abs(hi) * 0.02, 1);
   const raw = span / target;
   const mag = 10 ** Math.floor(Math.log10(raw));
   const step = [1, 2, 5, 10].map(m => m * mag).find(s => s >= raw) ?? 10 * mag;
   const start = Math.floor((lo - step / 2) / step) * step;
   const end = Math.ceil((hi + step / 2) / step) * step;
   const ticks: number[] = [];
-  for (let v = Math.max(0, start); v <= end + step / 1000; v += step) ticks.push(Math.round(v));
+  for (let v = allowNegative ? start : Math.max(0, start); v <= end + step / 1000; v += step) ticks.push(Math.round(v));
   return ticks;
 }

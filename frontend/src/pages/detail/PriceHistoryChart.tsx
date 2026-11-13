@@ -7,6 +7,7 @@ import type { DetailTab } from "./SpecsSection";
 import { buildSeries, typicalRange, type PriceVerdict } from "./priceHistorySeries";
 import { HistoryPlot } from "./HistoryPlot";
 import { HistoryTable } from "./HistoryTable";
+import { HistoryWaterfall } from "./HistoryWaterfall";
 import { historyFormatters } from "./historyFormat";
 
 // Tarix 90 kunlik yuklanadi (useProductDetail), davr mijozda kesiladi
@@ -40,6 +41,8 @@ export function PriceHistoryChart({ history, markets, activeTab }: {
   const d = t.detailPage;
   const fmt = useMemo(() => historyFormatters(d, language === 'en' ? '.' : ','), [d, language]);
   const [days, setDays] = useState<(typeof PERIODS)[number]>(90);
+  // Chiziq — narx darajasi; qadamlar — har o'zgarish +/− (waterfall)
+  const [view, setView] = useState<'line' | 'steps'>('line');
   const [compact, setCompact] = useState(() => typeof window !== 'undefined' && window.matchMedia(MOBILE).matches);
   useEffect(() => {
     const mq = window.matchMedia(MOBILE);
@@ -66,12 +69,21 @@ export function PriceHistoryChart({ history, markets, activeTab }: {
       <div className="glass rounded-3xl p-5 md:p-8">
         <div className="flex items-center justify-between gap-3 mb-5">
           <h2 id="history-title" className="text-lg font-semibold text-gray-900 dark:text-white">{d.priceHistoryTitle}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+          <div role="group" className="flex rounded-xl bg-gray-900/5 dark:bg-white/5 p-1">
+            {(['line', 'steps'] as const).map(v => (
+              <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} className={seg(view === v)}>
+                {v === 'line' ? d.viewLine : d.viewSteps}
+              </button>
+            ))}
+          </div>
           <div role="group" className="flex rounded-xl bg-gray-900/5 dark:bg-white/5 p-1">
             {PERIODS.map(p => (
               <button key={p} type="button" aria-pressed={days === p} onClick={() => setDays(p)} className={seg(days === p)}>
                 {d.periodDays.replace('{{n}}', String(p))}
               </button>
             ))}
+          </div>
           </div>
         </div>
 
@@ -99,11 +111,19 @@ export function PriceHistoryChart({ history, markets, activeTab }: {
               </p>
             </div>
 
-            {compact && <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1" aria-hidden="true">{fmt.unit} {t.listing.currency}</p>}
-            <div className="-ml-1" style={{ height: compact ? 240 : 300 }} aria-hidden="true">
-              <HistoryPlot rows={rows} typical={typical} fmt={fmt} compact={compact}
-                labels={{ lowest: d.historyLowest, stores: d.historyStores, typical: d.historyTypical }} />
-            </div>
+            {view === 'line' ? (
+              <>
+                {compact && <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1" aria-hidden="true">{fmt.unit} {t.listing.currency}</p>}
+                <div className="-ml-1" style={{ height: compact ? 240 : 300 }} aria-hidden="true">
+                  <HistoryPlot rows={rows} typical={typical} fmt={fmt} compact={compact}
+                    labels={{ lowest: d.historyLowest, stores: d.historyStores, typical: d.historyTypical }} />
+                </div>
+              </>
+            ) : (
+              <HistoryWaterfall rows={rows} fmtShort={fmt.short} compact={compact}
+                fmtAxis={(v) => (v === 0 ? '0' : `${v > 0 ? '+' : '−'}${Math.round(Math.abs(v) / 1000)}k`)}
+                labels={{ total: d.stepsTotal, cheaper: d.cheaperLegend, pricier: d.pricierLegend, none: d.stepsNone }} />
+            )}
 
             {/* Davr bo'yicha ikki raqam — grafik ostida, bir qatorda */}
             <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm">

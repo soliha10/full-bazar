@@ -109,6 +109,24 @@ body {
   box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 16px 32px -16px rgba(91, 33, 182, 0.25);
 }
 
+/* ── Grafik ranglari (dataviz validate_palette.js dan o'tgan) ──
+   Diverging: ko'k = arzonlashdi (manfiy), qizil = qimmatlashdi (musbat),
+   nol — neytral kulrang. Sequential (narx narvoni) — bitta binafsha. */
+:root {
+  --viz-neg: #2a78d6;
+  --viz-pos: #e34948;
+  --viz-zero: #d1d5db;
+  --viz-seq: #7c3aed;
+  --viz-seq-soft: rgba(124, 58, 237, 0.14);
+}
+.dark {
+  --viz-neg: #3987e5;
+  --viz-pos: #e66767;
+  --viz-zero: #4b5563;
+  --viz-seq: #8b5cf6;
+  --viz-seq-soft: rgba(139, 92, 246, 0.2);
+}
+
 /* ── Kartalar paydo bo'lishi: ustma-ust, ketma-ket ko'tariladi ──
    --i — kartaning tartib raqami (inline style), kechikish 12 tadan keyin
    to'xtaydi: 40-karta 1.6 s kutib turmasin. */
