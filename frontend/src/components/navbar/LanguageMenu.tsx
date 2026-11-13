@@ -22,8 +22,7 @@ export function LanguageMenu() {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsLangOpen(false)} />
           <div className="absolute right-0 top-full mt-2 w-44
-            bg-white dark:bg-gray-900
-            border border-gray-100 dark:border-gray-700
+            glass glass-solid
             rounded-xl shadow-lg shadow-black/5
             overflow-hidden z-50">
             {languages.map((lang) => (

@@ -20,7 +20,7 @@ export function HistoryTable({ rows, fmtDate, labels }: {
     <div className="mt-2.5 rounded-xl border border-gray-900/5 dark:border-white/10">
       <div id="history-table" className="max-h-72 overflow-y-auto">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur text-xs text-gray-500 dark:text-gray-400">
+          <thead className="sticky top-0 glass-bar text-xs text-gray-500 dark:text-gray-400">
             <tr>
               <th scope="col" className="px-4 py-2 text-left font-normal">{labels.date}</th>
               <th scope="col" className="px-4 py-2 text-left font-normal">{labels.store}</th>

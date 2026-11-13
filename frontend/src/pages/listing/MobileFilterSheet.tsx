@@ -33,7 +33,7 @@ export function MobileFilterSheet({ f, actions }: { f: ListingFilters; actions: 
 
         {/* Sheet */}
         <motion.div
-          className="absolute bottom-0 left-0 right-0 h-[80vh] max-h-[92vh] bg-white dark:bg-gray-950 flex flex-col overflow-hidden"
+          className="absolute bottom-0 left-0 right-0 h-[80vh] max-h-[92vh] glass-bar flex flex-col overflow-hidden"
           style={{ borderRadius: '24px 24px 0 0', boxShadow: '0 -8px 40px rgba(0,0,0,0.15)' }}
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
@@ -57,16 +57,16 @@ export function MobileFilterSheet({ f, actions }: { f: ListingFilters; actions: 
             </div>
             <button
               onClick={() => setIsMobileFilterOpen(false)}
-              className="w-8 h-8 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
+              className="w-8 h-8 rounded-2xl glass-soft flex items-center justify-center"
             >
               <X className="h-4 w-4 text-gray-600 dark:text-gray-400" />
             </button>
           </div>
 
           {/* Content: Split tabbed layout */}
-          <div className="flex-1 flex overflow-hidden min-h-0 bg-gray-50 dark:bg-gray-900/50">
+          <div className="flex-1 flex overflow-hidden min-h-0">
             {/* Left Tabs Column */}
-            <div className="w-[38%] shrink-0 border-r border-gray-100/80 dark:border-gray-800/80 bg-white dark:bg-gray-950 overflow-y-auto flex flex-col divide-y divide-gray-100/50 dark:divide-gray-900/50">
+            <div className="w-[38%] shrink-0 border-r border-gray-100/80 dark:border-gray-800/80 glass-bar overflow-y-auto flex flex-col divide-y divide-gray-100/50 dark:divide-gray-900/50">
               {([
                 { key: 'price'    as const, label: t.listing.priceRange },
                 { key: 'brand'    as const, label: t.listing.brands },
@@ -111,14 +111,14 @@ export function MobileFilterSheet({ f, actions }: { f: ListingFilters; actions: 
             </div>
 
             {/* Right Tab Content Column */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 bg-gray-50 dark:bg-gray-900/20">
+            <div className="flex-1 overflow-y-auto px-4 py-3">
               <FilterPanel f={f} isMobile={true} mobileTab={activeFilterTab} />
             </div>
           </div>
 
           {/* Footer actions */}
           <div
-            className="relative z-20 mt-auto grid grid-cols-2 gap-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-5 py-4"
+            className="relative z-20 mt-auto grid grid-cols-2 gap-3 border-t border-gray-100 dark:border-gray-800 glass-bar px-5 py-4"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
             <button

@@ -19,7 +19,7 @@ export function StorePricesRows({ items }: { items: CompareItem[] }) {
         </td>
       </tr>
       <tr>
-        <td className="p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide align-top sticky left-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+        <td className="p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide align-top sticky left-0 glass-bar border-t border-gray-100 dark:border-gray-800">
           {t.compare.prices}
         </td>
         {items.map((item) => (
@@ -35,7 +35,7 @@ export function StorePricesRows({ items }: { items: CompareItem[] }) {
                   className={`flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                     i === 0
                       ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
-                      : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      : 'glass-soft text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
                   <span className="flex items-center gap-1.5 truncate">

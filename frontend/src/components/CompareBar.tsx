@@ -14,7 +14,7 @@ export function CompareBar() {
   const ready = compareIds.length >= 2;
 
   return (
-    <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-gray-900 dark:bg-gray-800 text-white rounded-2xl shadow-2xl shadow-black/30 px-4 py-3">
+    <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 glass glass-solid text-gray-900 dark:text-white rounded-2xl shadow-2xl shadow-black/20 px-4 py-3">
       <Scale className="w-4 h-4 text-violet-400 shrink-0" />
       <span className="text-sm font-bold whitespace-nowrap">
         {t.common.compareSelected.replace('{{count}}', String(compareIds.length))}{!ready && t.common.compareNeedOne}
@@ -26,7 +26,7 @@ export function CompareBar() {
       >
         {t.common.compare}
       </button>
-      <button onClick={clearCompare} className="text-gray-400 hover:text-white transition-colors shrink-0">
+      <button onClick={clearCompare} className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0">
         <X className="w-4 h-4" />
       </button>
     </div>

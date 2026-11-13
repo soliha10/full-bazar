@@ -35,7 +35,7 @@ export function FormField({
 }
 
 export const inputClass = (invalid: boolean, padRight = false) =>
-  `w-full pl-10 ${padRight ? 'pr-11' : 'pr-4'} py-3 rounded-xl border bg-gray-50 dark:bg-gray-900 text-sm font-medium text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 transition disabled:opacity-60 ${
+  `w-full pl-10 ${padRight ? 'pr-11' : 'pr-4'} py-3 rounded-xl border glass-soft text-sm font-medium text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 transition disabled:opacity-60 ${
     invalid
       ? 'border-red-300 dark:border-red-700 focus:ring-red-400/30 focus:border-red-400'
       : 'border-gray-200 dark:border-gray-700 focus:ring-violet-400/40 focus:border-violet-400'

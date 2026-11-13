@@ -4,7 +4,7 @@ import { ChevronDown } from 'lucide-react';
 export function Cb({ on }: { on: boolean }) {
   return (
     <span className={`inline-flex w-4 h-4 shrink-0 rounded border transition-colors ${
-      on ? 'bg-violet-600 border-violet-600' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900'
+      on ? 'bg-violet-600 border-violet-600' : 'border-gray-300 dark:border-gray-600 glass-soft'
     }`}>
       {on && (
         <svg viewBox="0 0 10 10" className="m-auto w-2.5 h-2.5 text-white" fill="none" aria-hidden="true">

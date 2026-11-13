@@ -22,8 +22,8 @@ function DealCard({ product, labels, back }: { product: Product; labels: DeckLab
       <div className={`h-full flex flex-col transition-opacity duration-300 ${back ? 'opacity-0' : 'opacity-100'}`}>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{labels.label}</p>
       <Link to={productPath(product)} className="flex items-center gap-3 mb-3 group">
-        <span className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center shrink-0 overflow-hidden">
-          <img src={product.image || PLACEHOLDER} alt="" className="w-full h-full object-contain p-1.5"
+        <span className="w-16 h-16 rounded-2xl glass-soft flex items-center justify-center shrink-0 overflow-hidden">
+          <img src={product.image || PLACEHOLDER} alt="" className="w-full h-full object-contain p-1.5 mix-blend-multiply dark:mix-blend-normal"
             onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }} />
         </span>
         <span className="text-gray-900 dark:text-white text-sm font-medium leading-snug line-clamp-2 group-hover:underline">

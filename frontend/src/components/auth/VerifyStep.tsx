@@ -39,7 +39,7 @@ export function VerifyStep({ f }: { f: AuthForm }) {
           aria-invalid={Boolean(serverErrors.code)}
           aria-describedby={serverErrors.code ? `${ids.code}-error` : undefined}
           disabled={isLoading}
-          className={`mt-1 w-full py-3.5 rounded-xl border bg-gray-50 dark:bg-gray-900 text-center text-2xl font-semibold tracking-[0.5em] text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700 focus:outline-none focus:ring-2 transition disabled:opacity-60 ${
+          className={`mt-1 w-full py-3.5 rounded-xl border glass-soft text-center text-2xl font-semibold tracking-[0.5em] text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700 focus:outline-none focus:ring-2 transition disabled:opacity-60 ${
             serverErrors.code
               ? 'border-red-300 dark:border-red-700 focus:ring-red-400/30 focus:border-red-400'
               : 'border-gray-200 dark:border-gray-700 focus:ring-violet-400/40 focus:border-violet-400'

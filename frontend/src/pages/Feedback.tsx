@@ -93,8 +93,8 @@ export function Feedback() {
       />
 
       {/* Mobile header */}
-      <div className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 md:hidden">
-        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-90 transition-all">
+      <div className="sticky top-0 z-40 glass-bar border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 md:hidden">
+        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl glass-soft active:scale-90 transition-all">
           <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
         </button>
         <span className="text-base font-semibold text-gray-900 dark:text-white">{t.feedback.title}</span>
@@ -146,7 +146,7 @@ export function Feedback() {
                   value={name}
                   onChange={(e) => { setName(e.target.value); setError(''); }}
                   placeholder={t.feedback.namePlaceholder}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-sm font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+                  className="w-full px-3.5 py-2.5 rounded-xl glass-soft border border-gray-100 dark:border-gray-700 text-sm font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
                 />
               </div>
               <div>
@@ -156,7 +156,7 @@ export function Feedback() {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setError(''); }}
                   placeholder="email@example.com"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-sm font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+                  className="w-full px-3.5 py-2.5 rounded-xl glass-soft border border-gray-100 dark:border-gray-700 text-sm font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
                 />
               </div>
             </div>
@@ -171,7 +171,7 @@ export function Feedback() {
               rows={5}
               maxLength={2000}
               placeholder={t.feedback.textareaPlaceholder}
-              className="w-full px-3.5 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-sm font-medium text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40 resize-none"
+              className="w-full px-3.5 py-3 rounded-xl glass-soft border border-gray-100 dark:border-gray-700 text-sm font-medium text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40 resize-none"
             />
           </div>
 

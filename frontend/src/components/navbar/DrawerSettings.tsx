@@ -24,7 +24,7 @@ export function DrawerSettings({ isDark, toggleTheme, closeMenu }: DrawerSetting
           hover:bg-gray-50 dark:hover:bg-gray-900/50
           active:scale-[0.98] transition-all"
       >
-        <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center shrink-0">
+        <div className="w-9 h-9 rounded-xl glass-soft flex items-center justify-center shrink-0">
           {isDark
             ? <Sun className="w-[18px] h-[18px] text-amber-400" />
             : <Moon className="w-[18px] h-[18px] text-slate-500" />
@@ -45,7 +45,7 @@ export function DrawerSettings({ isDark, toggleTheme, closeMenu }: DrawerSetting
       {/* Language */}
       <div className="mt-1">
         <div className="flex items-center gap-3 px-3 py-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-xl glass-soft flex items-center justify-center shrink-0">
             <Globe className="w-[18px] h-[18px] text-violet-500" />
           </div>
           <span className="flex-1 text-sm font-semibold text-gray-800 dark:text-gray-200 leading-none">
@@ -60,7 +60,7 @@ export function DrawerSettings({ isDark, toggleTheme, closeMenu }: DrawerSetting
               className={`flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
                 language === code
                   ? 'bg-violet-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  : 'glass-soft text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
               <span className="text-base leading-none">{flag}</span>

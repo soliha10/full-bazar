@@ -31,8 +31,8 @@ export function Profile() {
       />
 
       {/* Mobile header */}
-      <div className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 md:hidden">
-        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-90 transition-all">
+      <div className="sticky top-0 z-40 glass-bar border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 md:hidden">
+        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl glass-soft active:scale-90 transition-all">
           <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
         </button>
         <span className="text-base font-semibold text-gray-900 dark:text-white flex-1">{t.nav.profile}</span>

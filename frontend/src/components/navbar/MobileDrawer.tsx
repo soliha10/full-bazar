@@ -43,7 +43,7 @@ export function MobileDrawer(props: MobileDrawerProps) {
       {/* Panel */}
       <div
         className={`absolute inset-y-0 left-0 w-[300px] max-w-[88vw] flex flex-col
-          bg-white dark:bg-gray-950
+          glass-bar
           border-r border-gray-100 dark:border-gray-800/60
           transition-transform duration-300
           ease-[cubic-bezier(0.25,0.46,0.45,0.94)]
@@ -67,7 +67,7 @@ export function MobileDrawer(props: MobileDrawerProps) {
             onClick={closeMenu}
             aria-label={t.nav.closeMenu}
             className="w-8 h-8 flex items-center justify-center rounded-xl
-              bg-gray-100 dark:bg-gray-800
+              glass-soft
               text-gray-500 dark:text-gray-400
               hover:bg-gray-200 dark:hover:bg-gray-700
               active:scale-90 transition-all"
@@ -85,7 +85,7 @@ export function MobileDrawer(props: MobileDrawerProps) {
           <DrawerNavLinks compareCount={compareCount} favoritesCount={favoritesCount} closeMenu={closeMenu} />
 
           {/* Divider */}
-          <div className="mx-4 my-3 h-px bg-gray-100 dark:bg-gray-800/80" />
+          <div className="mx-4 my-3 h-px bg-gray-900/5 dark:bg-white/10" />
 
           <DrawerSettings isDark={isDark} toggleTheme={toggleTheme} closeMenu={closeMenu} />
         </div>

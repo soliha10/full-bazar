@@ -45,7 +45,7 @@ export function DrawerNavLinks({ compareCount, favoritesCount, closeMenu }: Draw
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                 isActive
                   ? 'bg-violet-600'
-                  : 'bg-gray-100 dark:bg-gray-800/80'
+                  : 'glass-soft'
               }`}>
                 <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`} />
               </div>

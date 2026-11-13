@@ -46,7 +46,7 @@ export function ColorPicker({ variants, active, cheapest, onSelect }: {
                 on ? 'border-violet-600 ring-1 ring-violet-600'
                    : 'border-gray-900/10 dark:border-white/15 hover:border-gray-900/30 dark:hover:border-white/40'}`}>
               {v.images[0]
-                ? <img src={v.images[0]} alt="" loading="lazy" className="w-full h-full rounded-md object-contain bg-white" />
+                ? <img src={v.images[0]} alt="" loading="lazy" className="w-full h-full rounded-md object-contain mix-blend-multiply dark:mix-blend-normal" />
                 : <span aria-hidden="true" className="block w-full h-full rounded-md ring-1 ring-inset ring-black/10 dark:ring-white/20"
                     style={{ background: (v.color && SWATCH[v.color]) || '#9ca3af' }} />}
             </button>

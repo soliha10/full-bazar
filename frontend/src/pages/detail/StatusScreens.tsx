@@ -5,7 +5,7 @@ import { Card } from "../../components/Card";
 export function DetailLoading() {
   const { t } = useLanguage();
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col items-center justify-center gap-4 transition-colors">
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 transition-colors">
       <div className="relative w-12 h-12">
         <div className="absolute inset-0 rounded-full border-4 border-violet-100 dark:border-violet-900/30" />
         <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-violet-600 animate-spin" />
@@ -18,7 +18,7 @@ export function DetailLoading() {
 export function DetailError({ error, onBack }: { error: string | null; onBack: () => void }) {
   const { t } = useLanguage();
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4 transition-colors">
+    <div className="min-h-screen flex items-center justify-center p-4 transition-colors">
       <Card radius="3xl" padding="none" className="p-10 text-center shadow-xl max-w-sm w-full">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{error || t.detail.productNotFound}</h2>
         {error === t.detail.loadFailed && (

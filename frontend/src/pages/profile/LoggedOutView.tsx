@@ -17,7 +17,7 @@ export function LoggedOutView() {
   const isDark = resolvedTheme === 'dark';
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-28 flex flex-col">
+    <div className="min-h-screen pb-28 flex flex-col">
       <SEO
         title={t.nav.profile}
         description={t.profile.seoDescription}
@@ -26,8 +26,8 @@ export function LoggedOutView() {
       />
 
       {/* Mobile header */}
-      <div className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 md:hidden">
-        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-90 transition-all">
+      <div className="sticky top-0 z-40 glass-bar border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 md:hidden">
+        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl glass-soft active:scale-90 transition-all">
           <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
         </button>
         <span className="text-base font-semibold text-gray-900 dark:text-white">{t.nav.profile}</span>
@@ -97,7 +97,7 @@ export function LoggedOutView() {
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
                       language === code
                         ? 'bg-violet-600 text-white shadow-sm'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                        : 'glass-soft text-gray-600 dark:text-gray-400'
                     }`}
                   >
                     <span>{flag}</span>

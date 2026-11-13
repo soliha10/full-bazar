@@ -34,7 +34,7 @@ export function ProfileStep({ f }: { f: AuthForm }) {
               className={`py-2.5 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
                 ageGroup === value
                   ? 'bg-violet-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  : 'glass-soft text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}>
               {label}
             </button>
@@ -73,7 +73,7 @@ export function ProfileStep({ f }: { f: AuthForm }) {
               <button key={key} type="button" aria-pressed={on}
                 onClick={() => setPreferredBrands(prev => toggle(prev, key))}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 ${
-                  on ? 'bg-violet-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                  on ? 'bg-violet-600 text-white shadow-sm' : 'glass-soft text-gray-600 dark:text-gray-400'
                 }`}>
                 {on
                   ? <Check className="w-3 h-3" />
@@ -97,7 +97,7 @@ export function ProfileStep({ f }: { f: AuthForm }) {
               <button key={c} type="button" aria-pressed={on}
                 onClick={() => setPreferredCategories(prev => toggle(prev, c))}
                 className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 ${
-                  on ? 'bg-violet-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                  on ? 'bg-violet-600 text-white shadow-sm' : 'glass-soft text-gray-600 dark:text-gray-400'
                 }`}>
                 {on && <Check className="w-3 h-3 inline mr-1" />}{a.categories[c]}
               </button>

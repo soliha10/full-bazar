@@ -42,7 +42,7 @@ export function AddProductPanel({ search, onPick }: {
   const { query, setQuery, results, setResults, searching } = search;
   return (
     <Card className="mb-6">
-      <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2 mb-3">
+      <div className="flex items-center gap-2 glass-soft rounded-xl px-3 py-2 mb-3">
         <Search className="w-4 h-4 text-gray-400 shrink-0" />
         <input
           autoFocus

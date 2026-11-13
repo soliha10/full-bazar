@@ -23,14 +23,14 @@ export function SearchTrendsSection({ searchTrends }: { searchTrends: SearchTren
               key={tItem.query}
               to={`/products?search=${encodeURIComponent(tItem.query)}`}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all
-                bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700
+                glass-soft border-gray-200 dark:border-gray-700
                 hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20
                 hover:text-violet-700 dark:hover:text-violet-300 group"
             >
               <span className="text-sm font-bold text-gray-700 dark:text-gray-200 group-hover:text-violet-700 dark:group-hover:text-violet-300">
                 {tItem.query}
               </span>
-              <span className="text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-full">
+              <span className="text-[10px] font-semibold glass-soft text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-full">
                 {tItem.count}
               </span>
             </Link>

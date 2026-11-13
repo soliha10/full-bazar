@@ -21,7 +21,7 @@ export const VERDICT: Record<PriceVerdict, { icon: LucideIcon; tone: string }> =
 };
 
 const seg = (on: boolean) => `px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-  on ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`;
+  on ? 'bg-white/80 dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`;
 
 /**
  * ── Narx tarixi ──

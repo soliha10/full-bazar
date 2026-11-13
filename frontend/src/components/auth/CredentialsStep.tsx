@@ -39,14 +39,14 @@ export function CredentialsStep({ f }: { f: AuthForm }) {
 
       {isRegister && channels.phone && (
         <div role="radiogroup" aria-label={`${a.methodEmail} / ${a.methodPhone}`}
-          className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-gray-100 dark:bg-gray-900">
+          className="grid grid-cols-2 gap-1 p-1 rounded-xl glass-soft">
           {(['email', 'phone'] as Channel[]).map(m => (
             <button key={m} type="button" role="radio" aria-checked={activeMethod === m}
               onClick={() => { setMethod(m); setServerErrors({}); setFormError(null); }}
               disabled={isLoading}
               className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
                 activeMethod === m
-                  ? 'bg-white dark:bg-gray-800 text-violet-700 dark:text-violet-300 shadow-sm'
+                  ? 'bg-white/80 dark:bg-white/10 text-violet-700 dark:text-violet-300 shadow-sm'
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}>
               {m === 'email' ? <Mail className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}

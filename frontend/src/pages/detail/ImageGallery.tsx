@@ -31,7 +31,7 @@ export function ImageGallery({ gallery, productName }: {
             <img
               src={img}
               alt={productName}
-              className={`w-full aspect-square object-contain p-5 md:p-8 transition-opacity duration-500 ${
+              className={`w-full aspect-square object-contain p-5 md:p-8 mix-blend-multiply dark:mix-blend-normal transition-opacity duration-500 ${
                 selectedImage === idx ? 'opacity-100' : 'md:hidden'
               }`}
               onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
@@ -46,14 +46,14 @@ export function ImageGallery({ gallery, productName }: {
           <button
             onClick={() => goToImage(selectedImage - 1)}
             data-tip={d.prevImage} aria-label={d.prevImage}
-            className="md:hidden absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-md hover:bg-white dark:hover:bg-gray-800 active:scale-90 transition-all"
+            className="md:hidden absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full glass-soft shadow-md hover:bg-white dark:hover:bg-gray-800 active:scale-90 transition-all"
           >
             <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
           <button
             onClick={() => goToImage(selectedImage + 1)}
             data-tip={d.nextImage} aria-label={d.nextImage}
-            className="md:hidden absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-md hover:bg-white dark:hover:bg-gray-800 active:scale-90 transition-all"
+            className="md:hidden absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full glass-soft shadow-md hover:bg-white dark:hover:bg-gray-800 active:scale-90 transition-all"
           >
             <ChevronRight className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
@@ -89,7 +89,7 @@ export function ImageGallery({ gallery, productName }: {
           key={idx}
           onClick={() => goToImage(idx)}
           data-tip={d.imageN.replace('{{n}}', String(idx + 1))} aria-label={d.imageN.replace('{{n}}', String(idx + 1))}
-          className={`w-full aspect-square shrink-0 bg-white dark:bg-gray-900 rounded-xl p-1 border-2 transition-all ${
+          className={`w-full aspect-square shrink-0 glass-soft rounded-xl p-1 border-2 transition-all ${
             selectedImage === idx
               ? "border-violet-600"
               : "border-gray-100 dark:border-gray-800 hover:border-violet-200 dark:hover:border-violet-700"
@@ -98,7 +98,7 @@ export function ImageGallery({ gallery, productName }: {
           <img
             src={img}
             alt=""
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal"
             onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
           />
         </button>

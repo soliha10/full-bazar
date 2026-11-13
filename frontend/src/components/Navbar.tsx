@@ -62,7 +62,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
     <>
       {/* ════════════════════════════════════ NAV BAR ════════════════════════════════════ */}
       <nav className={`fixed w-full top-0 z-50 transition-all duration-300
-        bg-white/70 dark:bg-gray-950/60 backdrop-blur-xl backdrop-saturate-150
+        glass-bar
         border-b border-white/60 dark:border-white/[0.06]
         ${scrolled ? 'shadow-sm shadow-black/5 dark:shadow-black/20' : ''}
       `}>

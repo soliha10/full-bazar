@@ -26,7 +26,7 @@ export function StoreLogo({ name, size = 'sm', className = '' }: {
   if (!logo || failed) {
     return (
       <span aria-hidden="true"
-        className={`${box} bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-semibold`}>
+        className={`${box} glass-soft text-gray-500 dark:text-gray-400 font-semibold`}>
         {name.charAt(0).toUpperCase()}
       </span>
     );

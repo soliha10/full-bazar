@@ -117,7 +117,7 @@ export function TelegramPanel({ token }: { token: string }) {
             onChange={e => { setInput(e.target.value); setError(''); }}
             placeholder={t.watchlist.telegram.placeholder}
             className="w-full px-3 py-2.5 rounded-xl border border-blue-200 dark:border-blue-700
-              bg-white dark:bg-gray-900 text-sm font-bold
+              glass-soft text-sm font-bold
               text-gray-900 dark:text-white placeholder:text-gray-400
               focus:outline-none focus:ring-2 focus:ring-blue-400/40"
           />

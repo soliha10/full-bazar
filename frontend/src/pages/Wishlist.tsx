@@ -57,7 +57,7 @@ export function Wishlist() {
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.1, type: 'spring', stiffness: 260, damping: 20 }}
-                className="w-20 h-20 rounded-3xl bg-gray-50 dark:bg-gray-900 flex items-center justify-center mb-5"
+                className="w-20 h-20 rounded-3xl glass-soft flex items-center justify-center mb-5"
               >
                 <Heart className="w-10 h-10 text-gray-200 dark:text-gray-700" />
               </motion.div>

@@ -59,8 +59,8 @@ export function SuggestList({ listId, items, active, loading, onPick, onHover, f
             } ${item.kind === 'all' ? 'border-t border-gray-900/5 dark:border-white/10 mt-1 pt-2.5' : ''}`}>
             {item.kind === 'product' && (
               <>
-                <span className="w-10 h-10 rounded-lg bg-white flex items-center justify-center overflow-hidden shrink-0">
-                  {item.image && <img src={item.image} alt="" loading="lazy" className="w-full h-full object-contain p-0.5" />}
+                <span className="w-10 h-10 rounded-lg glass-soft flex items-center justify-center overflow-hidden shrink-0">
+                  {item.image && <img src={item.image} alt="" loading="lazy" className="w-full h-full object-contain p-0.5 mix-blend-multiply dark:mix-blend-normal" />}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate">{item.label}</span>

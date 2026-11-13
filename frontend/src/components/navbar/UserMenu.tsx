@@ -36,7 +36,7 @@ export function UserMenu({ user, logout }: { user: AuthUser; logout: () => void 
           <Card padding="none" className="absolute right-0 top-full mt-2 w-64 shadow-xl shadow-black/10 overflow-hidden z-50">
 
             {/* User header */}
-            <div className="px-4 py-4 bg-gray-50 dark:bg-gray-800/60
+            <div className="px-4 py-4 glass-soft
               border-b border-gray-100 dark:border-gray-700/60">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-violet-600
@@ -58,11 +58,11 @@ export function UserMenu({ user, logout }: { user: AuthUser; logout: () => void 
             <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
               <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2">{t.nav.profile}</p>
               <div className="grid grid-cols-2 gap-2 mb-2.5">
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
+                <div className="glass-soft rounded-xl px-3 py-2">
                   <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide">{t.nav.age}</p>
                   <p className="text-xs font-semibold text-gray-900 dark:text-white">{user.profile.ageGroup}</p>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
+                <div className="glass-soft rounded-xl px-3 py-2">
                   <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide">{t.nav.budget}</p>
                   <p className="text-xs font-semibold text-gray-900 dark:text-white">{BUDGET_LABELS[user.profile.budgetLevel]}</p>
                 </div>

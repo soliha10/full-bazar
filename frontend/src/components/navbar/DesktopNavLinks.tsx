@@ -22,7 +22,7 @@ export function DesktopNavLinks() {
           <Link key={path} to={path}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               active
-                ? 'text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800'
+                ? 'text-gray-900 dark:text-white glass-soft'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}>
             {label}

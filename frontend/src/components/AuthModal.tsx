@@ -28,7 +28,7 @@ export function AuthModal() {
         // overflow-clip (hidden emas): bezak doirasi o'ngga chiqib turadi va
         // hidden bo'lsa, fokus X/ko'z tugmasiga o'tganda brauzer oynani
         // yon tomonga 24px suradi — butun tarkib chapga siljib qolardi.
-        className="relative w-full sm:max-w-md bg-white dark:bg-gray-950 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-clip"
+        className="relative w-full sm:max-w-md glass-bar rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-clip"
       >
 
         <AuthHeader f={f} />

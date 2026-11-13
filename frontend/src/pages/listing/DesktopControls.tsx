@@ -59,7 +59,7 @@ export function DesktopToolbar({ f, total, showCount }: { f: ListingFilters; tot
             <button key={key} onClick={() => setSortBy(key)}
               aria-pressed={sortBy === key}
               className={`rounded-md px-2.5 py-1.5 text-xs transition-colors ${
-                sortBy === key ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                sortBy === key ? 'glass-soft text-gray-900 dark:text-white font-medium' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               {(t.listing as any)[labelKey] ?? labelKey}
@@ -69,12 +69,12 @@ export function DesktopToolbar({ f, total, showCount }: { f: ListingFilters; tot
         <div className="flex items-center gap-0.5 glass-soft rounded-xl p-0.5">
           <button onClick={() => setViewMode('grid')}
             aria-label={t.listing.grid} aria-pressed={viewMode === 'grid'}
-            className={`rounded-md p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-400 hover:text-gray-700'}`}>
+            className={`rounded-md p-1.5 transition-colors ${viewMode === 'grid' ? 'glass-soft text-gray-900 dark:text-white' : 'text-gray-400 hover:text-gray-700'}`}>
             <LayoutGrid className="h-4 w-4" />
           </button>
           <button onClick={() => setViewMode('list')}
             aria-label={t.listing.list} aria-pressed={viewMode === 'list'}
-            className={`rounded-md p-1.5 transition-colors ${viewMode === 'list' ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-400 hover:text-gray-700'}`}>
+            className={`rounded-md p-1.5 transition-colors ${viewMode === 'list' ? 'glass-soft text-gray-900 dark:text-white' : 'text-gray-400 hover:text-gray-700'}`}>
             <List className="h-4 w-4" />
           </button>
         </div>

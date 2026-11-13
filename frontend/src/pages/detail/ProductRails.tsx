@@ -18,7 +18,7 @@ export function SavedProducts({ favorites, onToggle }: { favorites: Product[]; o
         <h2 className="text-base font-semibold text-gray-900 dark:text-white">
           {t.detailPage.savedProducts}
         </h2>
-        <span className="text-xs font-bold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-full">
+        <span className="text-xs font-bold text-gray-400 dark:text-gray-500 glass-soft px-2.5 py-1 rounded-full">
           {t.detailPage.itemsCount.replace('{{count}}', String(favorites.length))}
         </span>
       </div>

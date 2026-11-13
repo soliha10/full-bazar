@@ -4,7 +4,7 @@ import type { ListingFilters } from '../useListingFilters';
 import { ClearButton, Section } from './ui';
 
 const inputClass =
-  'w-full min-w-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2.5 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:border-violet-500 transition-colors';
+  'w-full min-w-0 rounded-lg border border-gray-200 dark:border-gray-700 glass-soft px-2.5 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:border-violet-500 transition-colors';
 
 export function PriceFilter({ f, isMobile }: { f: ListingFilters; isMobile: boolean }) {
   const { t } = useLanguage();

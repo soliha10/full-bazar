@@ -58,7 +58,7 @@ export const WatchItem = forwardRef<HTMLDivElement, {
       <div className="p-3.5 flex gap-3">
         {/* Image */}
         <Link to={productPath(product)} className="shrink-0">
-          <div className="w-20 h-20 rounded-xl bg-gray-50 dark:bg-gray-800 overflow-hidden">
+          <div className="w-20 h-20 rounded-xl glass-soft overflow-hidden">
             <img
               src={product.image}
               alt={product.name}
@@ -101,7 +101,7 @@ export const WatchItem = forwardRef<HTMLDivElement, {
               </span>
             )}
             {!dropped && !rose && (
-              <span className="flex items-center gap-0.5 text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 rounded-full">
+              <span className="flex items-center gap-0.5 text-[10px] font-bold text-gray-400 glass-soft px-1.5 py-0.5 rounded-full">
                 <Minus className="w-2.5 h-2.5" />
                 {t.watchlist.priceUnchanged}
               </span>

@@ -31,13 +31,13 @@ export function SpecTable({ items, diffFields, verdict, onRemove, onOpen }: {
       <table className="w-full border-separate border-spacing-0 min-w-[640px]">
         <thead>
           <tr>
-            <th className="w-40 sticky left-0 z-10 bg-gray-50 dark:bg-gray-900" />
+            <th className="w-40 sticky left-0 z-10 glass-bar" />
             {items.map((item) => (
-              <th key={item.product.id} className="p-3 text-left align-top min-w-[180px] bg-gray-50 dark:bg-gray-900">
+              <th key={item.product.id} className="p-3 text-left align-top min-w-[180px] glass-bar">
                 <Card padding="sm" className="relative">
                   <button
                     onClick={() => onRemove(item.product.id)}
-                    className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-red-500 transition-colors"
+                    className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-lg glass-soft text-gray-400 hover:text-red-500 transition-colors"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -85,7 +85,7 @@ export function SpecTable({ items, diffFields, verdict, onRemove, onOpen }: {
               </tr>
               {group.rows.map((row) => (
                 <tr key={row.key}>
-                  <td className="p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide align-top sticky left-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+                  <td className="p-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide align-top sticky left-0 glass-bar border-t border-gray-100 dark:border-gray-800">
                     {t.compare.specs[row.label]}
                   </td>
                   {items.map((item) => {

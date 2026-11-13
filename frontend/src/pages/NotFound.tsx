@@ -35,7 +35,7 @@ export function NotFound() {
           </Link>
           <Link
             to="/products"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gray-100 px-5 py-3 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl glass-soft px-5 py-3 text-sm font-semibold text-gray-700 transition-colors hover:bg-white dark:text-gray-200 dark:hover:bg-gray-700"
           >
             {t.notFound.catalog}
           </Link>

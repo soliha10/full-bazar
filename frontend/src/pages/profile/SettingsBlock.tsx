@@ -50,7 +50,7 @@ export function SettingsBlock() {
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
                 language === code
                   ? 'bg-violet-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                  : 'glass-soft text-gray-600 dark:text-gray-400'
               }`}
             >
               <span>{flag}</span>

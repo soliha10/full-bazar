@@ -112,7 +112,7 @@ export function VerdictPanel({ verdict, items, onOpen }: {
                 className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                   i === 0
                     ? 'bg-emerald-100/80 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300'
-                    : 'bg-white/70 dark:bg-gray-900/40 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+                    : 'glass-soft text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
                 }`}
               >
                 <span className="flex items-center gap-1.5 truncate">

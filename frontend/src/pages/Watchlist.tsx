@@ -24,8 +24,8 @@ export function Watchlist() {
           noindex
           canonicalUrl={`${SITE_URL}/watchlist`}
         />
-        <div className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 md:hidden">
-          <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-90 transition-all">
+        <div className="sticky top-0 z-40 glass-bar border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 md:hidden">
+          <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl glass-soft active:scale-90 transition-all">
             <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           </button>
           <span className="text-base font-semibold text-gray-900 dark:text-white">{t.watchlist.title}</span>
@@ -67,9 +67,9 @@ export function Watchlist() {
       />
 
       {/* Mobile header */}
-      <div className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800 px-4 py-3 md:hidden">
+      <div className="sticky top-0 z-40 glass-bar border-b border-gray-100 dark:border-gray-800 px-4 py-3 md:hidden">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 active:scale-90 transition-all">
+          <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl glass-soft active:scale-90 transition-all">
             <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           </button>
           <div className="flex items-center gap-2 flex-1">
@@ -116,7 +116,7 @@ export function Watchlist() {
         <TelegramPanel token={user.token} />
 
         {/* Info banner */}
-        <div className="bg-gray-50 dark:bg-gray-900 rounded-xl px-4 py-3 mb-4">
+        <div className="glass-soft rounded-xl px-4 py-3 mb-4">
           <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
             {t.watchlist.infoBefore}<strong>{t.watchlist.infoBell}</strong>{t.watchlist.infoAfter}
           </p>
@@ -133,7 +133,7 @@ export function Watchlist() {
               <motion.div
                 initial={{ scale: 0.8 }} animate={{ scale: 1 }}
                 transition={{ delay: 0.1, type: 'spring', stiffness: 260, damping: 20 }}
-                className="w-20 h-20 rounded-3xl bg-gray-50 dark:bg-gray-900 flex items-center justify-center mb-5"
+                className="w-20 h-20 rounded-3xl glass-soft flex items-center justify-center mb-5"
               >
                 <Bell className="w-10 h-10 text-gray-200 dark:text-gray-700" />
               </motion.div>

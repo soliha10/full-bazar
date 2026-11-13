@@ -21,7 +21,7 @@ export function ProfileSheet({ user, logout, onClose }: ProfileSheetProps) {
         onClick={onClose}
       />
       <div
-        className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-950"
+        className="absolute bottom-0 left-0 right-0 glass-bar"
         style={{ borderRadius: '24px 24px 0 0', boxShadow: '0 -8px 40px rgba(0,0,0,0.15)' }}
       >
         {/* Handle */}
@@ -45,11 +45,11 @@ export function ProfileSheet({ user, logout, onClose }: ProfileSheetProps) {
         {/* Profile stats */}
         <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
           <div className="grid grid-cols-2 gap-2.5 mb-3">
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl px-4 py-3">
+            <div className="glass-soft rounded-2xl px-4 py-3">
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{t.nav.ageGroup}</p>
               <p className="text-sm font-semibold text-gray-900 dark:text-white mt-1">{user.profile.ageGroup}</p>
             </div>
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl px-4 py-3">
+            <div className="glass-soft rounded-2xl px-4 py-3">
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{t.nav.budget}</p>
               <p className="text-sm font-semibold text-gray-900 dark:text-white mt-1">{BUDGET_LABELS[user.profile.budgetLevel]}</p>
             </div>
