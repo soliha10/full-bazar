@@ -4,6 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import type { BrandFacet } from '../../hooks/useBrands';
 import { fmt, reveal, SectionHeader } from './shared';
 import { Card } from "../../components/Card";
+import { PAGE_CONTAINER } from '../../components/layout';
 
 /** Brendlar — /api/brands; eng ko'p modelli 12 tasi yirik plitka bo'lib chiqadi. */
 export function BrandsSection({ brands }: { brands: BrandFacet[] }) {
@@ -11,7 +12,7 @@ export function BrandsSection({ brands }: { brands: BrandFacet[] }) {
   const h = t.home;
   if (brands.length === 0) return null;
   return (
-    <m.section {...reveal} aria-labelledby="brands-title" className="mt-14 md:mt-24 px-4 max-w-7xl mx-auto">
+    <m.section {...reveal} aria-labelledby="brands-title" className={`mt-14 md:mt-24 ${PAGE_CONTAINER}`}>
       <SectionHeader id="brands-title" title={h.brandsTitle} subtitle={h.brandsSubtitle}
         linkTo="/products" linkLabel={t.landing.trending.viewAll} />
       <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">

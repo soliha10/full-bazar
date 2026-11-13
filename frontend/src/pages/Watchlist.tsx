@@ -7,6 +7,7 @@ import { SEO, SITE_URL } from '../components/SEO';
 import { useLanguage } from '../contexts/LanguageContext';
 import { TelegramPanel } from './watchlist/TelegramPanel';
 import { WatchItem } from './watchlist/WatchItem';
+import { PAGE_CONTAINER } from '../components/layout';
 
 export function Watchlist() {
   const { watched, toggle } = usePriceWatch();
@@ -91,7 +92,7 @@ export function Watchlist() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 pt-4 md:pt-8">
+      <div className={`${PAGE_CONTAINER} pt-4 md:pt-8`}>
 
         {/* Desktop header */}
         <div className="hidden md:flex items-center justify-between mb-6">

@@ -2,13 +2,14 @@ import { m } from 'framer-motion';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { reveal, SectionHeader } from './shared';
 import { Card } from "../../components/Card";
+import { PAGE_CONTAINER } from '../../components/layout';
 
 /* ══ HOW IT WORKS ══ — uch qadam, desktopda bir chiziq bilan bog'langan */
 export function StepsSection() {
   const { t } = useLanguage();
   const h = t.home;
   return (
-    <m.section {...reveal} aria-labelledby="steps-title" className="mt-14 md:mt-24 px-4 max-w-7xl mx-auto">
+    <m.section {...reveal} aria-labelledby="steps-title" className={`mt-14 md:mt-24 ${PAGE_CONTAINER}`}>
       <SectionHeader id="steps-title" title={h.stepsTitle} />
       <ol className="relative grid md:grid-cols-3 gap-3 md:gap-4">
         <span aria-hidden="true"

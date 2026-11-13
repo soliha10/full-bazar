@@ -17,6 +17,7 @@ import { NavIconLinks } from './navbar/NavIconLinks';
 import { DesktopAuth, MobileAuth } from './navbar/AuthButtons';
 import { MobileDrawer } from './navbar/MobileDrawer';
 import { ProfileSheet } from './navbar/ProfileSheet';
+import { PAGE_CONTAINER } from './layout';
 
 interface NavbarProps {
   onSearchChange?: (value: string) => void;
@@ -66,7 +67,7 @@ export function Navbar({ onSearchChange }: NavbarProps) {
         border-b border-white/60 dark:border-white/[0.06]
         ${scrolled ? 'shadow-sm shadow-black/5 dark:shadow-black/20' : ''}
       `}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-5">
+        <div className={PAGE_CONTAINER}>
 
           {/* ── Top row ── */}
           <div className="flex items-center justify-between h-14 md:h-16 gap-2">

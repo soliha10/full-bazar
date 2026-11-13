@@ -12,6 +12,7 @@ import { DesktopSidebar, DesktopToolbar } from './listing/DesktopControls';
 import { ActiveFilterChips } from './listing/ActiveFilterChips';
 import { ProductResults } from './listing/ProductResults';
 import { MobileFilterSheet } from './listing/MobileFilterSheet';
+import { PAGE_CONTAINER } from '../components/layout';
 
 export function ProductListing() {
   const { t, language } = useLanguage();
@@ -75,7 +76,7 @@ export function ProductListing() {
       <MobileHeader f={f} actions={actions} onBack={() => navigate(-1)} />
 
       {/* ── Main content ── */}
-      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 pb-24 md:pb-8">
+      <div className={`${PAGE_CONTAINER} py-4 pb-24 md:pb-8`}>
 
         {/* Breadcrumb — desktop */}
         <nav className="mb-4 hidden items-center gap-1.5 text-[12px] text-gray-400 dark:text-gray-500 md:flex">
@@ -86,13 +87,15 @@ export function ProductListing() {
           </span>
         </nav>
 
-        <div className="flex gap-6">
+        {/* Sahifa ustunlari (layout.ts): filtr paneli — bitta ustun, mahsulotlar —
+            qolgani; shu tufayli karta bosh sahifadagi bilan bir xil o'lchamda */}
+        <div className="lg:grid lg:grid-cols-4 xl:grid-cols-5 lg:gap-4">
 
           {/* ── Sidebar (desktop) ── */}
           <DesktopSidebar f={f} actions={actions} />
 
           {/* ── Products ── */}
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 lg:col-span-3 xl:col-span-4">
 
             {/* Sahifaning yagona h1 i. Mobil ko'rinishda tepadagi qidiruv
                 paneli sarlavha vazifasini bajaradi, shuning uchun u yerda

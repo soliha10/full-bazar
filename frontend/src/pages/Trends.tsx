@@ -5,6 +5,7 @@ import { StatCards } from './trends/StatCards';
 import { StoresBoard } from './trends/Charts';
 import { SearchTrendsSection, PriceChanges } from './trends/Lists';
 import { PopularSection } from './trends/PopularSection';
+import { PAGE_CONTAINER } from '../components/layout';
 
 export function Trends() {
   const { t, language } = useLanguage();
@@ -25,7 +26,7 @@ export function Trends() {
   const seoDesc = t.trends.seoDesc;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+    <div className={`${PAGE_CONTAINER} py-8 space-y-10`}>
       <SEO
         title={seoTitle}
         description={seoDesc}

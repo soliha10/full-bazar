@@ -19,7 +19,7 @@ export function DesktopSidebar({ f, actions }: { f: ListingFilters; actions: Fil
   const { activeFilterCount, handleResetFilters } = actions;
 
   return (
-    <aside className="hidden w-[256px] shrink-0 lg:block">
+    <aside className="hidden min-w-0 lg:block">
       <Card padding="none" className="sticky top-[86px] max-h-[calc(100vh-102px)] overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-thin px-4 py-3">
         <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-800">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white">

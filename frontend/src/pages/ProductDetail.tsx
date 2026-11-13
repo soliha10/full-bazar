@@ -18,6 +18,7 @@ import { PriceHistoryChart } from "./detail/PriceHistoryChart";
 import { useColorVariant } from "./detail/useColorVariant";
 import { ColorPicker } from "./detail/ColorPicker";
 import { SavedProducts, SimilarProducts } from "./detail/ProductRails";
+import { PAGE_CONTAINER } from '../components/layout';
 
 /**
  * Mahsulot sahifasi — narx solishtirish saytlari (Idealo, PriceRunner, Geizhals)
@@ -51,7 +52,7 @@ export function ProductDetail() {
       <DetailSeo product={product} />
       <MobileTopBar product={product} liked={liked} onBack={() => navigate(-1)} onToggleLike={toggleLike} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-5">
+      <div className={`${PAGE_CONTAINER} py-3 md:py-5`}>
         <nav className="hidden md:flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500 mb-4 overflow-hidden">
           <Link to="/" className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors shrink-0">{t.nav.home}</Link>
           <span aria-hidden="true">/</span>

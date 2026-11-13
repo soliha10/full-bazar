@@ -8,6 +8,7 @@ import { setHeroSearchVisible } from '../../utils/heroSearch';
 import { SearchBox } from '../../components/search/SearchBox';
 import { DealDeck } from './DealDeck';
 import { Card } from "../../components/Card";
+import { PAGE_CONTAINER } from '../../components/layout';
 
 const rise = (delay: number) => ({
   initial: { opacity: 0, y: 16 },
@@ -46,7 +47,7 @@ export function Hero({ hasStats, fill, deck, dealsLoading, topBrands, updated }:
 
 
   return (
-    <section aria-labelledby="hero-title" className="px-4 pt-10 pb-4 md:pt-20 md:pb-8 max-w-7xl mx-auto">
+    <section aria-labelledby="hero-title" className={`${PAGE_CONTAINER} pt-10 pb-4 md:pt-20 md:pb-8`}>
       <div className="flex flex-col md:flex-row md:items-center gap-10 md:gap-14">
         <div className="flex-1 min-w-0">
           <m.h1 {...rise(0)} id="hero-title"

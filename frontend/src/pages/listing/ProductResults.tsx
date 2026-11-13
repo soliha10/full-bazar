@@ -2,6 +2,7 @@ import type { RefObject } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { ProductCard, type Product } from '../../components/ProductCard';
+import { ProductGrid } from '../../components/product-card/ProductGrid';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Card } from "../../components/Card";
 
@@ -82,7 +83,7 @@ export function ProductResults(props: Props) {
       ) : (
         <>
           {viewMode === 'grid' ? (
-            <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 md:gap-4">
+            <ProductGrid besideSidebar>
               {filteredProducts.map((p, i) => (
                 <motion.div
                   key={p.id}
@@ -95,7 +96,7 @@ export function ProductResults(props: Props) {
                   <ProductCard product={p} activeMarkets={selectedMarketplaces} />
                 </motion.div>
               ))}
-            </div>
+            </ProductGrid>
           ) : (
             <div className="flex flex-col gap-2">
               {filteredProducts.map((p, i) => (

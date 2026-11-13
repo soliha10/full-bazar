@@ -29,7 +29,7 @@ export function useLandingData() {
     // diverse=1: server har modelni bir marta, har brenddan ko'pi bilan 3 tasini
     // qaytaradi (python/fastapi_app/recs_diverse.py) — 4 tasi hero dastasiga,
     // 8 tasi panjaraga
-    fetch('/api/recommendations?limit=12&diverse=1')
+    fetch('/api/recommendations?limit=14&diverse=1')
       .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
       .then(d => {
         if (!alive) return;

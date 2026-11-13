@@ -3,6 +3,7 @@ import type { Product } from "../../components/ProductCard";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { formatSum } from "../../utils/productMapper";
 import { productPath } from "../../utils/slug";
+import { PAGE_CONTAINER } from "../../components/layout";
 import { ProductTile, ProductTileSkeleton, TileAction } from "../../components/product-card/ProductTile";
 
 // Gorizontal qatordagi karta kengligi: mobilda 160px, lg da 6 tasi bir qatorda
@@ -13,7 +14,7 @@ export function SavedProducts({ favorites, onToggle }: { favorites: Product[]; o
   const { t } = useLanguage();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-2 mt-8">
+    <div className={`${PAGE_CONTAINER} pb-2 mt-8`}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-gray-900 dark:text-white">
           {t.detailPage.savedProducts}
@@ -41,7 +42,7 @@ export function SimilarProducts({ loading, products, bestPrice }: { loading: boo
   const { t } = useLanguage();
 
   return (
-    <section id="similar" aria-labelledby="similar-title" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 mt-6">
+    <section id="similar" aria-labelledby="similar-title" className={`${PAGE_CONTAINER} pb-6 mt-6`}>
       <h2 id="similar-title" className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
         {t.detailPage.similarProducts}
       </h2>

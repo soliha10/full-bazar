@@ -1,6 +1,7 @@
 import { ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import { PAGE_CONTAINER } from './layout';
 
 export function Footer() {
   const { t } = useLanguage();
@@ -8,7 +9,7 @@ export function Footer() {
   return (
     <footer className="bg-gray-950 text-white mt-12 border-t border-gray-800">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className={`${PAGE_CONTAINER} py-12`}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-8">
 
           {/* Brand */}

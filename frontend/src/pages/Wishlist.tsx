@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFavorites } from '../hooks/useFavorites';
 import { ProductCard } from '../components/ProductCard';
+import { ProductGrid } from '../components/product-card/ProductGrid';
+import { PAGE_CONTAINER } from '../components/layout';
 import { useLanguage } from '../contexts/LanguageContext';
 import { SEO, SITE_URL } from '../components/SEO';
 
@@ -18,7 +20,7 @@ export function Wishlist() {
         noindex
         canonicalUrl={`${SITE_URL}/wishlist`}
       />
-      <div className="max-w-7xl mx-auto px-4 pt-6 md:pt-8">
+      <div className={`${PAGE_CONTAINER} pt-6 md:pt-8`}>
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -79,7 +81,7 @@ export function Wishlist() {
 
         {/* Grid */}
         {favorites.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+          <ProductGrid>
             <AnimatePresence mode="popLayout">
               {favorites.map((product, i) => (
                 <motion.div
@@ -94,7 +96,7 @@ export function Wishlist() {
                 </motion.div>
               ))}
             </AnimatePresence>
-          </div>
+          </ProductGrid>
         )}
       </div>
     </div>
