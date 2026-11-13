@@ -26,7 +26,9 @@ async def get_price_history(
         FROM price_history
         WHERE product_id = $1
           AND recorded_at > NOW() - make_interval(days => $2)
-        ORDER BY recorded_at ASC
+        -- source, price: bir vaqtda yozilgan bir nechta e'lon (ranglar) har
+        -- safar bir xil tartibda kelsin
+        ORDER BY recorded_at ASC, source, price
         """,
         product_id, days,
     )

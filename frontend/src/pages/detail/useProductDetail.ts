@@ -28,7 +28,8 @@ export function useProductDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMarketIndex, setSelectedMarketIndex] = useState(0);
-  const [priceHistory, setPriceHistory] = useState<PricePoint[]>([]);
+  // null — hali yuklanmoqda (grafik skeleti), [] — tarix yo'q
+  const [priceHistory, setPriceHistory] = useState<PricePoint[] | null>(null);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [similarLoading, setSimilarLoading] = useState(true);
   const [specs, setSpecs] = useState<Specs | null>(null);
@@ -106,7 +107,10 @@ export function useProductDetail() {
     const productId = product?.id;
     if (!productId) return;
     let cancelled = false;
-    fetchPriceHistory(String(productId), 30).then((data) => {
+    setPriceHistory(null);
+    // 90 kun: grafik 7/30/90 kunlik davrlarni shundan kesadi, qisqa davrda
+    // ham do'konning davrdan oldingi oxirgi narxi kerak (priceHistorySeries.ts)
+    fetchPriceHistory(String(productId), 90).then((data) => {
       if (!cancelled) setPriceHistory(data.history ?? []);
     });
     return () => { cancelled = true; };

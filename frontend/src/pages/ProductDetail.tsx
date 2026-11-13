@@ -32,7 +32,7 @@ export function ProductDetail() {
   } = useProductDetail();
   const gallery = useImageGallery(product);
 
-  const stats = computePriceStats(product, selectedMarketIndex, priceHistory);
+  const stats = computePriceStats(product, selectedMarketIndex, priceHistory ?? []);
   const { selectedMarket, sortedMarkets, bestPrice, savings } = stats;
   const liked = product ? isLiked(product.id) : false;
   const inCompare = product ? compareIds.includes(String(product.id)) : false;
@@ -102,7 +102,7 @@ export function ProductDetail() {
         <DetailTabs product={product} specs={specs}
           activeTab={activeTab} onTabChange={setActiveTab} />
 
-        <PriceHistoryChart priceHistory={priceHistory} activeTab={activeTab} />
+        <PriceHistoryChart history={priceHistory} markets={product.markets ?? []} activeTab={activeTab} />
       </div>
 
       {favorites.length > 0 && <SavedProducts favorites={favorites} onToggle={toggle} />}

@@ -1,5 +1,6 @@
 import type { Product } from "../../components/ProductCard";
 import type { PricePoint } from "./useProductDetail";
+import { buildSeries } from "./priceHistorySeries";
 
 /** Do'kon takliflaridan hosil bo'ladigan narx ko'rsatkichlari. */
 export function computePriceStats(product: Product | null, selectedMarketIndex: number, priceHistory: PricePoint[]) {
@@ -8,14 +9,14 @@ export function computePriceStats(product: Product | null, selectedMarketIndex: 
   const bestPrice = sortedMarkets[0]?.price ?? product?.price ?? 0;
   const worstPrice = sortedMarkets[sortedMarkets.length - 1]?.price;
   const savings = worstPrice && worstPrice > bestPrice ? worstPrice - bestPrice : 0;
-  // 30 kun ichidagi o'zgarish: tarixdagi eng birinchi kunning eng arzon narxi
-  // va hozirgi eng arzon narx. Tarix bo'lmasa — null (ko'rsatilmaydi).
-  const priceChange30 = (() => {
-    if (priceHistory.length === 0 || !bestPrice) return null;
-    const firstDay = [...priceHistory].sort((a, b) => a.date.localeCompare(b.date))[0].date.slice(0, 10);
-    const startMin = Math.min(...priceHistory.filter(h => h.date.slice(0, 10) === firstDay).map(h => h.price));
-    return startMin > 0 ? ((bestPrice - startMin) / startMin) * 100 : null;
-  })();
+  // 30 kunlik o'zgarish — narx tarixi grafigi bilan AYNAN bir hisob
+  // (priceHistorySeries.ts): 30 kun oldingi eng arzon narx va hozirgisi.
+  // Ilgari faqat davr ichidagi birinchi yozuvlar olinardi va davrdan oldin
+  // narxi o'rnatilgan do'kon (eng arzoni bo'lishi mumkin) hisobga kirmasdi —
+  // grafik -0.3% desa, bu yer -6.3% derdi.
+  const priceChange30 = priceHistory.length && sortedMarkets.length
+    ? buildSeries(priceHistory, sortedMarkets, 30).summary.changePct
+    : null;
   return { selectedMarket, sortedMarkets, bestPrice, worstPrice, savings, priceChange30 };
 }
 
