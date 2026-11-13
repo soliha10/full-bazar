@@ -2,7 +2,7 @@ import { Star, Heart, Scale } from "lucide-react";
 import type { Product } from "../../components/ProductCard";
 import { useLanguage } from "../../contexts/LanguageContext";
 
-/** Sarlavha va meta: kategoriya, mavjudlik, nom, solishtirish/sevimli tugmalari, reyting. */
+/** Sarlavha: nom, solishtirish/sevimli tugmalari, reyting. */
 export function ProductHeading({ product, liked, inCompare, onToggleLike, onToggleCompare }: {
   product: Product;
   liked: boolean;
@@ -14,17 +14,7 @@ export function ProductHeading({ product, liked, inCompare, onToggleLike, onTogg
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-gray-500 dark:text-gray-400 text-xs">
-          {(t.detail.categories as any)[(product.category ?? '').toLowerCase()] ?? product.category}
-        </span>
-        {product.inStock && (
-          <span className="text-emerald-600 dark:text-emerald-400 text-xs">
-            · {t.detail.inStock}
-          </span>
-        )}
-      </div>
-
+      {/* Kategoriya — breadcrumb da, mavjudlik — takliflar ro'yxatida; bu yerda takrorlanmaydi */}
       <div className="flex items-start gap-3">
         <h1 title={product.name} className="line-clamp-2 flex-1 text-xl md:text-2xl font-semibold text-gray-900 dark:text-white tracking-tight leading-tight">
           {product.name}

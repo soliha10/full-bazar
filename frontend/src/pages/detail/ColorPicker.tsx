@@ -14,7 +14,10 @@ const SWATCH: Record<string, string> = {
 const COLLAPSED = 4;
 // Faqat bitta chipni yashiradigan tugma o'sha chipning o'zidek joy oladi — yig'ilmaydi
 
-/** Rang tanlovi: har rang — namuna, nomi va shu rangning eng arzon narxi. */
+/**
+ * Rang tanlovi: har rang — rasm (yoki namuna) va nomi. Narx chipda yozilmaydi —
+ * tanlangan rang narxi narx kartasida chiqadi (sichqoncha ustida — title da).
+ */
 export function ColorPicker({ variants, active, cheapest, onSelect }: {
   variants: ProductVariant[];
   active: ProductVariant | null;
@@ -37,9 +40,8 @@ export function ColorPicker({ variants, active, cheapest, onSelect }: {
 
   return (
     <div>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-        {d.colorLabel}: <span className="font-medium text-gray-900 dark:text-white">{names[active?.color ?? 'other'] ?? active?.color}</span>
-      </p>
+      {/* Tanlangan rang nomi — belgilangan chipning o'zida, sarlavhada takrorlanmaydi */}
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{d.colorLabel}</p>
       <div role="radiogroup" aria-label={d.colorLabel} className="grid grid-cols-2 gap-2">
         {shown.map(v => {
           const on = v === active;
@@ -61,13 +63,6 @@ export function ColorPicker({ variants, active, cheapest, onSelect }: {
                 <span className="block truncate text-sm text-gray-900 dark:text-white">
                   {names[key] ?? key}
                 </span>
-                {/* Hamma chip ikki qatorli (teng balandlik); eng arzon rang narxi yashil */}
-                {v.price != null && (
-                  <span className={`block whitespace-nowrap text-[11px] sm:text-xs tabular-nums ${v === cheapest && variants.length > 1
-                    ? 'font-medium text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                    {formatSum(v.price)}
-                  </span>
-                )}
               </span>
             </button>
           );

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ExternalLink } from "lucide-react";
 import type { Product } from "../../components/ProductCard";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -6,37 +6,21 @@ import { formatSum, formatCheckedAt } from "../../utils/productMapper";
 import { trackStoreClick } from "../../services/tracking";
 import { StoreLogo } from "../../components/StoreLogo";
 import type { PriceStats } from "./priceStats";
-import type { PricePoint } from "./useProductDetail";
-import { storeChanges } from "./storeChanges";
 
 // Sukut bo'yicha shuncha do'kon; qolgani tugma orqali (yashirilmaydi — yig'iladi)
 const VISIBLE = 5;
-const CHANGE_DAYS = 30;
 
 /**
- * Takliflar — narx kartasi ostidagi tor ustunda (Google Shopping "narxlarni
- * solishtiring" kabi): logo, do'kon, narx, eng arzonidan farq, havola ikonkasi.
- * Bitta ro'yxat barcha ekranlar uchun. Har do'konning 30 kunlik o'zgarishi shu
- * qatorda kichik belgi (tafsiloti — title da): ilgari alohida "Do'konlar
- * taqqoslanishi" kartasi bor edi va kam ma'lumot bilan katta joy egallardi.
+ * Takliflar: logo, do'kon, narx, havola — boshqa hech narsa. Ro'yxat narx bo'yicha
+ * tartiblangan (birinchisi — eng arzon, u narx kartasida ham), farq va o'zgarishlar
+ * raqamlar yonma-yon turgani uchun alohida yozilmaydi; tekshirilgan vaqt — title da.
  */
-export function OffersSection({ product, stats, history, allMarkets }: {
-  product: Product;
-  stats: PriceStats;
-  history: PricePoint[] | null;
-  /** Barcha ranglar bo'yicha do'kon narxlari — narx tarixi shu narxlar bo'yicha yuritiladi */
-  allMarkets: { source: string; price: number }[];
-}) {
+export function OffersSection({ product, stats }: { product: Product; stats: PriceStats }) {
   const { t } = useLanguage();
   const d = t.detailPage;
   const [showAll, setShowAll] = useState(false);
   const { sortedMarkets } = stats;
-  // Tarix rang bo'yicha emas, do'kon bo'yicha: o'zgarish do'konning umumiy narxidan
-  // hisoblanadi va faqat shu qatordagi narx o'sha narx bo'lsa ko'rsatiladi
-  // (aks holda tanlangan rang narxi bilan eski umumiy narx solishtirilib qolardi)
-  const changes = useMemo(() => storeChanges(history, allMarkets, CHANGE_DAYS), [history, allMarkets]);
   if (!sortedMarkets.length) return null;
-  const best = sortedMarkets[0].price;
   // Bitta qatorni yashirish uchun tugma shart emas — u ham shuncha joy oladi
   const collapsible = sortedMarkets.length > VISIBLE + 1;
 
@@ -50,31 +34,11 @@ export function OffersSection({ product, stats, history, allMarkets }: {
         {(showAll || !collapsible ? sortedMarkets : sortedMarkets.slice(0, VISIBLE)).map((m, idx) => {
           const checked = formatCheckedAt(m.checkedAt, t.checkedAt);
           const go = d.goToStore.replace('{{store}}', m.source);
-          const ch = changes[m.source];
-          const moved = ch && ch.now === m.price && Math.abs(ch.pct) >= 0.05;
           return (
             <li key={`${m.source}-${idx}`} className="flex items-center gap-2.5 py-2">
               <StoreLogo name={m.source} size="sm" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-gray-900 dark:text-white" title={checked ? `${m.source} · ${checked}` : m.source}>{m.source}</p>
-                <p className="flex items-center gap-x-2 overflow-hidden text-xs whitespace-nowrap">
-                  {idx === 0 && sortedMarkets.length > 1 && <span className="text-emerald-600 dark:text-emerald-400">{d.cheapestBadge}</span>}
-                  {moved && (
-                    // Raqam yolg'iz turmaydi — nimaning o'zgarishi ekani yonida yozilgan
-                    <span title={`${d.changeTab.replace('{{n}}', String(CHANGE_DAYS))}: ${formatSum(ch.first)} → ${formatSum(ch.now)}`}
-                      className="truncate tabular-nums cursor-default text-gray-500 dark:text-gray-400">
-                      <span className={`${ch.pct < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
-                        {ch.pct > 0 ? '+' : '−'}{Math.abs(ch.pct).toFixed(1)}%
-                      </span>{' '}
-                      {d.changeShort.replace('{{n}}', String(CHANGE_DAYS))}
-                    </span>
-                  )}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="whitespace-nowrap text-sm font-semibold tabular-nums text-gray-900 dark:text-white">{formatSum(m.price)}</p>
-                {m.price > best && <p className="whitespace-nowrap text-xs text-gray-400 dark:text-gray-500 tabular-nums">+{formatSum(m.price - best)}</p>}
-              </div>
+              <p className="min-w-0 flex-1 truncate text-sm text-gray-900 dark:text-white" title={checked ? `${m.source} · ${checked}` : m.source}>{m.source}</p>
+              <p className="whitespace-nowrap text-sm font-semibold tabular-nums text-gray-900 dark:text-white">{formatSum(m.price)}</p>
               <a href={m.url} target="_blank" rel="noopener noreferrer" title={go} aria-label={go}
                 onClick={() => trackStoreClick(product.id, m.source, m.price)}
                 className="flex w-8 h-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-violet-600 hover:text-white hover:border-violet-600 transition-colors">

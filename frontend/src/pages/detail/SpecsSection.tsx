@@ -29,7 +29,6 @@ export function SpecsSection({ specs }: { specs: Specs | null }) {
     <section id="specs" aria-labelledby="specs-title" className="flex-1 flex flex-col glass rounded-2xl p-4">
       <div className="flex items-baseline justify-between gap-3 mb-2.5">
         <h2 id="specs-title" className="text-sm font-semibold text-gray-900 dark:text-white">{t.detail.mainSpecifications}</h2>
-        {specs?.displayName && <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{specs.displayName}</span>}
       </div>
 
       {/* GSMArena dan; mos model topilmasa — qisqa izoh. Plitkalar teng balandlikda

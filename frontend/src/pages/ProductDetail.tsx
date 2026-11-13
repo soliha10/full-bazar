@@ -80,7 +80,7 @@ export function ProductDetail() {
           </div>
           <div className="flex flex-col gap-3 lg:col-start-3 lg:row-start-1 lg:row-span-2">
             <PriceSummary product={view ?? product} stats={stats} history={priceHistory} />
-            <OffersSection product={view ?? product} stats={stats} history={priceHistory} allMarkets={product.markets ?? []} />
+            <OffersSection product={view ?? product} stats={stats} />
           </div>
           <div className="lg:col-start-2 lg:row-start-2 flex flex-col">
             <SpecsSection specs={specs} />
