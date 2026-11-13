@@ -23,8 +23,9 @@ import { SavedProducts, SimilarProducts } from "./detail/ProductRails";
 /**
  * Mahsulot sahifasi — narx solishtirish saytlari (Idealo, PriceRunner, Geizhals)
  * tartibida: tepada rasm + xulosa (narx, holat, eng arzon do'kon tugmasi),
- * so'ng to'liq kenglikdagi bo'limlar: takliflar → xususiyatlar → narx tarixi
- * → o'xshash modellar. Bo'limlar menyusi yo'q — sahifa qisqa, hammasi ketma-ket.
+ * so'ng desktopda yonma-yon juftliklar: takliflar | xususiyatlar, narx tarixi |
+ * do'konlardagi o'zgarish; mobilda ketma-ket. Bo'sh joy qolmasin — kam
+ * kontentli blok ham butun qatorni egallamaydi.
  */
 export function ProductDetail() {
   const { t } = useLanguage();
@@ -63,12 +64,12 @@ export function ProductDetail() {
           <span className="text-gray-900 dark:text-white font-medium truncate">{product.name}</span>
         </nav>
 
-        <motion.div className="grid lg:grid-cols-12 gap-5 lg:gap-8"
+        <motion.div className="grid lg:grid-cols-12 gap-4 lg:gap-6"
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: 'easeOut' }}>
-          <div className="lg:col-span-5">
+          <div className="lg:col-span-4">
             <ImageGallery gallery={gallery} productName={product.name} />
           </div>
-          <div className="lg:col-span-7 space-y-4">
+          <div className="lg:col-span-8 space-y-3">
             <ProductHeading product={product} liked={liked} inCompare={inCompare}
               onToggleLike={toggleLike} onToggleCompare={() => toggleCompare(String(product.id))} />
             <ColorPicker variants={variant.variants} active={variant.active} cheapest={variant.cheapest} onSelect={variant.select} />
@@ -76,11 +77,14 @@ export function ProductDetail() {
           </div>
         </motion.div>
 
-        <div className="mt-5 space-y-4">
-          <OffersSection product={view ?? product} stats={stats} />
-          <SpecsSection specs={specs} />
-          <PriceHistoryChart history={priceHistory} markets={product.markets ?? []} />
-          <StoreComparison history={priceHistory} markets={product.markets ?? []} />
+        <div className="mt-4 grid lg:grid-cols-12 gap-4 items-start">
+          <div className="lg:col-span-7"><OffersSection product={view ?? product} stats={stats} /></div>
+          <div className="lg:col-span-5"><SpecsSection specs={specs} /></div>
+          {/* Do'konlarda o'zgarish bo'lmasa StoreComparison null — tarix butun qatorni oladi */}
+          <div className="lg:col-span-12 flex flex-col lg:flex-row gap-4 items-start">
+            <div className="w-full lg:flex-1 min-w-0"><PriceHistoryChart history={priceHistory} markets={product.markets ?? []} /></div>
+            <div className="w-full lg:w-[34%] shrink-0 empty:hidden"><StoreComparison history={priceHistory} markets={product.markets ?? []} /></div>
+          </div>
         </div>
       </div>
 

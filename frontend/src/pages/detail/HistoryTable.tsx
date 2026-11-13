@@ -16,7 +16,7 @@ export function HistoryTable({ rows, fmtDate, labels }: {
   const list = changes.map((r, i) => ({ ...r, delta: i === 0 ? null : r.min - changes[i - 1].min })).reverse();
 
   return (
-    <details className="group mt-3 rounded-xl border border-gray-900/5 dark:border-white/10">
+    <details className="group mt-2.5 rounded-xl border border-gray-900/5 dark:border-white/10">
       <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 [&::-webkit-details-marker]:hidden">
         {labels.title} <span className="text-xs text-gray-400">{list.length}</span>
       </summary>

@@ -20,15 +20,17 @@ export interface DivergingItem {
  * (dataviz: diverging). Qiymat ustun uchida, ishorasi bilan — rang
  * yagona belgi emas. HTML da: uzun nomlar va havolalar uchun qulay.
  */
-export function DivergingBars({ items, negLabel, posLabel }: {
+export function DivergingBars({ items, negLabel, posLabel, stacked = false }: {
   items: DivergingItem[];
   negLabel: string;
   posLabel: string;
+  /** Tor ustun uchun: yorliq tepada, ustun ostida (yonma-yon emas) */
+  stacked?: boolean;
 }) {
   const max = Math.max(...items.map(i => Math.abs(i.value)), 1e-9);
   return (
     <div>
-      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2 sm:pl-[40%]">
+      <div className={`flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2 ${stacked ? '' : 'sm:pl-[40%]'}`}>
         <span className="flex items-center gap-1.5"><span aria-hidden="true" className="w-2.5 h-2.5 rounded-sm" style={{ background: 'var(--viz-neg)' }} />← {negLabel}</span>
         <span className="flex items-center gap-1.5">{posLabel} →<span aria-hidden="true" className="w-2.5 h-2.5 rounded-sm" style={{ background: 'var(--viz-pos)' }} /></span>
       </div>
@@ -38,7 +40,7 @@ export function DivergingBars({ items, negLabel, posLabel }: {
           const width = `calc((100% - 4.5rem) * ${Math.abs(item.value) / max})`;
           const neg = item.value < 0;
           const row = (
-            <div className="grid grid-cols-1 sm:grid-cols-[40%_1fr] items-center gap-x-4 gap-y-1.5 py-2.5">
+            <div className={`grid grid-cols-1 ${stacked ? '' : 'sm:grid-cols-[40%_1fr]'} items-center gap-x-4 gap-y-1.5 py-2`}>
               <div className="flex items-center gap-2.5 min-w-0">
                 {item.logo && <StoreLogo name={item.logo} size="sm" />}
                 <span className="min-w-0">

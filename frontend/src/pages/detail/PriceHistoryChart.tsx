@@ -54,8 +54,6 @@ export function PriceHistoryChart({ history, markets }: {
   const baseline = typical?.median ?? [...rows.map(r => r.min)].sort((a, b) => a - b)[rows.length >> 1] ?? 0;
   const buckets = useMemo(() => toBuckets(rows, days === 90, baseline), [rows, days, baseline]);
 
-  const verdict = typical && VERDICT[typical.verdict];
-  const verdictLabel = typical && { low: d.verdictLow, typical: d.verdictTypical, high: d.verdictHigh }[typical.verdict];
   const change = summary.changePct;
   const changeText = change === null ? null : Math.abs(change) < 0.05 ? d.historyNoChange
     : `${change > 0 ? '+' : '−'}${Math.abs(change).toFixed(1)}%`;
@@ -79,7 +77,7 @@ export function PriceHistoryChart({ history, markets }: {
         </div>
 
         {history === null ? (
-          <div className="h-[240px] rounded-2xl bg-gray-900/5 dark:bg-white/5 animate-pulse" aria-hidden="true" />
+          <div className="h-[200px] rounded-2xl bg-gray-900/5 dark:bg-white/5 animate-pulse" aria-hidden="true" />
         ) : rows.length < 2 ? (
           <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{d.collectingData}</p>
@@ -87,14 +85,9 @@ export function PriceHistoryChart({ history, markets }: {
           </div>
         ) : (
           <>
-            {/* Xulosa: holat yorlig'i + bir jumla. Ma'lumot kam bo'lsa — faqat hozirgi narx */}
-            <div className="mb-4 flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
-              {verdict && verdictLabel && (
-                <span className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${verdict.tone}`}>
-                  <verdict.icon className="w-4 h-4" aria-hidden="true" />{verdictLabel}
-                </span>
-              )}
-              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+            {/* Xulosa jumlasi; holat yorlig'i (past/odatiy/yuqori) sahifa tepasidagi narx kartasida */}
+            <div className="mb-3">
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 leading-snug">
                 {typical && (typical.point
                   ? d.verdictTextPoint.replace('{{price}}', formatSum(round1k((typical.low + typical.high) / 2)))
                   : d.verdictText.replace('{{low}}', formatSum(round1k(typical.low))).replace('{{high}}', formatSum(round1k(typical.high))))}{' '}
@@ -107,7 +100,7 @@ export function PriceHistoryChart({ history, markets }: {
               labels={{ typical: d.devTypical, cheaper: d.devCheaper, pricier: d.devPricier, vsTypical: d.devVsTypical, range: d.candleRange }} />
 
             {/* Davr bo'yicha ikki raqam — grafik ostida, bir qatorda */}
-            <dl className="mt-3 flex flex-wrap gap-x-8 gap-y-2 text-sm">
+            <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs md:text-sm">
               {summary.low && (
                 <div className="flex gap-2">
                   <dt className="text-gray-500 dark:text-gray-400">{d.historyLow}:</dt>

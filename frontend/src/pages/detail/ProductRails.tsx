@@ -59,11 +59,12 @@ export function SimilarProducts({ loading, products, bestPrice }: { loading: boo
       <h2 id="similar-title" className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
         {t.detailPage.similarProducts}
       </h2>
-      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-4">{t.detailPage.similarSubtitle}</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 mb-3">{t.detailPage.similarSubtitle}</p>
+      {/* Bitta qator, gorizontal aylantiriladi — soni ustunlarga bo'linmasa ham "yetim" kartalar qolmaydi */}
+      <div className="flex gap-2.5 overflow-x-auto snap-x pb-1 [scrollbar-width:thin]">
         {loading
-          ? Array.from({ length: 4 }, (_, i) => (
-              <div key={i} className="rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse h-56" aria-hidden="true" />
+          ? Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="w-40 lg:w-[calc((100%-50px)/6)] shrink-0 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse h-44" aria-hidden="true" />
             ))
           : products.map((p) => {
               const diff = p.price - bestPrice;
@@ -72,13 +73,13 @@ export function SimilarProducts({ loading, products, bestPrice }: { loading: boo
                 <Link
                   key={p.id}
                   to={productPath(p)}
-                  className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3 hover:border-gray-300 dark:hover:border-gray-700 transition-colors flex flex-col"
+                  className="w-40 lg:w-[calc((100%-50px)/6)] shrink-0 snap-start bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-2.5 hover:border-gray-300 dark:hover:border-gray-700 transition-colors flex flex-col"
                 >
                   <img
                     src={p.image}
                     alt={p.name}
                     loading="lazy"
-                    className="w-full aspect-square object-contain rounded-xl bg-gray-50 dark:bg-gray-800 p-2 mb-2"
+                    className="w-full aspect-[4/3] object-contain rounded-lg bg-gray-50 dark:bg-gray-800 p-1.5 mb-2"
                     onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
                   />
                   <p className="text-xs font-medium text-gray-800 dark:text-white line-clamp-2 mb-1.5 leading-snug flex-1">{p.name}</p>
